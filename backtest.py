@@ -2,32 +2,14 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
-
-# ============================================================
-# HİSSELER
-# ============================================================
-
 STOCKS = [
-    "SNDL",
-    "PLUG",
-    "SOFI",
-    "OPEN",
-    "JOBY",
-    "LCID",
-    "NU",
-    "GRAB",
-    "MARA",
-    "RIOT",
+    "SNDL", "PLUG", "SOFI", "OPEN", "JOBY",
+    "LCID", "NU", "GRAB", "MARA", "RIOT"
 ]
 
 
-# ============================================================
-# RSI
-# ============================================================
-
 def calculate_rsi(series, period=14):
     delta = series.diff()
-
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
 
@@ -38,10 +20,6 @@ def calculate_rsi(series, period=14):
 
     return 100 - (100 / (1 + rs))
 
-
-# ============================================================
-# GÖSTERGELER
-# ============================================================
 
 def prepare_stock(ticker):
 
@@ -60,20 +38,13 @@ def prepare_stock(ticker):
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
-        required = ["Close", "Volume"]
-
-        for column in required:
-            if column not in df.columns:
-                return None
-
-        df = df.dropna(subset=required).copy()
+        df = df.dropna(subset=["Close", "Volume"]).copy()
 
         if len(df) < 100:
             return None
 
         close = df["Close"]
 
-        # EMA
         df["EMA9"] = close.ewm(
             span=9,
             adjust=False
@@ -89,10 +60,8 @@ def prepare_stock(ticker):
             adjust=False
         ).mean()
 
-        # RSI
         df["RSI"] = calculate_rsi(close)
 
-        # MACD
         ema12 = close.ewm(
             span=12,
             adjust=False
@@ -110,30 +79,20 @@ def prepare_stock(ticker):
             adjust=False
         ).mean()
 
-        # Hacim ortalaması
         df["VOL_AVG20"] = df["Volume"].rolling(20).mean()
 
-        df = df.dropna().copy()
-
-        return df
+        return df.dropna().copy()
 
     except Exception as e:
-
-        print(f"{ticker} veri hatası: {e}")
-
+        print(f"{ticker} HATA: {e}")
         return None
 
-
-# ============================================================
-# SKOR
-# ============================================================
 
 def calculate_score(row):
 
     score = 0
 
     close = float(row["Close"])
-
     ema9 = float(row["EMA9"])
     ema20 = float(row["EMA20"])
     ema50 = float(row["EMA50"])
@@ -146,397 +105,227 @@ def calculate_score(row):
 
     rsi = float(row["RSI"])
 
-    # --------------------------------------------------------
-    # EMA - 40 PUAN
-    # --------------------------------------------------------
-
+    # EMA - 40
     if close > ema9 > ema20 > ema50:
         score += 40
-
     elif close > ema9 > ema20:
         score += 30
-
     elif close > ema20:
         score += 20
-
     elif close > ema50:
         score += 10
 
-    # --------------------------------------------------------
-    # MACD - 30 PUAN
-    # --------------------------------------------------------
-
+    # MACD - 30
     if macd > macd_signal and macd > 0:
         score += 30
-
     elif macd > macd_signal:
         score += 20
-
     elif macd > 0:
         score += 10
 
-    # --------------------------------------------------------
-    # HACİM - 20 PUAN
-    # --------------------------------------------------------
-
-    if volume_avg > 0:
-
-        volume_ratio = volume / volume_avg
-
-    else:
-
-        volume_ratio = 0
+    # HACİM - 20
+    volume_ratio = volume / volume_avg if volume_avg > 0 else 0
 
     if volume_ratio >= 2:
         score += 20
-
     elif volume_ratio >= 1.5:
         score += 15
-
     elif volume_ratio >= 1:
         score += 10
-
     else:
         score += 5
 
-    # --------------------------------------------------------
-    # RSI - 10 PUAN
-    # --------------------------------------------------------
-
+    # RSI - 10
     if 50 <= rsi <= 65:
         score += 10
-
     elif 45 <= rsi < 50 or 65 < rsi <= 70:
         score += 8
-
     elif 40 <= rsi < 45:
         score += 6
-
     elif 30 <= rsi < 40:
         score += 4
-
     elif rsi < 30:
         score += 3
-
     else:
         score += 2
 
     return round(score)
 
 
-# ============================================================
-# GÜÇLÜ SİNYAL FİLTRESİ
-# ============================================================
-
-def strong_signal(row, score):
-
-    close = float(row["Close"])
-
-    ema9 = float(row["EMA9"])
-    ema20 = float(row["EMA20"])
-
-    macd = float(row["MACD"])
-    macd_signal = float(row["MACD_SIGNAL"])
-
-    volume = float(row["Volume"])
-    volume_avg = float(row["VOL_AVG20"])
-
-    rsi = float(row["RSI"])
-
-    if volume_avg > 0:
-
-        volume_ratio = volume / volume_avg
-
-    else:
-
-        volume_ratio = 0
-
-    # 1 - Güçlü yükseliş trendi
-    trend_ok = (
-        close > ema9
-        and ema9 > ema20
-    )
-
-    # 2 - MACD teyidi
-    macd_ok = (
-        macd > macd_signal
-        and macd > 0
-    )
-
-    # 3 - Hacim teyidi
-    volume_ok = volume_ratio >= 1.0
-
-    # 4 - RSI aşırı şişmemiş olmalı
-    rsi_ok = 45 <= rsi <= 70
-
-    # 5 - Genel skor
-    score_ok = score >= 80
-
-    return (
-        trend_ok
-        and macd_ok
-        and volume_ok
-        and rsi_ok
-        and score_ok
-    )
-
-
-# ============================================================
-# GETİRİ HESABI
-# ============================================================
-
 def future_return(df, index, days):
 
-    try:
-
-        current_price = float(
-            df.iloc[index]["Close"]
-        )
-
-        future_index = index + days
-
-        if future_index >= len(df):
-            return None
-
-        future_price = float(
-            df.iloc[future_index]["Close"]
-        )
-
-        return (
-            (future_price - current_price)
-            / current_price
-        ) * 100
-
-    except Exception:
-
+    if index + days >= len(df):
         return None
 
+    current = float(df.iloc[index]["Close"])
+    future = float(df.iloc[index + days]["Close"])
 
-# ============================================================
-# BACKTEST
-# ============================================================
+    return ((future - current) / current) * 100
+
 
 all_results = []
-
 strong_results = []
 
 
 print()
 print("=" * 70)
-print("MELİH STOCK SCANNER - GELİŞTİRİLMİŞ BACKTEST")
+print("MELİH STOCK SCANNER - FİLTRE TESTİ #2")
 print("=" * 70)
 print()
-
-print("Model:")
-print("EMA      : %40")
-print("MACD     : %30")
-print("Hacim    : %20")
-print("RSI      : %10")
+print("SKOR SİSTEMİ DEĞİŞMEDİ.")
 print()
-
-print("GÜÇLÜ SİNYAL TEYİDİ:")
-print("Fiyat > EMA9 > EMA20")
-print("MACD > Sinyal ve MACD > 0")
-print("Hacim >= 1.0x ortalama")
-print("RSI 45-70")
+print("YENİ GÜÇLÜ SİNYAL:")
 print("Skor >= 80")
+print("Fiyat > EMA9 > EMA20")
+print("MACD > MACD Sinyal")
+print("RSI ve hacim zorunlu değil.")
 print()
-
 print("=" * 70)
-print()
 
 
 for ticker in STOCKS:
 
+    print()
     print(f"{ticker} taranıyor...")
 
     df = prepare_stock(ticker)
 
     if df is None:
-
-        print(f"{ticker}: veri alınamadı")
+        print(f"{ticker}: veri alınamadı.")
         continue
 
-    ticker_count = 0
-    ticker_strong = 0
+    count = 0
+    strong_count = 0
 
-    # Son 5 yılın tamamını dolaş
     for i in range(len(df) - 5):
 
         row = df.iloc[i]
 
         score = calculate_score(row)
 
-        ret_1 = future_return(df, i, 1)
-        ret_3 = future_return(df, i, 3)
-        ret_5 = future_return(df, i, 5)
+        ret1 = future_return(df, i, 1)
+        ret3 = future_return(df, i, 3)
+        ret5 = future_return(df, i, 5)
 
-        if ret_1 is None:
+        if ret1 is None or ret3 is None or ret5 is None:
             continue
 
         result = {
             "ticker": ticker,
             "score": score,
-            "ret_1": ret_1,
-            "ret_3": ret_3,
-            "ret_5": ret_5,
+            "ret1": ret1,
+            "ret3": ret3,
+            "ret5": ret5
         }
 
         all_results.append(result)
+        count += 1
 
-        ticker_count += 1
+        # YENİ FİLTRE
+        trend_ok = (
+            row["Close"] > row["EMA9"]
+            and row["EMA9"] > row["EMA20"]
+        )
 
-        # Güçlü sinyal kontrolü
-        if strong_signal(row, score):
+        macd_ok = (
+            row["MACD"] > row["MACD_SIGNAL"]
+        )
+
+        if score >= 80 and trend_ok and macd_ok:
 
             strong_results.append(result)
-
-            ticker_strong += 1
+            strong_count += 1
 
     print(
-        f"{ticker}: "
-        f"{ticker_count} test | "
-        f"{ticker_strong} güçlü sinyal"
+        f"{ticker}: {count} test | "
+        f"{strong_count} güçlü sinyal"
     )
 
 
 # ============================================================
-# GENEL SONUÇLAR
+# GENEL SONUÇ
 # ============================================================
+
+df_all = pd.DataFrame(all_results)
 
 print()
 print("=" * 70)
 print("GENEL SONUÇ")
 print("=" * 70)
 
+print(f"Toplam test: {len(df_all)}")
 
-if not all_results:
+print(
+    f"1 gün : {df_all['ret1'].mean():+.2f}%"
+)
 
-    print("Sonuç bulunamadı.")
+print(
+    f"3 gün : {df_all['ret3'].mean():+.2f}%"
+)
 
-else:
-
-    df_all = pd.DataFrame(all_results)
-
-    print()
-    print(f"Toplam test: {len(df_all)}")
-
-    print()
-    print(
-        f"Ortalama 1 gün : "
-        f"{df_all['ret_1'].mean():+.2f}%"
-    )
-
-    print(
-        f"Ortalama 3 gün : "
-        f"{df_all['ret_3'].mean():+.2f}%"
-    )
-
-    print(
-        f"Ortalama 5 gün : "
-        f"{df_all['ret_5'].mean():+.2f}%"
-    )
+print(
+    f"5 gün : {df_all['ret5'].mean():+.2f}%"
+)
 
 
 # ============================================================
-# SKOR GRUPLARI
+# 80+ SKOR
+# ============================================================
+
+score80 = df_all[df_all["score"] >= 80]
+
+print()
+print("=" * 70)
+print("SKOR 80-100")
+print("=" * 70)
+
+print(f"Örnek sayısı: {len(score80)}")
+
+print(
+    f"1 gün : {score80['ret1'].mean():+.2f}%"
+)
+
+print(
+    f"3 gün : {score80['ret3'].mean():+.2f}%"
+)
+
+print(
+    f"5 gün : {score80['ret5'].mean():+.2f}%"
+)
+
+print(
+    f"1 gün pozitif: "
+    f"{(score80['ret1'] > 0).mean() * 100:.1f}%"
+)
+
+print(
+    f"3 gün pozitif: "
+    f"{(score80['ret3'] > 0).mean() * 100:.1f}%"
+)
+
+print(
+    f"5 gün pozitif: "
+    f"{(score80['ret5'] > 0).mean() * 100:.1f}%"
+)
+
+
+# ============================================================
+# YENİ GÜÇLÜ SİNYAL
 # ============================================================
 
 print()
 print("=" * 70)
-print("SKOR GRUPLARI")
+print("YENİ GÜÇLÜ SİNYAL FİLTRESİ")
 print("=" * 70)
 
+if len(strong_results) == 0:
 
-def print_group(name, condition):
-
-    group = df_all[condition]
-
-    if len(group) == 0:
-
-        print()
-        print(name)
-        print("Sonuç yok.")
-
-        return
-
-    print()
-    print(name)
-    print("-" * 50)
-
-    print(f"Örnek sayısı: {len(group)}")
-
-    print(
-        f"1 gün : {group['ret_1'].mean():+.2f}%"
-    )
-
-    print(
-        f"3 gün : {group['ret_3'].mean():+.2f}%"
-    )
-
-    print(
-        f"5 gün : {group['ret_5'].mean():+.2f}%"
-    )
-
-    print(
-        f"1 gün pozitif: "
-        f"{(group['ret_1'] > 0).mean() * 100:.1f}%"
-    )
-
-    print(
-        f"3 gün pozitif: "
-        f"{(group['ret_3'] > 0).mean() * 100:.1f}%"
-    )
-
-    print(
-        f"5 gün pozitif: "
-        f"{(group['ret_5'] > 0).mean() * 100:.1f}%"
-    )
-
-
-print_group(
-    "SKOR 80-100",
-    df_all["score"] >= 80
-)
-
-print_group(
-    "SKOR 65-79",
-    (df_all["score"] >= 65)
-    & (df_all["score"] < 80)
-)
-
-print_group(
-    "SKOR 50-64",
-    (df_all["score"] >= 50)
-    & (df_all["score"] < 65)
-)
-
-print_group(
-    "SKOR 0-49",
-    df_all["score"] < 50
-)
-
-
-# ============================================================
-# GELİŞTİRİLMİŞ GÜÇLÜ SİNYAL SONUCU
-# ============================================================
-
-print()
-print("=" * 70)
-print("GÜÇLÜ SİNYAL FİLTRESİ SONUCU")
-print("=" * 70)
-
-
-if not strong_results:
-
-    print()
-    print("Hiç güçlü sinyal bulunamadı.")
+    print("Güçlü sinyal bulunamadı.")
 
 else:
 
     df_strong = pd.DataFrame(strong_results)
 
-    print()
     print(
         f"Güçlü sinyal sayısı: "
         f"{len(df_strong)}"
@@ -546,39 +335,39 @@ else:
 
     print(
         f"1 gün ortalama : "
-        f"{df_strong['ret_1'].mean():+.2f}%"
+        f"{df_strong['ret1'].mean():+.2f}%"
     )
 
     print(
         f"3 gün ortalama : "
-        f"{df_strong['ret_3'].mean():+.2f}%"
+        f"{df_strong['ret3'].mean():+.2f}%"
     )
 
     print(
         f"5 gün ortalama : "
-        f"{df_strong['ret_5'].mean():+.2f}%"
+        f"{df_strong['ret5'].mean():+.2f}%"
     )
 
     print()
 
     print(
         f"1 gün pozitif: "
-        f"{(df_strong['ret_1'] > 0).mean() * 100:.1f}%"
+        f"{(df_strong['ret1'] > 0).mean() * 100:.1f}%"
     )
 
     print(
         f"3 gün pozitif: "
-        f"{(df_strong['ret_3'] > 0).mean() * 100:.1f}%"
+        f"{(df_strong['ret3'] > 0).mean() * 100:.1f}%"
     )
 
     print(
         f"5 gün pozitif: "
-        f"{(df_strong['ret_5'] > 0).mean() * 100:.1f}%"
+        f"{(df_strong['ret5'] > 0).mean() * 100:.1f}%"
     )
 
 
 # ============================================================
-# HİSSE BAZLI GÜÇLÜ SİNYALLER
+# HİSSE BAZLI
 # ============================================================
 
 print()
@@ -586,37 +375,27 @@ print("=" * 70)
 print("HİSSE BAZLI GÜÇLÜ SİNYALLER")
 print("=" * 70)
 
-if strong_results:
-
-    df_strong = pd.DataFrame(strong_results)
+if len(strong_results) > 0:
 
     summary = (
-        df_strong
+        pd.DataFrame(strong_results)
         .groupby("ticker")
         .agg(
             sinyal=("ticker", "count"),
-            ort_1g=("ret_1", "mean"),
-            ort_3g=("ret_3", "mean"),
-            ort_5g=("ret_5", "mean")
-        )
-        .sort_values(
-            "ort_5g",
-            ascending=False
+            ort_1g=("ret1", "mean"),
+            ort_3g=("ret3", "mean"),
+            ort_5g=("ret5", "mean")
         )
     )
-
-    print()
 
     print(summary.to_string())
 
 else:
 
-    print()
     print("Güçlü sinyal yok.")
 
 
 print()
 print("=" * 70)
-print("BACKTEST TAMAMLANDI")
+print("TEST TAMAMLANDI")
 print("=" * 70)
-print()
