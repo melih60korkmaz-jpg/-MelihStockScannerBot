@@ -23,12 +23,11 @@ def telegram(method, data=None):
         return json.loads(response.read().decode("utf-8"))
 
 
-def get_stock_data(symbol):
-
+def yahoo_chart(symbol, range_value, interval):
     url = (
         f"https://query1.finance.yahoo.com/v8/finance/chart/"
         f"{urllib.parse.quote(symbol)}"
-        f"?range=3mo&interval=1d"
+        f"?range={range_value}&interval={interval}"
     )
 
     request = urllib.request.Request(
@@ -39,105 +38,160 @@ def get_stock_data(symbol):
     with urllib.request.urlopen(request, timeout=20) as response:
         data = json.loads(response.read().decode("utf-8"))
 
-    result = data["chart"]["result"][0]
+    return data["chart"]["result"][0]
 
-    meta = result["meta"]
+
+def ema(values, period):
+
+    if len(values) < period:
+        return None
+
+    multiplier = 2 / (period + 1)
+
+    ema_value = sum(values[:period]) / period
+
+    for value in values[period:]:
+        ema_value = (
+            (value - ema_value) * multiplier
+        ) + ema_value
+
+    return ema_value
+
+
+def rsi(values, period=14):
+
+    if len(values) <= period:
+        return None
+
+    gains = []
+    losses = []
+
+    for i in range(1, len(values)):
+
+        change = values[i] - values[i - 1]
+
+        if change > 0:
+            gains.append(change)
+            losses.append(0)
+        else:
+            gains.append(0)
+            losses.append(abs(change))
+
+    average_gain = sum(gains[:period]) / period
+    average_loss = sum(losses[:period]) / period
+
+    for i in range(period, len(gains)):
+
+        average_gain = (
+            (average_gain * (period - 1))
+            + gains[i]
+        ) / period
+
+        average_loss = (
+            (average_loss * (period - 1))
+            + losses[i]
+        ) / period
+
+    if average_loss == 0:
+        return 100
+
+    rs = average_gain / average_loss
+
+    return 100 - (100 / (1 + rs))
+
+
+def get_stock_data(symbol):
+
+    # Günlük veri: EMA ve RSI için
+    daily = yahoo_chart(symbol, "3mo", "1d")
+
+    meta = daily["meta"]
+
     price = meta.get("regularMarketPrice")
 
-    indicators = result["indicators"]["quote"][0]
+    quote = daily["indicators"]["quote"][0]
 
-    closes = indicators.get("close", [])
-    volumes = indicators.get("volume", [])
+    daily_closes = [
+        x for x in quote.get("close", [])
+        if x is not None
+    ]
 
-    valid_closes = [x for x in closes if x is not None]
-    valid_volumes = [x for x in volumes if x is not None]
+    daily_volumes = [
+        x for x in quote.get("volume", [])
+        if x is not None
+    ]
 
     previous_close = None
-    volume = None
 
-    if len(valid_closes) >= 2:
-        previous_close = valid_closes[-2]
+    if len(daily_closes) >= 2:
+        previous_close = daily_closes[-2]
 
-    if valid_volumes:
-        volume = valid_volumes[-1]
+    daily_volume = None
 
+    if daily_volumes:
+        daily_volume = daily_volumes[-1]
 
-    # EMA hesaplama
+    ema9 = ema(daily_closes, 9)
+    ema20 = ema(daily_closes, 20)
+    rsi14 = rsi(daily_closes, 14)
 
-    def ema(values, period):
+    # 5 dakikalık veri: VWAP için
+    intraday = yahoo_chart(symbol, "1d", "5m")
 
-        if len(values) < period:
-            return None
+    intraday_quote = intraday["indicators"]["quote"][0]
 
-        multiplier = 2 / (period + 1)
+    highs = intraday_quote.get("high", [])
+    lows = intraday_quote.get("low", [])
+    closes = intraday_quote.get("close", [])
+    volumes = intraday_quote.get("volume", [])
 
-        ema_value = sum(values[:period]) / period
+    cumulative_price_volume = 0
+    cumulative_volume = 0
 
-        for value in values[period:]:
-            ema_value = (
-                (value - ema_value) * multiplier
-            ) + ema_value
+    for high, low, close, volume in zip(
+        highs,
+        lows,
+        closes,
+        volumes
+    ):
 
-        return ema_value
+        if (
+            high is None
+            or low is None
+            or close is None
+            or volume is None
+        ):
+            continue
 
+        typical_price = (
+            high + low + close
+        ) / 3
 
-    ema9 = ema(valid_closes, 9)
-    ema20 = ema(valid_closes, 20)
+        cumulative_price_volume += (
+            typical_price * volume
+        )
 
+        cumulative_volume += volume
 
-    # RSI 14 hesaplama
+    if cumulative_volume > 0:
 
-    def rsi(values, period=14):
+        vwap = (
+            cumulative_price_volume
+            / cumulative_volume
+        )
 
-        if len(values) <= period:
-            return None
+    else:
 
-        gains = []
-        losses = []
-
-        for i in range(1, len(values)):
-            change = values[i] - values[i - 1]
-
-            if change > 0:
-                gains.append(change)
-                losses.append(0)
-            else:
-                gains.append(0)
-                losses.append(abs(change))
-
-        average_gain = sum(gains[:period]) / period
-        average_loss = sum(losses[:period]) / period
-
-        for i in range(period, len(gains)):
-
-            average_gain = (
-                (average_gain * (period - 1))
-                + gains[i]
-            ) / period
-
-            average_loss = (
-                (average_loss * (period - 1))
-                + losses[i]
-            ) / period
-
-        if average_loss == 0:
-            return 100
-
-        rs = average_gain / average_loss
-
-        return 100 - (100 / (1 + rs))
-
-
-    rsi14 = rsi(valid_closes, 14)
-
+        vwap = None
 
     return (
         price,
         previous_close,
-        volume,
+        daily_volume,
         ema9,
         ema20,
-        rsi14
+        rsi14,
+        vwap
     )
 
 
@@ -147,12 +201,19 @@ def main():
 
     me = telegram("getMe")
 
-    print("Bot bağlantısı:", me["result"]["username"])
+    print(
+        "Bot bağlantısı:",
+        me["result"]["username"]
+    )
 
     updates = telegram("getUpdates")
 
     if not updates.get("result"):
-        print("Telegram'da bekleyen mesaj bulunamadı.")
+
+        print(
+            "Telegram'da bekleyen mesaj bulunamadı."
+        )
+
         return
 
     last_update = updates["result"][-1]
@@ -160,11 +221,12 @@ def main():
     message = last_update.get("message")
 
     if not message:
+
         print("Mesaj bulunamadı.")
+
         return
 
     chat_id = message["chat"]["id"]
-
 
     stocks = [
         "SNDL",
@@ -179,13 +241,11 @@ def main():
         "RIOT"
     ]
 
-
     results = []
 
     print("")
     print("ABD HİSSE TARAMASI")
     print("------------------")
-
 
     for symbol in stocks:
 
@@ -197,13 +257,12 @@ def main():
                 volume,
                 ema9,
                 ema20,
-                rsi14
+                rsi14,
+                vwap
             ) = get_stock_data(symbol)
-
 
             if price is None:
                 continue
-
 
             if previous_close:
 
@@ -216,8 +275,10 @@ def main():
 
                 change = 0
 
-
-            if ema9 is not None and ema20 is not None:
+            if (
+                ema9 is not None
+                and ema20 is not None
+            ):
 
                 if price > ema9 > ema20:
                     trend = "YUKARI"
@@ -231,7 +292,6 @@ def main():
             else:
 
                 trend = "YETERSİZ VERİ"
-
 
             if rsi14 is not None:
 
@@ -248,6 +308,20 @@ def main():
 
                 rsi_status = "YETERSİZ VERİ"
 
+            if vwap is not None:
+
+                if price > vwap:
+                    vwap_status = "VWAP ÜSTÜ"
+
+                elif price < vwap:
+                    vwap_status = "VWAP ALTI"
+
+                else:
+                    vwap_status = "VWAP CİVARI"
+
+            else:
+
+                vwap_status = "YETERSİZ VERİ"
 
             print(
                 f"{symbol}: "
@@ -257,10 +331,11 @@ def main():
                 f"EMA9: {ema9:.2f} | "
                 f"EMA20: {ema20:.2f} | "
                 f"RSI14: {rsi14:.2f} | "
+                f"VWAP: {vwap:.2f} | "
                 f"{trend} | "
-                f"{rsi_status}"
+                f"{rsi_status} | "
+                f"{vwap_status}"
             )
-
 
             if 1 <= price <= 10:
 
@@ -273,22 +348,25 @@ def main():
                         ema9,
                         ema20,
                         rsi14,
+                        vwap,
                         trend,
-                        rsi_status
+                        rsi_status,
+                        vwap_status
                     )
                 )
 
-
         except Exception as error:
 
-            print(f"{symbol}: veri alınamadı")
+            print(
+                f"{symbol}: veri alınamadı"
+            )
+
             print(error)
 
-
-    text = "🤖 MelihStockScannerBot\n\n"
-
-    text += "🇺🇸 $1–10 ABD Hisse Taraması\n\n"
-
+    text = (
+        "🤖 MelihStockScannerBot\n\n"
+        "🇺🇸 $1–10 ABD Hisse Taraması\n\n"
+    )
 
     if results:
 
@@ -300,10 +378,11 @@ def main():
             ema9,
             ema20,
             rsi14,
+            vwap,
             trend,
-            rsi_status
+            rsi_status,
+            vwap_status
         ) in results:
-
 
             if change > 0:
                 emoji = "📈"
@@ -314,13 +393,11 @@ def main():
             else:
                 emoji = "➡️"
 
-
-            if volume:
-                volume_text = f"{volume:,.0f}"
-
-            else:
-                volume_text = "Yok"
-
+            volume_text = (
+                f"{volume:,.0f}"
+                if volume
+                else "Yok"
+            )
 
             text += (
                 f"{emoji} {symbol}\n"
@@ -331,20 +408,22 @@ def main():
                 f"📐 EMA20: ${ema20:.2f}\n"
                 f"🔎 Trend: {trend}\n"
                 f"📊 RSI14: {rsi14:.2f}\n"
-                f"📌 RSI durumu: {rsi_status}\n\n"
+                f"📌 RSI: {rsi_status}\n"
+                f"⚖️ VWAP: ${vwap:.2f}\n"
+                f"📍 {vwap_status}\n\n"
             )
-
 
     else:
 
-        text += "Bu taramada $1–10 aralığında hisse bulunamadı."
-
+        text += (
+            "Bu taramada $1–10 aralığında "
+            "hisse bulunamadı."
+        )
 
     text += (
         "⚠️ Bu aşama teknik veri toplama testidir.\n"
         "Henüz AL/TUT sinyali değildir."
     )
-
 
     telegram(
         "sendMessage",
@@ -354,9 +433,10 @@ def main():
         }
     )
 
-
     print("")
-    print("Telegram'a tarama sonucu gönderildi.")
+    print(
+        "Telegram'a tarama sonucu gönderildi."
+    )
 
 
 if __name__ == "__main__":
