@@ -1,0 +1,20 @@
+name: MelihStockScannerBot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodu al
+        uses: actions/checkout@v6
+
+      - name: Python sürümünü kontrol et
+        run: python --version
+
+      - name: Botu test et
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: python bot.py
