@@ -3,54 +3,55 @@ import pandas as pd
 import numpy as np
 
 STOCKS = [
-    "SNDL",
-    "PLUG",
-    "OPEN",
-    "JOBY",
-    "LCID",
-    "GRAB",
-    "SOFI",
-    "NU",
-    "MARA",
-    "RIOT"
+    "SNDL", "PLUG", "OPEN", "JOBY", "LCID",
+    "GRAB", "SOFI", "NU", "MARA", "RIOT"
 ]
 
 
-def calculate_rsi(series, period=14):
+def rsi(series, period=14):
     delta = series.diff()
 
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
 
-    avg_gain = gain.rolling(period).mean()
-    avg_loss = loss.rolling(period).mean()
+    avg_gain = gain.ewm(
+        alpha=1 / period,
+        adjust=False
+    ).mean()
 
-    rs = avg_gain / avg_loss
+    avg_loss = loss.ewm(
+        alpha=1 / period,
+        adjust=False
+    ).mean()
+
+    rs = avg_gain / avg_loss.replace(0, np.nan)
 
     return 100 - (100 / (1 + rs))
 
 
-def calculate_score(data):
+def add_indicators(data):
     data = data.copy()
 
-    data["EMA9"] = data["Close"].ewm(
+    close = data["Close"]
+
+    data["EMA9"] = close.ewm(
         span=9,
         adjust=False
     ).mean()
 
-    data["EMA20"] = data["Close"].ewm(
+    data["EMA20"] = close.ewm(
         span=20,
         adjust=False
     ).mean()
 
-    data["RSI"] = calculate_rsi(data["Close"])
+    data["RSI"] = rsi(close)
 
-    ema12 = data["Close"].ewm(
+    ema12 = close.ewm(
         span=12,
         adjust=False
     ).mean()
 
-    ema26 = data["Close"].ewm(
+    ema26 = close.ewm(
         span=26,
         adjust=False
     ).mean()
@@ -62,249 +63,433 @@ def calculate_score(data):
         adjust=False
     ).mean()
 
-    data["AVG_VOLUME"] = data["Volume"].rolling(20).mean()
-
-    scores = []
-
-    for i in range(len(data)):
-
-        row = data.iloc[i]
-
-        price = row["Close"]
-        ema9 = row["EMA9"]
-        ema20 = row["EMA20"]
-        rsi = row["RSI"]
-        volume = row["Volume"]
-        avg_volume = row["AVG_VOLUME"]
-        macd = row["MACD"]
-        signal = row["SIGNAL"]
-
-        if (
-            pd.isna(ema9)
-            or pd.isna(ema20)
-            or pd.isna(rsi)
-            or pd.isna(avg_volume)
-            or pd.isna(macd)
-            or pd.isna(signal)
-        ):
-            scores.append(np.nan)
-            continue
-
-        score = 0
-
-        # EMA - 25 puan
-        if price > ema9 and ema9 > ema20:
-            score += 25
-
-        elif price > ema20:
-            score += 15
-
-        elif price > ema9:
-            score += 10
-
-        # HACİM - 20 puan
-        volume_ratio = volume / avg_volume
-
-        if volume_ratio >= 2:
-            score += 20
-
-        elif volume_ratio >= 1.5:
-            score += 15
-
-        elif volume_ratio >= 1:
-            score += 10
-
-        else:
-            score += 5
-
-        # RSI - 15 puan
-        if 50 <= rsi <= 65:
-            score += 15
-
-        elif 40 <= rsi < 50:
-            score += 10
-
-        elif 65 < rsi < 70:
-            score += 10
-
-        elif 30 <= rsi < 40:
-            score += 7
-
-        elif rsi < 30:
-            score += 5
-
-        else:
-            score += 3
-
-        # MACD - 20 puan
-        if macd > signal:
-            score += 20
-
-        else:
-            score += 5
-
-        scores.append(score)
-
-    data["SCORE"] = scores
+    data["AVG_VOLUME"] = (
+        data["Volume"]
+        .shift(1)
+        .rolling(20)
+        .mean()
+    )
 
     return data
 
 
-results = []
+def calculate_score(row):
 
-print("=" * 60)
+    price = float(row["Close"])
+    ema9 = float(row["EMA9"])
+    ema20 = float(row["EMA20"])
+
+    rsi_value = float(row["RSI"])
+
+    volume = float(row["Volume"])
+    avg_volume = float(row["AVG_VOLUME"])
+
+    macd = float(row["MACD"])
+    signal = float(row["SIGNAL"])
+
+    raw = 0
+
+    # EMA - 25 puan
+    if price > ema9 and ema9 > ema20:
+        raw += 25
+
+    elif price > ema20:
+        raw += 15
+
+    elif price > ema9:
+        raw += 10
+
+
+    # HACIM - 20 puan
+    volume_ratio = (
+        volume / avg_volume
+        if avg_volume > 0
+        else 0
+    )
+
+    if volume_ratio >= 2:
+        raw += 20
+
+    elif volume_ratio >= 1.5:
+        raw += 15
+
+    elif volume_ratio >= 1:
+        raw += 10
+
+    else:
+        raw += 5
+
+
+    # RSI - 15 puan
+    if 50 <= rsi_value <= 65:
+        raw += 15
+
+    elif 40 <= rsi_value < 50:
+        raw += 10
+
+    elif 65 < rsi_value < 70:
+        raw += 10
+
+    elif 30 <= rsi_value < 40:
+        raw += 7
+
+    elif rsi_value < 30:
+        raw += 5
+
+    else:
+        raw += 3
+
+
+    # MACD - 20 puan
+    if macd > signal:
+        raw += 20
+
+    else:
+        raw += 5
+
+
+    # VWAP ilk backtestte kullanilmiyor.
+    # Gunluk Yahoo verisinde gercek intraday VWAP yok.
+    # 80 puanlik skor 100'e olceklendiriliyor.
+
+    return round((raw / 80) * 100, 2)
+
+
+def get_bucket(score):
+
+    if score >= 80:
+        return "80-100"
+
+    if score >= 65:
+        return "65-79"
+
+    if score >= 50:
+        return "50-64"
+
+    return "0-49"
+
+
+all_results = []
+
+print("=" * 70)
 print("MELIH STOCK SCANNER - BACKTEST")
-print("=" * 60)
+print("=" * 70)
+
+print(
+    "Not: VWAP ilk testte kullanilmiyor."
+)
+
+print()
+
 
 for symbol in STOCKS:
 
-    print()
     print(symbol, "verisi indiriliyor...")
 
     try:
 
         data = yf.download(
             symbol,
-            period="2y",
+            period="5y",
             interval="1d",
             auto_adjust=False,
-            progress=False
+            progress=False,
+            threads=False
         )
 
         if data.empty:
-            print(symbol, "icin veri bulunamadi.")
+
+            print(symbol, "icin veri yok.")
+
             continue
 
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(0)
 
-        data = data.dropna()
+        if isinstance(
+            data.columns,
+            pd.MultiIndex
+        ):
 
-        data = calculate_score(data)
+            data.columns = (
+                data.columns
+                .get_level_values(0)
+            )
 
-        for i in range(len(data) - 5):
 
-            score = data["SCORE"].iloc[i]
+        needed = [
+            "Close",
+            "Volume"
+        ]
 
-            if pd.isna(score):
+        if not all(
+            col in data.columns
+            for col in needed
+        ):
+
+            print(
+                symbol,
+                "icin gerekli kolonlar yok."
+            )
+
+            continue
+
+
+        data = data[
+            needed
+        ].dropna()
+
+
+        data = add_indicators(
+            data
+        )
+
+
+        # Ilk 60 gun indikatorlerin
+        # oturmasi icin kullanilmiyor.
+        #
+        # Sonraki 5 gun de gelecekteki
+        # getiriyi olcmek icin gerekiyor.
+
+        for i in range(
+            60,
+            len(data) - 5
+        ):
+
+            row = data.iloc[i]
+
+
+            values = [
+                row["EMA9"],
+                row["EMA20"],
+                row["RSI"],
+                row["AVG_VOLUME"],
+                row["MACD"],
+                row["SIGNAL"]
+            ]
+
+
+            if any(
+                pd.isna(x)
+                for x in values
+            ):
+
                 continue
 
-            price = float(data["Close"].iloc[i])
 
-            price_1 = float(data["Close"].iloc[i + 1])
-            price_3 = float(data["Close"].iloc[i + 3])
-            price_5 = float(data["Close"].iloc[i + 5])
+            price = float(
+                data["Close"].iloc[i]
+            )
 
-            return_1d = ((price_1 / price) - 1) * 100
-            return_3d = ((price_3 / price) - 1) * 100
-            return_5d = ((price_5 / price) - 1) * 100
+            price_1 = float(
+                data["Close"].iloc[i + 1]
+            )
 
-            results.append({
+            price_3 = float(
+                data["Close"].iloc[i + 3]
+            )
+
+            price_5 = float(
+                data["Close"].iloc[i + 5]
+            )
+
+
+            score = calculate_score(
+                row
+            )
+
+
+            all_results.append({
+
                 "symbol": symbol,
-                "date": data.index[i],
-                "score": float(score),
-                "return_1d": return_1d,
-                "return_3d": return_3d,
-                "return_5d": return_5d
+
+                "date": str(
+                    data.index[i].date()
+                ),
+
+                "score": score,
+
+                "bucket": get_bucket(
+                    score
+                ),
+
+                "return_1d": (
+                    price_1 / price - 1
+                ) * 100,
+
+                "return_3d": (
+                    price_3 / price - 1
+                ) * 100,
+
+                "return_5d": (
+                    price_5 / price - 1
+                ) * 100
+
             })
 
-        print(symbol, "tamamlandi.")
+
+        print(
+            symbol,
+            "tamamlandi."
+        )
+
 
     except Exception as e:
 
-        print(symbol, "HATA:", e)
+        print(
+            symbol,
+            "HATA:",
+            e
+        )
 
 
-results_df = pd.DataFrame(results)
+results = pd.DataFrame(
+    all_results
+)
+
 
 print()
-print("=" * 60)
+
+print("=" * 70)
 print("GENEL SONUCLAR")
-print("=" * 60)
+print("=" * 70)
 
-if results_df.empty:
 
-    print("Hicbir backtest sonucu olusmadi.")
+if results.empty:
 
-else:
+    print(
+        "Hicbir backtest sonucu olusmadi."
+    )
 
-    print("Toplam test sayisi:", len(results_df))
+    raise SystemExit(0)
 
-    print()
-    print("SCORE GRUPLARI")
-    print("-" * 60)
 
-    groups = [
-        ("80+", 80, 101),
-        ("65-79", 65, 80),
-        ("50-64", 50, 65),
-        ("0-49", 0, 50)
+print(
+    "Toplam test sayisi:",
+    len(results)
+)
+
+
+print(
+    "1 gun ortalama getiri: %.2f%%"
+    % results["return_1d"].mean()
+)
+
+
+print(
+    "3 gun ortalama getiri: %.2f%%"
+    % results["return_3d"].mean()
+)
+
+
+print(
+    "5 gun ortalama getiri: %.2f%%"
+    % results["return_5d"].mean()
+)
+
+
+print()
+
+print("SKOR GRUPLARI")
+print("-" * 70)
+
+
+for bucket in [
+    "80-100",
+    "65-79",
+    "50-64",
+    "0-49"
+]:
+
+    group = results[
+        results["bucket"] == bucket
     ]
 
-    for name, minimum, maximum in groups:
 
-        group = results_df[
-            (results_df["score"] >= minimum)
-            & (results_df["score"] < maximum)
-        ]
-
-        print()
-        print("SCORE", name)
-        print("Test sayisi:", len(group))
-
-        if len(group) == 0:
-            print("Yeterli veri yok.")
-            continue
-
-        positive_1d = (
-            group["return_1d"] > 0
-        ).mean() * 100
-
-        positive_3d = (
-            group["return_3d"] > 0
-        ).mean() * 100
-
-        positive_5d = (
-            group["return_5d"] > 0
-        ).mean() * 100
+    if group.empty:
 
         print(
-            "1 gun ortalama getiri:",
-            round(group["return_1d"].mean(), 2),
-            "%"
+            bucket,
+            ": veri yok"
         )
 
-        print(
-            "3 gun ortalama getiri:",
-            round(group["return_3d"].mean(), 2),
-            "%"
-        )
+        continue
 
-        print(
-            "5 gun ortalama getiri:",
-            round(group["return_5d"].mean(), 2),
-            "%"
-        )
 
-        print(
-            "1 gun pozitif:",
-            round(positive_1d, 2),
-            "%"
-        )
+    win1 = (
+        group["return_1d"] > 0
+    ).mean() * 100
 
-        print(
-            "3 gun pozitif:",
-            round(positive_3d, 2),
-            "%"
-        )
 
-        print(
-            "5 gun pozitif:",
-            round(positive_5d, 2),
-            "%"
-        )
+    win3 = (
+        group["return_3d"] > 0
+    ).mean() * 100
+
+
+    win5 = (
+        group["return_5d"] > 0
+    ).mean() * 100
+
 
     print()
-    print("=" * 60)
-    print("BACKTEST TAMAMLANDI")
-    print("=" * 60)
+
+    print(
+        "SKOR",
+        bucket
+    )
+
+
+    print(
+        "Ornek sayisi:",
+        len(group)
+    )
+
+
+    print(
+        "1 gun ortalama: %.2f%%"
+        % group["return_1d"].mean()
+    )
+
+
+    print(
+        "3 gun ortalama: %.2f%%"
+        % group["return_3d"].mean()
+    )
+
+
+    print(
+        "5 gun ortalama: %.2f%%"
+        % group["return_5d"].mean()
+    )
+
+
+    print(
+        "1 gun pozitif oran: %.1f%%"
+        % win1
+    )
+
+
+    print(
+        "3 gun pozitif oran: %.1f%%"
+        % win3
+    )
+
+
+    print(
+        "5 gun pozitif oran: %.1f%%"
+        % win5
+    )
+
+
+results.to_csv(
+    "backtest_sonuclari.csv",
+    index=False
+)
+
+
+print()
+
+print("=" * 70)
+print("BACKTEST TAMAMLANDI")
+print(
+    "Detaylar backtest_sonuclari.csv dosyasina kaydedildi."
+)
+print("=" * 70)
