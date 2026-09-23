@@ -11,7 +11,6 @@ def telegram(method, data=None):
 
     if data is not None:
         encoded = json.dumps(data).encode("utf-8")
-
         request = urllib.request.Request(
             url,
             data=encoded,
@@ -28,7 +27,7 @@ def get_stock_data(symbol):
     url = (
         f"https://query1.finance.yahoo.com/v8/finance/chart/"
         f"{urllib.parse.quote(symbol)}"
-        f"?range=5d&interval=1d"
+        f"?range=3mo&interval=1d"
     )
 
     request = urllib.request.Request(
@@ -49,11 +48,11 @@ def get_stock_data(symbol):
     closes = indicators.get("close", [])
     volumes = indicators.get("volume", [])
 
-    previous_close = None
-    volume = None
-
     valid_closes = [x for x in closes if x is not None]
     valid_volumes = [x for x in volumes if x is not None]
+
+    previous_close = None
+    volume = None
 
     if len(valid_closes) >= 2:
         previous_close = valid_closes[-2]
@@ -61,7 +60,25 @@ def get_stock_data(symbol):
     if valid_volumes:
         volume = valid_volumes[-1]
 
-    return price, previous_close, volume
+    def ema(values, period):
+        if len(values) < period:
+            return None
+
+        multiplier = 2 / (period + 1)
+
+        ema_value = sum(values[:period]) / period
+
+        for value in values[period:]:
+            ema_value = (
+                (value - ema_value) * multiplier
+            ) + ema_value
+
+        return ema_value
+
+    ema9 = ema(valid_closes, 9)
+    ema20 = ema(valid_closes, 20)
+
+    return price, previous_close, volume, ema9, ema20
 
 
 def main():
@@ -111,7 +128,7 @@ def main():
 
         try:
 
-            price, previous_close, volume = get_stock_data(symbol)
+            price, previous_close, volume, ema9, ema20 = get_stock_data(symbol)
 
             if price is None:
                 continue
@@ -124,10 +141,27 @@ def main():
             else:
                 change = 0
 
+            if ema9 is not None and ema20 is not None:
+
+                if price > ema9 > ema20:
+                    trend = "YUKARI"
+
+                elif price < ema9 < ema20:
+                    trend = "AŞAĞI"
+
+                else:
+                    trend = "KARMA"
+
+            else:
+                trend = "YETERSİZ VERİ"
+
             print(
                 f"{symbol}: ${price:.2f} | "
                 f"%{change:.2f} | "
-                f"Hacim: {volume}"
+                f"Hacim: {volume} | "
+                f"EMA9: {ema9:.2f} | "
+                f"EMA20: {ema20:.2f} | "
+                f"{trend}"
             )
 
             if 1 <= price <= 10:
@@ -137,7 +171,10 @@ def main():
                         symbol,
                         price,
                         change,
-                        volume
+                        volume,
+                        ema9,
+                        ema20,
+                        trend
                     )
                 )
 
@@ -147,12 +184,11 @@ def main():
             print(error)
 
     text = "🤖 MelihStockScannerBot\n\n"
-
     text += "🇺🇸 $1–10 ABD Hisse Taraması\n\n"
 
     if results:
 
-        for symbol, price, change, volume in results:
+        for symbol, price, change, volume, ema9, ema20, trend in results:
 
             if change > 0:
                 emoji = "📈"
@@ -170,7 +206,10 @@ def main():
                 f"{emoji} {symbol}\n"
                 f"💵 ${price:.2f}\n"
                 f"📊 Günlük: %{change:.2f}\n"
-                f"📦 Hacim: {volume_text}\n\n"
+                f"📦 Hacim: {volume_text}\n"
+                f"📐 EMA9: ${ema9:.2f}\n"
+                f"📐 EMA20: ${ema20:.2f}\n"
+                f"🔎 Trend: {trend}\n\n"
             )
 
     else:
@@ -178,8 +217,7 @@ def main():
         text += "Bu taramada $1–10 aralığında hisse bulunamadı."
 
     text += (
-        "⚠️ Bu aşama yalnızca fiyat + günlük değişim + "
-        "hacim verisidir.\n"
+        "⚠️ Bu aşama teknik veri toplama testidir.\n"
         "Henüz AL/TUT sinyali değildir."
     )
 
