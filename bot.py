@@ -11,6 +11,7 @@ def telegram(method, data=None):
 
     if data is not None:
         encoded = json.dumps(data).encode("utf-8")
+
         request = urllib.request.Request(
             url,
             data=encoded,
@@ -23,10 +24,11 @@ def telegram(method, data=None):
         return json.loads(response.read().decode("utf-8"))
 
 
-def get_stock_price(symbol):
+def get_stock_data(symbol):
     url = (
         f"https://query1.finance.yahoo.com/v8/finance/chart/"
-        f"{urllib.parse.quote(symbol)}?range=1d&interval=5m"
+        f"{urllib.parse.quote(symbol)}"
+        f"?range=5d&interval=1d"
     )
 
     request = urllib.request.Request(
@@ -41,73 +43,87 @@ def get_stock_price(symbol):
     meta = result["meta"]
 
     price = meta.get("regularMarketPrice")
-    previous = meta.get("previousClose")
 
-    return price, previous
+    return price
 
 
 def main():
+
     print("MelihStockScannerBot başlatılıyor...")
 
-    # Telegram bağlantısını test et
     me = telegram("getMe")
-    username = me["result"]["username"]
 
-    print("Bot bağlantısı:", username)
+    print(
+        "Bot bağlantısı:",
+        me["result"]["username"]
+    )
 
-    # Telegram'dan gelen mesajları kontrol et
-    updates = telegram("getUpdates")
+    # İlk test hisselerimiz
+    stocks = [
+        "SNDL",
+        "PLUG",
+        "SOFI",
+        "OPEN",
+        "JOBY",
+        "LCID",
+        "NU",
+        "GRAB",
+        "MARA",
+        "RIOT"
+    ]
 
-    if not updates.get("result"):
-        print("Henüz Telegram mesajı yok.")
-        print("Telegram'da botuna /start yaz.")
+    print("")
+    print("ABD HİSSE TARAMASI")
+    print("------------------")
 
-        # ABD piyasası veri bağlantısını yine de test et
-        price, previous = get_stock_price("AAPL")
+    results = []
 
-        print("AAPL fiyatı:", price)
-        print("AAPL önceki kapanış:", previous)
+    for symbol in stocks:
 
-        return
+        try:
 
-    # Son mesajın chat ID'sini al
-    last_update = updates["result"][-1]
+            price = get_stock_data(symbol)
 
-    message = last_update.get("message")
+            if price is None:
+                continue
 
-    if not message:
-        print("Mesaj bulunamadı.")
-        return
+            print(
+                f"{symbol}: ${price:.2f}"
+            )
 
-    chat_id = message["chat"]["id"]
+            # Sadece $1 - $10 aralığındaki hisseleri al
+            if 1 <= price <= 10:
 
-    # ABD hisse verisini al
-    price, previous = get_stock_price("AAPL")
+                results.append(
+                    (symbol, price)
+                )
 
-    if previous:
-        change = ((price - previous) / previous) * 100
+        except Exception as error:
+
+            print(
+                f"{symbol}: veri alınamadı"
+            )
+
+            print(error)
+
+    print("")
+    print("1-10 DOLAR ARASINDAKİ HİSSELER")
+    print("------------------------------")
+
+    if results:
+
+        for symbol, price in results:
+
+            print(
+                f"✅ {symbol} - ${price:.2f}"
+            )
+
     else:
-        change = 0
 
-    text = (
-        "🤖 MelihStockScannerBot\n\n"
-        "📊 İlk veri testi başarılı!\n\n"
-        f"🇺🇸 AAPL\n"
-        f"💵 Fiyat: ${price:.2f}\n"
-        f"📈 Günlük değişim: %{change:.2f}\n\n"
-        "✅ Telegram bağlantısı çalışıyor.\n"
-        "✅ ABD hisse verisi alınabiliyor.\n"
-    )
-
-    telegram(
-        "sendMessage",
-        {
-            "chat_id": chat_id,
-            "text": text
-        }
-    )
-
-    print("Test mesajı Telegram'a gönderildi.")
+        print(
+            "Bu testte $1-$10 aralığında "
+            "hisse bulunamadı."
+        )
 
 
 if __name__ == "__main__":
