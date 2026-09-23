@@ -41,21 +41,39 @@ def yahoo_chart(symbol, range_value, interval):
     return data["chart"]["result"][0]
 
 
-def ema(values, period):
+def ema_series(values, period):
 
     if len(values) < period:
-        return None
+        return []
 
     multiplier = 2 / (period + 1)
 
-    ema_value = sum(values[:period]) / period
+    first_ema = sum(values[:period]) / period
+
+    result = [None] * (period - 1)
+    result.append(first_ema)
+
+    previous_ema = first_ema
 
     for value in values[period:]:
-        ema_value = (
-            (value - ema_value) * multiplier
-        ) + ema_value
 
-    return ema_value
+        previous_ema = (
+            (value - previous_ema) * multiplier
+        ) + previous_ema
+
+        result.append(previous_ema)
+
+    return result
+
+
+def ema(values, period):
+
+    series = ema_series(values, period)
+
+    if not series:
+        return None
+
+    return series[-1]
 
 
 def rsi(values, period=14):
@@ -100,10 +118,47 @@ def rsi(values, period=14):
     return 100 - (100 / (1 + rs))
 
 
+def calculate_macd(values):
+
+    ema12_series = ema_series(values, 12)
+    ema26_series = ema_series(values, 26)
+
+    if not ema12_series or not ema26_series:
+        return None, None, None
+
+    macd_values = []
+
+    for i in range(len(values)):
+
+        if (
+            ema12_series[i] is not None
+            and ema26_series[i] is not None
+        ):
+
+            macd_values.append(
+                ema12_series[i] - ema26_series[i]
+            )
+
+    if len(macd_values) < 9:
+        return None, None, None
+
+    signal_series = ema_series(macd_values, 9)
+
+    if not signal_series:
+        return None, None, None
+
+    macd_value = macd_values[-1]
+    signal_value = signal_series[-1]
+
+    histogram = macd_value - signal_value
+
+    return macd_value, signal_value, histogram
+
+
 def get_stock_data(symbol):
 
-    # Günlük veri: EMA ve RSI için
-    daily = yahoo_chart(symbol, "3mo", "1d")
+    # Günlük veri
+    daily = yahoo_chart(symbol, "6mo", "1d")
 
     meta = daily["meta"]
 
@@ -133,9 +188,14 @@ def get_stock_data(symbol):
 
     ema9 = ema(daily_closes, 9)
     ema20 = ema(daily_closes, 20)
+
     rsi14 = rsi(daily_closes, 14)
 
-    # 5 dakikalık veri: VWAP için
+    macd_value, macd_signal, macd_histogram = (
+        calculate_macd(daily_closes)
+    )
+
+    # 5 dakikalık veri - VWAP
     intraday = yahoo_chart(symbol, "1d", "5m")
 
     intraday_quote = intraday["indicators"]["quote"][0]
@@ -191,7 +251,10 @@ def get_stock_data(symbol):
         ema9,
         ema20,
         rsi14,
-        vwap
+        vwap,
+        macd_value,
+        macd_signal,
+        macd_histogram
     )
 
 
@@ -258,7 +321,10 @@ def main():
                 ema9,
                 ema20,
                 rsi14,
-                vwap
+                vwap,
+                macd_value,
+                macd_signal,
+                macd_histogram
             ) = get_stock_data(symbol)
 
             if price is None:
@@ -275,6 +341,7 @@ def main():
 
                 change = 0
 
+            # EMA trendi
             if (
                 ema9 is not None
                 and ema20 is not None
@@ -293,6 +360,7 @@ def main():
 
                 trend = "YETERSİZ VERİ"
 
+            # RSI
             if rsi14 is not None:
 
                 if rsi14 >= 70:
@@ -308,6 +376,7 @@ def main():
 
                 rsi_status = "YETERSİZ VERİ"
 
+            # VWAP
             if vwap is not None:
 
                 if price > vwap:
@@ -323,6 +392,25 @@ def main():
 
                 vwap_status = "YETERSİZ VERİ"
 
+            # MACD
+            if (
+                macd_value is not None
+                and macd_signal is not None
+            ):
+
+                if macd_value > macd_signal:
+                    macd_status = "POZİTİF"
+
+                elif macd_value < macd_signal:
+                    macd_status = "NEGATİF"
+
+                else:
+                    macd_status = "NÖTR"
+
+            else:
+
+                macd_status = "YETERSİZ VERİ"
+
             print(
                 f"{symbol}: "
                 f"${price:.2f} | "
@@ -330,11 +418,11 @@ def main():
                 f"Hacim: {volume} | "
                 f"EMA9: {ema9:.2f} | "
                 f"EMA20: {ema20:.2f} | "
-                f"RSI14: {rsi14:.2f} | "
+                f"RSI: {rsi14:.2f} | "
                 f"VWAP: {vwap:.2f} | "
-                f"{trend} | "
-                f"{rsi_status} | "
-                f"{vwap_status}"
+                f"MACD: {macd_value:.4f} | "
+                f"Sinyal: {macd_signal:.4f} | "
+                f"{macd_status}"
             )
 
             if 1 <= price <= 10:
@@ -349,9 +437,13 @@ def main():
                         ema20,
                         rsi14,
                         vwap,
+                        macd_value,
+                        macd_signal,
+                        macd_histogram,
                         trend,
                         rsi_status,
-                        vwap_status
+                        vwap_status,
+                        macd_status
                     )
                 )
 
@@ -379,9 +471,13 @@ def main():
             ema20,
             rsi14,
             vwap,
+            macd_value,
+            macd_signal,
+            macd_histogram,
             trend,
             rsi_status,
-            vwap_status
+            vwap_status,
+            macd_status
         ) in results:
 
             if change > 0:
@@ -410,7 +506,10 @@ def main():
                 f"📊 RSI14: {rsi14:.2f}\n"
                 f"📌 RSI: {rsi_status}\n"
                 f"⚖️ VWAP: ${vwap:.2f}\n"
-                f"📍 {vwap_status}\n\n"
+                f"📍 {vwap_status}\n"
+                f"〽️ MACD: {macd_value:.4f}\n"
+                f"〽️ Sinyal: {macd_signal:.4f}\n"
+                f"📈 MACD: {macd_status}\n\n"
             )
 
     else:
