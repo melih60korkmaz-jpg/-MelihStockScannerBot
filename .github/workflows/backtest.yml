@@ -21,3 +21,5 @@ jobs:
 
       - name: Backtesti çalıştır
         run: python backtest.py
+        # Backtest iş akışı
+        
