@@ -3,6 +3,8 @@ name: MelihStockScannerBot
 on:
   push:
   workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
 
 jobs:
   test:
@@ -15,7 +17,7 @@ jobs:
       - name: Python sürümünü kontrol et
         run: python --version
 
-      - name: Botu test et
+      - name: Botu çalıştır
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: python bot.py
