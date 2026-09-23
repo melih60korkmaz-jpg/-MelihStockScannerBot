@@ -2,15 +2,45 @@ import os
 import json
 import urllib.request
 import urllib.parse
+from datetime import datetime
+
+import yfinance as yf
+import pandas as pd
+import numpy as np
+
+
+# ============================================================
+# MELİH STOCK SCANNER BOT
+# Yeni ağırlıklı model
+# EMA %40 - MACD %30 - HACİM %20 - RSI %10
+# ============================================================
 
 TOKEN = os.environ.get("BOT_TOKEN")
 
+STOCKS = [
+    "SNDL",
+    "PLUG",
+    "SOFI",
+    "OPEN",
+    "JOBY",
+    "LCID",
+    "GRAB",
+    "NU",
+    "MARA",
+    "RIOT",
+]
+
+
+# ============================================================
+# TELEGRAM
+# ============================================================
 
 def telegram(method, data=None):
     url = f"https://api.telegram.org/bot{TOKEN}/{method}"
 
     if data is not None:
         encoded = json.dumps(data).encode("utf-8")
+
         request = urllib.request.Request(
             url,
             data=encoded,
@@ -19,293 +49,209 @@ def telegram(method, data=None):
     else:
         request = urllib.request.Request(url)
 
-    with urllib.request.urlopen(request, timeout=20) as response:
+    with urllib.request.urlopen(request, timeout=30) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
-def yahoo_chart(symbol, range_value, interval):
-    url = (
-        f"https://query1.finance.yahoo.com/v8/finance/chart/"
-        f"{urllib.parse.quote(symbol)}"
-        f"?range={range_value}&interval={interval}"
+def send_message(chat_id, text):
+    return telegram(
+        "sendMessage",
+        {
+            "chat_id": chat_id,
+            "text": text
+        }
     )
 
-    request = urllib.request.Request(
-        url,
-        headers={"User-Agent": "Mozilla/5.0"}
-    )
 
-    with urllib.request.urlopen(request, timeout=20) as response:
-        data = json.loads(response.read().decode("utf-8"))
+# ============================================================
+# RSI
+# ============================================================
 
-    return data["chart"]["result"][0]
+def calculate_rsi(series, period=14):
+    delta = series.diff()
 
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
 
-def ema_series(values, period):
+    avg_gain = gain.ewm(
+        alpha=1 / period,
+        adjust=False
+    ).mean()
 
-    if len(values) < period:
-        return []
+    avg_loss = loss.ewm(
+        alpha=1 / period,
+        adjust=False
+    ).mean()
 
-    multiplier = 2 / (period + 1)
+    rs = avg_gain / avg_loss.replace(0, np.nan)
 
-    value = sum(values[:period]) / period
+    rsi = 100 - (100 / (1 + rs))
 
-    result = [None] * (period - 1)
-    result.append(value)
-
-    for price in values[period:]:
-        value = ((price - value) * multiplier) + value
-        result.append(value)
-
-    return result
+    return rsi
 
 
-def ema(values, period):
-
-    series = ema_series(values, period)
-
-    if not series:
-        return None
-
-    return series[-1]
-
-
-def rsi(values, period=14):
-
-    if len(values) <= period:
-        return None
-
-    gains = []
-    losses = []
-
-    for i in range(1, len(values)):
-
-        change = values[i] - values[i - 1]
-
-        if change > 0:
-            gains.append(change)
-            losses.append(0)
-        else:
-            gains.append(0)
-            losses.append(abs(change))
-
-    average_gain = sum(gains[:period]) / period
-    average_loss = sum(losses[:period]) / period
-
-    for i in range(period, len(gains)):
-
-        average_gain = (
-            (average_gain * (period - 1))
-            + gains[i]
-        ) / period
-
-        average_loss = (
-            (average_loss * (period - 1))
-            + losses[i]
-        ) / period
-
-    if average_loss == 0:
-        return 100
-
-    rs = average_gain / average_loss
-
-    return 100 - (100 / (1 + rs))
-
-
-def calculate_macd(values):
-
-    ema12 = ema_series(values, 12)
-    ema26 = ema_series(values, 26)
-
-    if not ema12 or not ema26:
-        return None, None, None
-
-    macd_values = []
-
-    for i in range(len(values)):
-
-        if (
-            ema12[i] is not None
-            and ema26[i] is not None
-        ):
-            macd_values.append(
-                ema12[i] - ema26[i]
-            )
-
-    if len(macd_values) < 9:
-        return None, None, None
-
-    signal_series = ema_series(macd_values, 9)
-
-    if not signal_series:
-        return None, None, None
-
-    macd = macd_values[-1]
-    signal = signal_series[-1]
-    histogram = macd - signal
-
-    return macd, signal, histogram
-
+# ============================================================
+# HİSSE VERİSİ
+# ============================================================
 
 def get_stock_data(symbol):
 
-    daily = yahoo_chart(symbol, "6mo", "1d")
+    try:
 
-    meta = daily["meta"]
-    price = meta.get("regularMarketPrice")
-
-    quote = daily["indicators"]["quote"][0]
-
-    closes = [
-        x for x in quote.get("close", [])
-        if x is not None
-    ]
-
-    volumes = [
-        x for x in quote.get("volume", [])
-        if x is not None
-    ]
-
-    previous_close = (
-        closes[-2]
-        if len(closes) >= 2
-        else None
-    )
-
-    volume = (
-        volumes[-1]
-        if volumes
-        else None
-    )
-
-    ema9 = ema(closes, 9)
-    ema20 = ema(closes, 20)
-
-    rsi14 = rsi(closes, 14)
-
-    macd, macd_signal, macd_histogram = (
-        calculate_macd(closes)
-    )
-
-    # Son 20 günlük ortalama hacim
-    recent_volumes = volumes[-20:]
-
-    if recent_volumes:
-        average_volume = (
-            sum(recent_volumes)
-            / len(recent_volumes)
-        )
-    else:
-        average_volume = None
-
-    # 5 dakikalık veri - VWAP
-    intraday = yahoo_chart(symbol, "1d", "5m")
-
-    intraday_quote = (
-        intraday["indicators"]["quote"][0]
-    )
-
-    highs = intraday_quote.get("high", [])
-    lows = intraday_quote.get("low", [])
-    intraday_closes = (
-        intraday_quote.get("close", [])
-    )
-    intraday_volumes = (
-        intraday_quote.get("volume", [])
-    )
-
-    price_volume = 0
-    total_volume = 0
-
-    for high, low, close, vol in zip(
-        highs,
-        lows,
-        intraday_closes,
-        intraday_volumes
-    ):
-
-        if (
-            high is None
-            or low is None
-            or close is None
-            or vol is None
-        ):
-            continue
-
-        typical_price = (
-            high + low + close
-        ) / 3
-
-        price_volume += (
-            typical_price * vol
+        daily = yf.Ticker(symbol).history(
+            period="6mo",
+            interval="1d",
+            auto_adjust=False
         )
 
-        total_volume += vol
+        if daily.empty:
+            return None
 
-    if total_volume > 0:
-        vwap = (
-            price_volume
-            / total_volume
-        )
-    else:
+        daily = daily.dropna()
+
+        close = daily["Close"]
+        volume = daily["Volume"]
+
+        # EMA
+        daily["EMA9"] = close.ewm(
+            span=9,
+            adjust=False
+        ).mean()
+
+        daily["EMA20"] = close.ewm(
+            span=20,
+            adjust=False
+        ).mean()
+
+        # RSI
+        daily["RSI"] = calculate_rsi(close)
+
+        # MACD
+        ema12 = close.ewm(
+            span=12,
+            adjust=False
+        ).mean()
+
+        ema26 = close.ewm(
+            span=26,
+            adjust=False
+        ).mean()
+
+        daily["MACD"] = ema12 - ema26
+
+        daily["MACD_SIGNAL"] = daily["MACD"].ewm(
+            span=9,
+            adjust=False
+        ).mean()
+
+        # Hacim ortalaması
+        daily["AVG_VOLUME"] = volume.shift(1).rolling(
+            20
+        ).mean()
+
+        latest = daily.iloc[-1]
+
+        price = float(latest["Close"])
+        previous_close = float(daily["Close"].iloc[-2])
+
+        ema9 = float(latest["EMA9"])
+        ema20 = float(latest["EMA20"])
+
+        rsi = float(latest["RSI"])
+
+        macd = float(latest["MACD"])
+        macd_signal = float(latest["MACD_SIGNAL"])
+
+        current_volume = float(latest["Volume"])
+        average_volume = float(latest["AVG_VOLUME"])
+
+        if average_volume <= 0:
+            volume_ratio = 0
+        else:
+            volume_ratio = current_volume / average_volume
+
+        # ====================================================
+        # VWAP - gün içi
+        # ====================================================
+
         vwap = None
 
-    return (
-        price,
-        previous_close,
-        volume,
-        average_volume,
-        ema9,
-        ema20,
-        rsi14,
-        vwap,
-        macd,
-        macd_signal,
-        macd_histogram
-    )
+        try:
 
+            intraday = yf.Ticker(symbol).history(
+                period="1d",
+                interval="5m",
+                auto_adjust=False
+            )
 
-def calculate_score(
-    price,
-    volume,
-    average_volume,
-    ema9,
-    ema20,
-    rsi14,
-    vwap,
-    macd,
-    macd_signal
-):
+            if not intraday.empty:
 
-    score = 0
+                intraday = intraday.dropna()
 
-    # EMA TREND - 25 PUAN
+                typical_price = (
+                    intraday["High"]
+                    + intraday["Low"]
+                    + intraday["Close"]
+                ) / 3
 
-    if (
-        price > ema9
-        and ema9 > ema20
-    ):
-        score += 25
+                total_volume = intraday["Volume"].sum()
 
-    elif price > ema20:
-        score += 15
+                if total_volume > 0:
 
-    elif price > ema9:
-        score += 10
+                    vwap = float(
+                        (typical_price * intraday["Volume"]).sum()
+                        / total_volume
+                    )
 
+        except Exception:
+            vwap = None
 
-    # HACİM - 20 PUAN
+        # ====================================================
+        # YENİ SKOR MODELİ
+        #
+        # EMA     %40
+        # MACD    %30
+        # HACİM   %20
+        # RSI     %10
+        # ====================================================
 
-    if (
-        volume is not None
-        and average_volume is not None
-        and average_volume > 0
-    ):
+        score = 0
 
-        volume_ratio = (
-            volume
-            / average_volume
-        )
+        # ----------------------------------------------------
+        # EMA - 40 PUAN
+        # ----------------------------------------------------
+
+        if price > ema9 and ema9 > ema20:
+            score += 40
+
+        elif price > ema20:
+            score += 25
+
+        elif price > ema9:
+            score += 15
+
+        else:
+            score += 0
+
+        # ----------------------------------------------------
+        # MACD - 30 PUAN
+        # ----------------------------------------------------
+
+        if macd > macd_signal and macd > 0:
+            score += 30
+
+        elif macd > macd_signal:
+            score += 20
+
+        elif macd > 0:
+            score += 10
+
+        else:
+            score += 0
+
+        # ----------------------------------------------------
+        # HACİM - 20 PUAN
+        # ----------------------------------------------------
 
         if volume_ratio >= 2:
             score += 20
@@ -316,332 +262,346 @@ def calculate_score(
         elif volume_ratio >= 1:
             score += 10
 
-        else:
+        elif volume_ratio >= 0.75:
             score += 5
 
+        else:
+            score += 0
 
-    # RSI - 15 PUAN
+        # ----------------------------------------------------
+        # RSI - 10 PUAN
+        # ----------------------------------------------------
 
-    if rsi14 is not None:
-
-        if 50 <= rsi14 <= 65:
-            score += 15
-
-        elif 40 <= rsi14 < 50:
+        if 50 <= rsi <= 65:
             score += 10
 
-        elif 65 < rsi14 < 70:
-            score += 10
-
-        elif 30 <= rsi14 < 40:
+        elif 45 <= rsi < 50:
             score += 7
 
-        elif rsi14 < 30:
+        elif 65 < rsi <= 70:
+            score += 7
+
+        elif 40 <= rsi < 45:
             score += 5
 
-        else:
+        elif 30 <= rsi < 40:
             score += 3
 
+        else:
+            score += 0
 
-    # VWAP - 20 PUAN
+        # ====================================================
+        # ETİKET
+        # ====================================================
 
-    if vwap is not None:
+        if score >= 80:
+            label = "AL ADAYI"
 
-        if price > vwap:
-            score += 20
+        elif score >= 65:
+            label = "TUT"
 
-        elif price >= vwap * 0.99:
-            score += 10
+        elif score >= 50:
+            label = "DİKKAT"
 
         else:
-            score += 5
+            label = "RİSKLİ"
 
+        # ====================================================
+        # GÜN İÇİ VWAP DURUMU
+        # ====================================================
 
-    # MACD - 20 PUAN
+        if vwap is not None:
 
-    if (
-        macd is not None
-        and macd_signal is not None
-    ):
+            if price > vwap:
+                vwap_status = "ÜSTÜNDE"
 
-        if macd > macd_signal:
-            score += 20
+            elif price >= vwap * 0.99:
+                vwap_status = "YAKIN"
+
+            else:
+                vwap_status = "ALTINDA"
 
         else:
-            score += 5
+            vwap_status = "VERİ YOK"
 
-    return score
+        # ====================================================
+        # GÜNLÜK DEĞİŞİM
+        # ====================================================
+
+        daily_change = (
+            (price - previous_close)
+            / previous_close
+        ) * 100
+
+        return {
+            "symbol": symbol,
+            "price": price,
+            "change": daily_change,
+            "ema9": ema9,
+            "ema20": ema20,
+            "rsi": rsi,
+            "macd": macd,
+            "macd_signal": macd_signal,
+            "volume_ratio": volume_ratio,
+            "vwap": vwap,
+            "vwap_status": vwap_status,
+            "score": int(score),
+            "label": label
+        }
+
+    except Exception as e:
+
+        print(f"{symbol} hata: {e}")
+
+        return None
 
 
-def signal_label(score):
+# ============================================================
+# TARAMA
+# ============================================================
 
-    if score >= 80:
-        return "AL ADAYI"
-
-    elif score >= 65:
-        return "TUT"
-
-    elif score >= 50:
-        return "DİKKAT"
-
-    else:
-        return "RİSKLİ"
-
-
-def main():
-
-    print(
-        "MelihStockScannerBot başlatılıyor..."
-    )
-
-    me = telegram("getMe")
-
-    print(
-        "Bot bağlantısı:",
-        me["result"]["username"]
-    )
-
-    updates = telegram("getUpdates")
-
-    if not updates.get("result"):
-
-        print(
-            "Telegram'da bekleyen mesaj bulunamadı."
-        )
-
-        return
-
-    last_update = updates["result"][-1]
-
-    message = last_update.get("message")
-
-    if not message:
-
-        print("Mesaj bulunamadı.")
-
-        return
-
-    chat_id = message["chat"]["id"]
-
-    stocks = [
-        "SNDL",
-        "PLUG",
-        "SOFI",
-        "OPEN",
-        "JOBY",
-        "LCID",
-        "NU",
-        "GRAB",
-        "MARA",
-        "RIOT"
-    ]
+def scan_stocks():
 
     results = []
 
-    print("")
+    print()
     print("ABD HİSSE TARAMASI")
-    print("------------------")
+    print("===================")
 
-    for symbol in stocks:
+    for symbol in STOCKS:
 
-        try:
+        print(f"{symbol} taranıyor...")
 
-            (
-                price,
-                previous_close,
-                volume,
-                average_volume,
-                ema9,
-                ema20,
-                rsi14,
-                vwap,
-                macd,
-                macd_signal,
-                macd_histogram
-            ) = get_stock_data(symbol)
+        result = get_stock_data(symbol)
 
-            if price is None:
-                continue
+        if result:
+            results.append(result)
 
-            if previous_close:
-                change = (
-                    (price - previous_close)
-                    / previous_close
-                ) * 100
-            else:
-                change = 0
+    results.sort(
+        key=lambda x: x["score"],
+        reverse=True
+    )
 
-            score = calculate_score(
-                price,
-                volume,
-                average_volume,
-                ema9,
-                ema20,
-                rsi14,
-                vwap,
-                macd,
-                macd_signal
-            )
-
-            label = signal_label(score)
-
-            if price > ema9 > ema20:
-                trend = "YUKARI"
-
-            elif price < ema9 < ema20:
-                trend = "AŞAĞI"
-
-            else:
-                trend = "KARMA"
-
-            if rsi14 >= 70:
-                rsi_status = "AŞIRI ALIM"
-
-            elif rsi14 <= 30:
-                rsi_status = "AŞIRI SATIM"
-
-            else:
-                rsi_status = "NORMAL"
-
-            if price > vwap:
-                vwap_status = "VWAP ÜSTÜ"
-            else:
-                vwap_status = "VWAP ALTI"
-
-            if macd > macd_signal:
-                macd_status = "POZİTİF"
-            else:
-                macd_status = "NEGATİF"
-
-            print(
-                f"{symbol}: "
-                f"${price:.2f} | "
-                f"Skor: {score}/100 | "
-                f"{label}"
-            )
-
-            if 1 <= price <= 10:
-
-                results.append(
-                    (
-                        symbol,
-                        price,
-                        change,
-                        volume,
-                        ema9,
-                        ema20,
-                        rsi14,
-                        vwap,
-                        macd,
-                        macd_signal,
-                        trend,
-                        rsi_status,
-                        vwap_status,
-                        macd_status,
-                        score,
-                        label
-                    )
-                )
-
-        except Exception as error:
-
-            print(
-                f"{symbol}: veri alınamadı"
-            )
-
-            print(error)
+    return results
 
 
-    text = (
-        "🤖 MelihStockScannerBot\n\n"
-        "🇺🇸 $1–10 ABD Hisse Taraması\n\n"
+# ============================================================
+# TELEGRAM MESAJI
+# ============================================================
+
+def create_scan_message(results):
+
+    now = datetime.now().strftime("%d.%m.%Y %H:%M")
+
+    message = (
+        "📊 MELİH STOCK SCANNER\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"🕐 {now}\n\n"
+        "🎯 YENİ SKOR MODELİ\n"
+        "EMA %40 | MACD %30\n"
+        "Hacim %20 | RSI %10\n\n"
+    )
+
+    for r in results:
+
+        emoji = "🟢"
+
+        if r["label"] == "AL ADAYI":
+            emoji = "🚀"
+
+        elif r["label"] == "TUT":
+            emoji = "🟢"
+
+        elif r["label"] == "DİKKAT":
+            emoji = "🟡"
+
+        else:
+            emoji = "🔴"
+
+        message += (
+            f"{emoji} {r['symbol']}  ${r['price']:.2f}\n"
+            f"   Skor: {r['score']}/100 → {r['label']}\n"
+            f"   Günlük: {r['change']:+.2f}%\n"
+            f"   EMA9: ${r['ema9']:.2f}\n"
+            f"   EMA20: ${r['ema20']:.2f}\n"
+            f"   RSI: {r['rsi']:.1f}\n"
+            f"   MACD: {r['macd']:.3f}\n"
+            f"   Hacim: {r['volume_ratio']:.2f}x\n"
+            f"   VWAP: {r['vwap_status']}\n\n"
+        )
+
+    message += (
+        "━━━━━━━━━━━━━━━━━━\n"
+        "⚠️ Bu skor geçmiş verilerle geliştirilen "
+        "tarama modelidir.\n"
+        "Skor kesin yükseliş garantisi değildir."
+    )
+
+    return message
+
+
+# ============================================================
+# KOMUTLAR
+# ============================================================
+
+def help_message():
+
+    return (
+        "🤖 MELİH STOCK SCANNER\n\n"
+        "/start - Botu başlat\n"
+        "/tara - Hisseleri tara\n"
+        "/sinyaller - Güncel sinyaller\n"
+        "/aktif - Aktif takipler\n"
+        "/performans - Model bilgisi\n"
+        "/yardim - Yardım\n"
     )
 
 
-    if results:
+def performance_message():
 
-        # En yüksek skoru üste al
-        results.sort(
-            key=lambda x: x[14],
-            reverse=True
+    return (
+        "📈 MODEL BİLGİSİ\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        "Yeni ağırlıklı model:\n\n"
+        "EMA → %40\n"
+        "MACD → %30\n"
+        "Hacim → %20\n"
+        "RSI → %10\n\n"
+        "Model 12.000+ tarihsel test örneği "
+        "üzerinde analiz edilerek oluşturuldu.\n\n"
+        "⚠️ Geçmiş sonuçlar gelecekteki getiriyi "
+        "garanti etmez."
+    )
+
+
+# ============================================================
+# GÜNCEL TELEGRAM MESAJLARINI KONTROL ET
+# ============================================================
+
+def get_updates():
+
+    try:
+
+        result = telegram(
+            "getUpdates",
+            {
+                "timeout": 1
+            }
         )
 
-        for item in results:
+        return result.get("result", [])
 
-            (
-                symbol,
-                price,
-                change,
-                volume,
-                ema9,
-                ema20,
-                rsi14,
-                vwap,
-                macd,
-                macd_signal,
-                trend,
-                rsi_status,
-                vwap_status,
-                macd_status,
-                score,
-                label
-            ) = item
+    except Exception as e:
 
-            if score >= 80:
-                emoji = "🟢"
+        print("Telegram güncelleme hatası:", e)
 
-            elif score >= 65:
-                emoji = "🟡"
+        return []
 
-            elif score >= 50:
-                emoji = "🟠"
 
-            else:
-                emoji = "🔴"
+# ============================================================
+# ANA PROGRAM
+# ============================================================
 
-            text += (
-                f"{emoji} {symbol}\n"
-                f"💵 ${price:.2f}\n"
-                f"📊 Günlük: %{change:.2f}\n"
-                f"📦 Hacim: {volume:,.0f}\n"
-                f"📐 EMA9: ${ema9:.2f}\n"
-                f"📐 EMA20: ${ema20:.2f}\n"
-                f"🔎 Trend: {trend}\n"
-                f"📊 RSI14: {rsi14:.2f}\n"
-                f"⚖️ VWAP: ${vwap:.2f}\n"
-                f"〽️ MACD: {macd:.4f}\n"
-                f"📈 Sinyal: {macd_signal:.4f}\n"
-                f"⭐ SKOR: {score}/100\n"
-                f"📌 {label}\n\n"
+def main():
+
+    print()
+    print("================================")
+    print("MelihStockScannerBot başlatılıyor")
+    print("================================")
+
+    if not TOKEN:
+
+        print("BOT_TOKEN bulunamadı!")
+
+        return
+
+    updates = get_updates()
+
+    chat_ids = set()
+
+    for update in updates:
+
+        message = update.get("message")
+
+        if not message:
+            continue
+
+        chat_id = message["chat"]["id"]
+
+        chat_ids.add(chat_id)
+
+        text = message.get(
+            "text",
+            ""
+        ).strip().lower()
+
+        if text in ["/start", "/yardim", "/yardım"]:
+
+            send_message(
+                chat_id,
+                help_message()
             )
+
+        elif text in ["/tara", "/sinyaller"]:
+
+            results = scan_stocks()
+
+            if results:
+
+                send_message(
+                    chat_id,
+                    create_scan_message(results)
+                )
+
+        elif text == "/performans":
+
+            send_message(
+                chat_id,
+                performance_message()
+            )
+
+        elif text == "/aktif":
+
+            send_message(
+                chat_id,
+                "📌 Aktif takip sistemi bir sonraki aşamada "
+                "devreye alınacak."
+            )
+
+    # ========================================================
+    # Eğer yeni mesaj varsa tarama sonucunu gönder
+    # ========================================================
+
+    if chat_ids:
+
+        results = scan_stocks()
+
+        if results:
+
+            message = create_scan_message(
+                results
+            )
+
+            for chat_id in chat_ids:
+
+                try:
+
+                    send_message(
+                        chat_id,
+                        message
+                    )
+
+                except Exception as e:
+
+                    print(
+                        f"Telegram gönderim hatası: {e}"
+                    )
 
     else:
 
-        text += (
-            "Bu taramada $1–10 aralığında "
-            "hisse bulunamadı."
+        print(
+            "Yeni Telegram mesajı bulunamadı."
         )
-
-
-    text += (
-        "⚠️ Skor şu an TEST modelidir.\n"
-        "Skor, yükselme yüzdesi değildir.\n"
-        "Henüz geçmiş verilerle kalibre edilmemiştir."
-    )
-
-
-    telegram(
-        "sendMessage",
-        {
-            "chat_id": chat_id,
-            "text": text
-        }
-    )
-
-    print("")
-    print(
-        "Telegram'a tarama sonucu gönderildi."
-    )
 
 
 if __name__ == "__main__":
