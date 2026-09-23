@@ -24,6 +24,7 @@ def telegram(method, data=None):
 
 
 def get_stock_data(symbol):
+
     url = (
         f"https://query1.finance.yahoo.com/v8/finance/chart/"
         f"{urllib.parse.quote(symbol)}"
@@ -60,7 +61,11 @@ def get_stock_data(symbol):
     if valid_volumes:
         volume = valid_volumes[-1]
 
+
+    # EMA hesaplama
+
     def ema(values, period):
+
         if len(values) < period:
             return None
 
@@ -75,10 +80,65 @@ def get_stock_data(symbol):
 
         return ema_value
 
+
     ema9 = ema(valid_closes, 9)
     ema20 = ema(valid_closes, 20)
 
-    return price, previous_close, volume, ema9, ema20
+
+    # RSI 14 hesaplama
+
+    def rsi(values, period=14):
+
+        if len(values) <= period:
+            return None
+
+        gains = []
+        losses = []
+
+        for i in range(1, len(values)):
+            change = values[i] - values[i - 1]
+
+            if change > 0:
+                gains.append(change)
+                losses.append(0)
+            else:
+                gains.append(0)
+                losses.append(abs(change))
+
+        average_gain = sum(gains[:period]) / period
+        average_loss = sum(losses[:period]) / period
+
+        for i in range(period, len(gains)):
+
+            average_gain = (
+                (average_gain * (period - 1))
+                + gains[i]
+            ) / period
+
+            average_loss = (
+                (average_loss * (period - 1))
+                + losses[i]
+            ) / period
+
+        if average_loss == 0:
+            return 100
+
+        rs = average_gain / average_loss
+
+        return 100 - (100 / (1 + rs))
+
+
+    rsi14 = rsi(valid_closes, 14)
+
+
+    return (
+        price,
+        previous_close,
+        volume,
+        ema9,
+        ema20,
+        rsi14
+    )
 
 
 def main():
@@ -105,6 +165,7 @@ def main():
 
     chat_id = message["chat"]["id"]
 
+
     stocks = [
         "SNDL",
         "PLUG",
@@ -118,28 +179,43 @@ def main():
         "RIOT"
     ]
 
+
     results = []
 
     print("")
     print("ABD HİSSE TARAMASI")
     print("------------------")
 
+
     for symbol in stocks:
 
         try:
 
-            price, previous_close, volume, ema9, ema20 = get_stock_data(symbol)
+            (
+                price,
+                previous_close,
+                volume,
+                ema9,
+                ema20,
+                rsi14
+            ) = get_stock_data(symbol)
+
 
             if price is None:
                 continue
 
+
             if previous_close:
+
                 change = (
                     (price - previous_close)
                     / previous_close
                 ) * 100
+
             else:
+
                 change = 0
+
 
             if ema9 is not None and ema20 is not None:
 
@@ -153,16 +229,38 @@ def main():
                     trend = "KARMA"
 
             else:
+
                 trend = "YETERSİZ VERİ"
 
+
+            if rsi14 is not None:
+
+                if rsi14 >= 70:
+                    rsi_status = "AŞIRI ALIM"
+
+                elif rsi14 <= 30:
+                    rsi_status = "AŞIRI SATIM"
+
+                else:
+                    rsi_status = "NORMAL"
+
+            else:
+
+                rsi_status = "YETERSİZ VERİ"
+
+
             print(
-                f"{symbol}: ${price:.2f} | "
+                f"{symbol}: "
+                f"${price:.2f} | "
                 f"%{change:.2f} | "
                 f"Hacim: {volume} | "
                 f"EMA9: {ema9:.2f} | "
                 f"EMA20: {ema20:.2f} | "
-                f"{trend}"
+                f"RSI14: {rsi14:.2f} | "
+                f"{trend} | "
+                f"{rsi_status}"
             )
+
 
             if 1 <= price <= 10:
 
@@ -174,33 +272,55 @@ def main():
                         volume,
                         ema9,
                         ema20,
-                        trend
+                        rsi14,
+                        trend,
+                        rsi_status
                     )
                 )
+
 
         except Exception as error:
 
             print(f"{symbol}: veri alınamadı")
             print(error)
 
+
     text = "🤖 MelihStockScannerBot\n\n"
+
     text += "🇺🇸 $1–10 ABD Hisse Taraması\n\n"
+
 
     if results:
 
-        for symbol, price, change, volume, ema9, ema20, trend in results:
+        for (
+            symbol,
+            price,
+            change,
+            volume,
+            ema9,
+            ema20,
+            rsi14,
+            trend,
+            rsi_status
+        ) in results:
+
 
             if change > 0:
                 emoji = "📈"
+
             elif change < 0:
                 emoji = "📉"
+
             else:
                 emoji = "➡️"
 
+
             if volume:
                 volume_text = f"{volume:,.0f}"
+
             else:
                 volume_text = "Yok"
+
 
             text += (
                 f"{emoji} {symbol}\n"
@@ -209,17 +329,22 @@ def main():
                 f"📦 Hacim: {volume_text}\n"
                 f"📐 EMA9: ${ema9:.2f}\n"
                 f"📐 EMA20: ${ema20:.2f}\n"
-                f"🔎 Trend: {trend}\n\n"
+                f"🔎 Trend: {trend}\n"
+                f"📊 RSI14: {rsi14:.2f}\n"
+                f"📌 RSI durumu: {rsi_status}\n\n"
             )
+
 
     else:
 
         text += "Bu taramada $1–10 aralığında hisse bulunamadı."
 
+
     text += (
         "⚠️ Bu aşama teknik veri toplama testidir.\n"
         "Henüz AL/TUT sinyali değildir."
     )
+
 
     telegram(
         "sendMessage",
@@ -228,6 +353,7 @@ def main():
             "text": text
         }
     )
+
 
     print("")
     print("Telegram'a tarama sonucu gönderildi.")
