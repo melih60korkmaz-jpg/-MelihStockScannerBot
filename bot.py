@@ -40,9 +40,28 @@ def get_stock_data(symbol):
         data = json.loads(response.read().decode("utf-8"))
 
     result = data["chart"]["result"][0]
-    meta = result["meta"]
 
-    return meta.get("regularMarketPrice")
+    meta = result["meta"]
+    price = meta.get("regularMarketPrice")
+
+    indicators = result["indicators"]["quote"][0]
+
+    closes = indicators.get("close", [])
+    volumes = indicators.get("volume", [])
+
+    previous_close = None
+    volume = None
+
+    valid_closes = [x for x in closes if x is not None]
+    valid_volumes = [x for x in volumes if x is not None]
+
+    if len(valid_closes) >= 2:
+        previous_close = valid_closes[-2]
+
+    if valid_volumes:
+        volume = valid_volumes[-1]
+
+    return price, previous_close, volume
 
 
 def main():
@@ -50,17 +69,17 @@ def main():
     print("MelihStockScannerBot başlatılıyor...")
 
     me = telegram("getMe")
+
     print("Bot bağlantısı:", me["result"]["username"])
 
-    # Telegram'dan gelen mesajları al
     updates = telegram("getUpdates")
 
     if not updates.get("result"):
         print("Telegram'da bekleyen mesaj bulunamadı.")
         return
 
-    # Son mesajın chat ID'sini al
     last_update = updates["result"][-1]
+
     message = last_update.get("message")
 
     if not message:
@@ -91,33 +110,78 @@ def main():
     for symbol in stocks:
 
         try:
-            price = get_stock_data(symbol)
+
+            price, previous_close, volume = get_stock_data(symbol)
 
             if price is None:
                 continue
 
-            print(f"{symbol}: ${price:.2f}")
+            if previous_close:
+                change = (
+                    (price - previous_close)
+                    / previous_close
+                ) * 100
+            else:
+                change = 0
+
+            print(
+                f"{symbol}: ${price:.2f} | "
+                f"%{change:.2f} | "
+                f"Hacim: {volume}"
+            )
 
             if 1 <= price <= 10:
-                results.append((symbol, price))
+
+                results.append(
+                    (
+                        symbol,
+                        price,
+                        change,
+                        volume
+                    )
+                )
 
         except Exception as error:
+
             print(f"{symbol}: veri alınamadı")
             print(error)
 
     text = "🤖 MelihStockScannerBot\n\n"
+
     text += "🇺🇸 $1–10 ABD Hisse Taraması\n\n"
 
     if results:
 
-        for symbol, price in results:
-            text += f"✅ {symbol} — ${price:.2f}\n"
+        for symbol, price, change, volume in results:
+
+            if change > 0:
+                emoji = "📈"
+            elif change < 0:
+                emoji = "📉"
+            else:
+                emoji = "➡️"
+
+            if volume:
+                volume_text = f"{volume:,.0f}"
+            else:
+                volume_text = "Yok"
+
+            text += (
+                f"{emoji} {symbol}\n"
+                f"💵 ${price:.2f}\n"
+                f"📊 Günlük: %{change:.2f}\n"
+                f"📦 Hacim: {volume_text}\n\n"
+            )
 
     else:
 
         text += "Bu taramada $1–10 aralığında hisse bulunamadı."
 
-    text += "\n\n⚠️ Bu yalnızca fiyat filtresidir. Henüz AL/TUT sinyali değildir."
+    text += (
+        "⚠️ Bu aşama yalnızca fiyat + günlük değişim + "
+        "hacim verisidir.\n"
+        "Henüz AL/TUT sinyali değildir."
+    )
 
     telegram(
         "sendMessage",
