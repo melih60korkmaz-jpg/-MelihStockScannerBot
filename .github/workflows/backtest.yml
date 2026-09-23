@@ -1,0 +1,23 @@
+name: Backtest
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodu al
+        uses: actions/checkout@v6
+
+      - name: Python kurulumu
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Gerekli paketleri kur
+        run: pip install yfinance pandas numpy
+
+      - name: Backtesti çalıştır
+        run: python backtest.py
