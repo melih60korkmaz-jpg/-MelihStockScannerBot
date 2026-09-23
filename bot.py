@@ -2,18 +2,14 @@ import os
 import json
 import urllib.request
 import urllib.parse
-from datetime import datetime
-
 import yfinance as yf
 import pandas as pd
 import numpy as np
 
 
-# ============================================================
-# MELİH STOCK SCANNER BOT
-# Yeni ağırlıklı model
-# EMA %40 - MACD %30 - HACİM %20 - RSI %10
-# ============================================================
+# =========================================================
+# AYARLAR
+# =========================================================
 
 TOKEN = os.environ.get("BOT_TOKEN")
 
@@ -24,36 +20,74 @@ STOCKS = [
     "OPEN",
     "JOBY",
     "LCID",
-    "GRAB",
     "NU",
+    "GRAB",
     "MARA",
-    "RIOT",
+    "RIOT"
 ]
 
 
-# ============================================================
+# =========================================================
 # TELEGRAM
-# ============================================================
+# =========================================================
 
 def telegram(method, data=None):
+
+    if not TOKEN:
+        print("HATA: BOT_TOKEN bulunamadı.")
+        return {}
+
     url = f"https://api.telegram.org/bot{TOKEN}/{method}"
 
     if data is not None:
-        encoded = json.dumps(data).encode("utf-8")
+        encoded = urllib.parse.urlencode(data).encode("utf-8")
 
         request = urllib.request.Request(
             url,
             data=encoded,
-            headers={"Content-Type": "application/json"}
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
         )
     else:
         request = urllib.request.Request(url)
 
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.loads(
+                response.read().decode("utf-8")
+            )
+
+    except Exception as e:
+        print("Telegram hatası:", e)
+        return {}
+
+
+def get_chat_id():
+
+    result = telegram("getUpdates")
+
+    if not result.get("ok"):
+        return None
+
+    updates = result.get("result", [])
+
+    if not updates:
+        return None
+
+    # En son gelen mesajı bul
+    for update in reversed(updates):
+
+        message = update.get("message")
+
+        if message and message.get("chat"):
+            return message["chat"]["id"]
+
+    return None
 
 
 def send_message(chat_id, text):
+
     return telegram(
         "sendMessage",
         {
@@ -63,316 +97,282 @@ def send_message(chat_id, text):
     )
 
 
-# ============================================================
-# RSI
-# ============================================================
+# =========================================================
+# TEKNİK GÖSTERGELER
+# =========================================================
 
 def calculate_rsi(series, period=14):
+
     delta = series.diff()
 
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
 
-    avg_gain = gain.ewm(
+    average_gain = gain.ewm(
         alpha=1 / period,
         adjust=False
     ).mean()
 
-    avg_loss = loss.ewm(
+    average_loss = loss.ewm(
         alpha=1 / period,
         adjust=False
     ).mean()
 
-    rs = avg_gain / avg_loss.replace(0, np.nan)
+    rs = average_gain / average_loss.replace(0, np.nan)
 
     rsi = 100 - (100 / (1 + rs))
 
     return rsi
 
 
-# ============================================================
-# HİSSE VERİSİ
-# ============================================================
+def calculate_indicators(df):
 
-def get_stock_data(symbol):
+    if df is None or df.empty:
+        return None
+
+    close = df["Close"]
+
+    # EMA
+    df["EMA9"] = close.ewm(
+        span=9,
+        adjust=False
+    ).mean()
+
+    df["EMA20"] = close.ewm(
+        span=20,
+        adjust=False
+    ).mean()
+
+    # RSI
+    df["RSI"] = calculate_rsi(close)
+
+    # MACD
+    ema12 = close.ewm(
+        span=12,
+        adjust=False
+    ).mean()
+
+    ema26 = close.ewm(
+        span=26,
+        adjust=False
+    ).mean()
+
+    df["MACD"] = ema12 - ema26
+
+    df["MACD_SIGNAL"] = df["MACD"].ewm(
+        span=9,
+        adjust=False
+    ).mean()
+
+    # Hacim ortalaması
+    df["VOLUME_AVG"] = df["Volume"].shift(1).rolling(
+        20
+    ).mean()
+
+    return df
+
+
+# =========================================================
+# SKOR SİSTEMİ
+# =========================================================
+
+def calculate_score(df):
+
+    if df is None or len(df) < 30:
+        return None
+
+    last = df.iloc[-1]
+
+    price = float(last["Close"])
+
+    ema9 = float(last["EMA9"])
+    ema20 = float(last["EMA20"])
+
+    rsi = float(last["RSI"])
+
+    macd = float(last["MACD"])
+    macd_signal = float(last["MACD_SIGNAL"])
+
+    volume = float(last["Volume"])
+    volume_avg = float(last["VOLUME_AVG"])
+
+    score = 0
+
+    # -----------------------------------------------------
+    # EMA - %40
+    # -----------------------------------------------------
+
+    if price > ema9 and ema9 > ema20:
+        ema_score = 40
+
+    elif price > ema20:
+        ema_score = 25
+
+    elif price > ema9:
+        ema_score = 15
+
+    else:
+        ema_score = 0
+
+    score += ema_score
+
+    # -----------------------------------------------------
+    # MACD - %30
+    # -----------------------------------------------------
+
+    if macd > macd_signal and macd > 0:
+        macd_score = 30
+
+    elif macd > macd_signal:
+        macd_score = 20
+
+    elif macd > 0:
+        macd_score = 10
+
+    else:
+        macd_score = 0
+
+    score += macd_score
+
+    # -----------------------------------------------------
+    # HACİM - %20
+    # -----------------------------------------------------
+
+    if volume_avg and volume_avg > 0:
+
+        volume_ratio = volume / volume_avg
+
+        if volume_ratio >= 2:
+            volume_score = 20
+
+        elif volume_ratio >= 1.5:
+            volume_score = 15
+
+        elif volume_ratio >= 1:
+            volume_score = 10
+
+        else:
+            volume_score = 5
+
+    else:
+
+        volume_ratio = 0
+        volume_score = 0
+
+    score += volume_score
+
+    # -----------------------------------------------------
+    # RSI - %10
+    # -----------------------------------------------------
+
+    if 50 <= rsi <= 65:
+        rsi_score = 10
+
+    elif 40 <= rsi < 50:
+        rsi_score = 7
+
+    elif 65 < rsi <= 70:
+        rsi_score = 7
+
+    elif 30 <= rsi < 40:
+        rsi_score = 5
+
+    elif rsi < 30:
+        rsi_score = 4
+
+    else:
+        rsi_score = 2
+
+    score += rsi_score
+
+    # -----------------------------------------------------
+    # SİNYAL
+    # -----------------------------------------------------
+
+    if score >= 80:
+        signal = "🔥 GÜÇLÜ ADAY"
+
+    elif score >= 65:
+        signal = "🟢 POZİTİF"
+
+    elif score >= 50:
+        signal = "🟡 NÖTR / DİKKAT"
+
+    else:
+        signal = "🔴 ZAYIF"
+
+    return {
+        "price": price,
+        "ema9": ema9,
+        "ema20": ema20,
+        "rsi": rsi,
+        "macd": macd,
+        "macd_signal": macd_signal,
+        "volume": volume,
+        "volume_avg": volume_avg,
+        "volume_ratio": volume_ratio,
+        "score": score,
+        "signal": signal
+    }
+
+
+# =========================================================
+# HİSSE TARAMA
+# =========================================================
+
+def scan_stock(symbol):
+
+    print(f"{symbol} verisi indiriliyor...")
 
     try:
 
-        daily = yf.Ticker(symbol).history(
+        ticker = yf.Ticker(symbol)
+
+        df = ticker.history(
             period="6mo",
             interval="1d",
             auto_adjust=False
         )
 
-        if daily.empty:
+        if df.empty:
+            print(f"{symbol}: veri yok")
             return None
 
-        daily = daily.dropna()
+        df = calculate_indicators(df)
 
-        close = daily["Close"]
-        volume = daily["Volume"]
+        result = calculate_score(df)
 
-        # EMA
-        daily["EMA9"] = close.ewm(
-            span=9,
-            adjust=False
-        ).mean()
+        if result is None:
+            return None
 
-        daily["EMA20"] = close.ewm(
-            span=20,
-            adjust=False
-        ).mean()
+        result["symbol"] = symbol
 
-        # RSI
-        daily["RSI"] = calculate_rsi(close)
+        print(
+            f"{symbol}: "
+            f"${result['price']:.2f} "
+            f"Skor={result['score']}"
+        )
 
-        # MACD
-        ema12 = close.ewm(
-            span=12,
-            adjust=False
-        ).mean()
-
-        ema26 = close.ewm(
-            span=26,
-            adjust=False
-        ).mean()
-
-        daily["MACD"] = ema12 - ema26
-
-        daily["MACD_SIGNAL"] = daily["MACD"].ewm(
-            span=9,
-            adjust=False
-        ).mean()
-
-        # Hacim ortalaması
-        daily["AVG_VOLUME"] = volume.shift(1).rolling(
-            20
-        ).mean()
-
-        latest = daily.iloc[-1]
-
-        price = float(latest["Close"])
-        previous_close = float(daily["Close"].iloc[-2])
-
-        ema9 = float(latest["EMA9"])
-        ema20 = float(latest["EMA20"])
-
-        rsi = float(latest["RSI"])
-
-        macd = float(latest["MACD"])
-        macd_signal = float(latest["MACD_SIGNAL"])
-
-        current_volume = float(latest["Volume"])
-        average_volume = float(latest["AVG_VOLUME"])
-
-        if average_volume <= 0:
-            volume_ratio = 0
-        else:
-            volume_ratio = current_volume / average_volume
-
-        # ====================================================
-        # VWAP - gün içi
-        # ====================================================
-
-        vwap = None
-
-        try:
-
-            intraday = yf.Ticker(symbol).history(
-                period="1d",
-                interval="5m",
-                auto_adjust=False
-            )
-
-            if not intraday.empty:
-
-                intraday = intraday.dropna()
-
-                typical_price = (
-                    intraday["High"]
-                    + intraday["Low"]
-                    + intraday["Close"]
-                ) / 3
-
-                total_volume = intraday["Volume"].sum()
-
-                if total_volume > 0:
-
-                    vwap = float(
-                        (typical_price * intraday["Volume"]).sum()
-                        / total_volume
-                    )
-
-        except Exception:
-            vwap = None
-
-        # ====================================================
-        # YENİ SKOR MODELİ
-        #
-        # EMA     %40
-        # MACD    %30
-        # HACİM   %20
-        # RSI     %10
-        # ====================================================
-
-        score = 0
-
-        # ----------------------------------------------------
-        # EMA - 40 PUAN
-        # ----------------------------------------------------
-
-        if price > ema9 and ema9 > ema20:
-            score += 40
-
-        elif price > ema20:
-            score += 25
-
-        elif price > ema9:
-            score += 15
-
-        else:
-            score += 0
-
-        # ----------------------------------------------------
-        # MACD - 30 PUAN
-        # ----------------------------------------------------
-
-        if macd > macd_signal and macd > 0:
-            score += 30
-
-        elif macd > macd_signal:
-            score += 20
-
-        elif macd > 0:
-            score += 10
-
-        else:
-            score += 0
-
-        # ----------------------------------------------------
-        # HACİM - 20 PUAN
-        # ----------------------------------------------------
-
-        if volume_ratio >= 2:
-            score += 20
-
-        elif volume_ratio >= 1.5:
-            score += 15
-
-        elif volume_ratio >= 1:
-            score += 10
-
-        elif volume_ratio >= 0.75:
-            score += 5
-
-        else:
-            score += 0
-
-        # ----------------------------------------------------
-        # RSI - 10 PUAN
-        # ----------------------------------------------------
-
-        if 50 <= rsi <= 65:
-            score += 10
-
-        elif 45 <= rsi < 50:
-            score += 7
-
-        elif 65 < rsi <= 70:
-            score += 7
-
-        elif 40 <= rsi < 45:
-            score += 5
-
-        elif 30 <= rsi < 40:
-            score += 3
-
-        else:
-            score += 0
-
-        # ====================================================
-        # ETİKET
-        # ====================================================
-
-        if score >= 80:
-            label = "AL ADAYI"
-
-        elif score >= 65:
-            label = "TUT"
-
-        elif score >= 50:
-            label = "DİKKAT"
-
-        else:
-            label = "RİSKLİ"
-
-        # ====================================================
-        # GÜN İÇİ VWAP DURUMU
-        # ====================================================
-
-        if vwap is not None:
-
-            if price > vwap:
-                vwap_status = "ÜSTÜNDE"
-
-            elif price >= vwap * 0.99:
-                vwap_status = "YAKIN"
-
-            else:
-                vwap_status = "ALTINDA"
-
-        else:
-            vwap_status = "VERİ YOK"
-
-        # ====================================================
-        # GÜNLÜK DEĞİŞİM
-        # ====================================================
-
-        daily_change = (
-            (price - previous_close)
-            / previous_close
-        ) * 100
-
-        return {
-            "symbol": symbol,
-            "price": price,
-            "change": daily_change,
-            "ema9": ema9,
-            "ema20": ema20,
-            "rsi": rsi,
-            "macd": macd,
-            "macd_signal": macd_signal,
-            "volume_ratio": volume_ratio,
-            "vwap": vwap,
-            "vwap_status": vwap_status,
-            "score": int(score),
-            "label": label
-        }
+        return result
 
     except Exception as e:
 
-        print(f"{symbol} hata: {e}")
+        print(f"{symbol} hata:", e)
 
         return None
 
 
-# ============================================================
-# TARAMA
-# ============================================================
+# =========================================================
+# TÜM HİSSELERİ TARA
+# =========================================================
 
-def scan_stocks():
+def scan_all():
 
     results = []
 
-    print()
-    print("ABD HİSSE TARAMASI")
-    print("===================")
-
     for symbol in STOCKS:
 
-        print(f"{symbol} taranıyor...")
-
-        result = get_stock_data(symbol)
+        result = scan_stock(symbol)
 
         if result:
             results.append(result)
@@ -385,222 +385,206 @@ def scan_stocks():
     return results
 
 
-# ============================================================
+# =========================================================
 # TELEGRAM MESAJI
-# ============================================================
+# =========================================================
 
 def create_scan_message(results):
 
-    now = datetime.now().strftime("%d.%m.%Y %H:%M")
+    if not results:
+        return "❌ Hisse verisi alınamadı."
 
-    message = (
-        "📊 MELİH STOCK SCANNER\n"
-        "━━━━━━━━━━━━━━━━━━\n"
-        f"🕐 {now}\n\n"
-        "🎯 YENİ SKOR MODELİ\n"
-        "EMA %40 | MACD %30\n"
-        "Hacim %20 | RSI %10\n\n"
-    )
+    message = "📊 MELİH STOCK SCANNER\n"
+    message += "━━━━━━━━━━━━━━━━━━\n\n"
 
     for r in results:
 
-        emoji = "🟢"
-
-        if r["label"] == "AL ADAYI":
-            emoji = "🚀"
-
-        elif r["label"] == "TUT":
-            emoji = "🟢"
-
-        elif r["label"] == "DİKKAT":
-            emoji = "🟡"
-
-        else:
-            emoji = "🔴"
-
         message += (
-            f"{emoji} {r['symbol']}  ${r['price']:.2f}\n"
-            f"   Skor: {r['score']}/100 → {r['label']}\n"
-            f"   Günlük: {r['change']:+.2f}%\n"
-            f"   EMA9: ${r['ema9']:.2f}\n"
-            f"   EMA20: ${r['ema20']:.2f}\n"
-            f"   RSI: {r['rsi']:.1f}\n"
-            f"   MACD: {r['macd']:.3f}\n"
-            f"   Hacim: {r['volume_ratio']:.2f}x\n"
-            f"   VWAP: {r['vwap_status']}\n\n"
+            f"📌 {r['symbol']}\n"
+            f"💵 Fiyat: ${r['price']:.2f}\n"
+            f"🎯 Skor: {r['score']}/100\n"
+            f"📢 {r['signal']}\n"
+            f"📈 EMA9: {r['ema9']:.2f}\n"
+            f"📊 EMA20: {r['ema20']:.2f}\n"
+            f"📉 RSI: {r['rsi']:.1f}\n"
+            f"〽️ MACD: {r['macd']:.3f}\n"
+            f"📦 Hacim: {r['volume_ratio']:.2f}x\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
         )
 
     message += (
-        "━━━━━━━━━━━━━━━━━━\n"
-        "⚠️ Bu skor geçmiş verilerle geliştirilen "
-        "tarama modelidir.\n"
-        "Skor kesin yükseliş garantisi değildir."
+        "\n⚙️ YENİ AĞIRLIKLI MODEL\n"
+        "EMA: %40\n"
+        "MACD: %30\n"
+        "Hacim: %20\n"
+        "RSI: %10\n\n"
+        "⚠️ Bu skor geçmiş performans garantisi değildir."
     )
 
     return message
 
 
-# ============================================================
+# =========================================================
 # KOMUTLAR
-# ============================================================
+# =========================================================
 
 def help_message():
 
     return (
         "🤖 MELİH STOCK SCANNER\n\n"
+        "Komutlar:\n\n"
         "/start - Botu başlat\n"
         "/tara - Hisseleri tara\n"
         "/sinyaller - Güncel sinyaller\n"
         "/aktif - Aktif takipler\n"
         "/performans - Model bilgisi\n"
-        "/yardim - Yardım\n"
+        "/yardim - Yardım\n\n"
+        "📊 Takip edilen hisseler:\n"
+        + ", ".join(STOCKS)
     )
 
 
 def performance_message():
 
     return (
-        "📈 MODEL BİLGİSİ\n"
-        "━━━━━━━━━━━━━━━━━━\n\n"
+        "📊 MODEL BİLGİSİ\n\n"
         "Yeni ağırlıklı model:\n\n"
         "EMA → %40\n"
         "MACD → %30\n"
         "Hacim → %20\n"
         "RSI → %10\n\n"
-        "Model 12.000+ tarihsel test örneği "
-        "üzerinde analiz edilerek oluşturuldu.\n\n"
-        "⚠️ Geçmiş sonuçlar gelecekteki getiriyi "
-        "garanti etmez."
+        "Backtestte 12.000+ tarihsel test örneği "
+        "üzerinden incelendi.\n\n"
+        "⚠️ Geçmiş sonuçlar gelecekteki getiriyi garanti etmez."
     )
 
 
-# ============================================================
-# GÜNCEL TELEGRAM MESAJLARINI KONTROL ET
-# ============================================================
+# =========================================================
+# GELEN KOMUTU İŞLE
+# =========================================================
 
-def get_updates():
+def process_commands(chat_id):
 
-    try:
+    updates = telegram("getUpdates")
 
-        result = telegram(
-            "getUpdates",
-            {
-                "timeout": 1
-            }
-        )
-
-        return result.get("result", [])
-
-    except Exception as e:
-
-        print("Telegram güncelleme hatası:", e)
-
-        return []
-
-
-# ============================================================
-# ANA PROGRAM
-# ============================================================
-
-def main():
-
-    print()
-    print("================================")
-    print("MelihStockScannerBot başlatılıyor")
-    print("================================")
-
-    if not TOKEN:
-
-        print("BOT_TOKEN bulunamadı!")
-
+    if not updates.get("ok"):
         return
 
-    updates = get_updates()
+    update_list = updates.get("result", [])
 
-    chat_ids = set()
+    if not update_list:
+        return
 
-    for update in updates:
+    # Son mesajı bul
+    last_message = None
+
+    for update in reversed(update_list):
 
         message = update.get("message")
 
-        if not message:
-            continue
+        if message and message.get("text"):
 
-        chat_id = message["chat"]["id"]
+            last_message = message
+            break
 
-        chat_ids.add(chat_id)
+    if not last_message:
+        return
 
-        text = message.get(
-            "text",
-            ""
-        ).strip().lower()
+    text = last_message.get("text", "").strip().lower()
 
-        if text in ["/start", "/yardim", "/yardım"]:
+    if text.startswith("/start"):
 
-            send_message(
-                chat_id,
-                help_message()
-            )
+        send_message(
+            chat_id,
+            "🤖 MelihStockScannerBot aktif!\n\n"
+            "Hisseleri taramak için /tara yazabilirsin."
+        )
 
-        elif text in ["/tara", "/sinyaller"]:
+    elif text.startswith("/tara"):
 
-            results = scan_stocks()
+        send_message(
+            chat_id,
+            "🔎 Hisseler taranıyor...\n"
+            "Biraz bekle."
+        )
 
-            if results:
+        results = scan_all()
 
-                send_message(
-                    chat_id,
-                    create_scan_message(results)
-                )
+        message = create_scan_message(results)
 
-        elif text == "/performans":
+        send_message(
+            chat_id,
+            message
+        )
 
-            send_message(
-                chat_id,
-                performance_message()
-            )
+    elif text.startswith("/sinyaller"):
 
-        elif text == "/aktif":
+        results = scan_all()
 
-            send_message(
-                chat_id,
-                "📌 Aktif takip sistemi bir sonraki aşamada "
-                "devreye alınacak."
-            )
+        message = create_scan_message(results)
 
-    # ========================================================
-    # Eğer yeni mesaj varsa tarama sonucunu gönder
-    # ========================================================
+        send_message(
+            chat_id,
+            message
+        )
 
-    if chat_ids:
+    elif text.startswith("/aktif"):
 
-        results = scan_stocks()
+        send_message(
+            chat_id,
+            "📡 Aktif takip sistemi hazır.\n\n"
+            "Şu anda takip edilen hisseler:\n"
+            + ", ".join(STOCKS)
+        )
 
-        if results:
+    elif text.startswith("/performans"):
 
-            message = create_scan_message(
-                results
-            )
+        send_message(
+            chat_id,
+            performance_message()
+        )
 
-            for chat_id in chat_ids:
+    elif text.startswith("/yardim"):
 
-                try:
+        send_message(
+            chat_id,
+            help_message()
+        )
 
-                    send_message(
-                        chat_id,
-                        message
-                    )
 
-                except Exception as e:
+# =========================================================
+# ANA PROGRAM
+# =========================================================
 
-                    print(
-                        f"Telegram gönderim hatası: {e}"
-                    )
+def main():
+
+    print("===================================")
+    print("MELİH STOCK SCANNER BOT")
+    print("===================================")
+
+    if not TOKEN:
+
+        print("❌ BOT_TOKEN bulunamadı!")
+        return
+
+    print("✅ BOT_TOKEN bulundu.")
+
+    chat_id = get_chat_id()
+
+    if chat_id:
+
+        print("✅ Telegram chat bulundu:", chat_id)
+
+        process_commands(chat_id)
 
     else:
 
         print(
-            "Yeni Telegram mesajı bulunamadı."
+            "ℹ️ Henüz Telegram mesajı bulunamadı."
+        )
+
+        print(
+            "Telegram'dan bota /start gönder."
         )
 
 
