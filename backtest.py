@@ -1,371 +1,829 @@
+import os
+import json
+import urllib.request
+import urllib.parse
 import yfinance as yf
 import pandas as pd
 import numpy as np
 
 # ============================================================
-# MELİH STOCK SCANNER - TEST #5
-# FİLTRE: EMA + MACD + RSI + HACİM
+# MELİH STOCK SCANNER BOT
+# ANA SİNYAL MODELİ
+#
+# EMA      %40
+# MACD     %30
+# HACİM    %20
+# RSI      %10
+#
+# Güçlü aday >= 80
+# Pozitif    >= 65
+# Nötr       >= 50
+# Zayıf      < 50
+#
+# NOT:
+# Skor bir yükseliş yüzdesi değildir.
+# Yatırım tavsiyesi değildir.
 # ============================================================
+
+
+# ============================================================
+# AYARLAR
+# ============================================================
+
+TOKEN = os.environ.get("BOT_TOKEN")
 
 STOCKS = [
     "SNDL",
     "PLUG",
+    "SOFI",
     "OPEN",
     "JOBY",
     "LCID",
-    "GRAB",
-    "SOFI",
     "NU",
+    "GRAB",
     "MARA",
     "RIOT"
 ]
 
-PERIOD = "5y"
+DATA_PERIOD = "6mo"
+
+
+# ============================================================
+# TELEGRAM
+# ============================================================
+
+def telegram(method, data=None):
+
+    if not TOKEN:
+        print("BOT_TOKEN bulunamadı.")
+        return None
+
+    url = f"https://api.telegram.org/bot{TOKEN}/{method}"
+
+    try:
+
+        if data is None:
+            request = urllib.request.Request(url)
+
+        else:
+
+            encoded = urllib.parse.urlencode(data).encode()
+
+            request = urllib.request.Request(
+                url,
+                data=encoded
+            )
+
+        with urllib.request.urlopen(
+            request,
+            timeout=30
+        ) as response:
+
+            return json.loads(
+                response.read().decode()
+            )
+
+    except Exception as e:
+
+        print(f"Telegram HATA: {e}")
+        return None
+
+
+def send_message(chat_id, text):
+
+    return telegram(
+        "sendMessage",
+        {
+            "chat_id": chat_id,
+            "text": text
+        }
+    )
+
+
+# ============================================================
+# CHAT ID
+# ============================================================
+
+def get_chat_id():
+
+    result = telegram("getUpdates")
+
+    if not result:
+        return None
+
+    if not result.get("ok"):
+        return None
+
+    updates = result.get("result", [])
+
+    if not updates:
+        return None
+
+    latest = updates[-1]
+
+    message = latest.get("message")
+
+    if not message:
+        return None
+
+    chat = message.get("chat")
+
+    if not chat:
+        return None
+
+    return chat.get("id")
+
 
 # ============================================================
 # RSI
 # ============================================================
 
 def calculate_rsi(series, period=14):
+
     delta = series.diff()
 
     gain = delta.clip(lower=0)
+
     loss = -delta.clip(upper=0)
 
     avg_gain = gain.rolling(period).mean()
+
     avg_loss = loss.rolling(period).mean()
 
-    rs = avg_gain / avg_loss.replace(0, np.nan)
+    rs = avg_gain / avg_loss.replace(
+        0,
+        np.nan
+    )
 
-    rsi = 100 - (100 / (1 + rs))
+    rsi = 100 - (
+        100 / (1 + rs)
+    )
 
     return rsi
 
 
 # ============================================================
-# VERİ HAZIRLA
+# VERİ VE İNDİKATÖRLER
 # ============================================================
 
-def prepare_stock(ticker):
+def calculate_indicators(df):
+
+    df = df.copy()
+
+    close = df["Close"]
+
+    volume = df["Volume"]
+
+    # EMA 9
+    df["EMA9"] = close.ewm(
+        span=9,
+        adjust=False
+    ).mean()
+
+    # EMA 20
+    df["EMA20"] = close.ewm(
+        span=20,
+        adjust=False
+    ).mean()
+
+    # EMA 50
+    df["EMA50"] = close.ewm(
+        span=50,
+        adjust=False
+    ).mean()
+
+    # RSI
+    df["RSI"] = calculate_rsi(
+        close,
+        14
+    )
+
+    # MACD
+    ema12 = close.ewm(
+        span=12,
+        adjust=False
+    ).mean()
+
+    ema26 = close.ewm(
+        span=26,
+        adjust=False
+    ).mean()
+
+    df["MACD"] = ema12 - ema26
+
+    df["MACD_SIGNAL"] = df[
+        "MACD"
+    ].ewm(
+        span=9,
+        adjust=False
+    ).mean()
+
+    # Hacim
+    df["AVG_VOLUME20"] = volume.rolling(
+        20
+    ).mean()
+
+    df["VOLUME_RATIO"] = (
+        volume /
+        df["AVG_VOLUME20"]
+    )
+
+    return df.dropna()
+
+
+# ============================================================
+# SKOR MODELİ
+# ============================================================
+
+def calculate_score(row):
+
+    close = float(row["Close"])
+
+    ema9 = float(row["EMA9"])
+
+    ema20 = float(row["EMA20"])
+
+    ema50 = float(row["EMA50"])
+
+    macd = float(row["MACD"])
+
+    macd_signal = float(
+        row["MACD_SIGNAL"]
+    )
+
+    rsi = float(row["RSI"])
+
+    volume_ratio = float(
+        row["VOLUME_RATIO"]
+    )
+
+
+    # ========================================================
+    # EMA %40
+    # ========================================================
+
+    if (
+        close > ema9
+        and ema9 > ema20
+        and ema20 > ema50
+    ):
+
+        ema_score = 100
+
+    elif (
+        close > ema20
+        and ema20 > ema50
+    ):
+
+        ema_score = 75
+
+    elif close > ema20:
+
+        ema_score = 50
+
+    elif close > ema50:
+
+        ema_score = 25
+
+    else:
+
+        ema_score = 0
+
+
+    # ========================================================
+    # MACD %30
+    # ========================================================
+
+    if (
+        macd > macd_signal
+        and macd > 0
+    ):
+
+        macd_score = 100
+
+    elif macd > macd_signal:
+
+        macd_score = 70
+
+    elif macd > 0:
+
+        macd_score = 40
+
+    else:
+
+        macd_score = 0
+
+
+    # ========================================================
+    # HACİM %20
+    # ========================================================
+
+    if volume_ratio >= 2.0:
+
+        volume_score = 100
+
+    elif volume_ratio >= 1.5:
+
+        volume_score = 75
+
+    elif volume_ratio >= 1.0:
+
+        volume_score = 50
+
+    elif volume_ratio >= 0.7:
+
+        volume_score = 25
+
+    else:
+
+        volume_score = 0
+
+
+    # ========================================================
+    # RSI %10
+    # ========================================================
+
+    if 50 <= rsi <= 65:
+
+        rsi_score = 100
+
+    elif 45 <= rsi < 50:
+
+        rsi_score = 75
+
+    elif 65 < rsi <= 70:
+
+        rsi_score = 75
+
+    elif 35 <= rsi < 45:
+
+        rsi_score = 50
+
+    elif 70 < rsi <= 75:
+
+        rsi_score = 40
+
+    elif rsi < 35:
+
+        rsi_score = 30
+
+    else:
+
+        rsi_score = 20
+
+
+    # ========================================================
+    # AĞIRLIKLI TOPLAM
+    # ========================================================
+
+    total_score = (
+
+        ema_score * 0.40
+
+        + macd_score * 0.30
+
+        + volume_score * 0.20
+
+        + rsi_score * 0.10
+
+    )
+
+    return round(total_score)
+
+
+# ============================================================
+# ETİKET
+# ============================================================
+
+def get_label(score):
+
+    if score >= 80:
+
+        return "🔥 GÜÇLÜ ADAY"
+
+    elif score >= 65:
+
+        return "🟢 POZİTİF"
+
+    elif score >= 50:
+
+        return "🟡 NÖTR / DİKKAT"
+
+    else:
+
+        return "🔴 ZAYIF"
+
+
+# ============================================================
+# HİSSE TARAMA
+# ============================================================
+
+def scan_stock(ticker):
 
     try:
 
         df = yf.download(
             ticker,
-            period=PERIOD,
+            period=DATA_PERIOD,
             interval="1d",
             auto_adjust=True,
             progress=False
         )
 
         if df.empty:
+
             return None
 
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
+        if isinstance(
+            df.columns,
+            pd.MultiIndex
+        ):
 
-        df = df.copy()
+            df.columns = (
+                df.columns
+                .get_level_values(0)
+            )
 
-        required = ["Close", "Volume"]
+        df = calculate_indicators(df)
 
-        for col in required:
-            if col not in df.columns:
-                return None
+        if df.empty:
 
-        close = df["Close"]
-        volume = df["Volume"]
+            return None
 
-        # EMA
-        df["EMA20"] = close.ewm(
-            span=20,
-            adjust=False
-        ).mean()
+        row = df.iloc[-1]
 
-        df["EMA50"] = close.ewm(
-            span=50,
-            adjust=False
-        ).mean()
-
-        # RSI
-        df["RSI"] = calculate_rsi(close)
-
-        # MACD
-        ema12 = close.ewm(
-            span=12,
-            adjust=False
-        ).mean()
-
-        ema26 = close.ewm(
-            span=26,
-            adjust=False
-        ).mean()
-
-        df["MACD"] = ema12 - ema26
-
-        df["MACD_SIGNAL"] = df["MACD"].ewm(
-            span=9,
-            adjust=False
-        ).mean()
-
-        # Hacim oranı
-        df["AVG_VOLUME20"] = volume.rolling(20).mean()
-
-        df["VOLUME_RATIO"] = (
-            volume / df["AVG_VOLUME20"]
+        price = float(
+            row["Close"]
         )
 
-        df = df.dropna()
+        ema20 = float(
+            row["EMA20"]
+        )
 
-        return df
+        ema50 = float(
+            row["EMA50"]
+        )
+
+        rsi = float(
+            row["RSI"]
+        )
+
+        macd = float(
+            row["MACD"]
+        )
+
+        macd_signal = float(
+            row["MACD_SIGNAL"]
+        )
+
+        volume_ratio = float(
+            row["VOLUME_RATIO"]
+        )
+
+        score = calculate_score(row)
+
+        label = get_label(score)
+
+        return {
+            "ticker": ticker,
+            "price": price,
+            "ema20": ema20,
+            "ema50": ema50,
+            "rsi": rsi,
+            "macd": macd,
+            "macd_signal": macd_signal,
+            "volume_ratio": volume_ratio,
+            "score": score,
+            "label": label
+        }
 
     except Exception as e:
 
-        print(f"{ticker} HATA: {e}")
+        print(
+            f"{ticker} HATA: {e}"
+        )
 
         return None
 
 
 # ============================================================
-# TEST #5 FİLTRESİ
+# TÜM HİSSELERİ TARA
 # ============================================================
 
-def strong_signal(row):
+def scan_all():
 
-    close = float(row["Close"])
-    ema20 = float(row["EMA20"])
-    ema50 = float(row["EMA50"])
-
-    rsi = float(row["RSI"])
-
-    macd = float(row["MACD"])
-    macd_signal = float(row["MACD_SIGNAL"])
-
-    volume_ratio = float(row["VOLUME_RATIO"])
-
-    # 1 - Fiyat EMA20 üzerinde
-    condition_ema_price = close > ema20
-
-    # 2 - EMA20, EMA50 üzerinde
-    condition_ema_trend = ema20 > ema50
-
-    # 3 - MACD sinyalin üzerinde
-    condition_macd = macd > macd_signal
-
-    # 4 - RSI sağlıklı momentum bölgesinde
-    condition_rsi = 45 <= rsi <= 68
-
-    # 5 - Hacim en az ortalama kadar
-    condition_volume = volume_ratio >= 1.0
-
-    return (
-        condition_ema_price
-        and condition_ema_trend
-        and condition_macd
-        and condition_rsi
-        and condition_volume
-    )
-
-
-# ============================================================
-# ANA TEST
-# ============================================================
-
-all_results = []
-
-print("=" * 60)
-print("MELİH STOCK SCANNER - FİLTRE TESTİ #5")
-print("=" * 60)
-
-print()
-print("FİLTRE ŞARTLARI:")
-print("1. Fiyat > EMA20")
-print("2. EMA20 > EMA50")
-print("3. MACD > MACD Sinyal")
-print("4. RSI 45-68")
-print("5. Hacim >= 20 günlük ortalama")
-print()
-print("=" * 60)
-
-
-for ticker in STOCKS:
+    results = []
 
     print()
-    print(f"{ticker} taranıyor...")
-
-    df = prepare_stock(ticker)
-
-    if df is None:
-        print(f"{ticker}: Veri alınamadı.")
-        continue
-
-    tests = 0
-    strong_count = 0
-
-    returns_1 = []
-    returns_3 = []
-    returns_5 = []
-
-    for i in range(len(df) - 5):
-
-        row = df.iloc[i]
-
-        tests += 1
-
-        if not strong_signal(row):
-            continue
-
-        strong_count += 1
-
-        current_price = float(df["Close"].iloc[i])
-
-        price_1 = float(df["Close"].iloc[i + 1])
-        price_3 = float(df["Close"].iloc[i + 3])
-        price_5 = float(df["Close"].iloc[i + 5])
-
-        ret_1 = (
-            (price_1 / current_price) - 1
-        ) * 100
-
-        ret_3 = (
-            (price_3 / current_price) - 1
-        ) * 100
-
-        ret_5 = (
-            (price_5 / current_price) - 1
-        ) * 100
-
-        returns_1.append(ret_1)
-        returns_3.append(ret_3)
-        returns_5.append(ret_5)
-
-        all_results.append({
-            "ticker": ticker,
-            "date": df.index[i],
-            "signal": 1,
-            "ret_1": ret_1,
-            "ret_3": ret_3,
-            "ret_5": ret_5
-        })
-
-    print(
-        f"{ticker}: {tests} test | "
-        f"{strong_count} güçlü sinyal"
-    )
-
-
-# ============================================================
-# GENEL SONUÇ
-# ============================================================
-
-print()
-print("=" * 60)
-print("GENEL SONUÇ")
-print("=" * 60)
-
-if len(all_results) == 0:
-
-    print("Hiç güçlü sinyal bulunamadı.")
-
-else:
-
-    result_df = pd.DataFrame(all_results)
-
-    avg_1 = result_df["ret_1"].mean()
-    avg_3 = result_df["ret_3"].mean()
-    avg_5 = result_df["ret_5"].mean()
-
-    positive_1 = (
-        result_df["ret_1"] > 0
-    ).mean() * 100
-
-    positive_3 = (
-        result_df["ret_3"] > 0
-    ).mean() * 100
-
-    positive_5 = (
-        result_df["ret_5"] > 0
-    ).mean() * 100
-
-    print()
-    print(f"Güçlü sinyal sayısı: {len(result_df)}")
-
-    print()
-
-    print(
-        f"1 gün ortalama: {avg_1:+.2f}%"
-    )
-
-    print(
-        f"3 gün ortalama: {avg_3:+.2f}%"
-    )
-
-    print(
-        f"5 gün ortalama: {avg_5:+.2f}%"
-    )
-
-    print()
-
-    print(
-        f"1 gün pozitif: %{positive_1:.1f}"
-    )
-
-    print(
-        f"3 gün pozitif: %{positive_3:.1f}"
-    )
-
-    print(
-        f"5 gün pozitif: %{positive_5:.1f}"
-    )
-
-    # ========================================================
-    # HİSSE BAZLI SONUÇ
-    # ========================================================
-
-    print()
-    print("=" * 60)
-    print("HİSSE BAZLI GÜÇLÜ SİNYALLER")
-    print("=" * 60)
-
-    stock_summary = []
+    print("=" * 50)
+    print("ABD HİSSE TARAMASI")
+    print("=" * 50)
 
     for ticker in STOCKS:
 
-        stock_data = result_df[
-            result_df["ticker"] == ticker
+        print(
+            f"{ticker} taranıyor..."
+        )
+
+        result = scan_stock(ticker)
+
+        if result:
+
+            results.append(result)
+
+    # En yüksek skor üstte
+    results.sort(
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
+    return results
+
+
+# ============================================================
+# TELEGRAM MESAJI
+# ============================================================
+
+def create_scan_message(results):
+
+    if not results:
+
+        return (
+            "❌ Tarama sırasında veri "
+            "alınamadı."
+        )
+
+    lines = []
+
+    lines.append(
+        "📊 MELİH STOCK SCANNER"
+    )
+
+    lines.append(
+        "🇺🇸 ABD HİSSE TARAMASI"
+    )
+
+    lines.append(
+        "━━━━━━━━━━━━━━━━━━"
+    )
+
+    for item in results:
+
+        lines.append("")
+
+        lines.append(
+            f"📌 {item['ticker']} "
+            f"— ${item['price']:.2f}"
+        )
+
+        lines.append(
+            f"{item['label']} | "
+            f"Skor: {item['score']}/100"
+        )
+
+        lines.append(
+            f"EMA20: ${item['ema20']:.2f} | "
+            f"EMA50: ${item['ema50']:.2f}"
+        )
+
+        lines.append(
+            f"RSI: {item['rsi']:.1f}"
+        )
+
+        lines.append(
+            f"MACD: {item['macd']:.3f} | "
+            f"Sinyal: {item['macd_signal']:.3f}"
+        )
+
+        lines.append(
+            f"Hacim: "
+            f"{item['volume_ratio']:.1f}x ortalama"
+        )
+
+        lines.append(
+            "━━━━━━━━━━━━━━━━━━"
+        )
+
+    lines.append("")
+
+    lines.append(
+        "🧠 MODEL"
+    )
+
+    lines.append(
+        "EMA %40 | MACD %30 | "
+        "Hacim %20 | RSI %10"
+    )
+
+    lines.append("")
+
+    lines.append(
+        "⚠️ Skor yükselme yüzdesi değildir."
+    )
+
+    lines.append(
+        "⚠️ Geçmiş testler geleceği "
+        "garanti etmez."
+    )
+
+    return "\n".join(lines)
+
+
+# ============================================================
+# KOMUTLAR
+# ============================================================
+
+def process_commands():
+
+    result = telegram(
+        "getUpdates"
+    )
+
+    if not result:
+        return
+
+    if not result.get("ok"):
+        return
+
+    updates = result.get(
+        "result",
+        []
+    )
+
+    if not updates:
+        return
+
+    latest = updates[-1]
+
+    message = latest.get(
+        "message"
+    )
+
+    if not message:
+        return
+
+    text = message.get(
+        "text",
+        ""
+    ).strip().lower()
+
+    chat = message.get(
+        "chat"
+    )
+
+    if not chat:
+        return
+
+    chat_id = chat.get(
+        "id"
+    )
+
+    # --------------------------------------------------------
+    # /start
+    # --------------------------------------------------------
+
+    if text == "/start":
+
+        send_message(
+            chat_id,
+            "👋 Melih Stock Scanner'a "
+            "hoş geldin!\n\n"
+            "Hisseleri taramak için "
+            "/tara yazabilirsin.\n\n"
+            "Komutlar:\n"
+            "/tara - Hisseleri tara\n"
+            "/sinyaller - Güncel sinyaller\n"
+            "/aktif - Aktif takipler\n"
+            "/performans - Bot performansı\n"
+            "/yardim - Yardım"
+        )
+
+    # --------------------------------------------------------
+    # /tara
+    # --------------------------------------------------------
+
+    elif text == "/tara":
+
+        results = scan_all()
+
+        message = create_scan_message(
+            results
+        )
+
+        send_message(
+            chat_id,
+            message
+        )
+
+    # --------------------------------------------------------
+    # /sinyaller
+    # --------------------------------------------------------
+
+    elif text == "/sinyaller":
+
+        results = scan_all()
+
+        strong = [
+            x for x in results
+            if x["score"] >= 80
         ]
 
-        if stock_data.empty:
-            continue
+        if not strong:
 
-        stock_summary.append({
-            "hisse": ticker,
-            "sinyal": len(stock_data),
-            "ort_1g": stock_data["ret_1"].mean(),
-            "ort_3g": stock_data["ret_3"].mean(),
-            "ort_5g": stock_data["ret_5"].mean()
-        })
-
-    summary_df = pd.DataFrame(stock_summary)
-
-    if not summary_df.empty:
-
-        summary_df = summary_df.sort_values(
-            "ort_5g",
-            ascending=False
-        )
-
-        print(
-            summary_df.to_string(
-                index=False,
-                formatters={
-                    "ort_1g": "{:+.2f}%".format,
-                    "ort_3g": "{:+.2f}%".format,
-                    "ort_5g": "{:+.2f}%".format
-                }
+            send_message(
+                chat_id,
+                "🔎 Şu anda 80+ "
+                "güçlü aday bulunamadı."
             )
+
+        else:
+
+            lines = [
+                "🔥 GÜÇLÜ SİNYALLER",
+                "━━━━━━━━━━━━━━━━━━"
+            ]
+
+            for item in strong:
+
+                lines.append(
+                    f"{item['ticker']} "
+                    f"— Skor {item['score']}/100"
+                )
+
+                lines.append(
+                    f"${item['price']:.2f} | "
+                    f"RSI {item['rsi']:.1f} | "
+                    f"Hacim "
+                    f"{item['volume_ratio']:.1f}x"
+                )
+
+            lines.append("")
+            lines.append(
+                "⚠️ Bu liste otomatik "
+                "teknik taramadır."
+            )
+
+            send_message(
+                chat_id,
+                "\n".join(lines)
+            )
+
+    # --------------------------------------------------------
+    # /yardim
+    # --------------------------------------------------------
+
+    elif text == "/yardim":
+
+        send_message(
+            chat_id,
+            "📚 MELİH STOCK SCANNER\n\n"
+            "/tara\n"
+            "→ 10 ABD hissesini tarar.\n\n"
+            "/sinyaller\n"
+            "→ 80+ skor alanları gösterir.\n\n"
+            "/aktif\n"
+            "→ Aktif takip sistemi.\n\n"
+            "/performans\n"
+            "→ Geçmiş performans bilgisi."
         )
 
-print()
-print("=" * 60)
-print("TEST #5 TAMAMLANDI")
-print("=" * 60)
+
+# ============================================================
+# ANA PROGRAM
+# ============================================================
+
+def main():
+
+    print(
+        "Melih Stock Scanner başladı."
+    )
+
+    print(
+        "📊 MELİH STOK TARAMA SİSTEMİ"
+    )
+
+    # Telegram komutlarını kontrol et
+    process_commands()
+
+    # Otomatik tarama
+    results = scan_all()
+
+    if results:
+
+        print()
+        print(
+            "Tarama tamamlandı."
+        )
+
+        for item in results:
+
+            print(
+                f"{item['ticker']}: "
+                f"{item['score']}/100 "
+                f"{item['label']}"
+            )
+
+
+if __name__ == "__main__":
+
+    main()
