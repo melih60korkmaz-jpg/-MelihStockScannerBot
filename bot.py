@@ -10,7 +10,8 @@ import numpy as np
 
 
 # =========================================================
-# AYARLAR
+# MELİH STOCK SCANNER
+# TEKNİK + HABER + GİRİŞ + HEDEF + STOP
 # =========================================================
 
 TOKEN = os.environ.get("BOT_TOKEN")
@@ -30,16 +31,16 @@ STOCKS = [
 
 DATA_PERIOD = "6mo"
 
-TARGET_1 = 0.05
-TARGET_2 = 0.08
-STOP_LOSS = 0.04
-
-MAX_NEWS_AGE_HOURS = 7 * 24
 MAX_NEWS = 15
+MAX_NEWS_AGE_HOURS = 168
+
+TARGET_1_PERCENT = 0.05
+TARGET_2_PERCENT = 0.08
+STOP_PERCENT = 0.04
 
 
 # =========================================================
-# ŞİRKET BİLGİLERİ
+# ŞİRKETLER
 # =========================================================
 
 COMPANIES = {
@@ -64,6 +65,7 @@ COMPANIES = {
     "SOFI": {
         "name": "SoFi Technologies",
         "aliases": [
+            "sofi",
             "sofi technologies",
             "sofi technologies inc"
         ]
@@ -81,6 +83,7 @@ COMPANIES = {
     "JOBY": {
         "name": "Joby Aviation",
         "aliases": [
+            "joby",
             "joby aviation",
             "joby aviation inc"
         ]
@@ -89,6 +92,7 @@ COMPANIES = {
     "LCID": {
         "name": "Lucid Group",
         "aliases": [
+            "lucid",
             "lucid motors",
             "lucid group",
             "lucid group inc"
@@ -106,6 +110,7 @@ COMPANIES = {
     "GRAB": {
         "name": "Grab Holdings",
         "aliases": [
+            "grab",
             "grab holdings",
             "grab holdings limited"
         ]
@@ -114,6 +119,7 @@ COMPANIES = {
     "MARA": {
         "name": "MARA Holdings",
         "aliases": [
+            "mara",
             "mara holdings",
             "marathon digital",
             "marathon digital holdings"
@@ -123,6 +129,7 @@ COMPANIES = {
     "RIOT": {
         "name": "Riot Platforms",
         "aliases": [
+            "riot",
             "riot platforms",
             "riot platforms inc",
             "riot blockchain"
@@ -132,160 +139,109 @@ COMPANIES = {
 
 
 # =========================================================
-# POZİTİF HABER KELİMELERİ
+# HABER KELİMELERİ
 # =========================================================
 
-POSITIVE_PHRASES = {
-
-    "earnings beat": 3.0,
-    "beats estimates": 3.0,
-    "beats expectations": 3.0,
-
+POSITIVE_WORDS = {
+    "earnings beat": 3,
+    "beats estimates": 3,
+    "beats expectations": 3,
     "revenue growth": 2.5,
     "revenue increased": 2.5,
     "revenue rises": 2.5,
-
     "profit growth": 2.5,
-    "profit increased": 2.5,
-
     "strong earnings": 2.5,
-    "strong results": 2.0,
-
-    "record revenue": 3.0,
-    "record earnings": 3.0,
-
-    "raised guidance": 3.0,
-    "raises outlook": 3.0,
-    "positive outlook": 2.0,
-
+    "strong results": 2,
+    "record revenue": 3,
+    "record earnings": 3,
+    "raised guidance": 3,
+    "raises outlook": 3,
+    "positive outlook": 2,
     "major contract": 2.5,
-    "new contract": 2.0,
+    "new contract": 2,
     "contract": 1.5,
-
     "strategic partnership": 2.5,
     "partnership": 1.5,
-
     "strategic agreement": 2.5,
     "agreement": 1.5,
-
-    "strategic investment": 2.0,
+    "strategic investment": 2,
     "investment": 1.5,
-
     "expansion": 1.5,
     "acquisition": 1.5,
-    "acquires": 1.5,
-
-    "approval": 2.0,
+    "approval": 2,
     "regulatory approval": 2.5,
-
     "outperforms": 1.5,
     "outperformed": 1.5
 }
 
-
-# =========================================================
-# NEGATİF HABER KELİMELERİ
-# =========================================================
-
-NEGATIVE_PHRASES = {
-
-    "earnings miss": 3.0,
-    "misses estimates": 3.0,
-    "missed expectations": 3.0,
-
+NEGATIVE_WORDS = {
+    "earnings miss": 3,
+    "misses estimates": 3,
+    "missed expectations": 3,
     "revenue decline": 2.5,
     "revenue fell": 2.5,
     "revenue falls": 2.5,
-
     "profit decline": 2.5,
     "profit fell": 2.5,
-
     "weak earnings": 2.5,
-    "weak results": 2.0,
-
-    "net loss": 2.0,
-    "operating loss": 2.0,
+    "weak results": 2,
+    "net loss": 2,
+    "operating loss": 2,
     "losses": 1.5,
-
-    "lowered guidance": 3.0,
-    "lowers outlook": 3.0,
-    "cuts outlook": 3.0,
-    "cut outlook": 3.0,
-
-    "downgrade": 2.0,
-
+    "lowered guidance": 3,
+    "lowers outlook": 3,
+    "cuts outlook": 3,
+    "cut outlook": 3,
+    "downgrade": 2,
     "lawsuit": 2.5,
     "investigation": 2.5,
-    "regulatory investigation": 3.0,
-
-    "bankruptcy": 4.0,
-
-    "high debt": 2.0,
+    "regulatory investigation": 3,
+    "bankruptcy": 4,
+    "high debt": 2,
     "debt concerns": 2.5,
-    "cash burn": 2.0,
-
+    "cash burn": 2,
     "layoffs": 1.5,
     "job cuts": 1.5,
-
-    "secondary offering": 3.0,
-    "stock offering": 3.0,
-    "offering": 2.0,
-
-    "dilution": 3.0,
-    "share dilution": 3.0,
-
-    "production halt": 3.0,
-    "production cuts": 2.0,
-    "recall": 2.0,
-
+    "secondary offering": 3,
+    "stock offering": 3,
+    "offering": 2,
+    "dilution": 3,
+    "share dilution": 3,
+    "production halt": 3,
+    "production cuts": 2,
+    "recall": 2,
     "resigns": 2.5,
     "resignation": 2.5,
     "steps down": 2.5,
-    "departure": 2.0
+    "departure": 2
 }
 
-
-# =========================================================
-# ÖNEMLİ HABER KONULARI
-# =========================================================
-
-IMPORTANT_PHRASES = {
-
+IMPORTANT_WORDS = {
     "earnings": 2,
     "quarterly results": 2,
     "revenue": 2,
     "guidance": 3,
-
     "contract": 2,
     "agreement": 2,
     "partnership": 2,
-
     "acquisition": 2,
     "investment": 2,
-
     "lawsuit": 3,
     "investigation": 3,
-
     "approval": 2,
-
     "offering": 3,
     "dilution": 3,
-
     "debt": 2,
     "data center": 2,
     "bitcoin": 1,
-
     "production": 2,
     "delivery": 2,
-
     "regulatory": 3,
     "sec": 3,
-
     "ceo": 2,
     "cfo": 2,
     "coo": 2,
     "management": 1,
-
     "resigns": 3,
     "resignation": 3,
     "steps down": 3
@@ -293,7 +249,7 @@ IMPORTANT_PHRASES = {
 
 
 # =========================================================
-# TELEGRAM API
+# TELEGRAM
 # =========================================================
 
 def telegram(method, data=None):
@@ -303,7 +259,7 @@ def telegram(method, data=None):
         return None
 
     url = (
-        f"https://api.telegram.org/"
+        "https://api.telegram.org/"
         f"bot{TOKEN}/{method}"
     )
 
@@ -346,19 +302,12 @@ def telegram(method, data=None):
         return None
 
 
-# =========================================================
-# TELEGRAM MESAJ GÖNDERME
-# =========================================================
-
 def send_message(chat_id, text):
 
     if not text:
         return None
 
-    # Telegram mesaj sınırına takılmamak için
-    # mesajı güvenli şekilde parçalıyoruz.
     max_length = 3800
-
     parts = []
 
     while len(text) > max_length:
@@ -376,9 +325,7 @@ def send_message(chat_id, text):
             text[:cut]
         )
 
-        text = text[
-            cut:
-        ].lstrip()
+        text = text[cut:].lstrip()
 
     if text:
         parts.append(text)
@@ -387,15 +334,15 @@ def send_message(chat_id, text):
 
     for part in parts:
 
-        result = telegram(
-            "sendMessage",
-            {
-                "chat_id": chat_id,
-                "text": part
-            }
+        results.append(
+            telegram(
+                "sendMessage",
+                {
+                    "chat_id": chat_id,
+                    "text": part
+                }
+            )
         )
-
-        results.append(result)
 
     return results
 
@@ -404,10 +351,7 @@ def send_message(chat_id, text):
 # RSI
 # =========================================================
 
-def calculate_rsi(
-    series,
-    period=14
-):
+def calculate_rsi(series, period=14):
 
     delta = series.diff()
 
@@ -453,6 +397,8 @@ def calculate_indicators(df):
     df = df.copy()
 
     close = df["Close"]
+    high = df["High"]
+    low = df["Low"]
     volume = df["Volume"]
 
     df["EMA9"] = close.ewm(
@@ -505,6 +451,36 @@ def calculate_indicators(df):
         df["AVG_VOLUME20"]
     )
 
+    # ATR 14
+    previous_close = close.shift(1)
+
+    tr1 = high - low
+
+    tr2 = (
+        high -
+        previous_close
+    ).abs()
+
+    tr3 = (
+        low -
+        previous_close
+    ).abs()
+
+    true_range = pd.concat(
+        [
+            tr1,
+            tr2,
+            tr3
+        ],
+        axis=1
+    ).max(axis=1)
+
+    df["ATR14"] = (
+        true_range
+        .rolling(14)
+        .mean()
+    )
+
     return df.dropna()
 
 
@@ -514,34 +490,15 @@ def calculate_indicators(df):
 
 def calculate_score(row):
 
-    close = float(
-        row["Close"]
-    )
-
-    ema9 = float(
-        row["EMA9"]
-    )
-
-    ema20 = float(
-        row["EMA20"]
-    )
-
-    ema50 = float(
-        row["EMA50"]
-    )
-
-    macd = float(
-        row["MACD"]
-    )
-
+    close = float(row["Close"])
+    ema9 = float(row["EMA9"])
+    ema20 = float(row["EMA20"])
+    ema50 = float(row["EMA50"])
+    macd = float(row["MACD"])
     macd_signal = float(
         row["MACD_SIGNAL"]
     )
-
-    rsi = float(
-        row["RSI"]
-    )
-
+    rsi = float(row["RSI"])
     volume_ratio = float(
         row["VOLUME_RATIO"]
     )
@@ -586,13 +543,13 @@ def calculate_score(row):
         macd_score = 0
 
     # HACİM %20
-    if volume_ratio >= 2.0:
+    if volume_ratio >= 2:
         volume_score = 100
 
     elif volume_ratio >= 1.5:
         volume_score = 75
 
-    elif volume_ratio >= 1.0:
+    elif volume_ratio >= 1:
         volume_score = 50
 
     elif volume_ratio >= 0.7:
@@ -633,10 +590,6 @@ def calculate_score(row):
     return round(total)
 
 
-# =========================================================
-# TEKNİK SİNYAL
-# =========================================================
-
 def technical_signal(score):
 
     if score >= 80:
@@ -652,7 +605,7 @@ def technical_signal(score):
 
 
 # =========================================================
-# HABER METNİ
+# HABER YARDIMCILARI
 # =========================================================
 
 def clean_text(text):
@@ -665,19 +618,13 @@ def clean_text(text):
     )
 
 
-# =========================================================
-# HABER TARİHİ
-# =========================================================
-
 def parse_date(content):
 
     values = [
         content.get("pubDate"),
         content.get("displayTime"),
         content.get("published"),
-        content.get(
-            "providerPublishTime"
-        )
+        content.get("providerPublishTime")
     ]
 
     for value in values:
@@ -705,7 +652,6 @@ def parse_date(content):
                 text = value.strip()
 
                 if text.endswith("Z"):
-
                     text = (
                         text[:-1]
                         + "+00:00"
@@ -748,27 +694,6 @@ def age_hours(date):
     )
 
 
-def freshness_weight(hours):
-
-    if hours is None:
-        return 0.25
-
-    if hours <= 24:
-        return 1.0
-
-    if hours <= 72:
-        return 0.8
-
-    if hours <= 168:
-        return 0.5
-
-    return 0.0
-
-
-# =========================================================
-# ŞİRKET HABER EŞLEŞMESİ
-# =========================================================
-
 def company_match(
     ticker,
     title,
@@ -786,7 +711,6 @@ def company_match(
     for alias in aliases:
 
         if alias in text:
-
             return True
 
     related = content.get(
@@ -799,23 +723,18 @@ def company_match(
         list
     ):
 
-        for item in related:
+        for ticker_name in related:
 
             if (
-                str(item).upper()
+                str(ticker_name).upper()
                 == ticker
             ):
-
                 return True
 
     return False
 
 
-# =========================================================
-# HABER SENTIMENT
-# =========================================================
-
-def analyze_sentiment(title):
+def sentiment(title):
 
     text = clean_text(
         title
@@ -825,14 +744,14 @@ def analyze_sentiment(title):
     negative = 0
 
     for phrase, weight in (
-        POSITIVE_PHRASES.items()
+        POSITIVE_WORDS.items()
     ):
 
         if phrase in text:
             positive += weight
 
     for phrase, weight in (
-        NEGATIVE_PHRASES.items()
+        NEGATIVE_WORDS.items()
     ):
 
         if phrase in text:
@@ -876,94 +795,43 @@ def analyze_sentiment(title):
     )
 
 
-# =========================================================
-# HABER ÖNEMİ
-# =========================================================
-
-def analyze_importance(title):
+def importance(title):
 
     text = clean_text(
         title
     )
 
     score = 0
-    found = []
+    topics = []
 
     for phrase, weight in (
-        IMPORTANT_PHRASES.items()
+        IMPORTANT_WORDS.items()
     ):
 
         if phrase in text:
 
             score += weight
-
-            found.append(
+            topics.append(
                 phrase
             )
 
     if score >= 4:
+        level = "🔥 YÜKSEK"
 
-        return (
-            "🔥 YÜKSEK",
-            found
-        )
+    elif score >= 2:
+        level = "🟡 ORTA"
 
-    if score >= 2:
-
-        return (
-            "🟡 ORTA",
-            found
-        )
+    else:
+        level = "⚪ DÜŞÜK"
 
     return (
-        "⚪ DÜŞÜK",
-        found
+        level,
+        topics
     )
 
 
 # =========================================================
-# HABER AĞIRLIĞI
-# =========================================================
-
-def news_weight(
-    sentiment,
-    importance,
-    hours
-):
-
-    fresh = freshness_weight(
-        hours
-    )
-
-    if fresh == 0:
-        return 0
-
-    multipliers = {
-        "🔥 YÜKSEK": 3.0,
-        "🟡 ORTA": 2.0,
-        "⚪ DÜŞÜK": 1.0
-    }
-
-    multiplier = multipliers.get(
-        importance,
-        1.0
-    )
-
-    if sentiment == "🟡 KARIŞIK":
-
-        multiplier *= 0.5
-
-    if sentiment == "⚪ NÖTR":
-
-        return 0
-
-    return (
-        multiplier * fresh
-    )
-
-
-# =========================================================
-# HABER FORMATLAMA
+# HABER ÇEKME
 # =========================================================
 
 def normalize_news(item):
@@ -978,53 +846,52 @@ def normalize_news(item):
             {}
         )
 
-        title = content.get(
-            "title",
-            ""
-        )
-
-        publisher = content.get(
-            "provider",
-            {}
-        ).get(
-            "displayName",
-            "Bilinmiyor"
-        )
-
         return {
-            "title": title,
-            "publisher": publisher,
-            "content": content
+            "title":
+                content.get(
+                    "title",
+                    ""
+                ),
+
+            "publisher":
+                content.get(
+                    "provider",
+                    {}
+                ).get(
+                    "displayName",
+                    "Bilinmiyor"
+                ),
+
+            "content":
+                content
         }
 
-    title = item.get(
-        "title",
-        ""
-    )
-
-    publisher = item.get(
-        "publisher",
-        item.get(
-            "provider",
-            "Bilinmiyor"
-        )
-    )
-
     return {
-        "title": title,
-        "publisher": publisher,
-        "content": item
+        "title":
+            item.get(
+                "title",
+                ""
+            ),
+
+        "publisher":
+            item.get(
+                "publisher",
+                item.get(
+                    "provider",
+                    "Bilinmiyor"
+                )
+            ),
+
+        "content":
+            item
     }
 
-
-# =========================================================
-# HABERLERİ ÇEK
-# =========================================================
 
 def fetch_news(ticker):
 
     results = []
 
+    # Yahoo Ticker haberleri
     try:
 
         stock = yf.Ticker(
@@ -1049,10 +916,11 @@ def fetch_news(ticker):
     except Exception as e:
 
         print(
-            f"{ticker} Ticker haber "
+            f"{ticker} haber "
             f"hatası: {e}"
         )
 
+    # Yahoo Search haberleri
     try:
 
         search = yf.Search(
@@ -1100,7 +968,7 @@ def fetch_news(ticker):
     except Exception as e:
 
         print(
-            f"{ticker} Search haber "
+            f"{ticker} Search "
             f"hatası: {e}"
         )
 
@@ -1113,13 +981,13 @@ def fetch_news(ticker):
 
 def analyze_news(ticker):
 
-    news = fetch_news(
+    raw_news = fetch_news(
         ticker
     )
 
     unique = {}
 
-    for item in news:
+    for item in raw_news:
 
         title = clean_text(
             item.get(
@@ -1128,19 +996,16 @@ def analyze_news(ticker):
             )
         )
 
-        if not title:
-            continue
-
-        if title not in unique:
+        if title and title not in unique:
 
             unique[
                 title
             ] = item
 
+    articles = []
+
     positive_total = 0
     negative_total = 0
-
-    current_news = []
 
     for item in unique.values():
 
@@ -1159,7 +1024,6 @@ def analyze_news(ticker):
             title,
             content
         ):
-
             continue
 
         date = parse_date(
@@ -1174,36 +1038,52 @@ def analyze_news(ticker):
             hours is not None
             and hours > MAX_NEWS_AGE_HOURS
         ):
-
             continue
 
-        sentiment, positive, negative = (
-            analyze_sentiment(
-                title
-            )
+        news_sentiment, pos, neg = (
+            sentiment(title)
         )
 
-        importance, topics = (
-            analyze_importance(
-                title
-            )
+        news_importance, topics = (
+            importance(title)
         )
 
-        weight = news_weight(
-            sentiment,
-            importance,
-            hours
+        freshness = 1.0
+
+        if hours is not None:
+
+            if hours <= 24:
+                freshness = 1.0
+
+            elif hours <= 72:
+                freshness = 0.8
+
+            else:
+                freshness = 0.5
+
+        importance_multiplier = {
+            "🔥 YÜKSEK": 3,
+            "🟡 ORTA": 2,
+            "⚪ DÜŞÜK": 1
+        }.get(
+            news_importance,
+            1
         )
 
-        if sentiment == "🟢 POZİTİF":
+        weight = (
+            freshness
+            * importance_multiplier
+        )
+
+        if news_sentiment == "🟢 POZİTİF":
 
             positive_total += weight
 
-        elif sentiment == "🔴 NEGATİF":
+        elif news_sentiment == "🔴 NEGATİF":
 
             negative_total += weight
 
-        elif sentiment == "🟡 KARIŞIK":
+        elif news_sentiment == "🟡 KARIŞIK":
 
             positive_total += (
                 weight * 0.5
@@ -1213,10 +1093,13 @@ def analyze_news(ticker):
                 weight * 0.5
             )
 
-        current_news.append({
+        articles.append({
 
             "title":
-                title,
+                item.get(
+                    "title",
+                    ""
+                ),
 
             "publisher":
                 item.get(
@@ -1231,23 +1114,23 @@ def analyze_news(ticker):
                 hours,
 
             "sentiment":
-                sentiment,
+                news_sentiment,
 
             "importance":
-                importance,
+                news_importance,
 
             "topics":
                 topics
         })
 
-    current_news.sort(
+    articles.sort(
         key=lambda x:
         999999
         if x["hours"] is None
         else x["hours"]
     )
 
-    if not current_news:
+    if not articles:
 
         return {
             "status":
@@ -1287,28 +1170,385 @@ def analyze_news(ticker):
         )
 
     return {
-
         "status":
             status,
 
         "positive":
-            positive_total,
+            round(
+                positive_total,
+                1
+            ),
 
         "negative":
-            negative_total,
+            round(
+                negative_total,
+                1
+            ),
 
         "articles":
-            current_news[:5]
+            articles[:5]
     }
 
 
 # =========================================================
-# HİSSE TARAMA
+# DİNAMİK GİRİŞ / HEDEF / STOP
+# =========================================================
+
+def calculate_levels(df, score):
+
+    row = df.iloc[-1]
+
+    price = float(
+        row["Close"]
+    )
+
+    ema9 = float(
+        row["EMA9"]
+    )
+
+    ema20 = float(
+        row["EMA20"]
+    )
+
+    ema50 = float(
+        row["EMA50"]
+    )
+
+    atr = float(
+        row["ATR14"]
+    )
+
+    recent20 = df.tail(20)
+
+    recent_low = float(
+        recent20["Low"].min()
+    )
+
+    recent_high = float(
+        recent20["High"].max()
+    )
+
+    recent10 = df.tail(10)
+
+    support10 = float(
+        recent10["Low"].min()
+    )
+
+    resistance10 = float(
+        recent10["High"].max()
+    )
+
+    # -----------------------------------------------------
+    # DESTEK
+    # -----------------------------------------------------
+
+    support_candidates = [
+        recent_low,
+        support10,
+        ema20,
+        ema50
+    ]
+
+    supports = [
+        x for x in support_candidates
+        if x < price
+    ]
+
+    if supports:
+
+        support = max(
+            supports
+        )
+
+    else:
+
+        support = max(
+            0.01,
+            price - atr
+        )
+
+    # -----------------------------------------------------
+    # DİRENÇ
+    # -----------------------------------------------------
+
+    resistance_candidates = [
+        recent_high,
+        resistance10
+    ]
+
+    resistances = [
+        x for x in resistance_candidates
+        if x > price
+    ]
+
+    if resistances:
+
+        resistance = min(
+            resistances
+        )
+
+    else:
+
+        resistance = (
+            price + atr * 2
+        )
+
+    # -----------------------------------------------------
+    # GİRİŞ BÖLGESİ
+    # -----------------------------------------------------
+
+    # Güçlü trendde fiyatı kovalamamak için
+    # EMA9 / EMA20 / ATR çevresinde referans oluşturuyoruz.
+
+    if score >= 80:
+
+        preferred_entry = min(
+            price,
+            max(
+                ema9,
+                ema20
+            )
+        )
+
+    elif score >= 65:
+
+        preferred_entry = min(
+            price,
+            ema20 + (
+                atr * 0.25
+            )
+        )
+
+    else:
+
+        preferred_entry = min(
+            price,
+            ema20
+        )
+
+    # Giriş referansının destekten çok
+    # uzaklaşmasını engelle.
+
+    max_entry_distance = (
+        atr * 1.25
+    )
+
+    if (
+        price - preferred_entry
+        > max_entry_distance
+    ):
+
+        preferred_entry = (
+            price -
+            max_entry_distance
+        )
+
+    # Aşırı düşük seviyeye düşmesini engelle.
+
+    preferred_entry = max(
+        preferred_entry,
+        support
+    )
+
+    # Eğer hesaplanan giriş mevcut fiyatın
+    # çok üstüne çıkarsa mevcut fiyatı kullan.
+
+    if preferred_entry > price:
+
+        preferred_entry = price
+
+    # -----------------------------------------------------
+    # STOP
+    # -----------------------------------------------------
+
+    atr_stop = (
+        preferred_entry -
+        atr * 1.5
+    )
+
+    percentage_stop = (
+        preferred_entry *
+        (1 - STOP_PERCENT)
+    )
+
+    # İki yöntemin daha korumacı olanını
+    # destek çevresiyle birlikte değerlendir.
+
+    stop_candidates = [
+        atr_stop,
+        percentage_stop,
+        support - (
+            atr * 0.20
+        )
+    ]
+
+    valid_stops = [
+        x for x in stop_candidates
+        if x < preferred_entry
+        and x > 0
+    ]
+
+    if valid_stops:
+
+        stop = max(
+            valid_stops
+        )
+
+    else:
+
+        stop = (
+            preferred_entry *
+            (1 - STOP_PERCENT)
+        )
+
+    # Stop çok yakınsa minimum mesafe bırak.
+
+    minimum_stop_distance = (
+        preferred_entry * 0.025
+    )
+
+    if (
+        preferred_entry - stop
+        < minimum_stop_distance
+    ):
+
+        stop = (
+            preferred_entry
+            - minimum_stop_distance
+        )
+
+    # -----------------------------------------------------
+    # H1
+    # -----------------------------------------------------
+
+    mathematical_h1 = (
+        preferred_entry *
+        (1 + TARGET_1_PERCENT)
+    )
+
+    # İlk hedef mümkünse yakın direncin
+    # biraz üzerinde olacak.
+
+    resistance_target = (
+        resistance * 1.005
+    )
+
+    target1_candidates = [
+        mathematical_h1,
+        resistance_target
+    ]
+
+    target1_candidates = [
+        x for x in target1_candidates
+        if x > preferred_entry
+    ]
+
+    if target1_candidates:
+
+        target1 = min(
+            target1_candidates
+        )
+
+    else:
+
+        target1 = mathematical_h1
+
+    # H1'in çok uzağa gitmesini engelle.
+
+    maximum_target1 = (
+        preferred_entry +
+        atr * 3
+    )
+
+    target1 = min(
+        target1,
+        maximum_target1
+    )
+
+    # -----------------------------------------------------
+    # H2
+    # -----------------------------------------------------
+
+    mathematical_h2 = (
+        preferred_entry *
+        (1 + TARGET_2_PERCENT)
+    )
+
+    atr_target2 = (
+        preferred_entry +
+        atr * 4
+    )
+
+    target2 = max(
+        mathematical_h2,
+        atr_target2
+    )
+
+    # H2, H1'den kesinlikle yukarıda.
+
+    if target2 <= target1:
+
+        target2 = (
+            target1 +
+            atr * 1.5
+        )
+
+    return {
+
+        "entry":
+            preferred_entry,
+
+        "entry_low":
+            max(
+                support,
+                preferred_entry -
+                atr * 0.35
+            ),
+
+        "entry_high":
+            min(
+                price,
+                preferred_entry +
+                atr * 0.25
+            ),
+
+        "target1":
+            target1,
+
+        "target2":
+            target2,
+
+        "stop":
+            stop,
+
+        "support":
+            support,
+
+        "resistance":
+            resistance,
+
+        "atr":
+            atr,
+
+        "recent_high":
+            recent_high,
+
+        "recent_low":
+            recent_low
+    }
+
+
+# =========================================================
+# HİSSE ANALİZİ
 # =========================================================
 
 def scan_stock(ticker):
 
     try:
+
+        print(
+            f"{ticker} taranıyor..."
+        )
 
         df = yf.download(
             ticker,
@@ -1348,32 +1588,9 @@ def scan_stock(ticker):
             row
         )
 
-        target_1 = (
-            price * (
-                1 + TARGET_1
-            )
-        )
-
-        target_2 = (
-            price * (
-                1 + TARGET_2
-            )
-        )
-
-        stop = (
-            price * (
-                1 - STOP_LOSS
-            )
-        )
-
-        recent = df.tail(20)
-
-        support = float(
-            recent["Low"].min()
-        )
-
-        resistance = float(
-            recent["High"].max()
+        levels = calculate_levels(
+            df,
+            score
         )
 
         news = analyze_news(
@@ -1394,6 +1611,11 @@ def scan_stock(ticker):
             "signal":
                 technical_signal(
                     score
+                ),
+
+            "ema9":
+                float(
+                    row["EMA9"]
                 ),
 
             "ema20":
@@ -1426,20 +1648,38 @@ def scan_stock(ticker):
                     row["VOLUME_RATIO"]
                 ),
 
-            "support":
-                support,
+            "atr":
+                levels["atr"],
 
-            "resistance":
-                resistance,
+            "entry":
+                levels["entry"],
 
-            "target_1":
-                target_1,
+            "entry_low":
+                levels["entry_low"],
 
-            "target_2":
-                target_2,
+            "entry_high":
+                levels["entry_high"],
+
+            "target1":
+                levels["target1"],
+
+            "target2":
+                levels["target2"],
 
             "stop":
-                stop,
+                levels["stop"],
+
+            "support":
+                levels["support"],
+
+            "resistance":
+                levels["resistance"],
+
+            "recent_high":
+                levels["recent_high"],
+
+            "recent_low":
+                levels["recent_low"],
 
             "news":
                 news
@@ -1455,7 +1695,7 @@ def scan_stock(ticker):
 
 
 # =========================================================
-# TÜM HİSSELERİ TARA
+# TÜM HİSSELER
 # =========================================================
 
 def scan_all():
@@ -1468,7 +1708,11 @@ def scan_all():
     )
 
     print(
-        "ABD HİSSE TARAMASI"
+        "MELİH STOCK SCANNER"
+    )
+
+    print(
+        "TEKNİK + HABER ANALİZİ"
     )
 
     print(
@@ -1476,10 +1720,6 @@ def scan_all():
     )
 
     for ticker in STOCKS:
-
-        print(
-            f"{ticker} taranıyor..."
-        )
 
         result = scan_stock(
             ticker
@@ -1497,22 +1737,30 @@ def scan_all():
         reverse=True
     )
 
+    print(
+        "Tarama tamamlandı."
+    )
+
     return results
 
 
 # =========================================================
-# SONUÇ YORUMU
+# YORUM
 # =========================================================
 
 def final_comment(item):
 
-    score = item[
-        "score"
-    ]
+    score = item["score"]
 
     news_status = item[
         "news"
     ]["status"]
+
+    rsi = item["rsi"]
+
+    volume = item[
+        "volume_ratio"
+    ]
 
     if score >= 80:
 
@@ -1539,12 +1787,24 @@ def final_comment(item):
 
     if score >= 65:
 
+        if rsi > 70:
+
+            return (
+                "⚠️ POZİTİF AMA RSI YÜKSEK"
+            )
+
+        if volume < 0.8:
+
+            return (
+                "⚠️ POZİTİF AMA HACİM ZAYIF"
+            )
+
         if news_status.startswith(
             "🔴"
         ):
 
             return (
-                "⚠️ POZİTİF TEKNİK "
+                "⚠️ TEKNİK POZİTİF "
                 "+ NEGATİF HABER"
             )
 
@@ -1555,7 +1815,7 @@ def final_comment(item):
     if score >= 50:
 
         return (
-            "🔵 İZLE / VERİLERİ BEKLE"
+            "🔵 İZLE / TEYİT BEKLE"
         )
 
     return (
@@ -1564,7 +1824,7 @@ def final_comment(item):
 
 
 # =========================================================
-# DETAYLI TELEGRAM MESAJI
+# DETAYLI MESAJ
 # =========================================================
 
 def create_scan_message(results):
@@ -1572,7 +1832,7 @@ def create_scan_message(results):
     if not results:
 
         return (
-            "❌ Veri alınamadı."
+            "❌ Hisse verisi alınamadı."
         )
 
     lines = []
@@ -1582,7 +1842,7 @@ def create_scan_message(results):
     )
 
     lines.append(
-        "🇺🇸 ABD HİSSE ANALİZİ"
+        "🇺🇸 TEKNİK + HABER ANALİZİ"
     )
 
     lines.append(
@@ -1615,26 +1875,30 @@ def create_scan_message(results):
         lines.append("")
 
         lines.append(
+            f"📍 Giriş bölgesi: "
+            f"${item['entry_low']:.2f}"
+            f" – "
+            f"${item['entry_high']:.2f}"
+        )
+
+        lines.append(
             f"📍 Giriş referansı: "
-            f"${item['price']:.2f}"
+            f"${item['entry']:.2f}"
         )
 
         lines.append(
             f"🎯 H1: "
-            f"${item['target_1']:.2f} "
-            f"(+%5)"
+            f"${item['target1']:.2f}"
         )
 
         lines.append(
             f"🎯 H2: "
-            f"${item['target_2']:.2f} "
-            f"(+%8)"
+            f"${item['target2']:.2f}"
         )
 
         lines.append(
             f"🛑 Stop: "
-            f"${item['stop']:.2f} "
-            f"(-%4)"
+            f"${item['stop']:.2f}"
         )
 
         lines.append("")
@@ -1649,11 +1913,24 @@ def create_scan_message(results):
             f"${item['resistance']:.2f}"
         )
 
+        lines.append(
+            f"〽️ ATR: "
+            f"${item['atr']:.3f}"
+        )
+
         lines.append("")
 
         lines.append(
+            f"EMA9: "
+            f"${item['ema9']:.2f}"
+        )
+
+        lines.append(
             f"EMA20: "
-            f"${item['ema20']:.2f} | "
+            f"${item['ema20']:.2f}"
+        )
+
+        lines.append(
             f"EMA50: "
             f"${item['ema50']:.2f}"
         )
@@ -1688,8 +1965,21 @@ def create_scan_message(results):
                 "articles"
             ][:2]:
 
+                title = article[
+                    "title"
+                ]
+
+                # Telegram mesajının gereksiz
+                # uzamasını engelle.
+                if len(title) > 150:
+
+                    title = (
+                        title[:147]
+                        + "..."
+                    )
+
                 lines.append(
-                    f"• {article['title']}"
+                    f"• {title}"
                 )
 
                 lines.append(
@@ -1704,7 +1994,7 @@ def create_scan_message(results):
     lines.append("")
 
     lines.append(
-        "🧠 MODEL"
+        "🧠 TEKNİK MODEL"
     )
 
     lines.append(
@@ -1715,15 +2005,20 @@ def create_scan_message(results):
     lines.append("")
 
     lines.append(
-        "🎯 Hedef: H1 +%5 / "
-        "H2 +%8 / Stop -%4"
+        "📐 Seviyeler; fiyat, ATR, "
+        "EMA, destek ve direnç "
+        "birlikte değerlendirilerek "
+        "hesaplanır."
     )
 
     lines.append("")
 
     lines.append(
-        "⚠️ Skor garanti veya "
-        "kesin yükseliş anlamına gelmez."
+        "⚠️ Bu otomatik teknik analizdir."
+    )
+
+    lines.append(
+        "⚠️ Skor ve seviyeler garanti değildir."
     )
 
     return "\n".join(
@@ -1745,8 +2040,8 @@ def create_signal_message(results):
     if not strong:
 
         return (
-            "🔎 Şu anda "
-            "80+ teknik aday yok."
+            "🔎 Şu anda 80+ "
+            "teknik aday bulunamadı."
         )
 
     lines = []
@@ -1781,20 +2076,35 @@ def create_signal_message(results):
         )
 
         lines.append(
-            f"🎯 H1 ${item['target_1']:.2f}"
+            f"📍 Giriş "
+            f"${item['entry_low']:.2f}"
+            f"–${item['entry_high']:.2f}"
         )
 
         lines.append(
-            f"🎯 H2 ${item['target_2']:.2f}"
+            f"🎯 H1 "
+            f"${item['target1']:.2f}"
         )
 
         lines.append(
-            f"🛑 Stop ${item['stop']:.2f}"
+            f"🎯 H2 "
+            f"${item['target2']:.2f}"
+        )
+
+        lines.append(
+            f"🛑 Stop "
+            f"${item['stop']:.2f}"
         )
 
         lines.append(
             "━━━━━━━━━━━━━━━━━━"
         )
+
+    lines.append("")
+
+    lines.append(
+        "⚠️ Otomatik teknik taramadır."
+    )
 
     return "\n".join(
         lines
@@ -1802,7 +2112,65 @@ def create_signal_message(results):
 
 
 # =========================================================
-# TELEGRAM KOMUTLARI
+# AKTİF TAKİP
+# =========================================================
+
+def create_active_message(results):
+
+    active = [
+        x for x in results
+        if x["score"] >= 65
+    ]
+
+    if not active:
+
+        return (
+            "📭 Şu anda 65+ skor alan "
+            "aktif aday bulunamadı."
+        )
+
+    lines = []
+
+    lines.append(
+        "👁 AKTİF İZLEME ADAYLARI"
+    )
+
+    lines.append(
+        "━━━━━━━━━━━━━━━━━━"
+    )
+
+    for item in active:
+
+        lines.append(
+            f"{item['ticker']} "
+            f"| {item['score']}/100 "
+            f"| ${item['price']:.2f}"
+        )
+
+        lines.append(
+            f"Giriş: "
+            f"${item['entry_low']:.2f}"
+            f"–${item['entry_high']:.2f}"
+        )
+
+        lines.append(
+            f"H1: ${item['target1']:.2f} "
+            f"| H2: ${item['target2']:.2f}"
+        )
+
+        lines.append(
+            f"Stop: ${item['stop']:.2f}"
+        )
+
+        lines.append("")
+
+    return "\n".join(
+        lines
+    )
+
+
+# =========================================================
+# KOMUTLAR
 # =========================================================
 
 def process_commands():
@@ -1863,13 +2231,23 @@ def process_commands():
             send_message(
                 chat_id,
 
-                "👋 Melih Stock Scanner\n\n"
-                "📊 Teknik + haber analiz sistemi.\n\n"
-                "/tara - Detaylı analiz\n"
-                "/sinyaller - 80+ adaylar\n"
-                "/aktif - Aktif takipler\n"
-                "/performans - Performans\n"
-                "/yardim - Yardım"
+                "👋 Melih Stock Scanner'a "
+                "hoş geldin!\n\n"
+
+                "📊 Teknik + haber "
+                "analiz sistemi aktif.\n\n"
+
+                "/tara\n"
+                "→ 10 hisseyi detaylı analiz eder.\n\n"
+
+                "/sinyaller\n"
+                "→ 80+ güçlü teknik adayları gösterir.\n\n"
+
+                "/aktif\n"
+                "→ 65+ adayları gösterir.\n\n"
+
+                "/yardim\n"
+                "→ Komutları gösterir."
             )
 
         elif text == "/tara":
@@ -1894,26 +2272,42 @@ def process_commands():
                 )
             )
 
+        elif text == "/aktif":
+
+            results = scan_all()
+
+            send_message(
+                chat_id,
+                create_active_message(
+                    results
+                )
+            )
+
         elif text == "/yardim":
 
             send_message(
                 chat_id,
 
-                "📚 KOMUTLAR\n\n"
+                "📚 MELİH STOCK SCANNER\n\n"
+
                 "/tara\n"
-                "→ 10 hisseyi teknik + "
-                "haber analiziyle tarar.\n\n"
+                "→ Teknik + haber + "
+                "giriş/hedef/stop analizi.\n\n"
+
                 "/sinyaller\n"
-                "→ 80+ teknik skorları "
-                "gösterir.\n\n"
+                "→ 80+ güçlü adaylar.\n\n"
+
                 "/aktif\n"
-                "→ Aktif takip sistemi.\n\n"
-                "/performans\n"
-                "→ Geçmiş performans."
+                "→ 65+ izleme adayları.\n\n"
+
+                "/yardim\n"
+                "→ Yardım."
             )
 
-    # Güncellemeleri Telegram kuyruğundan
-    # ileri taşı.
+    # Telegram kuyruğunu ileri taşı.
+    # Böylece aynı komutun her dakika
+    # tekrar işlenmesi engellenir.
+
     if last_update_id is not None:
 
         telegram(
@@ -1932,14 +2326,25 @@ def process_commands():
 def main():
 
     print(
-        "Melih Stock Scanner başladı."
+        "======================================"
     )
 
     print(
-        "📊 Teknik + Haber sistemi"
+        "MELİH STOCK SCANNER BAŞLADI"
+    )
+
+    print(
+        "TEKNİK + HABER + SEVİYE MOTORU"
+    )
+
+    print(
+        "======================================"
     )
 
     process_commands()
+
+    # Komut gelmese bile veri kontrolü yapılır.
+    # Telegram'a otomatik mesaj göndermez.
 
     results = scan_all()
 
@@ -1948,15 +2353,16 @@ def main():
         print()
 
         print(
-            "Tarama tamamlandı."
+            "SONUÇLAR:"
         )
 
         for item in results:
 
             print(
-                f"{item['ticker']}: "
+                f"{item['ticker']} | "
                 f"{item['score']}/100 | "
                 f"{item['signal']} | "
+                f"${item['price']:.2f} | "
                 f"Haber: "
                 f"{item['news']['status']}"
             )
