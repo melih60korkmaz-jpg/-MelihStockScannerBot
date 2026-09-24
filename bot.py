@@ -39,7 +39,7 @@ MAX_NEWS = 15
 
 
 # =========================================================
-# HABER ŞİRKET BİLGİLERİ
+# ŞİRKET BİLGİLERİ
 # =========================================================
 
 COMPANIES = {
@@ -132,7 +132,7 @@ COMPANIES = {
 
 
 # =========================================================
-# HABER KELİMELERİ
+# POZİTİF HABER KELİMELERİ
 # =========================================================
 
 POSITIVE_PHRASES = {
@@ -182,6 +182,10 @@ POSITIVE_PHRASES = {
     "outperformed": 1.5
 }
 
+
+# =========================================================
+# NEGATİF HABER KELİMELERİ
+# =========================================================
 
 NEGATIVE_PHRASES = {
 
@@ -241,6 +245,10 @@ NEGATIVE_PHRASES = {
 }
 
 
+# =========================================================
+# ÖNEMLİ HABER KONULARI
+# =========================================================
+
 IMPORTANT_PHRASES = {
 
     "earnings": 2,
@@ -285,7 +293,7 @@ IMPORTANT_PHRASES = {
 
 
 # =========================================================
-# TELEGRAM
+# TELEGRAM API
 # =========================================================
 
 def telegram(method, data=None):
@@ -338,18 +346,58 @@ def telegram(method, data=None):
         return None
 
 
-def send_message(
-    chat_id,
-    text
-):
+# =========================================================
+# TELEGRAM MESAJ GÖNDERME
+# =========================================================
 
-    return telegram(
-        "sendMessage",
-        {
-            "chat_id": chat_id,
-            "text": text
-        }
-    )
+def send_message(chat_id, text):
+
+    if not text:
+        return None
+
+    # Telegram mesaj sınırına takılmamak için
+    # mesajı güvenli şekilde parçalıyoruz.
+    max_length = 3800
+
+    parts = []
+
+    while len(text) > max_length:
+
+        cut = text.rfind(
+            "\n",
+            0,
+            max_length
+        )
+
+        if cut <= 0:
+            cut = max_length
+
+        parts.append(
+            text[:cut]
+        )
+
+        text = text[
+            cut:
+        ].lstrip()
+
+    if text:
+        parts.append(text)
+
+    results = []
+
+    for part in parts:
+
+        result = telegram(
+            "sendMessage",
+            {
+                "chat_id": chat_id,
+                "text": part
+            }
+        )
+
+        results.append(result)
+
+    return results
 
 
 # =========================================================
@@ -466,17 +514,33 @@ def calculate_indicators(df):
 
 def calculate_score(row):
 
-    close = float(row["Close"])
-    ema9 = float(row["EMA9"])
-    ema20 = float(row["EMA20"])
-    ema50 = float(row["EMA50"])
+    close = float(
+        row["Close"]
+    )
 
-    macd = float(row["MACD"])
+    ema9 = float(
+        row["EMA9"]
+    )
+
+    ema20 = float(
+        row["EMA20"]
+    )
+
+    ema50 = float(
+        row["EMA50"]
+    )
+
+    macd = float(
+        row["MACD"]
+    )
+
     macd_signal = float(
         row["MACD_SIGNAL"]
     )
 
-    rsi = float(row["RSI"])
+    rsi = float(
+        row["RSI"]
+    )
 
     volume_ratio = float(
         row["VOLUME_RATIO"]
@@ -588,7 +652,7 @@ def technical_signal(score):
 
 
 # =========================================================
-# HABER YARDIMCILARI
+# HABER METNİ
 # =========================================================
 
 def clean_text(text):
@@ -600,6 +664,10 @@ def clean_text(text):
         str(text).lower().split()
     )
 
+
+# =========================================================
+# HABER TARİHİ
+# =========================================================
 
 def parse_date(content):
 
@@ -696,6 +764,10 @@ def freshness_weight(hours):
 
     return 0.0
 
+
+# =========================================================
+# ŞİRKET HABER EŞLEŞMESİ
+# =========================================================
 
 def company_match(
     ticker,
@@ -824,6 +896,7 @@ def analyze_importance(title):
         if phrase in text:
 
             score += weight
+
             found.append(
                 phrase
             )
@@ -890,12 +963,10 @@ def news_weight(
 
 
 # =========================================================
-# HABER FORMAT
+# HABER FORMATLAMA
 # =========================================================
 
-def normalize_news(
-    item
-):
+def normalize_news(item):
 
     if isinstance(
         item.get("content"),
@@ -947,16 +1018,13 @@ def normalize_news(
 
 
 # =========================================================
-# HABER ÇEK
+# HABERLERİ ÇEK
 # =========================================================
 
-def fetch_news(
-    ticker
-):
+def fetch_news(ticker):
 
     results = []
 
-    # Yahoo Ticker haberleri
     try:
 
         stock = yf.Ticker(
@@ -985,7 +1053,6 @@ def fetch_news(
             f"hatası: {e}"
         )
 
-    # Yahoo Search haberleri
     try:
 
         search = yf.Search(
@@ -1044,9 +1111,7 @@ def fetch_news(
 # HABER ANALİZİ
 # =========================================================
 
-def analyze_news(
-    ticker
-):
+def analyze_news(ticker):
 
     news = fetch_news(
         ticker
@@ -1105,8 +1170,6 @@ def analyze_news(
             date
         )
 
-        # Tarihi bilinen ve 7 günden eski
-        # haberleri karar hesabından çıkar.
         if (
             hours is not None
             and hours > MAX_NEWS_AGE_HOURS
@@ -1142,27 +1205,39 @@ def analyze_news(
 
         elif sentiment == "🟡 KARIŞIK":
 
-            positive_total += weight * 0.5
-            negative_total += weight * 0.5
+            positive_total += (
+                weight * 0.5
+            )
+
+            negative_total += (
+                weight * 0.5
+            )
 
         current_news.append({
 
-            "title": title,
+            "title":
+                title,
 
-            "publisher": item.get(
-                "publisher",
-                "Bilinmiyor"
-            ),
+            "publisher":
+                item.get(
+                    "publisher",
+                    "Bilinmiyor"
+                ),
 
-            "date": date,
+            "date":
+                date,
 
-            "hours": hours,
+            "hours":
+                hours,
 
-            "sentiment": sentiment,
+            "sentiment":
+                sentiment,
 
-            "importance": importance,
+            "importance":
+                importance,
 
-            "topics": topics
+            "topics":
+                topics
         })
 
     current_news.sort(
@@ -1231,9 +1306,7 @@ def analyze_news(
 # HİSSE TARAMA
 # =========================================================
 
-def scan_stock(
-    ticker
-):
+def scan_stock(ticker):
 
     try:
 
@@ -1276,15 +1349,21 @@ def scan_stock(
         )
 
         target_1 = (
-            price * 1.05
+            price * (
+                1 + TARGET_1
+            )
         )
 
         target_2 = (
-            price * 1.08
+            price * (
+                1 + TARGET_2
+            )
         )
 
         stop = (
-            price * 0.96
+            price * (
+                1 - STOP_LOSS
+            )
         )
 
         recent = df.tail(20)
@@ -1318,16 +1397,24 @@ def scan_stock(
                 ),
 
             "ema20":
-                float(row["EMA20"]),
+                float(
+                    row["EMA20"]
+                ),
 
             "ema50":
-                float(row["EMA50"]),
+                float(
+                    row["EMA50"]
+                ),
 
             "rsi":
-                float(row["RSI"]),
+                float(
+                    row["RSI"]
+                ),
 
             "macd":
-                float(row["MACD"]),
+                float(
+                    row["MACD"]
+                ),
 
             "macd_signal":
                 float(
@@ -1368,7 +1455,7 @@ def scan_stock(
 
 
 # =========================================================
-# TÜM HİSSELER
+# TÜM HİSSELERİ TARA
 # =========================================================
 
 def scan_all():
@@ -1417,9 +1504,7 @@ def scan_all():
 # SONUÇ YORUMU
 # =========================================================
 
-def final_comment(
-    item
-):
+def final_comment(item):
 
     score = item[
         "score"
@@ -1479,12 +1564,10 @@ def final_comment(
 
 
 # =========================================================
-# TELEGRAM DETAYLI MESAJ
+# DETAYLI TELEGRAM MESAJI
 # =========================================================
 
-def create_scan_message(
-    results
-):
+def create_scan_message(results):
 
     if not results:
 
@@ -1639,13 +1722,8 @@ def create_scan_message(
     lines.append("")
 
     lines.append(
-        "⚠️ Teknik ve haber verileri "
-        "otomatik analiz edilir."
-    )
-
-    lines.append(
-        "⚠️ Skor olasılık veya garanti "
-        "anlamına gelmez."
+        "⚠️ Skor garanti veya "
+        "kesin yükseliş anlamına gelmez."
     )
 
     return "\n".join(
@@ -1657,9 +1735,7 @@ def create_scan_message(
 # GÜÇLÜ SİNYALLER
 # =========================================================
 
-def create_signal_message(
-    results
-):
+def create_signal_message(results):
 
     strong = [
         x for x in results
@@ -1836,7 +1912,8 @@ def process_commands():
                 "→ Geçmiş performans."
             )
 
-    # Telegram update kuyruğunu onayla.
+    # Güncellemeleri Telegram kuyruğundan
+    # ileri taşı.
     if last_update_id is not None:
 
         telegram(
@@ -1849,7 +1926,7 @@ def process_commands():
 
 
 # =========================================================
-# MAIN
+# ANA PROGRAM
 # =========================================================
 
 def main():
@@ -1863,10 +1940,6 @@ def main():
     )
 
     process_commands()
-
-    # Workflow çalıştığında teknik tarama
-    # yapılır. Telegram'a yalnızca komut
-    # geldiğinde mesaj gönderilir.
 
     results = scan_all()
 
