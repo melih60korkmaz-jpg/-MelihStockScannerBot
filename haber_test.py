@@ -19,7 +19,6 @@ STOCKS = {
     "PLUG": {
         "name": "Plug Power",
         "aliases": [
-            "plug",
             "plug power",
             "plug power inc"
         ]
@@ -28,7 +27,6 @@ STOCKS = {
     "SOFI": {
         "name": "SoFi Technologies",
         "aliases": [
-            "sofi",
             "sofi technologies",
             "sofi technologies inc"
         ]
@@ -46,7 +44,6 @@ STOCKS = {
     "JOBY": {
         "name": "Joby Aviation",
         "aliases": [
-            "joby",
             "joby aviation",
             "joby aviation inc"
         ]
@@ -55,7 +52,6 @@ STOCKS = {
     "LCID": {
         "name": "Lucid Group",
         "aliases": [
-            "lucid",
             "lucid motors",
             "lucid group",
             "lucid group inc"
@@ -65,7 +61,6 @@ STOCKS = {
     "NU": {
         "name": "Nu Holdings",
         "aliases": [
-            "nu",
             "nu holdings",
             "nu holdings ltd"
         ]
@@ -74,7 +69,6 @@ STOCKS = {
     "GRAB": {
         "name": "Grab Holdings",
         "aliases": [
-            "grab",
             "grab holdings",
             "grab holdings limited"
         ]
@@ -83,7 +77,6 @@ STOCKS = {
     "MARA": {
         "name": "MARA Holdings",
         "aliases": [
-            "mara",
             "mara holdings",
             "marathon digital",
             "marathon digital holdings"
@@ -93,7 +86,6 @@ STOCKS = {
     "RIOT": {
         "name": "Riot Platforms",
         "aliases": [
-            "riot",
             "riot platforms",
             "riot platforms inc",
             "riot blockchain"
@@ -103,127 +95,165 @@ STOCKS = {
 
 
 # =========================================================
-# HABER KELİMELERİ
+# AYARLAR
 # =========================================================
 
-POSITIVE_PHRASES = [
-    "earnings beat",
-    "revenue growth",
-    "profit growth",
-    "strong earnings",
-    "strong results",
-    "record revenue",
-    "record earnings",
-    "revenue rises",
-    "revenue increased",
-    "profit rises",
-    "profit increased",
-    "raises outlook",
-    "raised guidance",
-    "positive outlook",
-    "partnership",
-    "strategic partnership",
-    "agreement",
-    "strategic agreement",
-    "contract",
-    "major contract",
-    "new contract",
-    "expansion",
-    "investment",
-    "strategic investment",
-    "approval",
-    "regulatory approval",
-    "acquisition",
-    "acquires",
-    "growth",
-    "outperforms",
-    "outperformed",
-    "beats estimates",
-    "beats expectations"
-]
+MAX_NEWS = 15
 
-
-NEGATIVE_PHRASES = [
-    "earnings miss",
-    "revenue decline",
-    "revenue fell",
-    "revenue falls",
-    "profit decline",
-    "profit fell",
-    "weak earnings",
-    "weak results",
-    "loss",
-    "losses",
-    "operating loss",
-    "net loss",
-    "lowers outlook",
-    "lowered guidance",
-    "cuts outlook",
-    "cut outlook",
-    "downgrade",
-    "lawsuit",
-    "investigation",
-    "regulatory investigation",
-    "bankruptcy",
-    "debt",
-    "high debt",
-    "cash burn",
-    "layoffs",
-    "job cuts",
-    "offering",
-    "secondary offering",
-    "stock offering",
-    "dilution",
-    "share dilution",
-    "recall",
-    "production halt",
-    "production cuts"
-]
-
-
-IMPORTANT_PHRASES = [
-    "earnings",
-    "quarterly results",
-    "revenue",
-    "guidance",
-    "contract",
-    "agreement",
-    "partnership",
-    "acquisition",
-    "investment",
-    "lawsuit",
-    "investigation",
-    "approval",
-    "offering",
-    "dilution",
-    "debt",
-    "cash",
-    "data center",
-    "bitcoin",
-    "production",
-    "delivery",
-    "regulatory",
-    "sec",
-    "ceo",
-    "management"
-]
-
-
-# Bunlar tek başına haberin olumlu/olumsuz olduğunu göstermez.
-# Özellikle finans sitelerindeki "buy / sell / hold" başlıklarını
-# yanlışlıkla sinyal olarak kabul etmemek için kullanılmıyorlar.
-OPINION_WORDS = [
-    "buy",
-    "sell",
-    "hold",
-    "should you buy",
-    "should you sell",
-    "price target"
-]
+# 7 günden eski haberler haber skoruna girmez.
+MAX_AGE_HOURS = 7 * 24
 
 
 # =========================================================
-# YARDIMCI FONKSİYONLAR
+# POZİTİF OLAYLAR
+# =========================================================
+
+POSITIVE_PHRASES = {
+
+    "earnings beat": 3.0,
+    "beats estimates": 3.0,
+    "beats expectations": 3.0,
+    "revenue growth": 2.5,
+    "revenue increased": 2.5,
+    "revenue rises": 2.5,
+    "profit growth": 2.5,
+    "profit increased": 2.5,
+    "strong earnings": 2.5,
+    "strong results": 2.0,
+    "record revenue": 3.0,
+    "record earnings": 3.0,
+
+    "raised guidance": 3.0,
+    "raises outlook": 3.0,
+    "positive outlook": 2.0,
+
+    "major contract": 2.5,
+    "new contract": 2.0,
+    "contract": 1.5,
+
+    "strategic partnership": 2.5,
+    "partnership": 1.5,
+    "strategic agreement": 2.5,
+    "agreement": 1.5,
+
+    "strategic investment": 2.0,
+    "investment": 1.5,
+
+    "expansion": 1.5,
+    "acquisition": 1.5,
+    "acquires": 1.5,
+
+    "approval": 2.0,
+    "regulatory approval": 2.5,
+
+    "outperforms": 1.5,
+    "outperformed": 1.5
+}
+
+
+# =========================================================
+# NEGATİF OLAYLAR
+# =========================================================
+
+NEGATIVE_PHRASES = {
+
+    "earnings miss": 3.0,
+    "misses estimates": 3.0,
+    "missed expectations": 3.0,
+
+    "revenue decline": 2.5,
+    "revenue fell": 2.5,
+    "revenue falls": 2.5,
+
+    "profit decline": 2.5,
+    "profit fell": 2.5,
+
+    "weak earnings": 2.5,
+    "weak results": 2.0,
+
+    "net loss": 2.0,
+    "operating loss": 2.0,
+    "losses": 1.5,
+
+    "lowered guidance": 3.0,
+    "lowers outlook": 3.0,
+    "cuts outlook": 3.0,
+    "cut outlook": 3.0,
+
+    "downgrade": 2.0,
+
+    "lawsuit": 2.5,
+    "investigation": 2.5,
+    "regulatory investigation": 3.0,
+
+    "bankruptcy": 4.0,
+
+    "high debt": 2.0,
+    "debt concerns": 2.5,
+    "cash burn": 2.0,
+
+    "layoffs": 1.5,
+    "job cuts": 1.5,
+
+    "secondary offering": 3.0,
+    "stock offering": 3.0,
+    "offering": 2.0,
+
+    "dilution": 3.0,
+    "share dilution": 3.0,
+
+    "production halt": 3.0,
+    "production cuts": 2.0,
+    "recall": 2.0
+}
+
+
+# =========================================================
+# ÖNEMLİ KONULAR
+# =========================================================
+
+IMPORTANT_PHRASES = {
+
+    "earnings": 2,
+    "quarterly results": 2,
+    "revenue": 2,
+
+    "guidance": 3,
+
+    "contract": 2,
+    "agreement": 2,
+    "partnership": 2,
+
+    "acquisition": 2,
+    "investment": 2,
+
+    "lawsuit": 3,
+    "investigation": 3,
+
+    "approval": 2,
+
+    "offering": 3,
+    "dilution": 3,
+
+    "debt": 2,
+
+    "data center": 2,
+    "bitcoin": 1,
+
+    "production": 2,
+    "delivery": 2,
+
+    "regulatory": 3,
+
+    "ceo": 1,
+    "management": 1,
+
+    "sec": 3
+}
+
+
+# =========================================================
+# YARDIMCI
 # =========================================================
 
 def clean_text(text):
@@ -236,66 +266,45 @@ def clean_text(text):
     )
 
 
-def company_match(title, ticker):
-
-    text = clean_text(title)
-
-    aliases = STOCKS[ticker]["aliases"]
-
-    for alias in aliases:
-
-        if alias in text:
-            return True
-
-    return False
-
-
-def count_phrases(text, phrases):
-
-    count = 0
-    found = []
-
-    for phrase in phrases:
-
-        if phrase in text:
-
-            count += 1
-            found.append(phrase)
-
-    return count, found
-
-
 def parse_date(content):
 
-    possible_dates = [
+    values = [
         content.get("pubDate"),
         content.get("displayTime"),
         content.get("published"),
         content.get("providerPublishTime")
     ]
 
-    for value in possible_dates:
+    for value in values:
 
         if value is None:
             continue
 
         try:
 
-            # Unix timestamp
-            if isinstance(value, (int, float)):
+            if isinstance(
+                value,
+                (int, float)
+            ):
 
                 return datetime.fromtimestamp(
                     value,
                     tz=timezone.utc
                 )
 
-            # ISO tarih
-            if isinstance(value, str):
+            if isinstance(
+                value,
+                str
+            ):
 
                 text = value.strip()
 
                 if text.endswith("Z"):
-                    text = text[:-1] + "+00:00"
+
+                    text = (
+                        text[:-1]
+                        + "+00:00"
+                    )
 
                 dt = datetime.fromisoformat(
                     text
@@ -312,123 +321,213 @@ def parse_date(content):
                 )
 
         except Exception:
-            continue
+            pass
 
     return None
 
 
-def freshness_info(pub_date):
+def age_hours(pub_date):
 
     if pub_date is None:
-
-        return (
-            "⚪ TARİH YOK",
-            0.5
-        )
+        return None
 
     now = datetime.now(
         timezone.utc
     )
 
-    age_hours = (
+    hours = (
         now - pub_date
     ).total_seconds() / 3600
 
-    if age_hours < 0:
-
-        age_hours = 0
-
-    if age_hours <= 24:
-
-        return (
-            "🔥 SON 24 SAAT",
-            1.0
-        )
-
-    if age_hours <= 72:
-
-        return (
-            "🟢 SON 3 GÜN",
-            0.8
-        )
-
-    if age_hours <= 168:
-
-        return (
-            "🟡 SON 7 GÜN",
-            0.5
-        )
-
-    return (
-        "⚪ 7 GÜNDEN ESKİ",
-        0.2
+    return max(
+        0,
+        hours
     )
 
 
-def analyze_title(title):
+def freshness_label(hours):
 
-    text = clean_text(title)
+    if hours is None:
+        return "⚪ TARİH YOK"
 
-    positive_count, positive_found = (
-        count_phrases(
-            text,
-            POSITIVE_PHRASES
-        )
+    if hours <= 24:
+        return "🔥 SON 24 SAAT"
+
+    if hours <= 72:
+        return "🟢 SON 3 GÜN"
+
+    if hours <= 168:
+        return "🟡 SON 7 GÜN"
+
+    return "⚪ 7 GÜNDEN ESKİ"
+
+
+def freshness_weight(hours):
+
+    if hours is None:
+        return 0.25
+
+    if hours <= 24:
+        return 1.00
+
+    if hours <= 72:
+        return 0.80
+
+    if hours <= 168:
+        return 0.50
+
+    return 0.00
+
+
+# =========================================================
+# ŞİRKET EŞLEŞMESİ
+# =========================================================
+
+def company_match(
+    ticker,
+    title,
+    content
+):
+
+    text = clean_text(
+        title
     )
 
-    negative_count, negative_found = (
-        count_phrases(
-            text,
-            NEGATIVE_PHRASES
-        )
+    aliases = STOCKS[
+        ticker
+    ]["aliases"]
+
+    # Başlıkta şirket adı
+    for alias in aliases:
+
+        if alias in text:
+
+            return "DOĞRUDAN"
+
+    # Yahoo relatedTickers alanı
+    related = content.get(
+        "relatedTickers",
+        []
     )
 
-    important_count, important_found = (
-        count_phrases(
-            text,
-            IMPORTANT_PHRASES
-        )
-    )
-
-    opinion_count, opinion_found = (
-        count_phrases(
-            text,
-            OPINION_WORDS
-        )
-    )
-
-    # -----------------------------------------------------
-    # Buy / Sell / Hold başlığı tek başına sentiment değildir.
-    # -----------------------------------------------------
-
-    if (
-        positive_count == 0
-        and negative_count == 0
+    if isinstance(
+        related,
+        list
     ):
 
-        sentiment = "⚪ NÖTR"
+        for item in related:
 
-    elif positive_count > negative_count:
+            if str(item).upper() == ticker:
+
+                return "İLİŞKİLİ"
+
+    return None
+
+
+# =========================================================
+# SENTIMENT
+# =========================================================
+
+def analyze_sentiment(title):
+
+    text = clean_text(
+        title
+    )
+
+    positive_score = 0
+    negative_score = 0
+
+    positive_found = []
+    negative_found = []
+
+    for phrase, weight in (
+        POSITIVE_PHRASES.items()
+    ):
+
+        if phrase in text:
+
+            positive_score += weight
+
+            positive_found.append(
+                phrase
+            )
+
+    for phrase, weight in (
+        NEGATIVE_PHRASES.items()
+    ):
+
+        if phrase in text:
+
+            negative_score += weight
+
+            negative_found.append(
+                phrase
+            )
+
+    difference = (
+        positive_score
+        - negative_score
+    )
+
+    # Çok küçük farklarda taraf tutma.
+    if difference >= 1.5:
 
         sentiment = "🟢 POZİTİF"
 
-    elif negative_count > positive_count:
+    elif difference <= -1.5:
 
         sentiment = "🔴 NEGATİF"
 
-    else:
+    elif (
+        positive_score > 0
+        or negative_score > 0
+    ):
 
         sentiment = "🟡 KARIŞIK"
 
-    # -----------------------------------------------------
-    # ÖNEM
-    # -----------------------------------------------------
+    else:
 
-    if important_count >= 2:
+        sentiment = "⚪ NÖTR"
+
+    return {
+        "sentiment": sentiment,
+        "positive_score": positive_score,
+        "negative_score": negative_score,
+        "positive_found": positive_found,
+        "negative_found": negative_found
+    }
+
+
+# =========================================================
+# ÖNEM ANALİZİ
+# =========================================================
+
+def analyze_importance(title):
+
+    text = clean_text(
+        title
+    )
+
+    score = 0
+    found = []
+
+    for phrase, weight in (
+        IMPORTANT_PHRASES.items()
+    ):
+
+        if phrase in text:
+
+            score += weight
+
+            found.append(
+                phrase
+            )
+
+    if score >= 4:
 
         importance = "🔥 YÜKSEK"
 
-    elif important_count == 1:
+    elif score >= 2:
 
         importance = "🟡 ORTA"
 
@@ -437,16 +536,9 @@ def analyze_title(title):
         importance = "⚪ DÜŞÜK"
 
     return {
-        "sentiment": sentiment,
+        "score": score,
         "importance": importance,
-        "positive_count": positive_count,
-        "negative_count": negative_count,
-        "important_count": important_count,
-        "positive_found": positive_found,
-        "negative_found": negative_found,
-        "important_found": important_found,
-        "opinion_count": opinion_count,
-        "opinion_found": opinion_found
+        "found": found
     }
 
 
@@ -454,9 +546,20 @@ def analyze_title(title):
 # HABER AĞIRLIĞI
 # =========================================================
 
-def article_weight(importance, freshness):
+def calculate_weight(
+    sentiment,
+    importance,
+    hours
+):
 
-    importance_score = {
+    fresh = freshness_weight(
+        hours
+    )
+
+    if fresh == 0:
+        return 0
+
+    importance_multiplier = {
         "🔥 YÜKSEK": 3.0,
         "🟡 ORTA": 2.0,
         "⚪ DÜŞÜK": 1.0
@@ -465,24 +568,138 @@ def article_weight(importance, freshness):
         1.0
     )
 
-    return (
-        importance_score * freshness
-    )
+    if sentiment == "🟢 POZİTİF":
+
+        return (
+            importance_multiplier
+            * fresh
+        )
+
+    if sentiment == "🔴 NEGATİF":
+
+        return (
+            importance_multiplier
+            * fresh
+        )
+
+    if sentiment == "🟡 KARIŞIK":
+
+        return (
+            importance_multiplier
+            * fresh
+            * 0.5
+        )
+
+    return 0
 
 
 # =========================================================
-# TEK HİSSE HABER ANALİZİ
+# HABER NORMALİZASYONU
 # =========================================================
 
-def analyze_stock_news(ticker):
+def normalize_news_item(
+    item,
+    source_type
+):
 
-    print()
-    print("=" * 70)
-    print(
-        f"📰 {ticker} — "
-        f"{STOCKS[ticker]['name']}"
+    # -----------------------------------------------------
+    # Ticker.get_news formatı
+    # -----------------------------------------------------
+
+    if isinstance(
+        item.get("content"),
+        dict
+    ):
+
+        content = item.get(
+            "content",
+            {}
+        )
+
+        title = content.get(
+            "title",
+            ""
+        )
+
+        publisher = content.get(
+            "provider",
+            {}
+        ).get(
+            "displayName",
+            "Bilinmiyor"
+        )
+
+        link = content.get(
+            "canonicalUrl",
+            {}
+        ).get(
+            "url",
+            ""
+        )
+
+        if not link:
+
+            link = content.get(
+                "clickThroughUrl",
+                {}
+            ).get(
+                "url",
+                ""
+            )
+
+        return {
+            "title": title,
+            "publisher": publisher,
+            "link": link,
+            "content": content,
+            "source_type": source_type
+        }
+
+    # -----------------------------------------------------
+    # Search.news formatı
+    # -----------------------------------------------------
+
+    title = item.get(
+        "title",
+        ""
     )
-    print("=" * 70)
+
+    publisher = item.get(
+        "publisher",
+        item.get(
+            "provider",
+            "Bilinmiyor"
+        )
+    )
+
+    link = item.get(
+        "link",
+        item.get(
+            "url",
+            ""
+        )
+    )
+
+    return {
+        "title": title,
+        "publisher": publisher,
+        "link": link,
+        "content": item,
+        "source_type": source_type
+    }
+
+
+# =========================================================
+# HABERLERİ ÇEK
+# =========================================================
+
+def fetch_news(ticker):
+
+    collected = []
+
+    # -----------------------------------------------------
+    # Kaynak 1 — Ticker.get_news
+    # -----------------------------------------------------
 
     try:
 
@@ -491,322 +708,544 @@ def analyze_stock_news(ticker):
         )
 
         news = stock.get_news(
-            count=10,
+            count=MAX_NEWS,
             tab="news"
         )
 
-        if not news:
+        if news:
 
-            print(
-                "❌ Haber bulunamadı."
-            )
+            for item in news:
 
-            return
-
-        total_checked = 0
-        accepted = 0
-        recent_count = 0
-
-        positive_weight = 0.0
-        negative_weight = 0.0
-        neutral_weight = 0.0
-
-        for item in news:
-
-            total_checked += 1
-
-            content = item.get(
-                "content",
-                {}
-            )
-
-            title = content.get(
-                "title",
-                ""
-            )
-
-            if not title:
-                continue
-
-            # -------------------------------------------------
-            # 1 — ŞİRKET EŞLEŞMESİ
-            # -------------------------------------------------
-
-            if not company_match(
-                title,
-                ticker
-            ):
-
-                print()
-                print(
-                    f"⛔ ELENDİ — Şirket "
-                    f"eşleşmesi yok:"
-                )
-
-                print(
-                    f"   {title}"
-                )
-
-                continue
-
-            # -------------------------------------------------
-            # 2 — TARİH
-            # -------------------------------------------------
-
-            pub_date = parse_date(
-                content
-            )
-
-            freshness_label, freshness = (
-                freshness_info(
-                    pub_date
-                )
-            )
-
-            if pub_date:
-
-                date_text = (
-                    pub_date.strftime(
-                        "%Y-%m-%d %H:%M UTC"
+                normalized = (
+                    normalize_news_item(
+                        item,
+                        "Ticker"
                     )
                 )
 
-            else:
-
-                date_text = (
-                    "Tarih alınamadı"
+                collected.append(
+                    normalized
                 )
 
-            # -------------------------------------------------
-            # 3 — ANALİZ
-            # -------------------------------------------------
+    except Exception as e:
 
-            analysis = analyze_title(
-                title
-            )
+        print(
+            f"Ticker haber hatası: {e}"
+        )
 
-            sentiment = analysis[
-                "sentiment"
-            ]
+    # -----------------------------------------------------
+    # Kaynak 2 — Yahoo Finance Search
+    # -----------------------------------------------------
 
-            importance = analysis[
-                "importance"
-            ]
+    try:
 
-            weight = article_weight(
-                importance,
-                freshness
-            )
+        company_name = STOCKS[
+            ticker
+        ]["name"]
 
-            accepted += 1
+        search = yf.Search(
+            company_name,
+            max_results=5,
+            news_count=MAX_NEWS,
+            lists_count=0,
+            include_cb=False,
+            include_nav_links=False,
+            include_research=False,
+            include_cultural_assets=False,
+            enable_fuzzy_query=False,
+            recommended=5,
+            raise_errors=False
+        )
 
-            if freshness >= 0.5:
+        search_news = getattr(
+            search,
+            "news",
+            []
+        )
 
-                recent_count += 1
+        if search_news:
 
-            if sentiment == "🟢 POZİTİF":
+            for item in search_news:
 
-                positive_weight += weight
-
-            elif sentiment == "🔴 NEGATİF":
-
-                negative_weight += weight
-
-            else:
-
-                neutral_weight += weight
-
-            # -------------------------------------------------
-            # 4 — HABERİ YAZDIR
-            # -------------------------------------------------
-
-            provider = content.get(
-                "provider",
-                {}
-            ).get(
-                "displayName",
-                "Bilinmiyor"
-            )
-
-            print()
-            print(
-                f"📰 {title}"
-            )
-
-            print(
-                f"Kaynak: {provider}"
-            )
-
-            print(
-                f"📅 {date_text}"
-            )
-
-            print(
-                f"⏱ {freshness_label}"
-            )
-
-            print(
-                "🏢 Şirket eşleşmesi: ✅"
-            )
-
-            print(
-                f"📊 Haber etkisi: "
-                f"{sentiment}"
-            )
-
-            print(
-                f"🔥 Önem: "
-                f"{importance}"
-            )
-
-            print(
-                f"Pozitif: "
-                f"{analysis['positive_count']} "
-                f"{analysis['positive_found']}"
-            )
-
-            print(
-                f"Negatif: "
-                f"{analysis['negative_count']} "
-                f"{analysis['negative_found']}"
-            )
-
-            print(
-                f"Önemli konu: "
-                f"{analysis['important_found']}"
-            )
-
-            if analysis[
-                "opinion_count"
-            ] > 0:
-
-                print(
-                    "ℹ️ Bu başlıkta "
-                    "analist/yorum dili var; "
-                    "tek başına sinyal "
-                    "olarak kullanılmadı."
+                normalized = (
+                    normalize_news_item(
+                        item,
+                        "Search"
+                    )
                 )
 
-            print(
-                "-" * 70
+                collected.append(
+                    normalized
+                )
+
+    except Exception as e:
+
+        print(
+            f"Search haber hatası: {e}"
+        )
+
+    return collected
+
+
+# =========================================================
+# TEKRAR EDEN HABERLERİ TEMİZLE
+# =========================================================
+
+def deduplicate_news(news):
+
+    unique = {}
+
+    for item in news:
+
+        title = clean_text(
+            item.get(
+                "title",
+                ""
+            )
+        )
+
+        link = item.get(
+            "link",
+            ""
+        )
+
+        key = link or title
+
+        if not key:
+            continue
+
+        if key not in unique:
+
+            unique[key] = item
+
+    return list(
+        unique.values()
+    )
+
+
+# =========================================================
+# TEK HİSSE ANALİZİ
+# =========================================================
+
+def analyze_stock(ticker):
+
+    print()
+    print("=" * 75)
+    print(
+        f"📰 {ticker} — "
+        f"{STOCKS[ticker]['name']}"
+    )
+    print("=" * 75)
+
+    news = fetch_news(
+        ticker
+    )
+
+    news = deduplicate_news(
+        news
+    )
+
+    if not news:
+
+        print(
+            "❌ Haber alınamadı."
+        )
+
+        return
+
+    direct = []
+    related = []
+    rejected = []
+
+    for item in news:
+
+        title = item.get(
+            "title",
+            ""
+        )
+
+        if not title:
+            continue
+
+        content = item.get(
+            "content",
+            {}
+        )
+
+        match = company_match(
+            ticker,
+            title,
+            content
+        )
+
+        if match == "DOĞRUDAN":
+
+            direct.append(
+                item
             )
 
-        # =====================================================
-        # TOPLU HABER SONUCU
-        # =====================================================
+        elif match == "İLİŞKİLİ":
 
-        print()
-        print(
-            f"📌 {ticker} HABER ÖZETİ"
-        )
-
-        print(
-            "-" * 70
-        )
-
-        print(
-            f"Çekilen haber: "
-            f"{total_checked}"
-        )
-
-        print(
-            f"Şirketle ilgili: "
-            f"{accepted}"
-        )
-
-        print(
-            f"Güncel haber: "
-            f"{recent_count}"
-        )
-
-        print(
-            f"Pozitif ağırlık: "
-            f"{positive_weight:.2f}"
-        )
-
-        print(
-            f"Negatif ağırlık: "
-            f"{negative_weight:.2f}"
-        )
-
-        print(
-            f"Nötr ağırlık: "
-            f"{neutral_weight:.2f}"
-        )
-
-        # -----------------------------------------------------
-        # GENEL HABER DURUMU
-        # -----------------------------------------------------
-
-        if accepted == 0:
-
-            final_status = (
-                "⚪ YETERSİZ VERİ"
-            )
-
-        elif (
-            positive_weight == 0
-            and negative_weight == 0
-        ):
-
-            final_status = (
-                "⚪ NÖTR / BELİRSİZ"
-            )
-
-        elif (
-            positive_weight
-            > negative_weight * 1.5
-        ):
-
-            final_status = (
-                "🟢 POZİTİF HABER AKIŞI"
-            )
-
-        elif (
-            negative_weight
-            > positive_weight * 1.5
-        ):
-
-            final_status = (
-                "🔴 NEGATİF HABER AKIŞI"
+            related.append(
+                item
             )
 
         else:
 
-            final_status = (
-                "🟡 KARIŞIK HABER AKIŞI"
+            rejected.append(
+                item
+            )
+
+    # =====================================================
+    # SADECE 7 GÜNLÜK HABERLER
+    # =====================================================
+
+    valid_direct = []
+
+    for item in direct:
+
+        content = item.get(
+            "content",
+            {}
+        )
+
+        date = parse_date(
+            content
+        )
+
+        hours = age_hours(
+            date
+        )
+
+        if (
+            hours is not None
+            and hours <= MAX_AGE_HOURS
+        ):
+
+            item["_date"] = date
+            item["_hours"] = hours
+
+            valid_direct.append(
+                item
+            )
+
+    # En yeni haber üstte
+    valid_direct.sort(
+        key=lambda x: (
+            x.get(
+                "_hours",
+                999999
+            )
+        )
+    )
+
+    # =====================================================
+    # HABERLERİ GÖSTER
+    # =====================================================
+
+    print()
+    print(
+        f"Toplam benzersiz haber: "
+        f"{len(news)}"
+    )
+
+    print(
+        f"Şirketle doğrudan ilgili: "
+        f"{len(direct)}"
+    )
+
+    print(
+        f"İlişkili/yan haber: "
+        f"{len(related)}"
+    )
+
+    print(
+        f"Alakasız ve elenen: "
+        f"{len(rejected)}"
+    )
+
+    print(
+        f"Son 7 gündeki doğrudan haber: "
+        f"{len(valid_direct)}"
+    )
+
+    # =====================================================
+    # GÜNCEL HABER YOK
+    # =====================================================
+
+    if not valid_direct:
+
+        print()
+        print(
+            "⚪ YETERSİZ GÜNCEL HABER VERİSİ"
+        )
+
+        print(
+            "Bu hisse için son 7 gün içinde "
+            "doğrudan şirket haberi bulunamadı."
+        )
+
+        return
+
+    # =====================================================
+    # TOPLAM SKOR
+    # =====================================================
+
+    positive_total = 0
+    negative_total = 0
+    mixed_total = 0
+
+    high_importance = 0
+
+    last_24h = 0
+    last_3d = 0
+
+    # En fazla 10 güncel haber göster
+    for item in valid_direct[:10]:
+
+        title = item[
+            "title"
+        ]
+
+        content = item[
+            "content"
+        ]
+
+        date = item.get(
+            "_date"
+        )
+
+        hours = item.get(
+            "_hours"
+        )
+
+        sentiment = analyze_sentiment(
+            title
+        )
+
+        importance = analyze_importance(
+            title
+        )
+
+        weight = calculate_weight(
+            sentiment["sentiment"],
+            importance["importance"],
+            hours
+        )
+
+        # -------------------------------------------------
+        # TOPLAM
+        # -------------------------------------------------
+
+        if sentiment[
+            "sentiment"
+        ] == "🟢 POZİTİF":
+
+            positive_total += weight
+
+        elif sentiment[
+            "sentiment"
+        ] == "🔴 NEGATİF":
+
+            negative_total += weight
+
+        elif sentiment[
+            "sentiment"
+        ] == "🟡 KARIŞIK":
+
+            mixed_total += weight
+
+        if importance[
+            "importance"
+        ] == "🔥 YÜKSEK":
+
+            high_importance += 1
+
+        if hours <= 24:
+
+            last_24h += 1
+
+        if hours <= 72:
+
+            last_3d += 1
+
+        publisher = item.get(
+            "publisher",
+            "Bilinmiyor"
+        )
+
+        if date:
+
+            date_text = date.strftime(
+                "%Y-%m-%d %H:%M UTC"
+            )
+
+        else:
+
+            date_text = (
+                "Tarih yok"
             )
 
         print()
         print(
-            f"📢 SONUÇ: {final_status}"
+            f"📰 {title}"
         )
 
         print(
-            "⚠️ Bu sonuç yatırım kararı "
-            "değildir; haber başlıklarının "
-            "otomatik sınıflandırmasıdır."
+            f"Kaynak: {publisher}"
         )
 
-    except Exception as e:
-
-        print()
         print(
-            f"❌ {ticker} HATA:"
+            f"📅 {date_text}"
         )
 
-        print(e)
+        print(
+            f"⏱ {freshness_label(hours)}"
+        )
+
+        print(
+            f"📊 Etki: "
+            f"{sentiment['sentiment']}"
+        )
+
+        print(
+            f"🔥 Önem: "
+            f"{importance['importance']}"
+        )
+
+        if sentiment[
+            "positive_found"
+        ]:
+
+            print(
+                "🟢 Pozitif: "
+                + ", ".join(
+                    sentiment[
+                        "positive_found"
+                    ]
+                )
+            )
+
+        if sentiment[
+            "negative_found"
+        ]:
+
+            print(
+                "🔴 Negatif: "
+                + ", ".join(
+                    sentiment[
+                        "negative_found"
+                    ]
+                )
+            )
+
+        if importance[
+            "found"
+        ]:
+
+            print(
+                "📌 Konular: "
+                + ", ".join(
+                    importance[
+                        "found"
+                    ]
+                )
+            )
+
+        print(
+            "-" * 75
+        )
+
+    # =====================================================
+    # GENEL HABER DURUMU
+    # =====================================================
+
+    difference = (
+        positive_total
+        - negative_total
+    )
+
+    if (
+        positive_total == 0
+        and negative_total == 0
+    ):
+
+        final_status = (
+            "⚪ NÖTR / YETERLİ YÖN YOK"
+        )
+
+    elif difference >= 2.0:
+
+        final_status = (
+            "🟢 POZİTİF HABER AKIŞI"
+        )
+
+    elif difference <= -2.0:
+
+        final_status = (
+            "🔴 NEGATİF HABER AKIŞI"
+        )
+
+    else:
+
+        final_status = (
+            "🟡 KARIŞIK HABER AKIŞI"
+        )
+
+    print()
+    print("=" * 75)
+    print(
+        f"📢 {ticker} HABER SONUCU"
+    )
+    print("=" * 75)
+
+    print(
+        f"Son 24 saat: {last_24h}"
+    )
+
+    print(
+        f"Son 3 gün: {last_3d}"
+    )
+
+    print(
+        f"Yüksek önem: {high_importance}"
+    )
+
+    print(
+        f"Pozitif ağırlık: "
+        f"{positive_total:.2f}"
+    )
+
+    print(
+        f"Negatif ağırlık: "
+        f"{negative_total:.2f}"
+    )
+
+    print(
+        f"Karışık ağırlık: "
+        f"{mixed_total:.2f}"
+    )
+
+    print()
+    print(
+        f"🎯 SONUÇ: {final_status}"
+    )
+
+    print(
+        "⚠️ Haber sonucu tek başına "
+        "AL/SAT sinyali değildir."
+    )
 
 
 # =========================================================
-# TÜM TEST
+# ANA TEST
 # =========================================================
 
 def main():
 
     print()
     print(
-        "======================================================"
+        "=============================================================="
     )
 
     print(
@@ -814,66 +1253,49 @@ def main():
     )
 
     print(
-        "GELİŞMİŞ HABER ANALİZ TESTİ"
+        "GÜNCEL HABER MOTORU — SON TEST"
     )
 
     print(
-        "======================================================"
+        "=============================================================="
     )
 
     print()
-
     print(
-        "Sistem:"
+        "Kaynak: Yahoo Finance / yfinance"
     )
 
     print(
-        "1. Şirket eşleşmesi"
+        "Haber yaşı: maksimum 7 gün"
     )
 
     print(
-        "2. Haber tarihi"
+        "Buy/Sell/Hold başlıkları tek başına sinyal değildir."
     )
 
     print(
-        "3. Güncellik"
-    )
-
-    print(
-        "4. Önem analizi"
-    )
-
-    print(
-        "5. Pozitif / negatif analiz"
-    )
-
-    print(
-        "6. Çoklu haber ağırlığı"
-    )
-
-    print(
-        "7. Toplu haber sonucu"
+        "Haber sonucu teknik modelden bağımsız test edilmektedir."
     )
 
     print()
 
     for ticker in STOCKS:
 
-        analyze_stock_news(
+        analyze_stock(
             ticker
         )
 
     print()
     print(
-        "======================================================"
+        "=============================================================="
     )
 
     print(
-        "✅ HABER TESTİ TAMAMLANDI"
+        "✅ TÜM HABER TESTİ TAMAMLANDI"
     )
 
     print(
-        "======================================================"
+        "=============================================================="
     )
 
 
