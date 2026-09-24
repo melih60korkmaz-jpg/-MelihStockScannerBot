@@ -2,11 +2,6 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
-# ============================================================
-# MELİH STOCK SCANNER
-# GELİŞMİŞ GİRİŞ / HEDEF / STOP BACKTEST
-# ============================================================
-
 STOCKS = [
     "SNDL",
     "PLUG",
@@ -22,53 +17,19 @@ STOCKS = [
 
 PERIOD = "5y"
 
-# Sadece güçlü teknik sinyaller
 MIN_SCORE = 80
 
-# Maksimum pozisyon süresi
 MAX_DAYS = 5
 
-# Test edilecek farklı sistemler
-SYSTEMS = [
-    {
-        "name": "Sistem A",
-        "target1": 0.03,
-        "target2": 0.06,
-        "stop": 0.02
-    },
-    {
-        "name": "Sistem B",
-        "target1": 0.04,
-        "target2": 0.07,
-        "stop": 0.03
-    },
-    {
-        "name": "Sistem C",
-        "target1": 0.05,
-        "target2": 0.10,
-        "stop": 0.03
-    },
-    {
-        "name": "Sistem D",
-        "target1": 0.05,
-        "target2": 0.08,
-        "stop": 0.04
-    },
-    {
-        "name": "Sistem E",
-        "target1": 0.06,
-        "target2": 0.10,
-        "stop": 0.04
-    }
-]
+TARGET_1 = 0.05
+TARGET_2 = 0.08
+STOP_LOSS = 0.04
 
+# Basit işlem maliyeti varsayımı
+COST = 0.001
 
-# ============================================================
-# RSI
-# ============================================================
 
 def calculate_rsi(series, period=14):
-
     delta = series.diff()
 
     gain = delta.clip(lower=0)
@@ -79,14 +40,8 @@ def calculate_rsi(series, period=14):
 
     rs = avg_gain / avg_loss.replace(0, np.nan)
 
-    rsi = 100 - (100 / (1 + rs))
+    return 100 - (100 / (1 + rs))
 
-    return rsi
-
-
-# ============================================================
-# TEKNİK GÖSTERGELER
-# ============================================================
 
 def calculate_indicators(df):
 
@@ -95,7 +50,6 @@ def calculate_indicators(df):
     close = df["Close"]
     volume = df["Volume"]
 
-    # EMA
     df["EMA9"] = close.ewm(
         span=9,
         adjust=False
@@ -111,13 +65,11 @@ def calculate_indicators(df):
         adjust=False
     ).mean()
 
-    # RSI
     df["RSI"] = calculate_rsi(
         close,
         14
     )
 
-    # MACD
     ema12 = close.ewm(
         span=12,
         adjust=False
@@ -135,7 +87,6 @@ def calculate_indicators(df):
         adjust=False
     ).mean()
 
-    # Hacim
     df["AVG_VOLUME20"] = volume.rolling(
         20
     ).mean()
@@ -146,10 +97,6 @@ def calculate_indicators(df):
 
     return df.dropna()
 
-
-# ============================================================
-# SKOR
-# ============================================================
 
 def calculate_score(row):
 
@@ -168,21 +115,11 @@ def calculate_score(row):
         row["VOLUME_RATIO"]
     )
 
-    # --------------------------------------------------------
     # EMA %40
-    # --------------------------------------------------------
-
-    if (
-        close > ema9
-        and ema9 > ema20
-        and ema20 > ema50
-    ):
+    if close > ema9 and ema9 > ema20 and ema20 > ema50:
         ema_score = 100
 
-    elif (
-        close > ema20
-        and ema20 > ema50
-    ):
+    elif close > ema20 and ema20 > ema50:
         ema_score = 75
 
     elif close > ema20:
@@ -194,14 +131,8 @@ def calculate_score(row):
     else:
         ema_score = 0
 
-    # --------------------------------------------------------
     # MACD %30
-    # --------------------------------------------------------
-
-    if (
-        macd > macd_signal
-        and macd > 0
-    ):
+    if macd > macd_signal and macd > 0:
         macd_score = 100
 
     elif macd > macd_signal:
@@ -213,10 +144,7 @@ def calculate_score(row):
     else:
         macd_score = 0
 
-    # --------------------------------------------------------
     # HACİM %20
-    # --------------------------------------------------------
-
     if volume_ratio >= 2.0:
         volume_score = 100
 
@@ -232,10 +160,7 @@ def calculate_score(row):
     else:
         volume_score = 0
 
-    # --------------------------------------------------------
     # RSI %10
-    # --------------------------------------------------------
-
     if 50 <= rsi <= 65:
         rsi_score = 100
 
@@ -267,52 +192,28 @@ def calculate_score(row):
     return round(score)
 
 
-# ============================================================
-# TEK İŞLEM TESTİ
-# ============================================================
-
-def test_trade(
-    df,
-    signal_index,
-    target1,
-    target2,
-    stop
-):
-
-    # --------------------------------------------------------
-    # Sinyal kapanışından sonra giriş:
-    # Ertesi işlem gününün OPEN fiyatı
-    # --------------------------------------------------------
+def test_trade(df, signal_index):
 
     entry_index = signal_index + 1
 
     if entry_index >= len(df):
         return None
 
-    entry_row = df.iloc[entry_index]
-
     entry_price = float(
-        entry_row["Open"]
+        df.iloc[entry_index]["Open"]
     )
 
-    target1_price = (
-        entry_price
-        * (1 + target1)
+    target1 = entry_price * (
+        1 + TARGET_1
     )
 
-    target2_price = (
-        entry_price
-        * (1 + target2)
+    target2 = entry_price * (
+        1 + TARGET_2
     )
 
-    stop_price = (
-        entry_price
-        * (1 - stop)
+    stop = entry_price * (
+        1 - STOP_LOSS
     )
-
-    # --------------------------------------------------------
-    # Maksimum 5 işlem günü
-    # --------------------------------------------------------
 
     end_index = min(
         entry_index + MAX_DAYS - 1,
@@ -329,75 +230,42 @@ def test_trade(
         high = float(row["High"])
         low = float(row["Low"])
 
-        hit_target1 = (
-            high >= target1_price
-        )
+        hit1 = high >= target1
+        hit2 = high >= target2
+        hit_stop = low <= stop
 
-        hit_target2 = (
-            high >= target2_price
-        )
-
-        hit_stop = (
-            low <= stop_price
-        )
-
-        # ----------------------------------------------------
-        # Aynı gün hem hedef hem stop:
-        # Gün içindeki sırayı bilemediğimiz için
-        # temkinli olarak STOP kabul ediyoruz.
-        # ----------------------------------------------------
-
-        if hit_stop and (
-            hit_target1
-            or hit_target2
-        ):
+        # Aynı gün hem hedef hem stop
+        if hit_stop and (hit1 or hit2):
 
             return {
                 "result": "STOP",
-                "return": -stop,
+                "return": -STOP_LOSS - COST,
                 "days": i - entry_index + 1
             }
 
-        # ----------------------------------------------------
-        # Target 2
-        # ----------------------------------------------------
-
-        if hit_target2:
+        if hit2:
 
             return {
                 "result": "TARGET_2",
-                "return": target2,
+                "return": TARGET_2 - COST,
                 "days": i - entry_index + 1
             }
 
-        # ----------------------------------------------------
-        # Target 1
-        # ----------------------------------------------------
-
-        if hit_target1:
+        if hit1:
 
             return {
                 "result": "TARGET_1",
-                "return": target1,
+                "return": TARGET_1 - COST,
                 "days": i - entry_index + 1
             }
-
-        # ----------------------------------------------------
-        # Stop
-        # ----------------------------------------------------
 
         if hit_stop:
 
             return {
                 "result": "STOP",
-                "return": -stop,
+                "return": -STOP_LOSS - COST,
                 "days": i - entry_index + 1
             }
-
-    # --------------------------------------------------------
-    # 5 gün içinde hedef veya stop olmadı.
-    # Son kapanıştan çıkıyoruz.
-    # --------------------------------------------------------
 
     final_price = float(
         df.iloc[end_index]["Close"]
@@ -410,22 +278,16 @@ def test_trade(
 
     return {
         "result": "TIMEOUT",
-        "return": final_return,
+        "return": final_return - COST,
         "days": end_index - entry_index + 1
     }
 
-
-# ============================================================
-# HİSSE VERİSİNİ AL
-# ============================================================
 
 def download_stock(ticker):
 
     try:
 
-        print(
-            f"{ticker} verisi indiriliyor..."
-        )
+        print(f"{ticker} indiriliyor...")
 
         df = yf.download(
             ticker,
@@ -436,9 +298,6 @@ def download_stock(ticker):
         )
 
         if df.empty:
-            print(
-                f"{ticker}: veri yok."
-            )
             return None
 
         if isinstance(
@@ -452,9 +311,6 @@ def download_stock(ticker):
 
         df = calculate_indicators(df)
 
-        if df.empty:
-            return None
-
         return df
 
     except Exception as e:
@@ -466,89 +322,55 @@ def download_stock(ticker):
         return None
 
 
-# ============================================================
-# TÜM SİNYALLERİ ÇIKAR
-# ============================================================
-
-def find_signals(df):
+def get_signals(df, start, end):
 
     signals = []
 
-    # Son günlerde ileri veri olmadığı için
-    # son MAX_DAYS günü kullanmıyoruz.
-    last_signal = (
-        len(df)
-        - MAX_DAYS
-        - 1
+    last_signal = min(
+        end,
+        len(df) - MAX_DAYS - 1
     )
 
     for i in range(
-        0,
+        start,
         last_signal + 1
     ):
 
-        row = df.iloc[i]
-
         score = calculate_score(
-            row
+            df.iloc[i]
         )
 
         if score >= MIN_SCORE:
 
-            signals.append({
-                "index": i,
-                "date": df.index[i],
-                "score": score
-            })
+            signals.append(i)
 
     return signals
 
 
-# ============================================================
-# BİR SİSTEMİ TEST ET
-# ============================================================
-
-def test_system(
-    all_stock_data,
-    system
-):
+def run_period(df, start, end):
 
     trades = []
 
-    for ticker, df in all_stock_data.items():
+    signals = get_signals(
+        df,
+        start,
+        end
+    )
 
-        signals = find_signals(df)
+    for signal_index in signals:
 
-        for signal in signals:
+        trade = test_trade(
+            df,
+            signal_index
+        )
 
-            trade = test_trade(
-                df,
-                signal["index"],
-                system["target1"],
-                system["target2"],
-                system["stop"]
-            )
-
-            if trade is None:
-                continue
-
-            trade["ticker"] = ticker
-            trade["score"] = signal["score"]
-            trade["date"] = signal["date"]
-
+        if trade:
             trades.append(trade)
 
     return trades
 
 
-# ============================================================
-# SONUÇLARI HESAPLA
-# ============================================================
-
-def summarize(
-    trades,
-    system
-):
+def summarize(trades):
 
     if not trades:
         return None
@@ -556,160 +378,107 @@ def summarize(
     total = len(trades)
 
     target1 = sum(
-        1
+        x["result"] == "TARGET_1"
         for x in trades
-        if x["result"] == "TARGET_1"
     )
 
     target2 = sum(
-        1
+        x["result"] == "TARGET_2"
         for x in trades
-        if x["result"] == "TARGET_2"
     )
 
     stop = sum(
-        1
+        x["result"] == "STOP"
         for x in trades
-        if x["result"] == "STOP"
     )
 
     timeout = sum(
-        1
+        x["result"] == "TIMEOUT"
         for x in trades
-        if x["result"] == "TIMEOUT"
     )
 
-    # --------------------------------------------------------
-    # Ortalama işlem getirisi
-    # --------------------------------------------------------
-
-    avg_return = np.mean([
+    returns = [
         x["return"]
         for x in trades
-    ])
+    ]
 
-    # --------------------------------------------------------
-    # Basit toplam getiri
-    # --------------------------------------------------------
-
-    total_return = sum(
-        x["return"]
-        for x in trades
+    avg_return = np.mean(
+        returns
     )
-
-    # --------------------------------------------------------
-    # Bileşik getiri
-    # Her işlemde sermayenin tamamı kullanılıyor varsayımı.
-    # --------------------------------------------------------
-
-    equity = 1.0
-
-    for trade in trades:
-
-        equity *= (
-            1 + trade["return"]
-        )
-
-    compound_return = (
-        equity - 1
-    )
-
-    # --------------------------------------------------------
-    # Pozitif işlem oranı
-    # --------------------------------------------------------
 
     positive = sum(
-        1
-        for x in trades
-        if x["return"] > 0
+        x > 0
+        for x in returns
     )
 
     positive_rate = (
         positive / total
     )
 
-    # --------------------------------------------------------
-    # Maksimum düşüş
-    # --------------------------------------------------------
+    simple_total = sum(
+        returns
+    )
 
-    equity_curve = 1.0
+    equity = 1.0
+
+    for r in returns:
+        equity *= (1 + r)
+
+    compound = equity - 1
+
+    # İşlem sırasındaki maksimum düşüş
     peak = 1.0
-    max_drawdown = 0.0
+    current = 1.0
+    max_drawdown = 0
 
-    for trade in trades:
+    for r in returns:
 
-        equity_curve *= (
-            1 + trade["return"]
-        )
+        current *= (1 + r)
 
-        if equity_curve > peak:
-            peak = equity_curve
+        if current > peak:
+            peak = current
 
         drawdown = (
-            equity_curve - peak
+            current - peak
         ) / peak
 
-        if drawdown < max_drawdown:
-            max_drawdown = drawdown
+        max_drawdown = min(
+            max_drawdown,
+            drawdown
+        )
 
     return {
-        "name": system["name"],
-        "target1": system["target1"],
-        "target2": system["target2"],
-        "stop": system["stop"],
         "total": total,
-        "target1_count": target1,
-        "target2_count": target2,
-        "stop_count": stop,
-        "timeout_count": timeout,
-        "positive_rate": positive_rate,
-        "avg_return": avg_return,
-        "total_return": total_return,
-        "compound_return": compound_return,
-        "max_drawdown": max_drawdown
+        "target1": target1,
+        "target2": target2,
+        "stop": stop,
+        "timeout": timeout,
+        "avg": avg_return,
+        "positive": positive_rate,
+        "simple": simple_total,
+        "compound": compound,
+        "drawdown": max_drawdown
     }
 
-
-# ============================================================
-# ANA PROGRAM
-# ============================================================
 
 def main():
 
     print()
-    print("=" * 70)
+    print("=" * 65)
     print("🔥 MELİH STOCK SCANNER")
-    print("GELİŞMİŞ HEDEF / STOP KARŞILAŞTIRMASI")
-    print("=" * 70)
+    print("SON DOĞRULAMA TESTİ")
+    print("=" * 65)
 
     print()
-    print(
-        f"📊 Hisseler       : {len(STOCKS)}"
-    )
+    print("🎯 Sistem")
+    print("Hedef 1 : +%5")
+    print("Hedef 2 : +%8")
+    print("Stop    : -%4")
+    print("Skor    : 80+")
+    print("Takip   : 5 işlem günü")
+    print("Maliyet : %0.10")
 
-    print(
-        f"📅 Veri           : {PERIOD}"
-    )
-
-    print(
-        f"🧠 Minimum skor   : {MIN_SCORE}+"
-    )
-
-    print(
-        f"⏱️ Takip süresi   : {MAX_DAYS} işlem günü"
-    )
-
-    print()
-    print(
-        "⚠️ Giriş fiyatı sinyalden sonraki "
-        "işlem gününün açılışıdır."
-    )
-
-    # --------------------------------------------------------
-    # Verileri sadece bir kez indir
-    # --------------------------------------------------------
-
-    all_stock_data = {}
+    all_data = {}
 
     for ticker in STOCKS:
 
@@ -719,257 +488,225 @@ def main():
 
         if df is not None:
 
-            all_stock_data[ticker] = df
+            all_data[ticker] = df
 
     print()
-    print("=" * 70)
-    print("📊 VERİ HAZIR")
-    print("=" * 70)
+    print("=" * 65)
+    print("📚 VERİ AYRILIYOR")
+    print("=" * 65)
 
-    print(
-        f"Başarılı hisseler: "
-        f"{len(all_stock_data)} / {len(STOCKS)}"
+    # --------------------------------------------------------
+    # Her hissenin ilk %70'i eğitim,
+    # son %30'u test.
+    # --------------------------------------------------------
+
+    train_trades = []
+    test_trades = []
+
+    for ticker, df in all_data.items():
+
+        split = int(
+            len(df) * 0.70
+        )
+
+        train = run_period(
+            df,
+            0,
+            split
+        )
+
+        test = run_period(
+            df,
+            split,
+            len(df)
+        )
+
+        train_trades.extend(
+            train
+        )
+
+        test_trades.extend(
+            test
+        )
+
+        print(
+            f"{ticker}: "
+            f"eğitim={len(train)} "
+            f"test={len(test)}"
+        )
+
+    train_result = summarize(
+        train_trades
     )
 
-    # --------------------------------------------------------
-    # Bütün sistemleri test et
-    # --------------------------------------------------------
+    test_result = summarize(
+        test_trades
+    )
 
-    results = []
-
-    for system in SYSTEMS:
-
-        print()
-        print(
-            f"🔬 {system['name']} test ediliyor..."
-        )
-
-        trades = test_system(
-            all_stock_data,
-            system
-        )
-
-        summary = summarize(
-            trades,
-            system
-        )
-
-        if summary:
-
-            results.append(
-                summary
-            )
-
-    # --------------------------------------------------------
-    # Sonuç tablosu
-    # --------------------------------------------------------
+    # ========================================================
+    # EĞİTİM
+    # ========================================================
 
     print()
-    print("=" * 70)
-    print("🔥 TÜM SİSTEMLERİN KARŞILAŞTIRMASI")
-    print("=" * 70)
+    print("=" * 65)
+    print("📚 İLK %70 — GEÇMİŞ DÖNEM")
+    print("=" * 65)
 
-    print()
-
-    for result in results:
+    if train_result:
 
         print(
-            f"📌 {result['name']}"
+            f"İşlem: {train_result['total']}"
         )
 
         print(
-            f"   H1: +%{result['target1'] * 100:.0f}"
-            f" | H2: +%{result['target2'] * 100:.0f}"
-            f" | Stop: -%{result['stop'] * 100:.0f}"
+            f"H1: {train_result['target1']}"
         )
 
         print(
-            f"   İşlem: {result['total']}"
+            f"H2: {train_result['target2']}"
         )
 
         print(
-            f"   H1: {result['target1_count']}"
+            f"Stop: {train_result['stop']}"
         )
 
         print(
-            f"   H2: {result['target2_count']}"
+            f"Pozitif: "
+            f"%{train_result['positive'] * 100:.1f}"
         )
-
-        print(
-            f"   Stop: {result['stop_count']}"
-        )
-
-        print(
-            f"   Timeout: {result['timeout_count']}"
-        )
-
-        print(
-            f"   Pozitif işlem: "
-            f"%{result['positive_rate'] * 100:.1f}"
-        )
-
-        print(
-            f"   Ortalama işlem: "
-            f"%{result['avg_return'] * 100:.3f}"
-        )
-
-        print(
-            f"   Basit toplam: "
-            f"%{result['total_return'] * 100:.1f}"
-        )
-
-        print(
-            f"   Bileşik sonuç: "
-            f"%{result['compound_return'] * 100:.1f}"
-        )
-
-        print(
-            f"   Maks. düşüş: "
-            f"%{result['max_drawdown'] * 100:.1f}"
-        )
-
-        print(
-            "   " + "-" * 55
-        )
-
-    # --------------------------------------------------------
-    # En yüksek ortalama işlem getirisi
-    # --------------------------------------------------------
-
-    if results:
-
-        best = max(
-            results,
-            key=lambda x: x["avg_return"]
-        )
-
-        print()
-        print("=" * 70)
-        print("🏁 İSTATİSTİKSEL SONUÇ")
-        print("=" * 70)
-
-        print()
-
-        print(
-            "En yüksek ortalama işlem "
-            "getirisine sahip sistem:"
-        )
-
-        print()
-
-        print(
-            f"👉 {best['name']}"
-        )
-
-        print(
-            f"Hedef 1: "
-            f"+%{best['target1'] * 100:.0f}"
-        )
-
-        print(
-            f"Hedef 2: "
-            f"+%{best['target2'] * 100:.0f}"
-        )
-
-        print(
-            f"Zarar-kes: "
-            f"-%{best['stop'] * 100:.0f}"
-        )
-
-        print()
 
         print(
             f"Ortalama işlem: "
-            f"%{best['avg_return'] * 100:.3f}"
+            f"%{train_result['avg'] * 100:.3f}"
         )
 
         print(
-            f"Pozitif işlem oranı: "
-            f"%{best['positive_rate'] * 100:.1f}"
+            f"Basit toplam: "
+            f"%{train_result['simple'] * 100:.1f}"
         )
 
         print(
-            f"Maksimum düşüş: "
-            f"%{best['max_drawdown'] * 100:.1f}"
+            f"Maks. düşüş: "
+            f"%{train_result['drawdown'] * 100:.1f}"
         )
 
-    # --------------------------------------------------------
-    # Hisse bazlı sonuç
-    # --------------------------------------------------------
+    # ========================================================
+    # TEST
+    # ========================================================
 
     print()
-    print("=" * 70)
-    print("📈 HİSSE BAZLI ANALİZ")
-    print("=" * 70)
+    print("=" * 65)
+    print("🧪 SON %30 — GÖRÜLMEMİŞ TEST DÖNEMİ")
+    print("=" * 65)
 
-    if results:
+    if test_result:
 
-        best_system = max(
-            results,
-            key=lambda x: x["avg_return"]
+        print(
+            f"İşlem: {test_result['total']}"
         )
 
-        trades = test_system(
-            all_stock_data,
-            {
-                "name": "Final",
-                "target1": best_system["target1"],
-                "target2": best_system["target2"],
-                "stop": best_system["stop"]
-            }
+        print(
+            f"H1: {test_result['target1']}"
         )
 
-        for ticker in STOCKS:
+        print(
+            f"H2: {test_result['target2']}"
+        )
 
-            ticker_trades = [
-                x
-                for x in trades
-                if x["ticker"] == ticker
-            ]
+        print(
+            f"Stop: {test_result['stop']}"
+        )
 
-            if not ticker_trades:
-                continue
+        print(
+            f"Timeout: {test_result['timeout']}"
+        )
 
-            avg = np.mean([
-                x["return"]
-                for x in ticker_trades
-            ])
+        print(
+            f"Pozitif: "
+            f"%{test_result['positive'] * 100:.1f}"
+        )
 
-            positive = sum(
-                1
-                for x in ticker_trades
-                if x["return"] > 0
+        print(
+            f"Ortalama işlem: "
+            f"%{test_result['avg'] * 100:.3f}"
+        )
+
+        print(
+            f"Basit toplam: "
+            f"%{test_result['simple'] * 100:.1f}"
+        )
+
+        print(
+            f"Maks. düşüş: "
+            f"%{test_result['drawdown'] * 100:.1f}"
+        )
+
+    # ========================================================
+    # KARAR DESTEK
+    # ========================================================
+
+    print()
+    print("=" * 65)
+    print("🔎 MODEL KONTROLÜ")
+    print("=" * 65)
+
+    if train_result and test_result:
+
+        print()
+
+        print(
+            "Eğitim ortalama: "
+            f"%{train_result['avg'] * 100:.3f}"
+        )
+
+        print(
+            "Test ortalama:   "
+            f"%{test_result['avg'] * 100:.3f}"
+        )
+
+        difference = (
+            test_result["avg"]
+            - train_result["avg"]
+        )
+
+        print(
+            "Fark:            "
+            f"%{difference * 100:.3f}"
+        )
+
+        print()
+
+        if (
+            test_result["avg"] > 0
+            and test_result["positive"] >= 0.35
+        ):
+
+            print(
+                "🟢 TEST DÖNEMİ POZİTİF"
             )
 
             print(
-                f"{ticker:<6} "
-                f"İşlem: {len(ticker_trades):<4} "
-                f"Pozitif: "
-                f"%{positive / len(ticker_trades) * 100:>5.1f} "
-                f"Ort: "
-                f"%{avg * 100:>7.3f}"
+                "Sistem canlı bot için "
+                "incelenebilir durumda."
+            )
+
+        else:
+
+            print(
+                "🟡 TEST DÖNEMİ ZAYIF"
+            )
+
+            print(
+                "Canlıya almadan önce "
+                "modeli geliştirmek gerekiyor."
             )
 
     print()
-    print("=" * 70)
-    print("⚠️ ÖNEMLİ")
-    print("=" * 70)
-
-    print(
-        "Bu sonuçlar geçmiş verilere dayanır."
-    )
-
-    print(
-        "Komisyon, spread ve kayma "
-        "(slippage) hesaba katılmamıştır."
-    )
-
-    print(
-        "Geçmiş performans gelecekteki "
-        "sonuçları garanti etmez."
-    )
-
-    print("=" * 70)
+    print("=" * 65)
+    print("⚠️ Bu bir geçmiş veri testidir.")
+    print("⚠️ Sonuçlar geleceği garanti etmez.")
+    print("⚠️ Gerçek işlem maliyetleri değişebilir.")
+    print("=" * 65)
 
 
 if __name__ == "__main__":
