@@ -180,9 +180,13 @@ music = music / (np.abs(music).max() + 1e-9)
 music *= np.clip(t / 2.0, 0, 1) * np.clip((TOT - t) / 2.5, 0, 1)
 
 # anlatım
-raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", os.path.join(BUILD, "narration.wav"), "-f", "s16le", "-ac", "1", "-ar", str(SR), "-"],
-                     capture_output=True, check=True).stdout
-voice = np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
+npath = os.path.join(BUILD, "narration.wav")
+if os.path.exists(npath):
+    raw = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", npath, "-f", "s16le", "-ac", "1", "-ar", str(SR), "-"],
+                         capture_output=True, check=True).stdout
+    voice = np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
+else:
+    voice = np.zeros(N, np.float32)
 voice = np.pad(voice, (0, max(0, N - len(voice))))[:N]
 # ducking: anlatım varken müzik -10 dB
 envv = signal.filtfilt(*signal.butter(2, 3 / (SR / 2)), np.abs(voice))

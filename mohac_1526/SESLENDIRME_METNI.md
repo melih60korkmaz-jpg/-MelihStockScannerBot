@@ -1,7 +1,11 @@
 # Mohaç 1526 – Seslendirme Metni
 
-Her sahneyi ayrı bir MP3 dosyası olarak kaydet:
-`s1.mp3`, `s2.mp3`, `s3.mp3`, `s4.mp3`, `s5.mp3`, `s6.mp3`
+**En kolay yol:** Tüm metni tek seferde seslendir ve tek bir dosya olarak `audio/` klasörüne koy (adı serbest, ör. `anlatim.mp3`).
+Kod, dosyayı duraklamalara göre 27 cümleye ve 6 sahneye kendisi böler.
+(İstenirse sahne sahne `s1.mp3` … `s6.mp3` olarak da verilebilir.)
+
+- Sahne geçişlerinde biraz daha uzun duraklama (≈1–1,5 sn) bırakmak bölmeyi kolaylaştırır.
+- Cümle içinde uzun duraklama yapma; aksi halde bir cümle iki parçaya bölünebilir.
 
 - **Cümle araları:** Cümlelerin arasında kısa bir nefes payı bırak (yaklaşık yarım saniye). Altyazılar bu duraklamalara göre senkronlanır.
 - **Sahne süreleri:** Aşağıdaki süreler hedeftir. Biraz kısa ya da uzun olması sorun değil; video kendini sese göre ayarlar.

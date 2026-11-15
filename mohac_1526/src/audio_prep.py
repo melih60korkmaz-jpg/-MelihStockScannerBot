@@ -95,13 +95,41 @@ def process(x, nsent):
     return y, bounds
 
 
+def find_full():
+    """audio/ içinde s1..s6 dışında tek bir ses dosyası varsa onu 'tek parça anlatım' kabul et."""
+    import glob, re
+    d = os.path.join(ROOT, "audio")
+    files = [f for f in glob.glob(os.path.join(d, "*")) if f.lower().endswith((".mp3", ".wav", ".m4a", ".ogg", ".aac", ".flac"))]
+    full = [f for f in files if not re.match(r"s\d\.", os.path.basename(f).lower())]
+    return sorted(full)[0] if full else None
+
+
+def split_full(path):
+    """Tek parça anlatımı cümle ve sahnelere böl: en uzun (toplam_cümle - 1) duraklama = cümle sınırları."""
+    ns = [len(sc["subs"]) for sc in SCENES]
+    y, b = process(decode(path), sum(ns))
+    out, k = {}, 0
+    for sc, n in zip(SCENES, ns):
+        a, e = b[k], b[k + n]
+        seg = y[int(a * SR): int(e * SR)]
+        out[sc["id"]] = (seg, [x - a for x in b[k: k + n + 1]])
+        k += n
+    print("tek parça anlatım bölündü:", os.path.basename(path))
+    return out
+
+
 def main():
     timeline, narr_tracks, srt = [], [], []
     t = 0.0
+    full = find_full()
+    parts = split_full(full) if full else {}
     for sc in SCENES:
         path = os.path.join(ROOT, "audio", f"s{sc['id']}.mp3")
         n = len(sc["subs"])
-        if os.path.exists(path):
+        if sc["id"] in parts:
+            y, bounds = parts[sc["id"]]
+            missing = False
+        elif os.path.exists(path):
             y, bounds = process(decode(path), n)
             missing = False
         else:
