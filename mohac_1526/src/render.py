@@ -655,7 +655,8 @@ def render_frame(f):
     portraits(cv, t)
     for a, b, x, y, w, title, lines in CARDS:
         card(cv, x, y, w, title, lines, env(t, a, b, 0.5, 0.5))
-    subtitles(cv, t)
+    if os.environ.get("SUBTITLES", "0") == "1":
+        subtitles(cv, t)
     img = surf.makeImageSnapshot().toarray()[:, :, :3].astype(np.float32)
     g = GRAIN[f % len(GRAIN)]
     img += np.repeat(np.repeat(g, 2, 0), 2, 1)[..., None] * 4.5

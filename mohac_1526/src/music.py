@@ -176,6 +176,8 @@ brass = lp(BUS["brass"], 1800)
 cello = lp(BUS["cello"], 2500)
 music = reverb(pad * 0.9 + brass * 0.8 + cello * 1.0, 2.8, 0.35) + BUS["sine"] * 0.25 + lp(DRUM, 4000) * 0.8
 music = music / (np.abs(music).max() + 1e-9)
+if os.environ.get("MUSIC", "0") != "1":
+    music = music * 0.0
 # giriş/çıkış
 music *= np.clip(t / 2.0, 0, 1) * np.clip((TOT - t) / 2.5, 0, 1)
 

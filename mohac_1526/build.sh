@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Mohaç 1526 belgeselini baştan üretir. Gereken: python3 (numpy, scipy, pillow, skia-python), ffmpeg.
 set -euo pipefail
+# Varsayılan: altyazı ve müzik KAPALI. Açmak için: SUBTITLES=1 MUSIC=1 ./build.sh
 cd "$(dirname "$0")/src"
 python3 build_europe.py
 python3 build_battlefield.py
