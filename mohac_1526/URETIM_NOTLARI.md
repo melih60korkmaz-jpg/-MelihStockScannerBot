@@ -9,7 +9,7 @@
 | Kıyı çizgileri | `world-atlas` (Natural Earth 50m, kamu malı) |
 | Kamera, 2.5B perspektif, birlikler, oklar, duman, portreler, yazılar | skia-python (perspektif homografi ile yatırılmış harita) |
 | Müzik ve efektler | NumPy ile sentez (telifsiz) |
-| Seslendirme | ElevenLabs – "Celil, Turkish Narrator" (sahne 1, 2, 3, 5) |
+| Seslendirme | Kullanıcı tarafından sağlanacak (audio/s1–s6.mp3) |
 | Montaj | ffmpeg |
 
 Yeniden üretmek için: `./build.sh` (çıktı `mohac_1526.mp4`, 1920x1080, 30 fps).
@@ -26,9 +26,8 @@ Yeniden üretmek için: `./build.sh` (çıktı `mohac_1526.mp4`, 1920x1080, 30 f
 
 Altyazılar `altyazi_tr.srt` dosyasında. Videoya da gömülü.
 
-## Eksik ses (sahne 4 ve 6)
-ElevenLabs ücretsiz katmanı bu iki sahne için "meşgul" hatası verdi. Bu sahnelerde şu an yalnızca müzik, efektler ve altyazı var.
-Metinler `SESLENDIRME_METNI.md` dosyasında. MP3'ler `audio/s4.mp3` ve `audio/s6.mp3` olarak eklenip `./build.sh` çalıştırıldığında
+## Seslendirme
+Metin `SESLENDIRME_METNI.md` dosyasında. MP3'ler `audio/s1.mp3` … `audio/s6.mp3` olarak eklenip `./build.sh` çalıştırıldığında
 zamanlamalar, kamera hareketleri ve altyazılar sese göre kendiliğinden yeniden hesaplanır.
 
 ## Tarihî doğruluk notları
