@@ -783,3 +783,15 @@ Kullanıcının daha önceki oyununun ekran kaydı incelendi. Çıkarımlar:
 - **Ertelenenler**: *kat karşılığı* ve *ortaklık* satış/yatırımcı sistemleri gerektirir → Faz 7–8. AVM/otel/karma tipler Faz 8. Şu an 3 şehir × 5 ilçe; Türkiye haritası ve 8 şehir Faz 11.
 - **Harita** şematik ilçe haritasıdır (ısı katmanları: satış fiyatı, gelir, rekabet, gelişim).
 - **Projeler** şimdilik "Taslak": tasarım bedeli ödenir; inşaat aşaması Faz 5.
+
+
+## Uygulama notları — Faz 5 (inşaat simülasyonu ve 3D şantiye)
+
+- **18 aşama** veri dosyasında (`data/stages.json`): maliyet payı, süre payı, ofis rolü (mimar/mühendis…), ruhsat, dış/iç iş. Proje planlanan süreyi (`expected.months × 30`) aşama süre paylarına böler; günlük ilerleme = ekip × hava × (ruhsatta rastgele gecikme).
+- **Ekip etkisi**: saha ekibi (işçi, usta, kalıpçı, demirci, elektrikçi, tesisatçı; şantiye şefi ×1,15) projenin gerektirdiği kapasiteyle kıyaslanır. Ekipsiz = taşeron yavaşlığı (×0,25), yeterli = ×1,0, fazla = azalan getiriyle en çok ×1,3. Aktif projeler ekibi paylaşır.
+- **Çifte işçilik maliyeti çözümü**: kendi ekibiniz, taşeron işçilik bedelinin (stage maliyetinin %35'i) karşıladığı kısmı tasarruf ettirir; maaşlarınız ayrıca ödenir. Böylece ekip kurmak anlamlıdır, aşırı büyük ekip küçük projede zarar ettirir (`npm run sim:build`).
+- **Nakit**: maliyet tahakkuk eder, haftalık ödenir; kasa yetmezse iş durur (kırmızı banner), nakit gelince devam eder.
+- **Zemin sürprizi**: etüt yoksa gerçek zemin hafriyat aşamasında ortaya çıkar (maliyet +/−, olay). **Hava**: şehir/mevsime göre açık/yağmur/kar; dış aşamalar yavaşlar.
+- **Teslim**: kalite puanı (aşama kalitelerinin maliyet ağırlıklı ortalaması), itibar etkisi, rapor kartı. Satış: şimdilik **toplu satış** (piyasa değerinin %92'si); daire daire satış Faz 7.
+- **3D**: her proje tasarım tohumundan farklı cephe stili (şerit, balkon, cam perde, tuğla, taş, metal), çatı (teras, eğimli, taç, sanayi), renk paleti ve blok sayısı alır. Aşamalar fizikseldir: hologram → hafriyat çukuru → radye + filiz → kat kat taşıyıcı → duvar → yalıtım → iskele → cephe/balkon → pencere → çatı ekipmanı → peyzaj; vinç bina ile yükselir ve sökülür. Gün/gece, yağmur/kar, kamera (döndür, sıkıştır-yakınlaştır, kaydır, çift dokunuş, ön ayarlar).
+- **Ölçüm**: tam yaşam döngüsü arayüz testi (başlat → teslim raporu → toplu satış), nakit durması, 8 bina tipi galerisi.

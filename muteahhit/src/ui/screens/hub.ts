@@ -33,10 +33,10 @@ const dayLabel = (d: number) => { const x = dateOf(d); return monthLabel(`${x.ye
 const signed = (m: number) => `<span class="${m > 0 ? 'pos' : m < 0 ? 'neg' : ''}">${m > 0 ? '+' : ''}${formatMoney(m)}</span>`;
 
 /** Şirket kabuğu: kalıcı HUD + 4 sekme. Tüm sayılar sim/finans katmanından türetilir (ikinci bir "doğru" yok). */
-export function hubScreen(app: App): HTMLElement {
+export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   app.scene?.stop(); app.audio.setMood('off');
   const root = h('div', { class: 'shell' });
-  let tab: Tab = 'sirket', sub = 'ozet';
+  let tab: Tab = startTab, sub = 'ozet';
   const hud = h('header', { class: 'hud' }), view = h('div', { class: 'view' }), tabs = h('nav', { class: 'tabs', 'aria-label': 'Ana sekmeler' });
   root.append(hud, view, tabs);
 
@@ -168,7 +168,7 @@ export function hubScreen(app: App): HTMLElement {
   };
 
   // Olaylar: gün akışı yalnızca HUD'u günceller; ay/komut olayları sekmeyi yeniler
-  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED']);
+  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED']);
   const unsub = app.store.subscribe((evs) => {
     if (!root.isConnected) { unsub(); return; }
     let redraw = false;
@@ -178,6 +178,12 @@ export function hubScreen(app: App): HTMLElement {
       if (e.type === 'MACRO_NEWS') { const d = e.data as { text: string; tone: string }; app.audio.sfx(d.tone === 'bad' ? 'error' : 'confirm'); toast(d.text, 5000); }
       if (e.type === 'SURVEY_DONE') { app.audio.sfx('confirm'); toast((e.data!.kind === 'soil' ? 'Zemin etüdü tamamlandı.' : 'Piyasa araştırması tamamlandı.'), 4000); }
       if (e.type === 'LAND_SOLD') { app.audio.sfx('confirm'); if (!e.data!.quick) toast(`Arsanız satıldı: ${formatMoney(e.data!.price as number)}`, 4500); }
+      if (e.type === 'CONSTRUCTION_STALLED') { app.audio.sfx('error'); toast('Bir şantiyede nakit bitti: inşaat durdu!', 5000); }
+      if (e.type === 'CONSTRUCTION_RESUMED') toast('Nakit sağlandı: inşaat devam ediyor.');
+      if (e.type === 'SOIL_REVEALED') { app.audio.sfx((e.data!.extra as number) > 0 ? 'error' : 'confirm'); toast((e.data!.extra as number) === 0 ? 'Hafriyat: zemin beklendiği gibi çıktı.' : `Hafriyatta zemin ortaya çıktı: ${(e.data!.extra as number) > 0 ? 'ek maliyet +' : 'tasarruf '}${formatMoney(Math.abs(e.data!.extra as number))}`, 5000); }
+      if (e.type === 'PROJECT_COMPLETED') { app.audio.sfx('stamp'); toast('Bir proje tamamlandı! Projeler sekmesinden şantiyeyi açın.', 5000); }
+      if (e.type === 'PROJECT_STARTED') toast('İnşaat başladı.');
+      if (e.type === 'PROJECT_SOLD') { app.audio.sfx('confirm'); toast(`Bina satıldı: ${formatMoney(e.data!.price as number)}`, 4500); }
       if (e.type === 'YEAR') toast(`Yeni yıl: personel maaşlarına %${((e.data!.raise as number) * 100).toFixed(0)} zam yapıldı.`, 4500);
       if (e.type === 'CASH_NEGATIVE') { app.audio.sfx('error'); toast('Kasa eksiye düştü! Oyun duraklatıldı.', 5000); }
     }

@@ -8,6 +8,7 @@ import ledgerCatsRaw from './ledgerCategories.json';
 import districtsRaw from './districts.json';
 import btRaw from './buildingTypes.json';
 import placesRaw from './places.json';
+import stagesRaw from './stages.json';
 
 export interface StaffTypeDef { id: string; label: string; baseSalaryTL: number }
 export interface OfficeDef { level: number; label: string; capacity: number; monthlyRentTL: number }
@@ -56,13 +57,16 @@ export interface BuildingTypeDef { id: string; label: string; use: 'konut' | 'ti
 export interface QualityDef { id: string; label: string; costMult: number; saleMult: number; blurb: string }
 export const BUILDING_TYPES = (btRaw as any).types as BuildingTypeDef[];
 export const QUALITIES = (btRaw as any).qualities as QualityDef[];
-export const STAGE_SHARES = (btRaw as any).stageShares as [string, number][];
+export interface StageDef { id: string; label: string; cost: number; time: number; office?: string; prepaid?: boolean; permit?: boolean; outdoor?: boolean }
+export const STAGES = stagesRaw as StageDef[];
+export const STAGE_SHARES: [string, number][] = STAGES.map((s) => [s.id, s.cost]);
+export const stageIndex = (id: string) => STAGES.findIndex((s) => s.id === id);
 export const SOIL_COST = (btRaw as any).soilCost as Record<string, number>;
 export const buildingType = (id: string) => BUILDING_TYPES.find((t) => t.id === id);
 export const quality = (id: string) => QUALITIES.find((q) => q.id === id);
 export const PLACES = placesRaw as { hoodPre: string[]; hoodSuf: string[]; projectWords: Record<string, string[]>; projectSuffix: Record<string, string[]> };
 // Veri bütünlüğü
 for (const c of CITIES) if (!cityData(c.id)) throw new Error(`Veri hatası: şehir ${c.id} için ilçe verisi yok`);
-{ const sum = STAGE_SHARES.reduce((a, [, w]) => a + w, 0); if (Math.abs(sum - 100) > 1e-9 && Math.abs(sum - 100) > 0.001) throw new Error(`Veri hatası: aşama payları toplamı ${sum}`); }
+{ const sum = STAGE_SHARES.reduce((a, [, w]) => a + w, 0); if (Math.abs(sum - 100) > 0.001) throw new Error(`Veri hatası: aşama payları toplamı ${sum}`); if (STAGES.length !== 18) throw new Error('Veri hatası: 18 aşama olmalı'); }
 export const staffType = (id: string) => STAFF_TYPES.find((t) => t.id === id);
 export const officeFor = (level: number) => OFFICES[Math.min(level, OFFICES.length) - 1]!;

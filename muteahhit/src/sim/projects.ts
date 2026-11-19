@@ -72,3 +72,12 @@ export function projectName(s: GameState, typeId: string): string {
   return `${pick(s.rng, 'misc', words)} ${pick(s.rng, 'misc', suf)}`;
 }
 export const newDesignSeed = (s: GameState) => randInt(s.rng, 'misc', 1, 2 ** 30);
+
+/** Mevcut piyasa koşullarında binanın tahmini toplam satış değeri (kalite puanı varsa ona göre). */
+export function currentRevenue(s: GameState, pr: { parcelId: number; type: string; quality: string; satilabilir: number; result?: { qualityScore: number } }): Money {
+  const parcel = s.parcels.find((x) => x.id === pr.parcelId);
+  if (!parcel) return 0;
+  const plan = planProject(s, parcel, pr.type, pr.quality, 0);
+  const qm = pr.result ? 1 + (pr.result.qualityScore - 74) * 0.004 : 1;
+  return Math.round(plan.revenue.mid * qm);
+}

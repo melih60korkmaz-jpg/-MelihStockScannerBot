@@ -5,7 +5,8 @@ import { post } from '../sim/ledger';
 import { createStaff } from '../sim/staff';
 import { DIFFICULTY_MACRO } from '../sim/macro';
 import { SURVEY_DAYS, TAPU_HARCI, QUICK_SALE_DISCOUNT, askPrice, fairValue, reservePrice, surveyCost } from '../sim/land';
-import { newDesignSeed, planProject, projectName } from '../sim/projects';
+import { currentRevenue, newDesignSeed, planProject, projectName } from '../sim/projects';
+import { startConstruction, settle } from '../sim/construction';
 
 /**
  * TÜM durum değişiklikleri komutla yapılır. UI'daki her buton bir komuta bağlıdır;
@@ -47,7 +48,7 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     s.company = {
       name: p.name.trim(), founderBackground: p.founderBackground, startCity: p.startCity,
       emblem: p.emblem ?? { shape: 0, color: 0 },
-      level: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0,
+      level: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0, stats: { completed: 0, sold: 0, profit: 0 },
     };
     post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
     for (const t of bg.staff) createStaff(s, t);
@@ -90,6 +91,7 @@ export interface ParcelRef { parcelId: number }
 export interface ListLandParams { parcelId: number; askMult: number }
 export interface CreateProjectParams { parcelId: number; type: string; quality: string }
 export interface CancelProjectParams { projectId: number }
+export interface ProjectRef { projectId: number }
 
 const parcelOf = (s: GameState, id: number) => s.parcels.find((p) => p.id === id);
 
@@ -168,7 +170,7 @@ const createProject: CommandDef<CreateProjectParams> = {
     post(s, 'tasarim', -plan.cost.designFee, { memo: 'Mimari ve proje bedeli' });
     const id = s.nextId++;
     s.projects.push({
-      id, parcelId: pc.id, name: projectName(s, p.type), type: p.type, quality: p.quality, designSeed: newDesignSeed(s), status: 'taslak', createdDay: s.clock.day, cityId: pc.city,
+      id, parcelId: pc.id, hood: pc.hood, name: projectName(s, p.type), type: p.type, quality: p.quality, designSeed: newDesignSeed(s), status: 'taslak', createdDay: s.clock.day, cityId: pc.city,
       floors: plan.floors, emsal: plan.emsal, brut: plan.brut, satilabilir: plan.satilabilir, matIndexAtPlan: s.macro.materialIndex,
       budget: { base: plan.cost.base, soil: plan.cost.soil, soft: plan.cost.soft, total: plan.cost.total, designFee: plan.cost.designFee },
       expected: { revenue: plan.revenue.mid, months: Math.round((plan.months.min + plan.months.max) / 2) },
@@ -186,7 +188,28 @@ const cancelProject: CommandDef<CancelProjectParams> = {
   },
 };
 
+const startConstructionCmd: CommandDef<ProjectRef> = {
+  validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr) return 'Proje bulunamadı.'; if (pr.status !== 'taslak') return 'Bu proje zaten başlatılmış.'; return null; },
+  apply(s, p) { return startConstruction(s, s.projects.find((x) => x.id === p.projectId)!); },
+};
+export const BULK_DISCOUNT = 0.92;
+const sellProjectBulk: CommandDef<ProjectRef> = {
+  validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr) return 'Proje bulunamadı.'; if (pr.status !== 'tamamlandi') return 'Yalnızca tamamlanmış projeler satılabilir.'; return null; },
+  apply(s, p) {
+    const pr = s.projects.find((x) => x.id === p.projectId)!; const parcel = s.parcels.find((x) => x.id === pr.parcelId)!;
+    settle(s, pr);
+    const price = Math.round(currentRevenue(s, pr) * BULK_DISCOUNT), comm = Math.round(price * 0.01);
+    post(s, 'satis', price, { projectId: pr.id, memo: `${pr.name} toplu satış` }); post(s, 'komisyon', -comm, { projectId: pr.id, memo: 'Toplu satış komisyonu' });
+    const cost = (pr.result?.cost ?? 0) + (parcel.costBasis ?? 0), profit = price - comm - cost;
+    pr.status = 'satildi'; pr.result = { ...pr.result!, revenue: price, profit, soldDay: s.clock.day };
+    s.parcels = s.parcels.filter((x) => x.id !== parcel.id);
+    s.company!.stats.sold++; s.company!.stats.profit += profit;
+    return [ev(s, 'PROJECT_SOLD', { projectId: pr.id, price, profit })];
+  },
+};
+
 export const COMMANDS = {
+  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,
   CreateCompany: createCompany,
   HireStaff: hireStaff,

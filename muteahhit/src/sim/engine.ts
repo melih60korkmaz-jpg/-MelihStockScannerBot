@@ -5,6 +5,7 @@ import { ledgerCat } from '../data';
 import { compactLedger, post } from './ledger';
 import { macroMonthly } from './macro';
 import { listingsWeekly, marketMonthly } from './land';
+import { constructionDaily } from './construction';
 import { monthlyCosts, netWorth } from './finance';
 
 /**
@@ -22,6 +23,7 @@ export function advanceDay(s: GameState): GameEvent[] {
     if (isFirstOfMonth(day)) monthly(s, events);
     if (isMonday(day)) { listingsWeekly(s, events); events.push({ type: 'WEEK', day }); }
     processScheduled(s, events);
+    constructionDaily(s, events, isMonday(day));
   }
   return events;
 }

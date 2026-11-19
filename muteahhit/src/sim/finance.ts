@@ -1,8 +1,9 @@
 import { monthKey } from '../core/calendar';
 import { TL, mul, type Money } from '../core/money';
 import type { GameState } from '../core/types';
-import { ledgerCat, officeFor } from '../data';
+import { STAGES, ledgerCat, officeFor } from '../data';
 import { landAssetValue } from './land';
+import { currentRevenue } from './projects';
 
 /** Her ay yapılan sabit giderler. Hem motor (ödeme) hem arayüz (beklenen gider) bunu kullanır → tek doğru. */
 export function monthlyCosts(s: GameState): { cat: string; amount: Money; memo: string }[] {
@@ -47,7 +48,9 @@ export function monthlyRows(s: GameState): MonthRow[] {
 }
 
 /** Net varlık = nakit + varlıklar − borçlar. (Arsa/proje/kredi sistemleri geldikçe genişler.) */
-export const netWorth = (s: GameState): Money => (s.company ? s.company.cash + landAssetValue(s) : 0);
+/** Net varlık = nakit + arsalar (piyasa) + inşaat halindeki projelerin ödenen maliyeti + biten/satılmamış binaların tahmini değeri (%90). */
+export const projectAssetValue = (s: GameState): Money => s.projects.reduce((a, p) => a + (p.status === 'insaat' ? p.build!.spent : p.status === 'tamamlandi' ? Math.round(currentRevenue(s, p) * 0.9) : 0), 0);
+export const netWorth = (s: GameState): Money => (s.company ? s.company.cash + landAssetValue(s) + projectAssetValue(s) : 0);
 
 /**
  * Nakit yeterlilik süresi (ay): kasa / aylık net yanma. Yanma = beklenen sabit gider − son 3 tam ayın ort. geliri.
@@ -74,6 +77,11 @@ export function alerts(s: GameState, fmt: (m: Money) => string, fmtDate: (d: num
   if (m.regime === 'kriz') out.push({ tone: 'bad', text: 'Ekonomik kriz sürüyor: nakdinizi koruyun, riskli yatırımdan kaçının.' });
   else if (m.regime === 'daralma') out.push({ tone: 'warn', text: 'Piyasa daralıyor: satışlar ve kredi koşulları zorlaşabilir.' });
   else if (m.regime === 'asiri_isinma') out.push({ tone: 'warn', text: 'Piyasa aşırı ısınma işareti veriyor; kaldıraçlı büyüme risklidir.' });
+  for (const pr of s.projects) {
+    if (pr.status === 'insaat' && pr.build?.stalled) out.push({ tone: 'bad', text: `${pr.name}: nakit yok, inşaat durdu!` });
+    else if (pr.status === 'insaat' && pr.build) out.push({ tone: 'info', text: `${pr.name}: ${STAGES[pr.build.stage]?.label ?? ''} (%${Math.round(pr.build.progress * 100)})` });
+    if (pr.status === 'tamamlandi') out.push({ tone: 'ok', text: `${pr.name} teslim edildi: satış seçeneklerini değerlendirin.` });
+  }
   const idle = s.parcels.filter((p) => p.owner === 'player' && p.projectId === undefined && !p.listed);
   if (idle.length) out.push({ tone: 'info', text: idle.length === 1 ? `Boş arsanız var (${idle[0]!.hood}): proje başlatın ya da satışa koyun.` : `${idle.length} boş arsanız var: proje başlatın ya da satışa koyun.` });
   if (s.staff.length === 0) out.push({ tone: 'info', text: 'Ekibiniz yok. Ekip sekmesinden personel alabilirsiniz.' });

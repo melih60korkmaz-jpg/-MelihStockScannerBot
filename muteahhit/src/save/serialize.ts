@@ -30,6 +30,12 @@ export const MIGRATIONS: Record<number, (s: any) => any> = {
     s.parcels = []; s.projects = []; s.cityMarket = {}; s.scheduled = [];
     initMarket(s); s.meta.version = 3; return s;
   },
+  // v3 → v4 (Faz 5): inşaat — şirket istatistikleri, proje mahalle adı, hava durumu
+  3: (s) => {
+    if (s.company) s.company.stats = { completed: 0, sold: 0, profit: 0 };
+    for (const pr of s.projects) pr.hood = (s.parcels.find((x: any) => x.id === pr.parcelId)?.hood) ?? '';
+    s.weather = { istanbul: 'acik', ankara: 'acik', izmir: 'acik' }; s.meta.version = 4; return s;
+  },
 };
 
 export function pack(state: GameState, now = Date.now()): string {
@@ -53,6 +59,7 @@ export function validateState(s: any): string | null {
   if (!Number.isInteger(s.ledgerBase)) return 'ledgerBase bozuk';
   if (!s.macro || typeof s.macro.policyRate !== 'number' || typeof s.macro.inflation !== 'number' || !s.macro.regime) return 'makro eksik';
   if (!Array.isArray(s.macroHistory) || !Array.isArray(s.news) || !Array.isArray(s.history)) return 'geçmiş eksik';
+  if (!s.weather) return 'hava durumu eksik';
   if (!Array.isArray(s.parcels) || !Array.isArray(s.projects) || !Array.isArray(s.scheduled) || !s.cityMarket) return 'arsa/proje verisi eksik';
   if (typeof s.costIndex !== 'number' || !Number.isInteger(s.taxLossCarry)) return 'maliyet endeksi bozuk';
   if (s.company) {

@@ -28,6 +28,7 @@ export interface Company {
   level: number;
   reputation: number;   // 0-100
   creditScore: number;  // 0-1000
+  stats: { completed: number; sold: number; profit: Money };
   cash: Money;          // ÖNBELLEK: her zaman ledgerBase + Σledger
 }
 
@@ -60,9 +61,32 @@ export interface Parcel {
   projectId?: number;
 }
 export interface CityMarket { landIndex: number; housingIndex: number }
+export interface BuildState {
+  stage: number;               // STAGES indeksi (1–17); 18 = bitti
+  progress: number;            // aşama ilerlemesi 0–1
+  startDay: number; stageStartDay: number;
+  stageBudget: Money[];        // aşama başına planlanan bütçe (baz fiyat), soil planı dahil
+  stageStarted: boolean;       // mevcut aşama başlangıç kancası çalıştı mı
+  stageMult: number;           // mevcut aşamanın rastgele maliyet sapması
+  soilPlanned: number;         // plandaki zemin çarpanı
+  permitMult: number;          // ruhsat süresi çarpanı
+  priceBase: { mat: number; cost: number };
+  spent: Money;                // ödenen
+  unpaid: Money;               // tahakkuk eden, henüz ödenmeyen
+  unpaidParts: { malzeme: Money; insaat: Money; makine: Money };
+  qualitySum: number; qualityW: number;
+  stalled: null | 'nakit';
+  stalledDays: number;
+  stallStreak?: number;        // art arda durma günü (olay tekrarını sınırlar)
+  stallEvtDay?: number;        // son DURDU olayının günü
+  soilExtra: Money;            // zemin sürprizi (+/−)
+  doneDay?: number;
+}
 export interface Project {
-  id: number; parcelId: number; name: string; type: string; quality: string; designSeed: number;
-  status: 'taslak';
+  id: number; parcelId: number; hood: string; name: string; type: string; quality: string; designSeed: number;
+  status: 'taslak' | 'insaat' | 'tamamlandi' | 'satildi';
+  build?: BuildState;
+  result?: { qualityScore: number; cost: Money; days: number; plannedDays: number; revenue?: Money; profit?: Money; soldDay?: number };
   createdDay: number; cityId: string;
   floors: number; emsal: number; brut: number; satilabilir: number;
   matIndexAtPlan: number;
@@ -93,6 +117,7 @@ export interface GameState {
   projects: Project[];
   cityMarket: Record<string, CityMarket>;
   scheduled: Scheduled[];
+  weather: Record<string, 'acik' | 'yagmur' | 'kar'>;
 }
 
 export interface GameEvent {

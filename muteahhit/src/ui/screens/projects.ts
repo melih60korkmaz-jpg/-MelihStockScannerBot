@@ -1,4 +1,4 @@
-import { buildingType, cityData, quality } from '../../data';
+import { STAGES, buildingType, cityData, quality } from '../../data';
 import { fairValue, ownedParcels } from '../../sim/land';
 import { COMMISSION } from '../../sim/projects';
 import { h, press, toast } from '../dom';
@@ -12,17 +12,21 @@ export function projectsView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, parcels = ownedParcels(s);
   const projs = h('div', {}); const lots = h('div', {});
   if (!s.projects.length) projs.append(h('div', { class: 'card empty' }, 'Henüz projeniz yok. Arsa dosyasından "Proje başlat" ile ilk projenizi oluşturun.'));
+  const STATUS: Record<string, [string, string]> = { taslak: ['Taslak', 'warn'], insaat: ['İnşaat', 'good'], tamamlandi: ['Teslim edildi', 'good'], satildi: ['Satıldı', ''] };
   for (const pr of s.projects) {
-    const p = s.parcels.find((x) => x.id === pr.parcelId), t = buildingType(pr.type)!, q = quality(pr.quality)!;
-    const land = p?.costBasis ?? 0, profit = pr.expected.revenue - Math.round(pr.expected.revenue * COMMISSION) - pr.budget.total - land;
+    const p = s.parcels.find((x) => x.id === pr.parcelId), t = buildingType(pr.type)!, q = quality(pr.quality)!, b = pr.build;
+    const land = p?.costBasis ?? 0, profit = pr.status === 'satildi' ? (pr.result?.profit ?? 0) : pr.expected.revenue - Math.round(pr.expected.revenue * COMMISSION) - pr.budget.total - land;
+    const stage = pr.status === 'insaat' && b ? STAGES[b.stage]! : null;
+    const prog = pr.status === 'insaat' && b ? (STAGES.slice(1, b.stage).reduce((a, x) => a + x.cost, 0) + STAGES[b.stage]!.cost * b.progress) / 100 : pr.status === 'taslak' ? 0 : 1;
     projs.append(h('div', { class: 'card', style: 'margin-bottom:10px' },
-      h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' }, h('h3', { style: 'font-size:22px;flex:1' }, pr.name), h('span', { class: 'chip' }, t.label), h('span', { class: 'chip' }, q.label), h('span', { class: 'chip warn' }, 'Taslak')),
-      h('div', { class: 'mute', style: 'font-size:12px;margin:4px 0 8px' }, `${p?.hood ?? ''} · ${cityData(pr.cityId)?.label} · ${pr.floors} kat · brüt ${nf(pr.brut)} m² · satılabilir ${nf(pr.satilabilir)} m²`),
-      h('div', { class: 'kpis' }, h('div', { class: 'kpi', html: `<small>Proje bütçesi</small><b>${fmt(pr.budget.total)}</b>` }), h('div', { class: 'kpi', html: `<small>Beklenen gelir</small><b>${fmt(pr.expected.revenue)}</b>` }), h('div', { class: 'kpi' }, h('small', {}, 'Beklenen kâr'), h('b', {}, colored(profit)))),
-      h('div', { class: 'mute', style: 'font-size:12px;margin-top:8px' }, `~${pr.expected.months} ay sürecek (tahmin). İnşaat aşaması bu sürümde henüz yok; proje taslak olarak saklanır.`),
-      h('div', { style: 'display:flex;gap:8px;margin-top:8px;justify-content:flex-end;flex-wrap:wrap' },
-        h('button', { class: 'btn', onclick: () => { if (p) { press(app); openParcel(app, p.id, refresh); } } }, 'Arsa dosyası'),
-        h('button', { class: 'btn danger', onclick: () => { if (!confirm('Proje iptal edilsin mi? Ödenen tasarım bedeli geri gelmez.')) return; const r = app.store.run('CancelProject', { projectId: pr.id }); if (r.ok) { app.audio.sfx('click'); toast('Proje iptal edildi.'); } else toast(r.error); } }, 'Projeyi iptal et'))));
+      h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' }, h('h3', { style: 'font-size:22px;flex:1' }, pr.name), h('span', { class: 'chip' }, t.label), h('span', { class: 'chip' }, q.label), h('span', { class: `chip ${STATUS[pr.status]![1]}` }, STATUS[pr.status]![0]), b?.stalled ? h('span', { class: 'chip bad' }, 'Nakit yok') : null),
+      h('div', { class: 'mute', style: 'font-size:12px;margin:4px 0 8px' }, `${pr.hood} · ${cityData(pr.cityId)?.label} · ${pr.floors} kat · brüt ${nf(pr.brut)} m² · satılabilir ${nf(pr.satilabilir)} m²`),
+      h('div', { class: 'kpis' }, h('div', { class: 'kpi', html: `<small>Proje bütçesi</small><b>${fmt(pr.budget.total)}</b>` }), h('div', { class: 'kpi', html: `<small>${pr.status === 'satildi' ? 'Satış' : 'Beklenen gelir'}</small><b>${fmt(pr.status === 'satildi' ? (pr.result?.revenue ?? 0) : pr.expected.revenue)}</b>` }), h('div', { class: 'kpi' }, h('small', {}, pr.status === 'satildi' ? 'Gerçekleşen kâr' : 'Beklenen kâr'), h('b', {}, colored(profit)))),
+      pr.status === 'insaat' || pr.status === 'tamamlandi' ? h('div', { style: 'margin-top:8px' }, h('div', { class: 'meter' }, h('i', { style: `width:${Math.round(prog * 100)}%;background:var(--gold)` })), h('div', { class: 'mute', style: 'font-size:12px' }, stage ? `${stage.label} · bütçe ilerlemesi ${Math.round(prog * 100)}%` : `Kalite puanı ${pr.result?.qualityScore ?? '-'}`)) : null,
+      h('div', { style: 'display:flex;gap:8px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap' },
+        pr.status !== 'satildi' ? h('button', { class: pr.status === 'tamamlandi' || pr.status === 'insaat' || pr.status === 'taslak' ? 'btn gold' : 'btn', onclick: () => { press(app); app.openSite(pr.id); } }, pr.status === 'taslak' ? 'Şantiye ve inşaat' : pr.status === 'insaat' ? 'Şantiyeyi aç' : 'Binayı aç / sat') : null,
+        p && pr.status !== 'satildi' ? h('button', { class: 'btn', onclick: () => { press(app); openParcel(app, p.id, refresh); } }, 'Arsa dosyası') : null,
+        pr.status === 'taslak' ? h('button', { class: 'btn danger', onclick: () => { if (!confirm('Proje iptal edilsin mi? Ödenen tasarım bedeli geri gelmez.')) return; const r = app.store.run('CancelProject', { projectId: pr.id }); if (r.ok) { app.audio.sfx('click'); toast('Proje iptal edildi.'); } else toast(r.error); } }, 'Projeyi iptal et') : null)));
   }
   if (!parcels.length) lots.append(h('div', { class: 'card empty' }, 'Henüz arsanız yok. Harita sekmesinden bir bölge seçip arsa inceleyin.'));
   for (const p of parcels) {

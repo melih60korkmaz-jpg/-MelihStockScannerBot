@@ -1,6 +1,7 @@
 import type { AudioEngine } from '../audio/engine';
 import { Store } from '../core/store';
 import type { MenuScene, Mood } from '../render3d/menuScene';
+import type { SiteScene } from '../render3d/siteScene';
 import type { SettingsStore } from '../platform/settings';
 import type { SaveManager } from '../save/manager';
 import type { UiCtx } from './dom';
@@ -10,11 +11,13 @@ export interface App extends UiCtx {
   settings: SettingsStore;
   saves: SaveManager;
   scene: MenuScene | null;
+  site: SiteScene | null;
   store: Store;
   persistent: boolean;
   go(screen: HTMLElement, mood?: Mood | 'none'): void;
   setStore(s: Store): void;
   menu(): void;
+  openSite(projectId: number): void;
 }
 
 /** Basit ekran yöneticisi: eski ekran söner, yenisi girer (hareket azaltma açıksa anında). */

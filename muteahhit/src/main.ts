@@ -15,6 +15,8 @@ import { MenuScene, type Mood } from './render3d/menuScene';
 import { FallbackKV, SaveManager } from './save/manager';
 import { Router, type App } from './ui/app';
 import { menuScreen } from './ui/screens/menu';
+import { hubScreen } from './ui/screens/hub';
+import { siteScreen } from './ui/screens/site';
 import { playIntro, tapGate } from './ui/screens/intro';
 
 const settings = new SettingsStore();
@@ -34,7 +36,7 @@ const root = document.getElementById('ui')!;
 const router = new Router(root, () => settings.reduced);
 
 const app: App = {
-  settings, audio, haptic, saves, scene,
+  settings, audio, haptic, saves, scene, site: null,
   get persistent() { return kv.persistent; },
   store: new Store(newGameState(1)),
   go(screen, mood = 'none') {
@@ -43,6 +45,7 @@ const app: App = {
   },
   setStore(s) { this.store = s; },
   menu() { this.go(menuScreen(app), 'menu'); },
+  openSite(id) { this.go(siteScreen(app, id, () => this.go(hubScreen(app, 'projeler'), 'none')), 'none'); },
 };
 
 function applyMotion() {
@@ -60,19 +63,19 @@ requestAnimationFrame(loop);
 // Yaşam döngüsü: arka plana alınınca oyunu duraklat, kaydet, sahneyi durdur
 let sceneWasRunning = false;
 const onHide = () => {
-  if (!document.hidden) { if (sceneWasRunning) scene?.start(); return; }
+  if (!document.hidden) { if (app.site) app.site.start(); else if (sceneWasRunning) scene?.start(); return; }
   sceneWasRunning = !!scene && (scene as any).running;
-  scene?.stop();
+  scene?.stop(); app.site?.stop();
   if (app.store.state.company) { app.store.pauseForBackground(); void saves.autosave(app.store.state).catch(() => {}); }
 };
 document.addEventListener('visibilitychange', onHide);
 addEventListener('pagehide', onHide);
-addEventListener('resize', () => scene?.resize());
+addEventListener('resize', () => { scene?.resize(); app.site?.resize(); });
 // Yalnızca yatay: dikey tutulursa oyun duraklar ve sahne durur; yatay dönünce kaldığı yerden devam eder.
 const portraitMq = matchMedia('(orientation: portrait)');
 const onOrient = () => {
-  if (portraitMq.matches) { sceneWasRunning = !!scene && (scene as any).running || sceneWasRunning; scene?.stop(); app.store.pauseForBackground(); audio.suspend(); }
-  else { if (sceneWasRunning) scene?.start(); audio.resume(); setTimeout(() => scene?.resize(), 150); }
+  if (portraitMq.matches) { sceneWasRunning = !!scene && (scene as any).running || sceneWasRunning; scene?.stop(); app.site?.stop(); app.store.pauseForBackground(); audio.suspend(); }
+  else { if (app.site) app.site.start(); else if (sceneWasRunning) scene?.start(); audio.resume(); setTimeout(() => { scene?.resize(); app.site?.resize(); }, 150); }
 };
 portraitMq.addEventListener('change', onOrient);
 try { (screen.orientation as any)?.lock?.('landscape').catch(() => {}); } catch { /* iOS Safari desteklemez; yerel uygulamada kilitlenecek */ }

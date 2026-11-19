@@ -107,7 +107,8 @@ export const surveyCost = (p: Parcel, kind: 'soil' | 'market'): Money => (kind =
 export const SURVEY_DAYS = { soil: 5, market: 3 } as const;
 export const ownedParcels = (s: GameState) => s.parcels.filter((p) => p.owner === 'player');
 export const marketParcels = (s: GameState) => s.parcels.filter((p) => p.owner === 'market');
-export const landAssetValue = (s: GameState): Money => ownedParcels(s).reduce((a, p) => a + fairValue(s, p), 0);
+/** Biten (satılmamış) binası olan arsa, bina değeriyle birlikte sayıldığı için burada hariç tutulur. */
+export const landAssetValue = (s: GameState): Money => ownedParcels(s).reduce((a, p) => a + (s.projects.some((x) => x.parcelId === p.id && x.status === 'tamamlandi') ? 0 : fairValue(s, p)), 0);
 
 /** Pazarlık: satıcının gizli eşiği güvenle sertleşir (güven yüksek → satıcı inatçı). */
 export function reservePrice(s: GameState, p: Parcel): Money {
