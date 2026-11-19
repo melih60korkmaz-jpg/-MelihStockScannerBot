@@ -1,0 +1,6 @@
+[
+  { "level": 1, "label": "Küçük Ofis",     "capacity": 6,   "monthlyRentTL": 25000 },
+  { "level": 2, "label": "Ofis Katı",      "capacity": 20,  "monthlyRentTL": 80000 },
+  { "level": 3, "label": "Plaza Katı",     "capacity": 60,  "monthlyRentTL": 240000 },
+  { "level": 4, "label": "Şirket Binası",  "capacity": 150, "monthlyRentTL": 600000 }
+]
