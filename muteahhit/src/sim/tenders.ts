@@ -3,6 +3,7 @@ import { pick, rand, randInt } from '../core/rng';
 import type { GameEvent, GameState, Parcel, Project, Tender } from '../core/types';
 import { buildingType, cityData, STAGES } from '../data';
 import { post } from './ledger';
+import { tenderRivals } from './rivals';
 import { newDesignSeed, planProject } from './projects';
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
@@ -16,7 +17,6 @@ export const KINDS: Kind[] = [
   { id: 'fabrika', label: 'Sanayi tesisi', type: 'fabrika', quality: 'standart', client: 'ozel', area: 3000, zoning: 'sanayi', taks: 0.5, kaks: 1.0, floors: 2, req: { rep: 10, score: 380, completed: 1, staff: 5, machines: 1 }, bondPct: 0.02, names: ['Gıda', 'Tekstil', 'Plastik', 'Makine', 'Mobilya'] },
   { id: 'konut', label: 'Büyük konut projesi', type: 'site', quality: 'standart', client: 'ozel', area: 6000, zoning: 'konut', taks: 0.3, kaks: 1.5, floors: 6, req: { rep: 22, score: 480, completed: 2, staff: 8, machines: 2 }, bondPct: 0.03, names: ['Toplu Konut', 'Kooperatif', 'Kentsel Dönüşüm', 'Vadi', 'Park'] },
 ];
-const RIVALS = ['Kuzey İnşaat', 'Akın Yapı', 'Demirhan A.Ş.', 'Atlas Müteahhitlik', 'Yıldız Holding', 'Başaran Yapı', 'Erdem İnşaat', 'Tuna Grup'];
 
 const mkParcel = (s: GameState, cityId: string, k: Kind, scale: number): Parcel => {
   const dist = cityData(cityId)!.districts; const d = dist[randInt(s.rng, 'misc', 0, dist.length - 1)]!;
@@ -28,8 +28,7 @@ export function generateTender(s: GameState, cityId: string): Tender | null {
   const plan = planProject(s, pc, k.type, k.quality, 0); if (!plan.ok) return null;
   const trueCost = plan.cost.total - plan.cost.designFee; const ref = Math.round(trueCost * 1.2), day = s.clock.day;
   const name = pick(s.rng, 'misc', k.names), prov = cityData(cityId)!.label;
-  const rivals: Tender['rivals'] = []; const nr = randInt(s.rng, 'misc', 3, 4), pool = [...RIVALS];
-  for (let i = 0; i < nr; i++) { const n = pool.splice(randInt(s.rng, 'misc', 0, pool.length - 1), 1)[0]!; rivals.push({ name: n, price: Math.round(ref * (0.86 + rand(s.rng, 'misc') * 0.14)), tech: randInt(s.rng, 'misc', 40, 88), rep: randInt(s.rng, 'misc', 20, 85) }); }
+  const rivals = tenderRivals(s, randInt(s.rng, 'misc', 3, 4), ref);
   return {
     id: s.nextId++, kind: k.id, title: `${prov} ${name} ${k.label}`, city: cityId, client: k.client, type: k.type, quality: k.quality, area: pc.area, months: Math.round((plan.months.min + plan.months.max) / 2),
     refCost: ref, trueCost, req: { ...k.req, rep: Math.min(80, Math.round(k.req.rep * (0.9 + plan.cost.total / TL(400_000_000)))) }, bondPct: k.bondPct, openDay: day, evalDay: day + EVAL_DAYS, rivals, status: 'acik',
@@ -88,7 +87,7 @@ export function evaluateTender(s: GameState, t: Tender, events: GameEvent[]): vo
     events.push({ type: 'TENDER_LOST', day, pause: true, data: { tenderId: t.id, reason: 'elendi' } }); return;
   }
   if (top?.me) { t.status = 'kazandi'; t.result = { winner: c.name, ...out }; winTender(s, t, events); }
-  else { t.status = 'kaybetti'; t.result = { winner: top!.name, ...out }; post(s, 'teminat', t.bid.bond, { memo: 'Teminat iadesi' }); c.reputation = clamp(c.reputation, 0, 100); events.push({ type: 'TENDER_LOST', day, pause: true, data: { tenderId: t.id, winner: top!.name } }); }
+  else { const rv = s.rivals.find((r) => r.name === top!.name); if (rv) { rv.wins++; rv.projects++; rv.last = 'ihale'; } t.status = 'kaybetti'; t.result = { winner: top!.name, ...out }; post(s, 'teminat', t.bid.bond, { memo: 'Teminat iadesi' }); c.reputation = clamp(c.reputation, 0, 100); events.push({ type: 'TENDER_LOST', day, pause: true, data: { tenderId: t.id, winner: top!.name } }); }
 }
 
 /** Kazanılan ihale: işveren arsası + sözleşmeli proje; %10 avans; aşama bazlı hakediş (45 gün vadeli). */

@@ -1,5 +1,6 @@
 import { seedStreams } from './rng';
 import { initMarket } from '../sim/land';
+import { initRivals } from '../sim/rivals';
 import { MATERIALS } from '../data';
 import type { Difficulty, GameState, MacroState } from './types';
 
@@ -7,7 +8,7 @@ export function initialMacro(): MacroState {
   return { regime: 'normal', regimeSince: 0, regimeEnd: 24 * 30, calmUntilDay: 0, policyRate: 18, inflation: 14, confidence: 58, materialIndex: 100 };
 }
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 export function newGameState(seed: number, difficulty: Difficulty = 'gercekci'): GameState {
   const s: GameState = {
@@ -40,7 +41,10 @@ export function newGameState(seed: number, difficulty: Difficulty = 'gercekci'):
     loans: [],
     investments: [],
     tenders: [],
+    rivals: [],
+    pending: null,
+    evtLast: {},
   };
-  initMarket(s);
+  initMarket(s); initRivals(s);
   return s;
 }

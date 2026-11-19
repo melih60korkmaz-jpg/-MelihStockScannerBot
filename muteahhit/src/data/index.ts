@@ -11,6 +11,7 @@ import stagesRaw from './stages.json';
 import materialsRaw from './materials.json';
 import machinesRaw from './machines.json';
 import banksRaw from './banks.json';
+import eventsRaw from './events.json';
 
 export interface StaffTypeDef { id: string; label: string; baseSalaryTL: number }
 export interface OfficeDef { level: number; label: string; capacity: number; monthlyRentTL: number }
@@ -85,3 +86,9 @@ export const BANKS = banksRaw as BankDef[];
 export const bank = (id: string) => BANKS.find((b) => b.id === id);
 export const staffType = (id: string) => STAFF_TYPES.find((t) => t.id === id);
 export const officeFor = (level: number) => OFFICES[Math.min(level, OFFICES.length) - 1]!;
+
+export type EffectTuple = [string, ...(number | string)[]];
+export interface EventChoice { l: string; e: EffectTuple[]; p?: number; s?: EffectTuple[]; f?: EffectTuple[] }
+export interface EventDef { id: string; c: string; t: string; x: string; w: number; need: string[]; ch: EventChoice[]; def?: number }
+export const EVENTS = eventsRaw as unknown as EventDef[];
+export const eventDef = (id: string) => EVENTS.find((e) => e.id === id);

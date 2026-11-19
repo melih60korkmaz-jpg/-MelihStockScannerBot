@@ -64,6 +64,8 @@ export const MIGRATIONS: Record<number, (s: any) => any> = {
     if (s.company) { s.company.ownership = 100; s.company.bankrupt = false; }
     s.meta.version = 8; return s;
   },
+  // v8 → v9 (Faz 9): rakipler, olay kataloğu
+  8: (s) => { s.rivals = []; s.pending = null; s.evtLast = {}; s.meta.version = 9; return s; },
 };
 
 export function pack(state: GameState, now = Date.now()): string {
@@ -93,6 +95,7 @@ export function validateState(s: any): string | null {
   if (!s.stock || !Array.isArray(s.orders) || !Array.isArray(s.machines) || !s.matPrice) return 'kaynak verisi eksik';
   if (!Array.isArray(s.parcels) || !Array.isArray(s.projects) || !Array.isArray(s.scheduled) || !s.cityMarket) return 'arsa/proje verisi eksik';
   if (typeof s.costIndex !== 'number' || !Number.isInteger(s.taxLossCarry)) return 'maliyet endeksi bozuk';
+  if (!Array.isArray(s.rivals) || typeof s.evtLast !== 'object') return 'rakip/olay verisi eksik';
   if (!Array.isArray(s.loans) || !Array.isArray(s.investments) || !Array.isArray(s.tenders)) return 'finans verisi eksik';
   if (s.company) {
     if (!Number.isInteger(s.company.cash)) return 'kasa bozuk';

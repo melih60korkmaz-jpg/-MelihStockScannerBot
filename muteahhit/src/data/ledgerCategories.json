@@ -133,5 +133,15 @@
   "id": "kredi_harc",
   "label": "Kredi masrafı",
   "kind": "gider"
+ },
+ {
+  "id": "olay_gider",
+  "label": "Olay ve beklenmedik gider",
+  "kind": "gider"
+ },
+ {
+  "id": "olay_gelir",
+  "label": "Olay geliri",
+  "kind": "gelir"
  }
 ]

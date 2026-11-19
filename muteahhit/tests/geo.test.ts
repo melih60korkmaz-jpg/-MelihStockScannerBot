@@ -99,6 +99,6 @@ describe('kayıt (v7)', () => {
   });
   it('v6 kaydı v7\'ye taşınır: başlangıç şehri ve sahip olunan arsaların illeri açık', () => {
     const s = start(7, 'emlakci', 'ankara'); const old: any = JSON.parse(JSON.stringify(s)); old.meta.version = 6; delete old.openCities;
-    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(8); expect(r.state.openCities).toContain('ankara'); advanceDays(r.state, 40); }
+    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(9); expect(r.state.openCities).toContain('ankara'); advanceDays(r.state, 40); }
   });
 });

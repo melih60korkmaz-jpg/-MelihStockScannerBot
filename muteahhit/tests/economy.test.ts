@@ -68,8 +68,8 @@ describe('giderler ve enflasyon', () => {
   });
   it('yıllık maaş artışı enflasyona bağlı; sabit giderler endeksle artar', () => {
     const s = start(); dispatch(s, 'HireStaff', { type: 'isci' });
-    const w0 = s.staff[0]!.salary; advanceDays(s, 365);
-    expect(s.staff[0]!.salary).toBeGreaterThan(w0 * 1.05);
+    const w0 = s.staff[0]!.salary, id0 = s.staff[0]!.id; s.evtLast = Object.fromEntries(['usta_ayrildi', 'personel_transfer'].map((k) => [k, 1e9])); advanceDays(s, 365);
+    expect(s.staff.find((x) => x.id === id0)!.salary).toBeGreaterThan(w0 * 1.05);
     expect(s.costIndex).toBeGreaterThan(1.05);
   });
   it('bilinmeyen kategoriyle para hareketi reddedilir', () => {
@@ -140,7 +140,7 @@ describe('kayıt göçü', () => {
     for (const k of ['macro', 'macroHistory', 'news', 'history', 'costIndex', 'taxLossCarry']) delete old[k];
     const r = unpack(pack(old));
     expect(r.ok).toBe(true);
-    if (r.ok) { expect(r.migrated).toBe(true); expect(r.state.meta.version).toBe(8); expect(r.state.parcels.length).toBeGreaterThan(0); advanceDays(r.state, 120); expect(checkInvariant(r.state)).toBe(true); expect(r.state.macroHistory.length).toBeGreaterThan(0); }
+    if (r.ok) { expect(r.migrated).toBe(true); expect(r.state.meta.version).toBe(9); expect(r.state.parcels.length).toBeGreaterThan(0); advanceDays(r.state, 120); expect(checkInvariant(r.state)).toBe(true); expect(r.state.macroHistory.length).toBeGreaterThan(0); }
   });
 });
 

@@ -1,5 +1,6 @@
 import { gauss, rand, rand as rnd } from '../core/rng';
 import { settleProject } from './investors';
+import { rivalPressure } from './rivals';
 import type { Money } from '../core/money';
 import type { GameEvent, GameState, Project, Receivable, SalesPolicy, Unit } from '../core/types';
 import { districtData } from '../data';
@@ -57,7 +58,7 @@ export function saleChance(s: GameState, p: Project, pol: SalesPolicy): { p: num
   const demand = demandIndex(s), price = Math.exp(-6 * (pol.priceMult - 1)), brand = 0.7 + 0.6 * ((0.6 * c.reputation + 0.4 * c.satisfaction) / 100);
   const staff = 1 + Math.min(0.45, 0.15 * s.staff.filter((x) => x.type === 'satis_danismani').length), agent = pol.agent ? 1.3 : 1;
   const comp = 1 - 0.4 * ((d?.competition ?? 50) / 100), pres = isPresale(p) ? 0.6 : 1;
-  return { p: clamp(0.012 * demand * price * brand * staff * agent * comp * (SPEED[p.type] ?? 1) * pres, 0, 0.25), demand, price, brand };
+  return { p: clamp(0.012 * demand * price * brand * staff * agent * comp * (SPEED[p.type] ?? 1) * pres * rivalPressure(s, p.cityId), 0, 0.25), demand, price, brand };
 }
 
 function addReceivable(s: GameState, u: Unit, amount: Money, dueDay: number, kind: Receivable['kind']) { if (amount > 0) s.receivables.push({ id: s.nextId++, unitId: u.id, projectId: u.projectId, amount, dueDay, kind, missed: 0 }); }

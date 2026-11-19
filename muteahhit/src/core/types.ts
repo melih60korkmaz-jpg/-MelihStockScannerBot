@@ -69,7 +69,9 @@ export interface Parcel {
   listed?: { askMult: number; day: number } // oyuncu satışa koyduysa
   projectId?: number;
 }
-export interface CityMarket { landIndex: number; housingIndex: number }
+export interface CityMarket { landIndex: number; housingIndex: number; supply?: number }
+export interface Rival { id: number; name: string; style: 'agresif' | 'dengeli' | 'temkinli'; home: string; cash: Money; rep: number; tech: number; projects: number; wins: number; failed: boolean; since: number; last?: string }
+export interface PendingEvent { id: string; day: number; projectId?: number; city?: string }
 export interface BuildState {
   stage: number;               // STAGES indeksi (1–17); 18 = bitti
   progress: number;            // aşama ilerlemesi 0–1
@@ -170,6 +172,9 @@ export interface GameState {
   loans: Loan[];
   investments: Investment[];
   tenders: Tender[];
+  rivals: Rival[];
+  pending: PendingEvent | null;
+  evtLast: Record<string, number>;
 }
 
 export interface GameEvent {
