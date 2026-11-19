@@ -50,7 +50,7 @@ describe('komutlar', () => {
   });
   it('ofis kapasitesini aşan işe alımı reddeder', () => {
     const s = startGame();
-    for (let i = 0; i < OFFICES[0]!.capacity; i++) expect(dispatch(s, 'HireStaff', { type: 'isci' }).ok).toBe(true);
+    for (let i = s.staff.length; i < OFFICES[0]!.capacity; i++) expect(dispatch(s, 'HireStaff', { type: 'isci' }).ok).toBe(true);
     const r = dispatch(s, 'HireStaff', { type: 'isci' });
     expect(r.ok).toBe(false);
   });
@@ -102,5 +102,30 @@ describe('determinizm', () => {
       return JSON.stringify(s);
     };
     expect(run()).toBe(run());
+  });
+});
+
+describe('patron geçmişi ve zorluk (gerçek etkiler)', () => {
+  const make = (bg: string, diff?: string) => {
+    const s = newGameState(3);
+    const r = dispatch(s, 'CreateCompany', { name: 'Etki Yapı', founderBackground: bg, startCity: 'ankara', ...(diff ? { difficulty: diff } : {}) });
+    expect(r.ok).toBe(true); return s;
+  };
+  it('her geçmiş farklı sermaye/itibar/kadro verir', () => {
+    const a = make('muhendis_mirasci'), b = make('eski_kalfa'), c = make('emlakci');
+    expect(a.company!.cash).toBe(TL(5_500_000)); expect(a.company!.reputation).toBe(18); expect(a.staff.map((x) => x.type)).toEqual(['muhendis']);
+    expect(b.staff.map((x) => x.type)).toEqual(['usta', 'isci', 'isci']);
+    expect(c.company!.cash).toBe(TL(6_500_000)); expect(c.staff[0]!.type).toBe('satis_danismani');
+    for (const s of [a, b, c]) expect(checkInvariant(s)).toBe(true);
+  });
+  it('zorluk başlangıç sermayesini çarpar', () => {
+    expect(make('emlakci', 'rahat').company!.cash).toBe(TL(6_500_000 * 1.25));
+    expect(make('emlakci', 'acimasiz').company!.cash).toBe(TL(6_500_000 * 0.8));
+    expect(make('emlakci', 'acimasiz').meta.difficulty).toBe('acimasiz');
+  });
+  it('geçersiz amblem/zorluk reddedilir', () => {
+    const s = newGameState(1);
+    expect(dispatch(s, 'CreateCompany', { name: 'Aa', founderBackground: 'emlakci', startCity: 'izmir', emblem: { shape: 99, color: 0 } }).ok).toBe(false);
+    expect(dispatch(s, 'CreateCompany', { name: 'Aa', founderBackground: 'emlakci', startCity: 'izmir', difficulty: 'x' }).ok).toBe(false);
   });
 });

@@ -28,6 +28,9 @@ export class Store {
     return r;
   }
 
+  /** Tek gün ilerlet (atlama düğmeleri için); olayları yayınlar. */
+  stepDay(): void { const evs = advanceDay(this.state); this.emit(evs); }
+
   setSpeed(sp: Speed) { this.speed = sp; this.acc = 0; this.emit([{ type: 'SPEED', day: this.state.clock.day, data: { speed: sp } }]); }
 
   /** requestAnimationFrame'den çağrılır. Büyük dt (arka plandan dönüş) sınırlanır. */

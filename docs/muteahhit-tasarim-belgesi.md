@@ -446,7 +446,7 @@ Nakit akış tablosu (aylık), gelir-gider, bilanço özeti (varlık = nakit + a
 | 27 | İflas/oyun sonu | Toparlanma seçenekleri |
 | 28 | Haber bandı & bildirim merkezi | Piyasa/olay akışı |
 
-**Navigasyon (mobil, portre):** Alt sekme çubuğu: **Şirket · Harita · Şantiye · Piyasa · Finans** (+ "Daha fazla": personel, makine, banka, ihale, görev…). Üstte kalıcı HUD: tarih + hız kontrolleri + kasa + itibar. Tüm detaylar **alttan açılan paneller (bottom sheet)** ile açılır; böylece 3D sahne hiç terk edilmez.
+**Navigasyon (YATAY öncelikli, bkz. Revizyon v0.2):** Alt sekme çubuğu: **Şirket · Harita · Şantiye · Piyasa · Finans** (+ "Daha fazla": personel, makine, banka, ihale, görev…). Üstte kalıcı HUD: şirket adı, kasa, itibar, ayarlar, tarih + hız kontrolleri. Detaylar yan/alt panellerle açılır; böylece 3D sahne hiç terk edilmez. Dikey ekran desteklenir ama ikincil.
 
 ---
 
@@ -758,3 +758,15 @@ Her faz **çalışır halde** bitirilir, bir sonrakine geçmeden **çıkış kri
 4. **Başlangıç sermayesi** (~6 M₺) ve para birimi ölçeği (gerçekçi TL büyüklükleri) uygun mu?
 5. **MVP sınırı:** AVM/otel/hisse satışı/kamu mega-ihaleleri Faz 8'e ertelenmesi uygun mu?
 6. **Repo:** Bu depo bir borsa botu; oyun için **ayrı yeni bir depo** açmanızı öneririm. Hangisini kullanalım?
+
+
+---
+
+## Revizyon v0.2 — Referans videodan çıkarımlar (Faz 2)
+
+Kullanıcının daha önceki oyununun ekran kaydı incelendi. Çıkarımlar:
+
+- **Yatay (landscape) öncelikli oyun.** Arayüz ~390 px yüksekliğe sığacak şekilde tasarlanır; menü, sihirbaz ve paneller buna göre sıkıdır. Dikey düzen ikincil/uyumlu.
+- **Görsel dil:** koyu petrol-lacivert zemin, altın sarısı birincil vurgu, yuvarlak köşeli kartlar, hap biçimli sekmeler, alt sekme çubuğu (ikon + etiket), üst HUD (kasa / ayar / tarih). Palet referansla uyumlu olacak şekilde petrol tonuna çekildi (`#07161d`, `#0e2430`, `#153242`); altın `#F5B700` korundu.
+- **Ekran fikirleri (ileri fazlara not):** Türkiye haritası + şehir/ilçe kartları, proje kartları (illüstratif bina görseli + ilerleme çubuğu + durum rozeti), "Bugün" aksiyon kutuları, kâr/zarar grafiği kartı, borsa/ortaklık/yatırım sekmeleri, rakip ve piyasa panelleri. Bunlar Faz 3–9'da ilgili sistemle birlikte eklenecek (çalışmayan ekran bırakılmaz).
+- Referanstaki oyundan **görsel varlık veya metin kopyalanmaz**; yalnızca düzen/bilgi mimarisi ilham olarak kullanılır.

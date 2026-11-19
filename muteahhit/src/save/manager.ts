@@ -21,11 +21,12 @@ export class IdbKV implements KV {
   private dbp: Promise<IDBDatabase>;
   constructor(name = 'muteahhit', private store = 'saves') {
     this.dbp = new Promise((res, rej) => {
-      const r = indexedDB.open(name, 1);
+      let r: IDBOpenDBRequest; try { r = indexedDB.open(name, 1); } catch (e) { rej(e); return; }
       r.onupgradeneeded = () => r.result.createObjectStore(store);
       r.onsuccess = () => res(r.result);
       r.onerror = () => rej(r.error);
     });
+    this.dbp.catch(() => {}); // reddi FallbackKV işler; yakalanmamış hata olmasın
   }
   private async tx<T>(mode: IDBTransactionMode, f: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
     const db = await this.dbp;
@@ -35,6 +36,27 @@ export class IdbKV implements KV {
   async set(k: string, v: string) { await this.tx('readwrite', (s) => s.put(v, k)); }
   async delete(k: string) { await this.tx('readwrite', (s) => s.delete(k)); }
   keys() { return this.tx('readonly', (s) => s.getAllKeys()).then((a) => a.map(String)); }
+}
+
+/**
+ * IndexedDB açılamazsa (gizli mod, engelleme, kota) sessizce belleğe düşer: oyun çalışmaya devam eder,
+ * ama kayıtlar kalıcı olmaz (`persistent` false olur ve arayüz bunu gösterir).
+ */
+export class FallbackKV implements KV {
+  persistent = true;
+  private mem = new MemoryKV();
+  private primary: KV | null = null;
+  constructor(make: () => KV = () => new IdbKV()) {
+    try { this.primary = make(); } catch { this.persistent = false; }
+  }
+  private async run<T>(f: (k: KV) => Promise<T>): Promise<T> {
+    if (this.primary) { try { return await f(this.primary); } catch { this.primary = null; this.persistent = false; } }
+    return f(this.mem);
+  }
+  get(k: string) { return this.run((s) => s.get(k)); }
+  set(k: string, v: string) { return this.run((s) => s.set(k, v)); }
+  delete(k: string) { return this.run((s) => s.delete(k)); }
+  keys() { return this.run((s) => s.keys()); }
 }
 
 export const AUTOSAVE_SLOTS = 3;
@@ -64,6 +86,8 @@ export class SaveManager {
     await this.kv.set(`slot:${slot}`, pack(s, this.now()));
     return slot;
   }
+
+  async remove(slot: string): Promise<void> { await this.kv.delete(`slot:${slot}`); }
 
   async list(): Promise<SlotInfo[]> {
     const out: SlotInfo[] = [];

@@ -1,0 +1,5 @@
+[
+  { "id": "istanbul", "label": "İstanbul", "blurb": "Dev pazar, yüksek arsa fiyatı, sert rekabet." },
+  { "id": "ankara",   "label": "Ankara",   "blurb": "Kararlı talep, kamu işlerine yakınlık." },
+  { "id": "izmir",    "label": "İzmir",    "blurb": "Gelişen bölgeler, dengeli piyasa." }
+]

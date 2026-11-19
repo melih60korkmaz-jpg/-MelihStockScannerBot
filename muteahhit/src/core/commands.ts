@@ -1,8 +1,8 @@
 import { TL, mul } from './money';
-import { pick, randInt } from './rng';
 import type { GameEvent, GameState } from './types';
-import { NAMES, officeFor, staffType } from '../data';
+import { CITIES, background, difficulty, officeFor, staffType } from '../data';
 import { post } from '../sim/ledger';
+import { createStaff } from '../sim/staff';
 
 /**
  * TÜM durum değişiklikleri komutla yapılır. UI'daki her buton bir komuta bağlıdır;
@@ -13,13 +13,13 @@ export interface CommandDef<P> {
   apply(s: GameState, p: P): GameEvent[];
 }
 
-export interface CreateCompanyParams { name: string; founderBackground: string; startCity: string }
+export interface Emblem { shape: number; color: number }
+export const EMBLEM_SHAPES = 12;
+export const EMBLEM_COLORS = 6;
+export interface CreateCompanyParams { name: string; founderBackground: string; startCity: string; difficulty?: string; emblem?: Emblem }
 export interface HireStaffParams { type: string }
 export interface FireStaffParams { staffId: number }
 
-export const STARTING_CAPITAL = TL(6_000_000);
-export const FOUNDER_BACKGROUNDS = ['muhendis_mirasci', 'eski_kalfa', 'emlakci'] as const;
-export const START_CITIES = ['istanbul', 'ankara', 'izmir'] as const;
 
 const ev = (s: GameState, type: string, data?: Record<string, unknown>, pause = false): GameEvent => ({
   type, day: s.clock.day, ...(pause ? { pause } : {}), ...(data ? { data } : {}),
@@ -30,16 +30,24 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     if (s.company) return 'Şirket zaten kurulmuş.';
     const name = p.name.trim();
     if (name.length < 2 || name.length > 32) return 'Şirket adı 2–32 karakter olmalı.';
-    if (!(FOUNDER_BACKGROUNDS as readonly string[]).includes(p.founderBackground)) return 'Geçersiz patron geçmişi.';
-    if (!(START_CITIES as readonly string[]).includes(p.startCity)) return 'Geçersiz başlangıç şehri.';
+    if (!background(p.founderBackground)) return 'Geçersiz patron geçmişi.';
+    if (!CITIES.some((c) => c.id === p.startCity)) return 'Geçersiz başlangıç şehri.';
+    if (p.difficulty !== undefined && !difficulty(p.difficulty)) return 'Geçersiz zorluk.';
+    const e = p.emblem;
+    if (e && !(Number.isInteger(e.shape) && e.shape >= 0 && e.shape < EMBLEM_SHAPES && Number.isInteger(e.color) && e.color >= 0 && e.color < EMBLEM_COLORS)) return 'Geçersiz amblem.';
     return null;
   },
   apply(s, p) {
+    if (p.difficulty) s.meta.difficulty = p.difficulty as typeof s.meta.difficulty;
+    const bg = background(p.founderBackground)!;
+    const mult = difficulty(s.meta.difficulty)!.capitalMult;
     s.company = {
       name: p.name.trim(), founderBackground: p.founderBackground, startCity: p.startCity,
-      level: 1, reputation: 10, creditScore: 500, cash: 0,
+      emblem: p.emblem ?? { shape: 0, color: 0 },
+      level: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0,
     };
-    post(s, 'sermaye', STARTING_CAPITAL, { memo: 'Kuruluş sermayesi' });
+    post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
+    for (const t of bg.staff) createStaff(s, t);
     return [ev(s, 'COMPANY_CREATED', { name: s.company.name })];
   },
 };
@@ -52,14 +60,8 @@ const hireStaff: CommandDef<HireStaffParams> = {
     return null;
   },
   apply(s, p) {
-    const def = staffType(p.type)!;
-    const experience = randInt(s.rng, 'misc', 10, 40);
-    // Deneyimli = pahalı: maaş deneyimle %0–%30 artar.
-    const salary = mul(TL(def.baseSalaryTL), 1 + (experience / 100) * 0.75);
-    const name = `${pick(s.rng, 'misc', NAMES.first)} ${pick(s.rng, 'misc', NAMES.last)}`;
-    const id = s.nextId++;
-    s.staff.push({ id, type: p.type, name, salary, experience, hiredDay: s.clock.day });
-    return [ev(s, 'STAFF_HIRED', { id, name, type: p.type })];
+    const st = createStaff(s, p.type);
+    return [ev(s, 'STAFF_HIRED', { id: st.id, name: st.name, type: p.type })];
   },
 };
 

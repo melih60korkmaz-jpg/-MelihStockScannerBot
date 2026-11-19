@@ -58,3 +58,20 @@ describe('kayıt', () => {
     expect(await m.saveManual(2, game())).toBe('manual2');
   });
 });
+
+import { FallbackKV } from '../src/save/manager';
+describe('depolama yedeği', () => {
+  it('IndexedDB oluşturulamazsa bellekte çalışır ve kalıcı değil der', async () => {
+    const kv = new FallbackKV(() => { throw new Error('engelli'); });
+    expect(kv.persistent).toBe(false);
+    const m = new SaveManager(kv); await m.autosave(game());
+    expect((await m.list()).length).toBe(1);
+  });
+  it('çalışırken IndexedDB hata verirse bellek moduna geçer, veri kaybolmaz', async () => {
+    const bad = { get: async () => { throw new Error('x'); }, set: async () => { throw new Error('x'); }, delete: async () => {}, keys: async () => [] };
+    const kv = new FallbackKV(() => bad); expect(kv.persistent).toBe(true);
+    const m = new SaveManager(kv); await m.saveManual(1, game());
+    expect(kv.persistent).toBe(false);
+    expect((await m.load('manual1')).ok).toBe(true);
+  });
+});

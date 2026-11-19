@@ -1,0 +1,8 @@
+[
+  { "id": "muhendis_mirasci", "label": "Mühendis Mirasçısı", "story": "Babanızdan kalan mühendislik diploması ve temiz bir sicil. Kasa dar, ama bankalar sizi tanıyor.",
+    "startCashTL": 5500000, "reputation": 18, "creditScore": 560, "staff": ["muhendis"] },
+  { "id": "eski_kalfa", "label": "Eski Kalfa", "story": "Yıllarca başkasının şantiyesinde çalıştınız. Şimdi güvendiğiniz bir ekibiniz var; sermayeniz az.",
+    "startCashTL": 5000000, "reputation": 12, "creditScore": 480, "staff": ["usta", "isci", "isci"] },
+  { "id": "emlakci", "label": "Emlakçı", "story": "Piyasayı ve müşteriyi iyi bilirsiniz. Nakdiniz bol, ama inşaat dünyasında henüz tanınmıyorsunuz.",
+    "startCashTL": 6500000, "reputation": 8, "creditScore": 520, "staff": ["satis_danismani"] }
+]

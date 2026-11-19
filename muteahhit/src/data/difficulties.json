@@ -1,0 +1,5 @@
+[
+  { "id": "rahat",    "label": "Rahat",    "desc": "Daha fazla başlangıç sermayesi. Öğrenmek için.", "capitalMult": 1.25 },
+  { "id": "gercekci", "label": "Gerçekçi", "desc": "Dengeli başlangıç. Önerilen.",                   "capitalMult": 1.0 },
+  { "id": "acimasiz", "label": "Acımasız", "desc": "Daha az sermaye. Her hata pahalı.",              "capitalMult": 0.8 }
+]

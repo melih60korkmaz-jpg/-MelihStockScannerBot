@@ -24,6 +24,7 @@ export interface Company {
   name: string;
   founderBackground: string;
   startCity: string;
+  emblem: { shape: number; color: number };
   level: number;
   reputation: number;   // 0-100
   creditScore: number;  // 0-1000
