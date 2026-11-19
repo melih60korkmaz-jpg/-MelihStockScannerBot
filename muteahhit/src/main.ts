@@ -84,9 +84,14 @@ addEventListener('orientationchange', () => setTimeout(() => scene?.resize(), 20
 (async function boot() {
   scene?.start();
   await tapGate();
-  await audio.unlock();      // iOS: ses yalnızca dokunuşla açılır
-  await playIntro(app);
-  app.menu();
+  // iOS: ses yalnızca dokunuşla açılır. Bazı gömülü görüntüleyicilerde AudioContext.resume() hiç sonuçlanmaz;
+  // ses yüzünden açılış takılmasın diye en çok 700 ms beklenir, ses arkada açılmaya devam eder.
+  await Promise.race([audio.unlock().catch(() => {}), new Promise<void>((r) => setTimeout(r, 700))]);
+  // Güvenlik ağı: açılış animasyonu herhangi bir nedenle bitmezse 7 sn sonra menü zorla açılır.
+  let shown = false; const show = () => { if (!shown) { shown = true; document.querySelector('.intro')?.remove(); app.menu(); } };
+  const wd = setTimeout(show, 7000);
+  try { await playIntro(app); } catch (e) { console.warn('açılış animasyonu atlandı', e); }
+  clearTimeout(wd); show();
 })();
 
 (window as any).__app = app; // test/hata ayıklama
