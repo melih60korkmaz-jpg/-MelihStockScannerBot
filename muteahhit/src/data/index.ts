@@ -5,6 +5,9 @@ import backgroundsRaw from './backgrounds.json';
 import difficultiesRaw from './difficulties.json';
 import citiesRaw from './cities.json';
 import ledgerCatsRaw from './ledgerCategories.json';
+import districtsRaw from './districts.json';
+import btRaw from './buildingTypes.json';
+import placesRaw from './places.json';
 
 export interface StaffTypeDef { id: string; label: string; baseSalaryTL: number }
 export interface OfficeDef { level: number; label: string; capacity: number; monthlyRentTL: number }
@@ -43,5 +46,23 @@ export type LedgerKind = 'sermaye' | 'gelir' | 'gider' | 'vergi' | 'yatirim' | '
 export interface LedgerCatDef { id: string; label: string; kind: LedgerKind }
 export const LEDGER_CATS = ledgerCatsRaw as LedgerCatDef[];
 export const ledgerCat = (id: string) => LEDGER_CATS.find((c) => c.id === id);
+export type Zoning = 'konut' | 'ticaret' | 'karma' | 'sanayi';
+export interface DistrictDef { id: string; label: string; saleBase: number; income: number; density: number; infra: number; transit: number; commercial: number; competition: number; growth: number; zoningW: Record<Zoning, number>; areaBias: 'small' | 'mid' | 'large'; map: { x: number; y: number; w: number; h: number } }
+export interface CityFull { id: string; label: string; costMult: number; districts: DistrictDef[] }
+export const CITY_DATA = districtsRaw as unknown as CityFull[];
+export const cityData = (id: string) => CITY_DATA.find((c) => c.id === id);
+export const districtData = (cityId: string, id: string) => cityData(cityId)?.districts.find((d) => d.id === id);
+export interface BuildingTypeDef { id: string; label: string; use: 'konut' | 'ticari' | 'sanayi'; zoning: Zoning[]; costM2: number; monthsMin: number; monthsMax: number; floorsCap: number; minArea: number; minFloors: number; saleMult: number; blurb: string }
+export interface QualityDef { id: string; label: string; costMult: number; saleMult: number; blurb: string }
+export const BUILDING_TYPES = (btRaw as any).types as BuildingTypeDef[];
+export const QUALITIES = (btRaw as any).qualities as QualityDef[];
+export const STAGE_SHARES = (btRaw as any).stageShares as [string, number][];
+export const SOIL_COST = (btRaw as any).soilCost as Record<string, number>;
+export const buildingType = (id: string) => BUILDING_TYPES.find((t) => t.id === id);
+export const quality = (id: string) => QUALITIES.find((q) => q.id === id);
+export const PLACES = placesRaw as { hoodPre: string[]; hoodSuf: string[]; projectWords: Record<string, string[]>; projectSuffix: Record<string, string[]> };
+// Veri bütünlüğü
+for (const c of CITIES) if (!cityData(c.id)) throw new Error(`Veri hatası: şehir ${c.id} için ilçe verisi yok`);
+{ const sum = STAGE_SHARES.reduce((a, [, w]) => a + w, 0); if (Math.abs(sum - 100) > 1e-9 && Math.abs(sum - 100) > 0.001) throw new Error(`Veri hatası: aşama payları toplamı ${sum}`); }
 export const staffType = (id: string) => STAFF_TYPES.find((t) => t.id === id);
 export const officeFor = (level: number) => OFFICES[Math.min(level, OFFICES.length) - 1]!;

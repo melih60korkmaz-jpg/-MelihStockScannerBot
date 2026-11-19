@@ -1,0 +1,6 @@
+{
+  "hoodPre": ["Yeni", "Cumhuriyet", "Gül", "Çınar", "Fatih", "Barış", "Yıldız", "Atatürk", "Çiçek", "Mimar Sinan", "Kurtuluş", "Güneş", "Dere", "Orman", "Zafer", "Akpınar", "Kavak", "Esentepe", "Bahçelievler", "Subaşı"],
+  "hoodSuf": ["Mahallesi"],
+  "projectWords": { "konut": ["Gül", "Çınar", "Park", "Güneş", "Vadi", "Esintepe", "Kordon", "Bahar"], "ticari": ["Merkez", "Plaza", "Meridyen", "Zirve", "Kule"], "sanayi": ["Endüstri", "Lojistik", "Üretim"] },
+  "projectSuffix": { "mustakil": ["Evleri", "Konağı"], "apartman": ["Apartmanı", "Sitesi Blok A"], "site": ["Sitesi", "Yaşam Evleri"], "villa": ["Villaları", "Vadisi"], "rezidans": ["Residence", "Towers"], "luks": ["Premium Konutları", "Seçkin Evler"], "ofis": ["Ofis Binası", "Plaza"], "is_merkezi": ["İş Merkezi", "Business Center"], "fabrika": ["Fabrikası", "Üretim Tesisi"], "depo": ["Depo Kompleksi", "Lojistik Merkezi"] }
+}

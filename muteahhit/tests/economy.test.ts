@@ -133,14 +133,14 @@ describe('finans tabloları', () => {
 });
 
 describe('kayıt göçü', () => {
-  it('v1 kaydı v2\'ye taşınır ve oynanabilir', () => {
+  it('v1 kaydı v3\'e (zincirleme) taşınır ve oynanabilir', () => {
     const s = start(); advanceDays(s, 40);
     // v1 biçimine indir
     const old: any = JSON.parse(JSON.stringify(s)); old.meta.version = 1;
     for (const k of ['macro', 'macroHistory', 'news', 'history', 'costIndex', 'taxLossCarry']) delete old[k];
     const r = unpack(pack(old));
     expect(r.ok).toBe(true);
-    if (r.ok) { expect(r.migrated).toBe(true); expect(r.state.meta.version).toBe(2); advanceDays(r.state, 120); expect(checkInvariant(r.state)).toBe(true); expect(r.state.macroHistory.length).toBeGreaterThan(0); }
+    if (r.ok) { expect(r.migrated).toBe(true); expect(r.state.meta.version).toBe(3); expect(r.state.parcels.length).toBeGreaterThan(0); advanceDays(r.state, 120); expect(checkInvariant(r.state)).toBe(true); expect(r.state.macroHistory.length).toBeGreaterThan(0); }
   });
 });
 

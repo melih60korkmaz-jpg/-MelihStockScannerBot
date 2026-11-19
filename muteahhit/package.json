@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "sim": "tsx src/headless/run.ts",
-    "sim:macro": "tsx src/headless/macroStats.ts"
+    "sim:macro": "tsx src/headless/macroStats.ts",
+    "sim:land": "tsx src/headless/landStats.ts"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

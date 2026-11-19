@@ -43,6 +43,34 @@ export interface MacroPoint { day: number; regime: Regime; policyRate: number; i
 export interface NewsItem { day: number; text: string; tone: 'info' | 'ok' | 'warn' | 'bad' }
 export interface HistoryPoint { day: number; cash: Money; netWorth: Money }
 
+export type Soil = 'saglam' | 'kaya' | 'kil' | 'dolgu' | 'yeralti_suyu' | 'egimli';
+export interface Parcel {
+  id: number; city: string; district: string; hood: string;
+  area: number; zoning: 'konut' | 'ticaret' | 'karma' | 'sanayi';
+  taks: number; kaks: number; maxFloors: number;
+  soil: Soil; soilKnown: boolean;           // gerçek zemin gizli: etütle açılır
+  roads: number; corner: boolean; infra: number;
+  growth: number; growthKnown: boolean;     // gerçek gelişim potansiyeli (0–0.3): piyasa araştırmasıyla netleşir
+  unitBase: Money;                          // m² başına adil değer (endeks 1.0'da, kuruş)
+  askMult: number; reserveMult: number;     // satıcının istediği ve gizli kabul eşiği (adil değere göre)
+  negoLockUntil: number;
+  owner: 'market' | 'player';
+  boughtDay?: number; costBasis?: Money;
+  listed?: { askMult: number; day: number } // oyuncu satışa koyduysa
+  projectId?: number;
+}
+export interface CityMarket { landIndex: number; housingIndex: number }
+export interface Project {
+  id: number; parcelId: number; name: string; type: string; quality: string; designSeed: number;
+  status: 'taslak';
+  createdDay: number; cityId: string;
+  floors: number; emsal: number; brut: number; satilabilir: number;
+  matIndexAtPlan: number;
+  budget: { base: Money; soil: Money; soft: Money; total: Money; designFee: Money };
+  expected: { revenue: Money; months: number };
+}
+export interface Scheduled { day: number; type: 'survey'; data: { parcelId: number; kind: 'soil' | 'market' } }
+
 export interface GameState {
   meta: { version: number; seed: number; difficulty: Difficulty };
   clock: { day: number };
@@ -61,6 +89,10 @@ export interface GameState {
   costIndex: number;
   /** Önceki çeyreklerden devreden zarar (vergi matrahından düşer). */
   taxLossCarry: Money;
+  parcels: Parcel[];
+  projects: Project[];
+  cityMarket: Record<string, CityMarket>;
+  scheduled: Scheduled[];
 }
 
 export interface GameEvent {

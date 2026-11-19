@@ -1,20 +1,102 @@
 [
-  { "id": "sermaye",      "label": "Sermaye",                "kind": "sermaye" },
-  { "id": "satis",        "label": "Konut/dükkân satışı",    "kind": "gelir" },
-  { "id": "hakedis",      "label": "Hakediş (ihale)",        "kind": "gelir" },
-  { "id": "kira_geliri",  "label": "Kira geliri",            "kind": "gelir" },
-  { "id": "maas",         "label": "Personel maaşları",      "kind": "gider" },
-  { "id": "sigorta",      "label": "Sigorta ve güvence",     "kind": "gider" },
-  { "id": "kira",         "label": "Ofis kirası",            "kind": "gider" },
-  { "id": "ofis",         "label": "Ofis giderleri",         "kind": "gider" },
-  { "id": "malzeme",      "label": "Malzeme",                "kind": "gider" },
-  { "id": "insaat",       "label": "İnşaat işçilik/şantiye", "kind": "gider" },
-  { "id": "makine",       "label": "Makine bakım/yakıt",     "kind": "gider" },
-  { "id": "komisyon",     "label": "Satış komisyonu",        "kind": "gider" },
-  { "id": "faiz",         "label": "Faiz gideri",            "kind": "gider" },
-  { "id": "vergi",        "label": "Vergiler",               "kind": "vergi" },
-  { "id": "arsa",         "label": "Arsa alım/satım",        "kind": "yatirim" },
-  { "id": "makine_alim",  "label": "Makine alım/satım",      "kind": "yatirim" },
-  { "id": "kredi_cekim",  "label": "Kredi çekimi",           "kind": "finansman" },
-  { "id": "kredi_odeme",  "label": "Kredi anapara ödemesi",  "kind": "finansman" }
+ {
+  "id": "sermaye",
+  "label": "Sermaye",
+  "kind": "sermaye"
+ },
+ {
+  "id": "satis",
+  "label": "Konut/dükkân satışı",
+  "kind": "gelir"
+ },
+ {
+  "id": "hakedis",
+  "label": "Hakediş (ihale)",
+  "kind": "gelir"
+ },
+ {
+  "id": "kira_geliri",
+  "label": "Kira geliri",
+  "kind": "gelir"
+ },
+ {
+  "id": "maas",
+  "label": "Personel maaşları",
+  "kind": "gider"
+ },
+ {
+  "id": "sigorta",
+  "label": "Sigorta ve güvence",
+  "kind": "gider"
+ },
+ {
+  "id": "kira",
+  "label": "Ofis kirası",
+  "kind": "gider"
+ },
+ {
+  "id": "ofis",
+  "label": "Ofis giderleri",
+  "kind": "gider"
+ },
+ {
+  "id": "malzeme",
+  "label": "Malzeme",
+  "kind": "gider"
+ },
+ {
+  "id": "tasarim",
+  "label": "Proje ve mimari",
+  "kind": "gider"
+ },
+ {
+  "id": "etut",
+  "label": "Etüt ve araştırma",
+  "kind": "gider"
+ },
+ {
+  "id": "insaat",
+  "label": "İnşaat işçilik/şantiye",
+  "kind": "gider"
+ },
+ {
+  "id": "makine",
+  "label": "Makine bakım/yakıt",
+  "kind": "gider"
+ },
+ {
+  "id": "komisyon",
+  "label": "Satış komisyonu",
+  "kind": "gider"
+ },
+ {
+  "id": "faiz",
+  "label": "Faiz gideri",
+  "kind": "gider"
+ },
+ {
+  "id": "vergi",
+  "label": "Vergiler",
+  "kind": "vergi"
+ },
+ {
+  "id": "arsa",
+  "label": "Arsa alım/satım",
+  "kind": "yatirim"
+ },
+ {
+  "id": "makine_alim",
+  "label": "Makine alım/satım",
+  "kind": "yatirim"
+ },
+ {
+  "id": "kredi_cekim",
+  "label": "Kredi çekimi",
+  "kind": "finansman"
+ },
+ {
+  "id": "kredi_odeme",
+  "label": "Kredi anapara ödemesi",
+  "kind": "finansman"
+ }
 ]

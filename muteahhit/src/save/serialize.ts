@@ -1,6 +1,7 @@
 import { SAVE_VERSION } from '../core/state';
 import type { GameState } from '../core/types';
 import { crc32 } from './crc32';
+import { initMarket } from '../sim/land';
 import { STREAMS } from '../core/rng';
 
 export interface SaveEnvelope {
@@ -23,6 +24,11 @@ export const MIGRATIONS: Record<number, (s: any) => any> = {
     s.macro = { regime: 'normal', regimeSince: s.clock.day, regimeEnd: s.clock.day + 20 * 30, calmUntilDay: s.clock.day + 20 * 30, policyRate: 18, inflation: 14, confidence: 58, materialIndex: 100 };
     s.macroHistory = []; s.news = []; s.history = []; s.costIndex = 1; s.taxLossCarry = 0;
     s.meta.version = 2; return s;
+  },
+  // v2 → v3 (Faz 4): arsa pazarı, projeler, şehir endeksleri, zamanlanmış işler
+  2: (s) => {
+    s.parcels = []; s.projects = []; s.cityMarket = {}; s.scheduled = [];
+    initMarket(s); s.meta.version = 3; return s;
   },
 };
 
@@ -47,6 +53,7 @@ export function validateState(s: any): string | null {
   if (!Number.isInteger(s.ledgerBase)) return 'ledgerBase bozuk';
   if (!s.macro || typeof s.macro.policyRate !== 'number' || typeof s.macro.inflation !== 'number' || !s.macro.regime) return 'makro eksik';
   if (!Array.isArray(s.macroHistory) || !Array.isArray(s.news) || !Array.isArray(s.history)) return 'geçmiş eksik';
+  if (!Array.isArray(s.parcels) || !Array.isArray(s.projects) || !Array.isArray(s.scheduled) || !s.cityMarket) return 'arsa/proje verisi eksik';
   if (typeof s.costIndex !== 'number' || !Number.isInteger(s.taxLossCarry)) return 'maliyet endeksi bozuk';
   if (s.company) {
     if (!Number.isInteger(s.company.cash)) return 'kasa bozuk';

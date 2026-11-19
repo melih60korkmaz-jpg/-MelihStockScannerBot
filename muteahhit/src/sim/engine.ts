@@ -4,6 +4,7 @@ import { monthKey } from '../core/calendar';
 import { ledgerCat } from '../data';
 import { compactLedger, post } from './ledger';
 import { macroMonthly } from './macro';
+import { listingsWeekly, marketMonthly } from './land';
 import { monthlyCosts, netWorth } from './finance';
 
 /**
@@ -19,9 +20,26 @@ export function advanceDay(s: GameState): GameEvent[] {
   if (s.company) {
     if (isNewYear(day)) yearly(s, events);
     if (isFirstOfMonth(day)) monthly(s, events);
-    if (isMonday(day)) events.push({ type: 'WEEK', day });
+    if (isMonday(day)) { listingsWeekly(s, events); events.push({ type: 'WEEK', day }); }
+    processScheduled(s, events);
   }
   return events;
+}
+
+/** Zamanlanmış işler (etüt sonuçları vb.). */
+function processScheduled(s: GameState, events: GameEvent[]): void {
+  if (!s.scheduled.length) return;
+  const due = s.scheduled.filter((x) => x.day <= s.clock.day);
+  if (!due.length) return;
+  s.scheduled = s.scheduled.filter((x) => x.day > s.clock.day);
+  for (const x of due) {
+    if (x.type === 'survey') {
+      const p = s.parcels.find((q) => q.id === x.data.parcelId);
+      if (!p) continue; // arsa arada başkasına satıldı: etüt boşa gitti
+      if (x.data.kind === 'soil') p.soilKnown = true; else p.growthKnown = true;
+      events.push({ type: 'SURVEY_DONE', day: s.clock.day, data: { parcelId: p.id, kind: x.data.kind } });
+    }
+  }
 }
 
 /** Yıllık maaş artışı: enflasyonun %90'ı kadar (işçi kaybetmemek için). */
@@ -35,6 +53,7 @@ function yearly(s: GameState, events: GameEvent[]): void {
 function monthly(s: GameState, events: GameEvent[]): void {
   const c = s.company!;
   macroMonthly(s, events);
+  marketMonthly(s, events);
   s.costIndex *= 1 + (s.macro.inflation / 100 / 12) * 0.85;
   for (const x of monthlyCosts(s)) post(s, x.cat, -x.amount, { memo: x.memo });
   if ([1, 4, 7, 10].includes(dateOf(s.clock.day).month)) quarterlyTax(s, events);

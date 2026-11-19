@@ -770,3 +770,16 @@ Kullanıcının daha önceki oyununun ekran kaydı incelendi. Çıkarımlar:
 - **Görsel dil:** koyu petrol-lacivert zemin, altın sarısı birincil vurgu, yuvarlak köşeli kartlar, hap biçimli sekmeler, alt sekme çubuğu (ikon + etiket), üst HUD (kasa / ayar / tarih). Palet referansla uyumlu olacak şekilde petrol tonuna çekildi (`#07161d`, `#0e2430`, `#153242`); altın `#F5B700` korundu.
 - **Ekran fikirleri (ileri fazlara not):** Türkiye haritası + şehir/ilçe kartları, proje kartları (illüstratif bina görseli + ilerleme çubuğu + durum rozeti), "Bugün" aksiyon kutuları, kâr/zarar grafiği kartı, borsa/ortaklık/yatırım sekmeleri, rakip ve piyasa panelleri. Bunlar Faz 3–9'da ilgili sistemle birlikte eklenecek (çalışmayan ekran bırakılmaz).
 - Referanstaki oyundan **görsel varlık veya metin kopyalanmaz**; yalnızca düzen/bilgi mimarisi ilham olarak kullanılır.
+
+
+---
+
+## Uygulama notları — Faz 4 (arsa ve proje)
+
+- **Arsa fiyatı artık değer yöntemiyle**: arsa, referans projede (apartman/ofis/fabrika, standart kalite) geliştiriciye bölgeye göre hedef kârı bırakacak seviyeye oturur (rekabet yüksekse daha dar). Böylece pahalı bölge otomatik kâr demek değildir; fırsat tip/kalite uyumundan, zeminden, gelişim potansiyelinden ve piyasa döngüsünden gelir. Ölçüm (`npm run sim:land`): en iyi seçenekte medyan marj ≈ %13, p10 ≈ %5, zarar eden ilan ≈ %8.
+- **Bilgi mekaniği**: zemin gizlidir (etüt: ücretli, 5 gün); gelişim potansiyeli tahminidir (piyasa araştırması: 3 gün); değer aralığı araştırmadan sonra daralır. Plan, bilinmeyen zemini +%10 beklenti ve %0–%40 aralıkla gösterir.
+- **Pazarlık**: satıcının gizli alt sınırı var (piyasa güveni yüksekken sertleşir); reddedilirse 3 gün kilit. İstenen fiyat her zaman kabul edilir. Tapu harcı %4.
+- **Satış**: hızlı satış (%92) ve satışa koyma (haftalık alıcı şansı fiyata ve güvene bağlı, %2 komisyon).
+- **Ertelenenler**: *kat karşılığı* ve *ortaklık* satış/yatırımcı sistemleri gerektirir → Faz 7–8. AVM/otel/karma tipler Faz 8. Şu an 3 şehir × 5 ilçe; Türkiye haritası ve 8 şehir Faz 11.
+- **Harita** şematik ilçe haritasıdır (ısı katmanları: satış fiyatı, gelir, rekabet, gelişim).
+- **Projeler** şimdilik "Taslak": tasarım bedeli ödenir; inşaat aşaması Faz 5.

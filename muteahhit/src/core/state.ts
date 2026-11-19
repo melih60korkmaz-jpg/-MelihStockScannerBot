@@ -1,14 +1,15 @@
 import { seedStreams } from './rng';
+import { initMarket } from '../sim/land';
 import type { Difficulty, GameState, MacroState } from './types';
 
 export function initialMacro(): MacroState {
   return { regime: 'normal', regimeSince: 0, regimeEnd: 24 * 30, calmUntilDay: 0, policyRate: 18, inflation: 14, confidence: 58, materialIndex: 100 };
 }
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export function newGameState(seed: number, difficulty: Difficulty = 'gercekci'): GameState {
-  return {
+  const s: GameState = {
     meta: { version: SAVE_VERSION, seed, difficulty },
     clock: { day: 0 },
     rng: seedStreams(seed),
@@ -23,5 +24,11 @@ export function newGameState(seed: number, difficulty: Difficulty = 'gercekci'):
     history: [],
     costIndex: 1,
     taxLossCarry: 0,
+    parcels: [],
+    projects: [],
+    cityMarket: {},
+    scheduled: [],
   };
+  initMarket(s);
+  return s;
 }
