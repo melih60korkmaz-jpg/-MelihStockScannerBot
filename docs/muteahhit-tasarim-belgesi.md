@@ -1,0 +1,760 @@
+# Müteahhit — Temelden Zirveye
+### Oyun Tasarım Belgesi, Sistem Mimarisi ve Geliştirme Planı (v0.1 — çalışma adı)
+
+> Durum: **Planlama aşaması. Henüz kod yok.** Bu belge onaylandıktan sonra Faz 1'den başlanır.
+> Hedef platform: önce **tarayıcıda çalışan HTML (mobil öncelikli)**, sonra Capacitor ile iOS/Android paketi.
+
+---
+
+## 0. Vizyon
+
+**Tek cümle:** Oyuncu, bir arsa ve biraz sermayeyle başladığı şirketi, gözünün önünde yükselen binalarla ve her ay değişen bir piyasada, ülke çapında bir inşaat markasına dönüştürür.
+
+**Üç temel sütun**
+
+| Sütun | Anlamı | Tasarım sınavı |
+|---|---|---|
+| **Görülebilir inşaat** | Her ekonomik karar şantiyede fiziksel olarak görünür (stok biterse vinç boşta bekler, kalite düşükse cephe kusurlu çıkar). | "Bu sayı sahnede nerede görünüyor?" |
+| **Okunabilir derinlik** | Derin ama yorucu değil. Her ekranda tek bir ana soru: *Param yeter mi? Şantiye akıyor mu? Ne satıyorum?* | "Bu ekranı 5 sn'de anlar mıyım?" |
+| **Adil risk** | Oyuncu kaybedebilir, ama her kayıp önceden görülebilir bir nedene bağlıdır ve toparlanma yolu vardır. | "Batarsa nedenini söyleyebiliyor mu?" |
+
+**Dürüst görsel hedef.** Kodla üretilen 3D ile fotoğraf gerçekçiliği hedeflenmez. Hedef, *premium stilize* bir görünümdür: temiz low-poly formlar, yumuşak ışık/gölge, tutarlı renk paleti, zengin animasyon (referans hissi: Islanders / Mini Motorways / Townscaper kalitesinde cilalı diorama). Bu hem mobil performans hem de "içerikler birbirinin kopyası olmasın" hedefi için doğru yoldur: bina tasarımları **prosedürel** üretilir (Bölüm 9).
+
+**Özgünlük.** Tüm görsel, ses, isim ve markalar özgündür; gerçek şirket/marka kullanılmaz. Şehir adları gerçek, mahalle ve şirket adları kurgusaldır.
+
+---
+
+## 1. Kapsam Kararları ve Teknoloji Seçimi
+
+### 1.1 Teknoloji
+
+| Konu | Karar | Neden |
+|---|---|---|
+| Dil/Yapı | Vanilla **ES modülleri + TypeScript** (derleme: **Vite**) | Bağımlılık az, hızlı, mobil dostu |
+| 3D | **Three.js** (MIT), `InstancedMesh`, düz renkli low-poly, vertex-color AO | iPhone Safari'de kararlı; WebGL2 |
+| UI | HTML/CSS + küçük reaktif katman (Preact + htm, ~4 KB) | Metin/liste/grafik için DOM, 3D için canvas |
+| Grafikler | Elle yazılmış hafif SVG/Canvas grafik bileşenleri | Ağır kütüphane yok, tema ile uyumlu |
+| Ses | **Web Audio** prosedürel (önceki tasarımdaki adaptif müzik motoru fikri) | Dosya yok, telif yok, küçük boyut |
+| Kayıt | **IndexedDB** + sürümlü şema + sağlama toplamı | localStorage sınırlı ve kırılgan |
+| Dağıtım | Tek `index.html` (singlefile build) + PWA manifest → sonra **Capacitor** | "HTML olarak göster, sonra iOS" hedefi |
+| Sim testi | **Node'da başsız (headless) simülasyon** | Denge testi görselsiz koşabilmeli |
+
+### 1.2 Altın kurallar
+
+1. **Sim ile görüntü ayrı.** `sim/` klasörü DOM ve Three.js'i hiç bilmez. Render yalnızca durumun salt-okunur anlık görüntüsünü çizer.
+2. **Tüm değişiklik komutla yapılır** (`BuyLand`, `HireStaff`, `PlaceBid`…). Her UI butonu bir komuta bağlı; komut kayıt tablosu otomatik testle taranır → **çalışmayan/sahte buton olamaz.**
+3. **Para tamsayıdır** (kuruş cinsinden). Float yuvarlama hatası ekonomiyi bozmaz.
+4. **Deterministik rastgelelik.** Her sistem kendi tohumlu RNG akışını kullanır (mulberry32). Aynı tohum + aynı komutlar = aynı oyun. Hata ayıklama ve denge testi için şart.
+5. **Veri odaklı içerik.** Malzemeler, makineler, olaylar, görevler, bina tipleri JSON tanımıdır; kod değil.
+6. **Kilitli özellik açıkça kilitli.** "Yakında" butonu yok; kilitli öğe hangi seviye/şartla açılacağını gösterir.
+
+### 1.3 MVP sınırı (ilk oynanabilir sürüm = Faz 1–7 sonu)
+
+Dahil: 1 şehir→3 şehir, apartman/site/müstakil/villa/ofis/rezidans, 18 aşamalı inşaat, malzeme, personel, makine, satış, kredi, olaylar, 2 rakip.
+Sonraya: AVM, otel, fabrika, karma kullanım, kamu mega-ihaleleri, 8 şehir, şirket hissesi satışı (Faz 8–11).
+Sınır, "her şeyi yarım yapmaktansa az şeyi bitmiş yapmak" ilkesiyle konmuştur.
+
+---
+
+## 2. Sistem Mimarisi
+
+```
+┌────────────────────────────── platform/ ──────────────────────────────┐
+│ lifecycle (visibilitychange/pause) · haptics · storage · capacitor    │
+└───────────────────────────────────────────────────────────────────────┘
+        ▲                     ▲                       ▲
+┌── ui/ ───────┐   ┌── render3d/ ──────┐   ┌── audio/ ─────────┐
+│ ekranlar     │   │ sahne, kamera      │   │ müzik motoru      │
+│ bileşenler   │   │ bina üretici       │   │ SFX, ambiyans     │
+│ grafikler    │   │ şantiye varlıkları │   │ ses mixeri        │
+└──────▲───────┘   └─────────▲──────────┘   └─────────▲─────────┘
+       │ okur (snapshot)     │ okur                    │ olayları dinler
+┌──────┴─────────────────────┴─────────────────────────┴───────────────┐
+│                         core/  (Store · EventBus · Commands)          │
+└──────▲───────────────────────────────────────────────────────────────┘
+       │ komut gönderir / olay yayar
+┌──────┴──────────────────────── sim/ (saf mantık) ────────────────────┐
+│ clock · rng · macro · markets · land · projects · construction        │
+│ materials · workforce · machines · sales · finance · tenders · rivals │
+│ events · decisions · reputation · quests · achievements               │
+└──────▲───────────────────────────────────────────────────────────────┘
+       │ okur
+┌──────┴────── data/ (JSON) ──────────────────────────────────────────┐
+│ cities · districts · buildingTypes · materials · machines · staff    │
+│ suppliers · events · quests · banks · rivalProfiles · loc/tr.json    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### 2.1 Zaman ve tick modeli
+
+- **1 tick = 1 oyun günü.** Aylık işlemler ayın 1'inde, haftalık işlemler pazartesi, yıllık işlemler 1 Ocak'ta.
+- Hızlar: ⏸ Duraklat · **1×** (1 gün / 2,0 sn) · **2×** (0,8 sn) · **4×** (0,3 sn) · **Atla** (olay çıkana/proje aşaması bitene kadar).
+- Önemli olay (karar, kaza, ihale sonucu) gelince oyun **otomatik duraklar**.
+- Uygulama arka plana alınınca **otomatik duraklar**, ses sustur (Bölüm 12).
+
+### 2.2 Ana veri modeli (özet)
+
+```
+GameState {
+  meta{ version, seed, createdAt, difficulty }
+  clock{ day, speed }
+  macro{ policyRate, inflation, regime, confidence, materialIndex, history[] }
+  cities[ districts[ {landIndex, demand, income, density, infra, transit, competition} ] ]
+  company{ name, level, reputation, creditScore, cash, debts[], offices[] }
+  parcels[]   // arsalar (oyuncunun ve piyasadakiler)
+  projects[]  // proje: parcel, type, quality, design seed, stages[18], budget, actuals, units[]
+  staff[]  machines[]  suppliers[]  stock{materialId: qty, quality}
+  loans[]  ledger[]   // ledger = çift taraflı değil ama her hareket etiketli kayıt
+  rivals[]  tenders[]  eventsQueue[]  scheduledConsequences[]
+  quests[]  achievements[]  stats{}
+}
+```
+
+`ledger` her para hareketini (kategori, proje, gün, tutar) tutar; tüm finansal tablolar buradan **türetilir** — ikinci bir "doğru" sayı yoktur, tutarsızlık imkânsızdır.
+
+### 2.3 Komut/olay akışı
+
+`UI buton → Command.validate() → Command.apply(state) → EventBus.emit('LAND_BOUGHT')` → ui yeniden çizer, render3d sahneyi günceller, audio ses çalar. Komutlar geri alınmaz ama **kayıt/yeniden oynatma** ile test edilir.
+
+---
+
+## 3. Çekirdek Oyun Döngüsü
+
+**Dakikalık döngü (30 sn–2 dk):** Haritaya bak → arsayı incele → fizibiliteyi çalıştır → karar ver.
+**Seanslık döngü (10–20 dk):** Arsa al → proje seç/tasarla → ruhsat bekle → ekip + malzeme ata → şantiyeyi hızlandır/izle → olaylara karar ver → sat.
+**Uzun döngü (saatler):** Seviye atla → yeni şehir/yeni bina tipi → ihale → rakiplerle rekabet → marka.
+
+**Ana gerilim:** Nakit ≠ kâr. Proje kâr yazar ama nakit bitmişse şirket batar. Oyuncu sürekli *zaman–para–risk* takası yapar.
+
+**İlk 15 dakika (öğretici, zorlamasız):** Şirket kur → hazır küçük arsa teklifi → fizibilite aç → satın al → 2 işçi + 1 usta ata → müstakil ev/dubleks başlat → ilk olay (küçük karar) → hızlandır → ilk satış. Görevler "yol gösterir"; hiçbir şey zorunlu değildir.
+
+---
+
+## 4. Sistem Tasarımları
+
+### 4.1 Arsa ve Arazi
+
+**Parsel özellikleri**
+
+| Alan | Açıklama |
+|---|---|
+| Konum | Şehir › ilçe › mahalle (kurgusal) |
+| Alan (m²) | 150–25.000 (seviyeye göre) |
+| İmar | Konut / Ticaret / Karma / Sanayi / Turizm / Tarım(imarsız) |
+| **TAKS** | Taban oturum oranı (0,20–0,60) |
+| **KAKS (Emsal)** | Toplam inşaat alanı çarpanı (0,6–3,5) |
+| Max kat | İmar izni (2–40) |
+| Zemin | Sağlam kaya · Sıkışık kil · Dolgu · Yüksek yeraltı suyu · Eğimli |
+| Cephe | Yol sayısı/yönü, köşe parsel, manzara |
+| Altyapı | Elektrik/su/kanal/doğalgaz (%) — eksikse ek maliyet |
+| Gelişim potansiyeli | Metro/yol/AVM/üniversite gibi yatırım yakınlığı (gizli + ipuçlu) |
+| Çevre | Konut ve ticari yoğunluk (talep & rekabet göstergesi) |
+
+**Hesaplar**
+```
+taban alanı        = parsel × TAKS
+emsal alanı        = parsel × KAKS
+kat sayısı         = min(maxKat, ceil(emsal / taban))
+brüt inşaat alanı  = emsal × 1.30      (bodrum, otopark, ortak alan emsal dışı)
+satılabilir alan   = emsal × 0.85
+```
+
+**Arsa fiyatı (₺/m²)**
+```
+fiyat = ilçeTabanı × konumÇarpanı × (1 + gelişimBeklentisi) × imarÇarpanı
+        × zeminVeAltyapıDüzeltmesi × şehirArsaEndeksi(t) × (1 ± pazarlıkPayı)
+```
+Altyapı ve gelişim projeleri (metro açıldı, üniversite kuruldu) ilçe endeksini zamanla yükseltir; olay sistemi ile bağlıdır.
+
+**Etüt (bilgi mekaniği).** Zemin etüdü ve imar araştırması **ücretlidir**; yaptırmayan oyuncu satın alma sonrası "sürpriz" yaşayabilir (yüksek yeraltı suyu → hafriyat ve temel maliyeti ×1,4). Bilgi bir kaynaktır.
+
+**Satın alma yolları:** Peşin · Kredi ile · **Kat karşılığı** (arsa sahibine %35–55 daire payı, nakit çıkışı yok, kâr payı düşük) · **Ortaklık** (yatırımcı/arsa sahibi ile %xx pay). Satma: piyasaya koy (süre + pazarlık) veya hızlı sat (iskontolu).
+
+### 4.2 Proje ve Bina Tipleri
+
+| Tip | Birim maliyet ₺/m² (standart) | Tipik süre | Notlar |
+|---|---|---|---|
+| Müstakil ev | 13.000 | 4–7 ay | MVP başlangıç |
+| Apartman | 14.000 | 8–14 ay | Ana gelir kalemi |
+| Site | 15.500 | 18–30 ay | Çoklu blok, ön satış |
+| Villa | 30.000 | 7–12 ay | Düşük hacim, yüksek marj |
+| Rezidans | 22.000 | 20–36 ay | Kule, ağır vinç |
+| Lüks konut | 28.000 | 18–30 ay | Kalite/itibar şart |
+| Ofis binası | 20.000 | 14–26 ay | Kiralama/satış |
+| İş merkezi | 24.000 | 24–40 ay | Ticari talep |
+| AVM | 26.000 | 30–48 ay | Faz 8+ |
+| Otel | 32.000 | 30–48 ay | Faz 8+ |
+| Fabrika | 9.000 | 10–20 ay | İhale/sanayi |
+| Depo | 6.500 | 6–12 ay | Hızlı/düşük marj |
+| Karma kullanım | Alt kata ticaret + üst konut | | Faz 8+ |
+
+Kalite çarpanı: **Ekonomik ×0,85 · Standart ×1,00 · Premium ×1,25 · Lüks ×1,60.** Bu değerler *başlangıç* değeridir; Bölüm 13'teki denge simülatörü ile kalibre edilecektir.
+
+**Proje bütçesi** = brüt alan × birim maliyet × kalite × bölgesel maliyet çarpanı × (1 + enflasyon etkisi) + yumuşak giderler (proje, ruhsat/harç ≈ %6,5).
+
+### 4.3 İnşaat Aşamaları (18 adım)
+
+İş yükü ve bütçe payı aşağıdaki gibidir (toplam %100). Her aşamanın **ön koşulu** (önceki aşama, malzeme, ekip uzmanlığı) vardır.
+
+| # | Aşama | Bütçe payı | Gereken uzmanlık | Kritik malzeme/ekipman |
+|---|---|---|---|---|
+| 1 | Arsa seçimi | — (arsa bedeli ayrı) | — | — |
+| 2 | Proje planlama | 0,5 | Proje yön. | — |
+| 3 | Mimari tasarım | 2,0 | Mimar | — |
+| 4 | Statik proje | 1,5 | İnşaat müh. | — |
+| 5 | Elektrik/mekanik proje | 1,0 | Müh. | — |
+| 6 | Ruhsat/izin | 1,5 | Proje yön./muhasebe | **Takvim gecikmesi riski** |
+| 7 | Hafriyat | 3,0 | İşçi | Ekskavatör, kamyon |
+| 8 | Temel/zemin | 10,0 | Demirci, kalıpçı | Beton, demir, pompa |
+| 9–10 | Betonarme + kat yükselme (kat başına döngü) | 24,0 | Kalıpçı, demirci | Beton, demir, kule vinç |
+| 11 | Duvar/bölme | 6,0 | Usta | Tuğla/gazbeton |
+| 12 | Elektrik + su tesisatı | 9,0 | Elektrikçi, tesisatçı | Kablo, boru |
+| 13 | Yalıtım | 4,0 | Usta | Yalıtım malz. |
+| 14 | Sıva ve cephe | 9,0 | Usta, iskele | Çimento, kaplama |
+| 15 | Pencere/kapı | 7,0 | Usta | Cam, alüminyum, kapı |
+| 16 | İç dekorasyon | 17,0 | Usta | Seramik, parke, boya |
+| 17 | Peyzaj/çevre | 2,5 | İşçi | — |
+| 18 | Kontrol/teslim | 2,0 | Şantiye şefi | **Kalite denetimi** |
+
+**İlerleme formülü (günlük):**
+```
+günlükİlerleme = Σ(atananEkipVerimi × deneyim × moral) × makineÇarpanı
+                 × havaÇarpanı × malzemeUygunluğu(0/1) × güvenlikKesintisi
+                 / aşamaİşYükü(adam-gün)
+```
+- **Malzeme yoksa** aşama durur (görsel: bekleyen işçiler, yanıp sönen uyarı).
+- **Aşamalar üst üste binebilir** (kat 3 betonarme sürerken kat 1'de duvar) → gerçek inşaat ritmi, "kat başına lag" ile görselleşir.
+- **Kalite**, her aşamada malzeme kalitesi × usta kalitesi × denetim ile birikir; son aşamada **Bina Kalite Puanı** olur ve satış fiyatı, şikâyet, garanti, itibarı etkiler.
+- **Ruhsat** bir bekleme aşamasıdır: süre, belediye yoğunluğu + dosya kalitesi + rastgele gecikme olayına bağlıdır.
+
+### 4.4 Malzeme ve Tedarik
+
+17 malzeme (demir, beton, çimento, tuğla, gazbeton, kum, çakıl, cam, alüminyum, seramik, parke, boya, yalıtım, kablo, boru, kapı/pencere, çatı). Her biri için: birim, baz fiyat, **kalite kademesi (A/B/C)**, stok, depo kapasitesi.
+
+**Tedarikçi** (her malzeme için 2–4 tane): fiyat çarpanı, kalite, **teslim süresi**, nakliye (mesafeye bağlı), **güvenilirlik** (%gecikme/eksik teslimat olasılığı), vade (peşin/30/60 gün), ilişki puanı (sadakat indirimi).
+
+**Fiyat modeli:**
+```
+fiyat(t) = baz × malzemeEndeksi(t) × (1 + mevsim) × şok(t) × tedarikçiÇarpanı
+malzemeEndeksi: enflasyon + ortalamaya dönen rastgele yürüyüş + arz şokları
+```
+- Ucuz malzeme: maliyet −%8…−15, **kalite puanı ↓, şikâyet/garanti riski ↑**.
+- Stok tutmak nakit bağlar ve fiyat artışına karşı korur (stratejik karar); depo kapasitesi ve çalınma/bozulma küçük bir risktir.
+- **Toplu alım** indirim sağlar; **sipariş verip bekleyen** malzeme "yolda" görünür (şantiyeye kamyon animasyonuyla gelir).
+
+### 4.5 Personel
+
+Kategoriler: İşçi, Usta, Kalıpçı, Demirci, Elektrikçi, Tesisatçı, Mimar, Mühendis, Şantiye Şefi, Proje Yöneticisi, Muhasebeci, Satış Danışmanı, Satın Alma Sorumlusu.
+
+Her çalışan: `maaş, deneyim(0–100), verimlilik, uzmanlık, iş kalitesi, memnuniyet/moral, iş güvenliği bilinci`. 
+
+- Deneyimli = pahalı ama hızlı + kaliteli + güvenli. Yetersiz kadro ilerlemeyi yavaşlatır.
+- **Yönetici etkisi:** Şantiye şefi ekip verimini ve kaza riskini çarpar; proje yöneticisi aynı anda yönetilebilecek proje sayısını belirler; muhasebeci vergi/ceza hatasını azaltır; satın alma sorumlusu tedarikçi pazarlığı gücünü artırır; satış danışmanı satış hızını artırır.
+- **Moral:** maaş adaleti, fazla mesai, kaza, şirket başarısı etkiler. Düşük moral → verim ↓, istifa riski ↑.
+- **İş güvenliği:** Ekipman (baret, korkuluk, iskele denetimi) bütçesi + şef kalitesi + yorgunluk → günlük **kaza olasılığı**. Kaza = ilerleme durur, tazminat/ceza, moral ve itibar düşer. Güvenlik tasarrufu kısa vadede maliyet düşürür, uzun vadede tehlikelidir (açık takas).
+
+### 4.6 Makine ve Ekipman
+
+Kule vinç, mobil vinç, ekskavatör, kepçe, dozer, beton pompası, beton mikseri, forklift, kamyon, jeneratör, iskele, kompresör.
+
+Her biri: satın alma bedeli, kiralama bedeli (günlük), yakıt, bakım, **kapasite**, **arıza olasılığı** (yaşla artar, bakımla azalır), değer kaybı.
+
+- **Al vs. kirala:** Kiralama düşük risk, yüksek birim maliyet; alım sermaye ve bakım yükü getirir ama ihale yeterliliği (makine parkı) için gereklidir.
+- Makine varlığı belirli aşamalarda **çarpan** sağlar (kule vinç yoksa 5+ kat betonarme yavaşlar).
+- Arıza: onarım süresi boyunca makine çalışmaz; aşama yavaşlar veya durur.
+
+### 4.7 Satış ve Müşteri
+
+**Birim (daire/dükkân/ofis) özellikleri:** m², oda sayısı, kat, manzara, cephe yönü, kalite, konum, fiyat.
+
+```
+adilDeğer(m²) = bölgeBazFiyat × kaliteÇarpanı × katÇarpanı × manzara × cephe
+günlükSatışOlasılığı = baz × bölgeTalebi × (fiyat/adilDeğer)^(−esneklik)
+                       × markaGüveni × pazarlama × satışDanışmanı × faizEtkisi
+```
+
+**Satış yolları**
+- **Peşin** (iskontolu, hemen nakit)
+- **Taksitli** (daha yüksek fiyat, nakit zamana yayılır, **temerrüt riski**)
+- **Kapora** (düşük, iptal edilebilir)
+- **Ön satış** (inşaata başlamadan veya sırasında; finansman sağlar, **teslim gecikmesi cezası** doğurur)
+- **Toplu satış** (yatırımcıya blok, iskonto)
+- **Emlakçı** (%2–3 komisyon, satış hızı ↑, fiyat esnekliği ↓)
+
+**Teslim sonrası:** müşteri memnuniyeti (kalite, teslim zamanı, fiyat-algı) → şikâyet olayları, **garanti** talepleri (kalite düşükse maliyetli), itibar ve tavsiye etkisi.
+
+### 4.8 Banka, Kredi, Yatırım
+
+| Ürün | Amaç | Not |
+|---|---|---|
+| Ticari kredi | Genel | Orta faiz |
+| İnşaat kredisi | Proje | Proje aşamasına göre dilimli çekim |
+| Makine kredisi | Ekipman | Makine teminatlı |
+| Kısa vadeli finansman | Nakit köprüsü | **Pahalı**, tuzak olabilir |
+| Ortak yatırım | Proje ortağı | Kâr payı verir |
+| Yatırımcı bulma | Sermaye | İtibar şart |
+| Hisse satışı | Büyük sermaye | Faz 8+, kontrol kaybı |
+
+```
+kredi faizi = politikaFaizi + bankaMarjı + (1000 − krediNotu)/k + risk primi(proje/teminat)
+```
+Taksit gününde nakit yoksa: gecikme faizi, **kredi notu ↓**, itibar ↓; üst üste geciken ödeme → icra/haciz (varlık satışı zorunlu) → toparlanma yolu: varlık sat, restrüktüre et (yüksek maliyetli), ortak al.
+
+### 4.9 İhaleler
+
+Kamu ve özel ihaleler (hastane, okul, belediye binası, yol/altyapı, köprü, fabrika, büyük konut).
+
+**Değerlendirme puanı (örnek ağırlıklar):**
+```
+puan = fiyat(%40) + teknikYeterlilik(%25) + itibar(%15)
+     + finansalYeterlilik(%10) + kapasite(personel+makine)(%10)
+```
+- Yeterlilik şartları **eleme** niteliğindedir (ör. min. kredi notu, min. makine parkı, benzer iş tecrübesi).
+- Rakipler kendi stratejileriyle teklif verir; **en düşük teklif her zaman kazanmaz**. Aşırı düşük teklif kazandırır ama zarar ettirir (*kazananın laneti*).
+- Kazanma sahnesi + sözleşme: teslim süresi, gecikme cezası, avans. Ödemeler **hakediş** (aşama bazlı, 30–60 gün gecikmeli) ile gelir → nakit akışı riski.
+
+### 4.10 Şirket Gelişimi ve İtibar
+
+**Seviyeler:** 1 Şahıs Müteahhit › 2 Küçük Firma › 3 Yerel Firma › 4 Bölge Firması › 5 Şehir Markası › 6 Çok Şehirli Firma › 7 Ulusal Firma › 8 Holding. Seviye = *net varlık + tamamlanan proje + itibar* eşiklerinin birleşimi (yalnızca para değil).
+
+**Ofis kademeleri:** Küçük ofis (6 kişi) › Ofis katı (20) › Plaza katı (60) › Şirket binası (150+) › Şubeler (şehir başına).
+
+**İtibar (0–100):** + zamanında teslim, + kalite, + memnuniyet, + finansal güvenilirlik, + kamu işi; − gecikme, − kaza, − borç ödememe, − şikâyet. İtibar → ihale, yatırımcı, satış hızı, kredi faizi, personel çekme gücü.
+
+### 4.11 Rakip Şirketler (AI)
+
+6–10 rakip, her birinin **strateji profili**: *Lüks uzmanı · Ekonomik konut · Büyük ticari · Dengeli · Agresif kaldıraçlı · Temkinli*. Haftalık karar döngüsü, fayda temelli:
+
+- Arsa alır (nakit/risk iştahına göre), proje başlatır, fiyat belirler, satar, ihaleye teklif verir, kredi çeker.
+- **Piyasada yer kaplarlar:** iyi arsalar kapılır, rakip arz bölgeyi doyurur, fiyat savaşı çıkar.
+- Büyür, durağanlaşır veya **iflas eder** (varlıkları piyasaya düşer → oyuncuya fırsat).
+- Rakipler **hile yapmaz:** oyuncuyla aynı kurallar ve aynı piyasa verisiyle işler (adil rekabet).
+
+### 4.12 Makro Ekonomi ve Piyasa
+
+```
+Rejimler: Normal → Genişleme → Aşırı ısınma → Daralma → Kriz → Toparlanma
+politikaFaizi : rejime bağlı ortalamaya dönen yürüyüş
+enflasyon     : yıllık %, malzeme ve işçilik endeksini sürükler
+güven         : olaylar + rejim → konut talebine çarpan
+bölgeTalebi   = f(gelir, nüfus, faiz↑ → talep↓, güven, yeni arz↑ → talep↓)
+```
+Piyasa oyuncudan bağımsız evrilir. Kriz rejimi nadirdir, **ipucuyla gelir** (faiz yükselişi, güven düşüşü, haber bandı) — oyuncu hazırlanabilir.
+
+### 4.13 Olaylar ve Karar Mekaniği
+
+Olay şablonu (JSON): `koşul, ağırlık, soğuma, seçenekler[]`. Her seçenek: **maliyet, risk (olasılık dağılımı), avantaj, zaman etkisi** ve **gecikmeli sonuç** (N gün sonra tetiklenen).
+
+**Örnek — "Beton zammı"**
+
+| Seçenek | Maliyet | Risk | Avantaj | Zaman |
+|---|---|---|---|---|
+| Mevcut tedarikçiyle pazarlık | Ücretsiz (satın alma sorumlusu varsa daha iyi) | %40 başarısız | Başarılırsa zam yarıya iner | Sonuç 3 gün sonra |
+| Başka tedarikçi ara | Küçük araştırma gideri | Yeni tedarikçi güvenilmez olabilir | Daha iyi fiyat/kalite | Sonuç 7 gün sonra |
+| Zammı kabul et | +%X beton maliyeti | Yok | Sorunsuz akış | Anında |
+| Projeyi yavaşlat | Gecikme cezası riski | Piyasa fiyatı düşmeyebilir | Beklenen düşüş | 2–4 hafta |
+
+Olay kataloğu (başlangıçta ~40, hedef 80+): malzeme şoku, tedarikçi gecikmesi, makine arızası, iş kazası, kötü hava, ruhsat gecikmesi, müşteri şikâyeti, maliyet aşımı, piyasa daralması, rakip fiyat düşürmesi, finansman sorunu, teslim gecikmesi, denetim, hırsızlık, komşu şikâyeti, tarihi eser buluntusu, vb. Aynı olay sık tekrar etmez (soğuma + bağlama göre koşullu metin).
+
+### 4.14 Harita ve Şehirler
+
+8 şehir (İstanbul, Ankara, İzmir, Bursa, Antalya, Kocaeli, Gaziantep, Trabzon — kademeli açılır). Her şehir 4–8 ilçeye bölünür. Her bölgenin: arsa fiyatı, konut talebi, nüfus yoğunluğu, gelir seviyesi, altyapı, ulaşım, ticari potansiyel, rekabet. Şehir açma: şube + belirli seviye + yerel ruhsat/tanınırlık (düşük başlar).
+
+### 4.15 Görevler ve Başarımlar
+
+**Yönlendirici görevler:** ilk arsa, ilk bina, ilk daire satışı, ilk 10 milyon ₺ net varlık, ilk ihale, 3/5 şehir, X konut teslimi, "büyük inşaat şirketi kur".
+**Kurallar:** görevler *öneri*dir (serbest oyun kısıtlanmaz); ödül küçük (itibar/nakit/kozmetik); "başarım" sayacı gerçek istatistiklerden türetilir.
+
+---
+
+## 5. Ekonomi Modeli
+
+### 5.1 Örnek proje (kalibrasyon başlangıç noktası)
+
+**Apartman, 400 m² arsa, KAKS 1,6, standart kalite**
+
+| Kalem | Hesap | Tutar |
+|---|---|---|
+| Emsal alanı | 400 × 1,6 | 640 m² |
+| Satılabilir alan | 640 × 0,85 | 544 m² |
+| Brüt inşaat | 640 × 1,30 | 832 m² |
+| Arsa | 400 × 12.000 | 4,80 M₺ |
+| İnşaat | 832 × 14.000 | 11,65 M₺ |
+| Yumuşak gider (%6,5 inşaat) | | 0,76 M₺ |
+| Komisyon/pazarlama (%2) | | 0,41 M₺ |
+| Finansman (ort.) | | ~0,45 M₺ |
+| **Toplam maliyet** | | **~18,1 M₺** |
+| Satış geliri | 544 × 38.000 | 20,7 M₺ |
+| **Brüt kâr / marj** | | **~2,6 M₺ / ~%14** |
+
+**Kalibrasyon hedefleri**
+- Standart projede **hedef marj %10–18**; riskli/lüks segmentte %18–35 ama zarar olasılığı yüksek.
+- Arsa, satış gelirinin **%22–30'u**.
+- Satış ₺/m² ≈ inşaat ₺/m² × **2,5–3,0** (orta segment).
+- Başlangıç sermayesi: **~6 M₺** (bir küçük proje + işletme sermayesi); küçük proje (müstakil/dubleks) ilk 12 oyun ayında **net varlığı ~+%15–30** büyütür. Oyuncu "birkaç işlemle zengin olmaz": ilk 10 M₺ net varlık hedefi **12–18 oyun ayı** civarında olmalı.
+
+### 5.2 Aylık gider/gelir kalemleri
+
+Maaşlar · ofis kirası · kredi taksit+faiz · sigorta · makine bakım+yakıt · vergi karşılığı · satış komisyonları · garanti ayrılığı. Gelirler: satış, hakediş, kira, ortaklık payı.
+
+### 5.3 Vergiler (basitleştirilmiş)
+
+Kurumlar vergisi **%25** (yıllık kâr; çeyreklik geçici vergi), tapu/harç giderleri, KDV fiyatlara gömülü kabul edilir (oyuncuya karmaşıklık yüklemeden). Muhasebeci varlığı vergi hatası/ceza olasılığını düşürür.
+
+### 5.4 Finansal tablolar (ledger'dan türetilir)
+
+Nakit akış tablosu (aylık), gelir-gider, bilanço özeti (varlık = nakit + arsa + devam eden proje değeri + makine + stok + alacaklar), proje bazlı kâr/zarar, **nakit yeterlilik süresi (runway)**, borç/özkaynak, faiz karşılama oranı. Grafikler: net varlık eğrisi, nakit akışı çubukları, gelir/gider pastası, proje başına planlanan-gerçekleşen kâr.
+
+### 5.5 İflas ve toparlanma
+
+- **Erken uyarı:** runway < 3 ay, kredi notu düşüşü, gecikmiş taksit → kırmızı HUD ve danışman uyarısı.
+- **Toparlanma araçları:** arsa/makine sat, ön satış, ortak al, kredi restrüktürasyonu (pahalı), projeyi durdur, personel azalt.
+- **İflas** yalnızca nakit < 0 **ve** satılabilir varlık/kredi yolu tükendiğinde. İflasta "Yeniden başla (miras: küçük itibar bonusu)" ve "Son 3 ayı geri yükle (otomatik kayıttan)" seçenekleri.
+
+---
+
+## 6. Ekran Listesi
+
+| # | Ekran | Amaç |
+|---|---|---|
+| 1 | Açılış (logo animasyonu) | Marka duygusu |
+| 2 | Ana menü | Devam/Yeni/Kayıtlar/Ayarlar/Başarımlar |
+| 3 | Yeni oyun sihirbazı | Ad, amblem, patron geçmişi, şehir, zorluk |
+| 4 | Kayıt yükle/kaydet | Slotlar, otomatik kayıtlar |
+| 5 | Ayarlar | Ses, grafik kalitesi, titreşim, animasyon, dil |
+| 6 | **Şirket Genel Bakış** (ana HUB) | Nabız + yapılacaklar |
+| 7 | Harita (Türkiye → şehir → ilçe) | Bölge karşılaştırma, arsa arama |
+| 8 | **Arsa Dosyası** | İnceleme + fizibilite |
+| 9 | Arsa alım/satım | Satın alma yolları |
+| 10 | Proje sihirbazı | Tip, kalite, tasarım, ekip |
+| 11 | Bina tasarım stüdyosu | Cephe stili, çatı, renk (3D önizleme) |
+| 12 | **Aktif Şantiye** (3D) | Ana oyun sahnesi |
+| 13 | Proje detayı | Aşamalar, maliyet, kalite, dosya |
+| 14 | Malzeme & Tedarik | Stok, sipariş, tedarikçiler |
+| 15 | Personel | İşe alma, atama, moral |
+| 16 | Makine parkı | Al/kirala/bakım |
+| 17 | Satış merkezi | Birim listesi, fiyat, satış yolları, müşteri |
+| 18 | Finans | Tablolar + grafikler |
+| 19 | Banka & Yatırım | Krediler, ödeme planı, yatırımcı |
+| 20 | İhale merkezi | Liste, teklif, sonuç |
+| 21 | Piyasa & Rakipler | Endeksler, rakip karşılaştırma |
+| 22 | Olay/Karar penceresi | Seçenekli kararlar |
+| 23 | Şirket gelişimi | Seviye, ofis, şube, marka |
+| 24 | Görevler & Başarımlar | Hedefler |
+| 25 | Proje tamamlanma raporu | Teslim sahnesi |
+| 26 | Seviye atlama / ihale kazanma sahnesi | Ödül anı |
+| 27 | İflas/oyun sonu | Toparlanma seçenekleri |
+| 28 | Haber bandı & bildirim merkezi | Piyasa/olay akışı |
+
+**Navigasyon (mobil, portre):** Alt sekme çubuğu: **Şirket · Harita · Şantiye · Piyasa · Finans** (+ "Daha fazla": personel, makine, banka, ihale, görev…). Üstte kalıcı HUD: tarih + hız kontrolleri + kasa + itibar. Tüm detaylar **alttan açılan paneller (bottom sheet)** ile açılır; böylece 3D sahne hiç terk edilmez.
+
+---
+
+## 7. Görsel Stil Rehberi
+
+### 7.1 Kimlik: "Şantiye Altını & Gece Mavisi"
+
+Tema: premium, sıcak, mühendislik hassasiyeti. Koyu zeminde **şantiye sarısı** vurgu; proje paftası hissi için krem kağıt yüzeyler.
+
+| Rol | Renk | Kullanım |
+|---|---|---|
+| Zemin (gece) | `#0E1621` | Uygulama arka planı |
+| Yüzey 1 | `#16212E` | Kartlar |
+| Yüzey 2 | `#1F2D3D` | Yükseltilmiş kartlar, sheet |
+| Çelik/beton | `#8A949E` | İkincil metin, çizgiler |
+| **Şantiye sarısı** | `#F5B700` | Birincil vurgu, CTA |
+| Emniyet turuncusu | `#FF7A1A` | Uyarı, vinç, dikkat |
+| Kâr yeşili | `#2ECC8F` | Pozitif |
+| Zarar kırmızısı | `#E5484D` | Negatif/kritik |
+| Proje paftası (krem) | `#F4EFE6` | Arsa dosyası, sözleşme, rapor yüzeyi |
+| Mavi baskı (blueprint) | `#3E7BFA` | İmar zarfı, hat çizimleri |
+
+Renk **anlam taşır** (yeşil/kırmızı sadece kâr/zarar için kullanılır). Karanlık tema birincil; açık "paftalı" tema opsiyonel (Faz 10). Kontrast WCAG AA.
+
+### 7.2 Tipografi
+
+- **Başlıklar:** *Barlow Condensed* (kalın, mühendislik levhası hissi), büyük harf yok — Türkçe İ/ı doğru render için büyük-harf dönüşümü `toLocaleUpperCase('tr')` ile.
+- **Gövde/sayılar:** *Inter*, **tabular-nums** (finansal tablolarda hizalı).
+- Para formatı: `4,8 M₺`, `12.450 ₺`; büyük sayılar animasyonlu sayaç (count-up).
+- Yazı tipleri alt kümelenip yerel gömülür (çevrimdışı, Türkçe glifler dahil).
+
+### 7.3 Bileşenler ve ikonlar
+
+- **İkonlar:** tek ağırlık (2 px çizgi), sivri köşeli "mühendislik" stili, tek SVG sprite. Aşama ikonları (18) ve malzeme ikonları (17) özel çizilir.
+- **Kartlar:** 16 px yarıçap, ince üst parlama çizgisi, hafif iç gölge → "metal levha" hissi.
+- **Proje kartı:** canlı 3D küçük görsel (render-to-texture), 18 segmentli aşama çubuğu, kalan gün, kâr tahmini şeridi (yeşil/kırmızı), uyarı rozetleri.
+- **Butonlar:** CTA = sarı dolu; ikincil = çerçeve; tehlikeli = kırmızı çerçeve. Minimum dokunma alanı **44 px**.
+- **Grafikler:** ince çizgi, yumuşak gradyan dolgu, belirsizlik bandı (tahminler için), dokunmayla değer okuma.
+
+### 7.4 3D ışık ve görünüm
+
+Tek yönlü güneş + yarım küre ortam ışığı, ACES tonlama, hafif sis, vertex-color AO. **Gün döngüsü:** sabah soğuk → öğle parlak → altın saat → gece (inşaat spotları, pencere ışıkları). Yüksek kalitede yumuşak gölge haritası; düşükte "blob" gölge.
+
+---
+
+## 8. Ekran Tarifleri
+
+### 8.1 Ana Menü
+
+**Sahne.** Altın saatte, hafif sisli bir şehir silüeti. Ön planda yarı bitmiş, çelik iskeletli bir kule; üzerinde dönen iki kule vinç, aşağıda küçük şantiye ışıkları. Kamera **çok yavaş bir yarım-yörünge** yapar (60 sn döngü) ve cihaz eğimine/parmağa hafif parallax verir. Toz zerrecikleri ışıkta süzülür, uzakta bir vinç kancası sallanır.
+
+**Yerleşim (portre):**
+- Üst: küçük sarı kask amblemi + oyun logosu (sarı levha harfler, hafif metalik parlama).
+- Orta alt: dikey buton yığını — **Devam Et** (en büyük kart: şirket adı, oyun tarihi, net varlık, son projenin küçük 3D görseli), **Yeni Oyun**, **Kayıtlar**, **Başarımlar**, **Ayarlar**.
+- Alt köşe: sürüm numarası, ses/titreşim kısayolu.
+
+**Etkileşim.** Butona basınca kart hafifçe basılır (scale 0,97 + titreşim), sahne kamerası yavaşça ilgili yöne kayar, geçiş sırasında 250 ms çapraz çözülme. "Devam Et", sahneyi doğrudan kayıtlı şirketin şantiyesine zoomlar (menü → oyun kesintisiz geçiş).
+
+**Açılış animasyonu (≈6 sn, dokunarak geçilebilir):** siyah → kule vinç kancası ekranın tepesinden iner → logo harfleri kutu bloklar olarak tek tek yerleşir (her biri hafif "çınlama" ile) → son blokta ışık süpürmesi → şehir panoraması şafakla açılır.
+
+### 8.2 Şirket Yönetimi (Genel Bakış)
+
+```
+┌─────────────────────────────────────┐
+│ 12 Mar 2027  ⏸ ▶ ▶▶ ▶▶▶   ₺ 5,4M ★62 │  ← kalıcı HUD
+├─────────────────────────────────────┤
+│  ŞİRKET NABZI                       │
+│  Net varlık  12,8 M₺   ▲ %3,2       │
+│  ┌──────── sparkline ─────────┐     │
+│  Nakit yeterlilik: ▓▓▓▓▓░░ 5,1 ay  │  ← runway göstergesi
+│  Bu ay: +1,2M gelir  −0,9M gider    │
+├─────────────────────────────────────┤
+│  BUGÜNÜN İŞLERİ   (3)               │
+│  ⚠ Beton zammı — karar bekliyor     │
+│  🏗 Kat 4 betonarme tamamlandı       │
+│  📞 2 daire için teklif geldi       │
+├─────────────────────────────────────┤
+│  AKTİF PROJELER  ← yatay kaydırma → │
+│ ┌────────┐ ┌────────┐ ┌────────┐    │
+│ │ [3D]   │ │ [3D]   │ │ + Yeni │    │
+│ │ ▓▓▓░░  │ │ ▓░░░░  │ │ proje  │    │
+│ │ 62 gün │ │ 140 gün│ │        │    │
+│ └────────┘ └────────┘ └────────┘    │
+├─────────────────────────────────────┤
+│ Şirket Harita Şantiye Piyasa Finans │  ← alt sekme
+└─────────────────────────────────────┘
+```
+
+- Üstte dünyaya açılan **dekoratif diorama şeridi**: şirket ofisi seviyesine göre değişen küçük 3D ofis + park halindeki makineler (oyuncu ne aldıysa görünür).
+- "Bugünün işleri" yalnızca **eylem gerektiren** şeyleri gösterir; her satır doğrudan ilgili karara/ekrana gider.
+- Runway çubuğu rengi: >6 ay yeşil, 3–6 sarı, <3 kırmızı + nabız animasyonu.
+
+### 8.3 Arsa Satın Alma
+
+**Akış:** Harita (ilçe ısı haritası: fiyat/talep/rekabet katmanları) → parsele dokun → **Arsa Dosyası**.
+
+**Arsa Dosyası ekranı:**
+- **Üst yarı: 3D parsel diorama.** Parsel sınırı kesikli sarı çizgi, çevre yollar, komşu low-poly binalar, ağaçlar, trafo. Parselin üstünde **mavi şeffaf "yapılaşma zarfı"** (taban/kat/emsal sınırı) — oyuncu imar haklarını *görür*. Kat sayısı kaydırıcısı değiştikçe zarf içinde örnek hacim büyür/küçülür.
+- **Alt yarı: sekmeli panel** (krem "paftası" yüzeyi):
+  1. **Özet** — adres, m², fiyat, fiyat/m² ve bölge ortalamasına göre ▲/▼.
+  2. **İmar** — TAKS, KAKS, max kat, emsal alanı, satılabilir alan (hesaplı).
+  3. **Zemin & Altyapı** — çubuklar; "Zemin etüdü yaptır (45.000 ₺ · 5 gün)" butonu gizli bilgiyi açar.
+  4. **Çevre** — yoğunluk, yakın yatırımlar, rekabet, ulaşım.
+  5. **Fizibilite** — bina tipi + kalite seç → tahmini maliyet, süre, gelir **aralığı (belirsizlik bandı)**, **başa baş satış fiyatı**, nakit ihtiyacı, risk skoru.
+- Alt sabit çubuk: **Satın Al ▾** (Peşin · Kredi ile · Kat karşılığı · Ortaklık) ve **Pazarlık**.
+
+**Satın alma animasyonu (≈2,5 sn):** tapu belgesi ekrana kayar → mühür basılır (ses + titreşim) → kamera parsele iner, **çit ve şantiye tabelası** çıkar (tabelada şirket logosu) → kasadan düşen para animasyonu → "Arsa tapuya işlendi" bildirimi.
+
+### 8.4 Aktif Şantiye
+
+**Yerleşim:**
+- **Tam ekran 3D** (üst ~60 %): izometrik-perspektif karışık kamera.
+  - **Tek parmak:** kamera döndür · **iki parmak:** yakınlaştır/kaydır · **çift dokunuş:** seçilen noktaya odak · **Ön ayar butonları:** Kuş bakışı / Yan / Vinç kabini / Seyir.
+- **Üst katman (overlay):** proje adı, 18 ikonlu aşama şeridi (tamamlananlar altın, mevcut yanıp sönen), "Kat 6/12".
+- **Dünyada uyarı balonları:** malzeme bitti ikonu vinç üstünde; kaza kırmızı çember; hakediş/satış para balonu. Dokununca ilgili panel açılır.
+- **Alt panel (sürüklenebilir):** sekmeler **Genel · Ekip · Malzeme · Makine · Kalite & Güvenlik · Satış**. En üst satır: *Bugünkü ilerleme, bütçe/gerçekleşen, tahmini bitiş, tahmini kâr*.
+
+**Şantiye yaşıyor:**
+- Beton mikserleri kapıdan girer, pompa hortumunu bağlar, **beton döküm** (damlayan, kürelenen parçacıklar + titreşim).
+- Kule vinç **dönüp kancayı indirir**, kalıp/demir bağları taşır; yük taşırken kablo gerilir.
+- Hafriyat kamyonları yükleyip çıkar; ekskavatör kolu hareket eder.
+- İşçiler (ekibin gerçek sayısı kadar, LOD ile sınırlı) farklı animasyon durumlarında: taşır, kaynak/ark ışığı, kalıp çakar, bekler (malzeme yoksa), mola.
+- Hava: yağmur → işçiler siperlenir, ilerleme çarpanı düşer (görsel ile sim birbirine bağlı).
+
+**Zaman atlatma (time-lapse):** 4× hızda gün/gece döngüsü akar, gölgeler yürür; bina saniyeler içinde katlanır. Doyurucu bir "izleme" anıdır.
+
+### 8.5 İnşaat Tamamlanma
+
+1. **Son kontrol:** denetçi ikonu, kalite çubuğu dolar (puan = kalite).
+2. **Sahne dönüşümü (≈8 sn):** iskeleler üstten alta çözülür, kule vinç parçalanıp kamyona yüklenir, çit kalkar, peyzaj ağaçları büyüyerek belirir, gün batarken **pencerelerde ışıklar tek tek yanar**. Kamera yavaş 360° yörünge.
+3. **İskân belgesi:** krem kâğıt, mühür darbesi, tonlu "tamamlandı" sesi.
+4. **Rapor kartı:** Bütçe vs gerçek · Plan vs gerçek süre · **Kalite puanı** · Kazanılan itibar · Şirket kâr/zarar (**count-up**) · 1–5 yıldız. Sorun varsa dürüstçe belirtilir ("Kalite düşük: garanti riski ↑").
+5. **Sonraki adım butonları:** *Satışa aç · Kirala · Hemen sat · Portföye al*.
+6. Seviye/görev tetiklendiyse ardışık kutlama kartı (aşırı değil: tek sinematik dokunuş).
+
+---
+
+## 9. 3D Bina ve Şantiye Üretimi
+
+### 9.1 Prosedürel bina üreticisi
+
+Her projenin bir **tasarım tohumu** vardır; aynı tohum aynı binayı verir (kayıtta sadece tohum+parametreler saklanır, geometri değil).
+
+| Parametre | Seçenekler |
+|---|---|
+| Taban formu | Dikdörtgen, L, U, T, bloklu (site), kule + podyum |
+| Kat sayısı/yükseklik | İmar + proje; zemin kat farklı yükseklik |
+| Cephe stili | Şerit pencere, balkon ritmi, cam perde, tuğla, taş kaplama, ahşap detay |
+| Çatı | Eğimli kiremit, teras, kule tacı, saçak |
+| Renk paleti | Tohumdan seçilen uyumlu 6 palet |
+| Ek detay | Balkon korkulukları, tabela, çatı ekipmanı, giriş sundurması |
+| Tipe özgü | Villa: havuz+bahçe; Rezidans: podyum+kule; Fabrika: tonoz çatı+bacalar; AVM: geniş kutu+cam atrium |
+
+### 9.2 İnşaat aşaması → görsel eşlemesi
+
+| Aşama | 3D görünüm |
+|---|---|
+| Hafriyat | Zemin çukura dönüşür (derinlik animasyonu), kamyon rampası |
+| Temel | Radye plak + filiz demirleri, beton döküm |
+| Betonarme/kat | **Kat kat**: kolon-kiriş iskeleti, kalıp kutuları, plak; yeni kat "kalıp → beton" ile yükselir |
+| Duvar | Tuğla/gazbeton aşağıdan yukarı dolar |
+| Tesisat/yalıtım | Cephe iskelede açık kablo/boru, sonra yalıtım paneli |
+| Sıva/cephe | Cephe rengi/kaplaması aşamalı belirir (ilk soluk, sonra son görünüm) |
+| Pencere/kapı | Cam bölmeler tek tek oturur |
+| İç dekor | Pencerelerden görünen ışık/iç renk |
+| Peyzaj | Ağaç, çim, yürüyüş yolu, ışıklandırma |
+
+Katlar **farklı aşamalarda olabilir**: görsel olarak alt katlar kaplanmışken üst katlar hâlâ iskelet (gerçek inşaat siluet).
+
+### 9.3 Performans stratejisi
+
+- `InstancedMesh` (pencere, kolon, tuğla parçaları, işçi, ağaç); **statik geometri birleştirme** (bina kabuğu).
+- Render-to-texture proje küçük görselleri **yalnızca değişince** yenilenir.
+- **Kalite kademeleri:** *Düşük* (gölge yok, 30 FPS sınırı, az işçi/parçacık, düşük çözünürlük ölçeği) · *Orta* · *Yüksek* (yumuşak gölge, 60 FPS, tam parçacık). **Otomatik tespit:** ilk 5 sn FPS ölçülür, düşükse öneri sunulur.
+- Sahnede sadece **görünen proje** simüle edilir görsel olarak; diğer projeler sadece sayıdır (sim her zaman çalışır, görsel sadece açıkken).
+- Bellek: geometri/texture havuzları, `dispose()` disiplini, ekran dışı sahneler uyutulur.
+
+---
+
+## 10. Animasyon Planı
+
+İlke: **anlamlı, kısa, atlanabilir.** Tüm hareket `prefers-reduced-motion` ve Ayarlar > Animasyon ile azaltılabilir. Easing: giriş `cubic-out`, çıkış `cubic-in`, vurgu hafif `back-out`. Kural: UI animasyonu ≤ 300 ms, "ödül anı" ≤ 3 sn, sinematikler atlanabilir.
+
+| Animasyon | Tetikleyici | Süre | Not |
+|---|---|---|---|
+| Açılış logosu | Uygulama açılışı | ~6 sn | Dokunarak geç |
+| Ekran geçişleri | Sekme/ekran | 250 ms | Yatay kayma + bulanık geçiş; 3D sahne arka planda süreklidir |
+| Bottom sheet | Detay açma | 280 ms | Yay (spring) fiziği |
+| Arsa satın alma | `BuyLand` | ~2,5 sn | Tapu → mühür → çit/tabela |
+| Kat yükselmesi | Aşama ilerlemesi | sürekli | Sim durumundan türetilir, "sahte" yok |
+| Vinç/makine | Aktif aşama | sürekli | Basit IK/yay hareketi, yük bağlıyken kablo gerilimi |
+| İşçi | Ekip ataması | sürekli | 5 durum: taşı/çalış/bekle/mola/kaza |
+| Para efekti | Gelir/gider | 700 ms | Gelir: yeşil altın damlacık HUD'a uçar; gider: kırmızı kısılır |
+| Proje açılışı | `StartProject` | ~2 sn | Plan kâğıdı açılır → zemin çizilir → tabela |
+| Bina tamamlanma | Aşama 18 | ~8 sn | Bölüm 8.5 |
+| Daire satış bildirimi | `UnitSold` | 1,5 sn | Üstte "anahtar teslim" toast + bina penceresinde ışık yanar |
+| Seviye atlama | Seviye eşiği | ~3 sn | Şirket rozeti yükselir, ofis diorama büyür |
+| İhale kazanma | `TenderWon` | ~4 sn | Sözleşme mührü + kamera şantiye alanına uçar |
+| Başarısızlık | İflas riski, ihale kaybı | 1–2 sn | Soluk renk, sade; abartı yok |
+
+---
+
+## 11. Ses ve Müzik
+
+Önceki müzik çalışmasının fikirleri korunur: **prosedürel (Web Audio), kayıpsız geçişli, tek arka plan müziği, ayrı kanallar.**
+
+- **Müzik durumları (adaptif):** Ana menü (sinematik, güven verici) · Yönetim (sakin, profesyonel) · Şantiye (hafif ritmik, mekanik ilham) · İhale/pazarlık (gerilimli, diplomatik) · Kriz (karanlık, gergin) · Başarı/seviye (parlak) · Yenilgi/iflas (ağır, duygusal). Durumlar arası **çapraz geçiş (crossfade)**, yoğunluk katmanları (ritim katmanı oyun hızına ve olay baskısına göre açılır).
+- **Ambiyans:** şantiye gürültüsü (uzaktan matkap, çekiç, kamyon), şehir uğultusu, yağmur/rüzgâr.
+- **SFX:** UI tıklama, mühür, beton döküm, vinç hidrolik, makine marşı, kasa/para (gelir-gider ayrı tını), satış zili, uyarı/alarm, başarı fanfarı, kaza uyarısı.
+- **Ayarlar:** Müzik aç/kapa + seviye · Efekt aç/kapa + seviye · Ambiyans seviyesi · Titreşim aç/kapa · Animasyon azaltma · Tercihler kalıcı.
+- **Mobil/iOS:** AudioContext ilk kullanıcı dokunuşuyla açılır; arka plana alınınca askıya alınır; sessiz mod davranışı test edilir.
+- **Özgünlük:** tüm sesler kodla üretilir, telif sorunu yoktur.
+
+---
+
+## 12. Teknik Altyapı
+
+### 12.1 Kayıt sistemi
+
+- **IndexedDB**: 3 dönen **otomatik kayıt** (her ay başı + önemli olay sonrası) + N manuel slot.
+- **Sürümlü şema** (`meta.version`) ve **migrasyon** fonksiyonları; eski kayıt yeni sürümde açılabilir.
+- **Sağlama toplamı (CRC32)** + yapı doğrulama (şema kontrolü). Bozuk kayıt: otomatik önceki kayda dönme önerisi, "yine de aç (kurtarma modu)".
+- **Boyut kontrolü:** geçmiş seriler **kademeli sıkıştırılır** (günlük → haftalık → aylık), `ledger` eski kayıtları aylık toplamlara indirgenir (özet saklanır), gzip (`CompressionStream` varsa).
+- Kayıt asenkron ve atomik (önce yeni kayıt yazılır, sonra eskisi silinir).
+
+### 12.2 Mobil ve performans
+
+- Dokunmatik öncelikli, **44 px** hedef boyut, güvenli alan (`env(safe-area-inset-*)`), 100dvh.
+- Tek canvas, `requestAnimationFrame` yalnızca görünürken; **sim 3D'den bağımsız** sabit adım.
+- Bellek bütçesi (hedef): < 250 MB iPhone Safari'de; ana thread tick süresi < 4 ms (günlük tick), ağır hesaplar (rakip AI) parçalara bölünür.
+- Gerekirse sim, **Web Worker**'a alınır (arayüz yapısı buna uygun tasarlanır).
+- Çevrimdışı çalışır (service worker); font ve varlıklar gömülü.
+
+### 12.3 Yaşam döngüsü
+
+`visibilitychange/pagehide` → oyun duraklat + otomatik kayıt + ses askıya al. Geri dönünce kullanıcıya "Devam" gösterilir (süre atlaması yok).
+
+---
+
+## 13. Test ve Denge Planı
+
+### 13.1 Test katmanları
+
+1. **Birim testler:** formüller (arsa, emsal, faiz, ilerleme), ledger tutarlılığı, kayıt/yükleme gidiş-dönüş.
+2. **Komut kayıt testi:** her UI butonu bir komuta bağlı mı? Boşta komut/buton var mı?
+3. **Özellik testleri:** her fazın çıkış kriteri (Bölüm 14).
+4. **Başsız simülasyon (Node):** botlar 20 oyun yılı oynar (aynı tohumlarla yüzlerce koşu).
+5. **Cihaz testi:** iPhone Safari (WebGL, ses, kayıt, güvenli alan), orta seviye Android.
+
+### 13.2 Denge botları ve hedefler
+
+| Strateji botu | Beklenti |
+|---|---|
+| **Temkinli** (az kredi, küçük proje) | İflas < %5; yıl 1 net varlık +%10–25; yavaş ama güvenli |
+| **Dengeli** | İflas ~%10–15; yıl 3'te seviye 4 |
+| **Agresif kaldıraçlı** | Daralma rejiminde iflas **%35–45**; iyi dönemlerde 2× hızlı büyüme |
+| **Lüks uzman** | Kâr/risk yüksek; talep şokuna hassas |
+| **İhale odaklı** | Başlangıçta eleme yüzünden yavaş; seviye 5+ sonrası kararlı |
+| **Hiç çalışmayan** | Giderler yüzünden eriyip batmalı (pasif zenginleşme yok) |
+
+Ölçülen metrikler: net varlık eğrisi, **iflas oranı**, toparlanma oranı (borç sonrası), ortalama proje marjı, ortalama proje süresi, **ilk 10 M₺ net varlık süresi (hedef 12–18 ay)**, rakip hayatta kalma/ iflas dağılımı, malzeme endeksi varyansı, nakit sıkışma sıklığı. Sapma → parametre revizyonu → yeniden koşu. **Tek stratejinin baskın olmaması** başarı kriteridir.
+
+### 13.3 Dayanıklılık
+
+"Hatalardan dönme" için: otomatik kayıt, erken uyarı, kurtarma araçları (Bölüm 5.5). Sürpriz felaket hiç "ipucusuz" gelmemelidir.
+
+---
+
+## 14. Geliştirme Yol Haritası
+
+Her faz **çalışır halde** bitirilir, bir sonrakine geçmeden **çıkış kriteri** doğrulanır ve önceki özellikler regresyon testinden geçer.
+
+| Faz | Kapsam | Boyut | Çıkış kriteri |
+|---|---|---|---|
+| **1** | Mimari iskelet: çekirdek (store, komut, olay, RNG), zaman, kayıt altyapısı, veri yükleyici, başsız sim koşturucu, build | M | Komutla bir şirket oluşturulup 1 yıl simüle edilir, kaydedilip aynı sonuçla yüklenir |
+| **2** | Ana menü + açılış + yeni oyun sihirbazı + ayarlar + tema/UI bileşen kütüphanesi | M | Menüden yeni oyun başlar; iPhone'da akıcı; tema tutarlı |
+| **3** | Şirket + ekonomi: kasa, ledger, aylık giderler, makro rejimler, finans tabloları/grafikleri | M | Bilanço ledger ile tutarlı; makro rejimler döner; grafikler doğru |
+| **4** | Arsa ve proje sistemi: harita, arsa dosyası, fizibilite, satın alma, proje sihirbazı | L | Arsa al → proje oluştur; hesaplar elle doğrulanan örnekle eşleşir |
+| **5** | İnşaat simülasyonu + 3D: 18 aşama, prosedürel bina, kat kat yükselme, kamera | L | Tüm aşamalar sim'den çizilir; 5+ farklı bina görünümü; 30+ FPS orta cihaz |
+| **6** | Personel, makine, malzeme/tedarik; vinç/işçi/kamyon animasyonları | L | Malzeme yoksa duran şantiye; ekip/makine ilerlemeyi etkiler |
+| **7** | Satış + müşteri: birim üretimi, satış yolları, garanti, memnuniyet | M | İlk ilk daire satışı → nakit akışı; satış hızı fiyat/talep ile uyumlu |
+| **8** | Banka, kredi, yatırımcı, ihaleler; hisse satışı; AVM/otel/karma tipler | L | Kredi ödeme planı doğru; geç ödeme not düşürür; ihale kazanılır/kaybedilir |
+| **9** | Rakip AI + dinamik piyasa; olay/karar kataloğu genişler (40+) | L | Rakipler büyür/batar; oyuncu fırsat yakalar; olaylar tekrar etmiyor |
+| **10** | Animasyon cilası, **ses/müzik**, atmosfer, ışık/hava, tamamlanma sahneleri | L | Bölüm 10 tablosundaki her animasyon çalışır; müzik durumları geçişli |
+| **11** | Görevler, başarımlar, seviye sistemi, 8 şehir, ofis/şube | M | Uzun vadeli ilerleme yolu; serbest oyun kısıtlanmıyor |
+| **12** | **Kapsamlı test, denge, optimizasyon, hata düzeltme**, kayıt dayanıklılığı, cihaz testi | L | Denge botu hedefleri tutar; 20 yıllık kayıt hızlı yüklenir; iPhone kabul listesi geçer |
+
+*(Boyut: M ≈ orta, L ≈ büyük; takvim süreleri onay sonrası kapsama göre netleştirilir.)*
+
+---
+
+## 15. Riskler ve Açık Noktalar
+
+| Risk | Önlem |
+|---|---|
+| Kapsam çok büyük | Faz disiplini, MVP sınırı, veri odaklı içerik |
+| 3D'nin düşük cihazlarda yavaşlaması | Kademeli kalite, instancing, otomatik tespit |
+| "Fotoğraf gerçekçiliği" beklentisi | Stilize premium yön baştan net; ileride varlık paketi eklenebilir |
+| Ekonomi denge tuzağı (ya çok kolay ya imkânsız) | Başsız botlarla ölçülebilir hedefler |
+| Karmaşıklık yorgunluğu | Her ekranda tek ana soru, varsayılan otomasyon (ör. otomatik sipariş kuralları, isteğe bağlı) |
+| Safari ses/WebGL kısıtları | Erken cihaz testi (Faz 2), yaşam döngüsü yönetimi |
+| Kayıt bozulması | Atomik yazma, sağlama toplamı, döner otomatik kayıt |
+
+### Onayınızı beklediğim kararlar
+
+1. **Çalışma adı:** "Müteahhit — Temelden Zirveye" uygun mu?
+2. **Görsel yön:** Stilize premium low-poly (önerilen) uygun mu?
+3. **Teknoloji:** TypeScript + Vite + Three.js + tek HTML çıktısı (sonra Capacitor) onaylı mı?
+4. **Başlangıç sermayesi** (~6 M₺) ve para birimi ölçeği (gerçekçi TL büyüklükleri) uygun mu?
+5. **MVP sınırı:** AVM/otel/hisse satışı/kamu mega-ihaleleri Faz 8'e ertelenmesi uygun mu?
+6. **Repo:** Bu depo bir borsa botu; oyun için **ayrı yeni bir depo** açmanızı öneririm. Hangisini kullanalım?
