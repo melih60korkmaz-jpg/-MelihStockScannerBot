@@ -795,3 +795,14 @@ Kullanıcının daha önceki oyununun ekran kaydı incelendi. Çıkarımlar:
 - **Teslim**: kalite puanı (aşama kalitelerinin maliyet ağırlıklı ortalaması), itibar etkisi, rapor kartı. Satış: şimdilik **toplu satış** (piyasa değerinin %92'si); daire daire satış Faz 7.
 - **3D**: her proje tasarım tohumundan farklı cephe stili (şerit, balkon, cam perde, tuğla, taş, metal), çatı (teras, eğimli, taç, sanayi), renk paleti ve blok sayısı alır. Aşamalar fizikseldir: hologram → hafriyat çukuru → radye + filiz → kat kat taşıyıcı → duvar → yalıtım → iskele → cephe/balkon → pencere → çatı ekipmanı → peyzaj; vinç bina ile yükselir ve sökülür. Gün/gece, yağmur/kar, kamera (döndür, sıkıştır-yakınlaştır, kaydır, çift dokunuş, ön ayarlar).
 - **Ölçüm**: tam yaşam döngüsü arayüz testi (başlat → teslim raporu → toplu satış), nakit durması, 8 bina tipi galerisi.
+
+
+## Uygulama notları — Faz 6 (temel düzen: personel, makine, malzeme/tedarik)
+
+Kullanıcı kararı: bu fazda **temel düzen** kurulur, ince ayar ve hatalar sonra ele alınır.
+
+- **Malzeme**: 17 malzeme (veri), 4 genel tedarikçi (fiyat, tedarik süresi, güvenilirlik, kalite A/B/C). Aşama malzeme ihtiyacı, bütçedeki malzeme payının plan fiyatlarıyla miktara çevrilmesidir. Stok yoksa ilerleme stokla sınırlanır, hiç yoksa iş durur ("Malzeme yok"). **Otomatik satın alma** (varsayılan açık): aktif aşamanın kalan ihtiyacı ve sonraki aşamanın ilk günleri tercih edilen tedarikçiden sipariş edilir; iki aylık sabit gider nakitte bırakılır. Manuel sipariş modalı var. Malzeme fiyatı = temel × makro endeks × malzemeye özgü aylık yürüyüş × tedarikçi; ani sıçrama haberi çıkar. Kalite: stoğun ağırlıklı ortalama kalitesi aşama kalitesine (±6 puan) yansır.
+- **Makine**: 12 tip. Aşamalar gereken makineleri listeler. Sahip olunan çalışır makine yalnızca **yakıt**, olmayan **günlük kira** öder (kiralama otomatik). Satın alma/satış (%90), yıllık %12 değer kaybı (min %25), aylık bakım, kullanıldıkça artan **arıza** ihtimali (onarım ücreti + birkaç gün devre dışı).
+- **Personel**: atama (proje ya da ortak havuz), **moral** (güvenlik politikası, kaza, nakit sıkıntısıyla değişir; verimi ±%15 etkiler). **İş güvenliği** politikası (düşük/normal/yüksek): sigorta maliyeti ↔ kaza olasılığı ↔ moral. **Kaza**: şantiye 3–9 gün durur, tazminat, moral ve itibar düşer.
+- **Arayüz**: Operasyon sekmesi (Ekip, Malzeme, Makine, Politika); şantiye panelinde "Kaynaklar" sekmesi; durum bandı (nakit/malzeme/kaza).
+- **Bilinen eksikler (sonraya)**: tedarikçiler malzemeye göre ayrışmıyor; makine kapasitesi tek proje/gün; tedarikçi ilişki puanı, vade, toplu alım indirimi yok; kaza türleri tek; ekip UI'ı sıkışık; **ekipsiz inşaat çok pahalı** (kira süresi uzar) → ilk proje için kolaylaştırma gerekebilir; denge ayarı Faz 12.

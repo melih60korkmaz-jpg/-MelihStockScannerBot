@@ -210,6 +210,6 @@ describe('kayıt göçü v2→v3 ve gidiş-dönüş', () => {
   });
   it('v2 kaydı v3\'e taşınır: pazar oluşur', () => {
     const s = start(); const old: any = JSON.parse(JSON.stringify(s)); old.meta.version = 2; for (const k of ['parcels', 'projects', 'cityMarket', 'scheduled']) delete old[k];
-    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(4); expect(marketParcels(r.state).length).toBeGreaterThanOrEqual(15 * LISTING_TARGET); }
+    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(5); expect(marketParcels(r.state).length).toBeGreaterThanOrEqual(15 * LISTING_TARGET); }
   });
 });

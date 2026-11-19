@@ -6,7 +6,10 @@ import { crewFactor, stageDays } from '../../sim/construction';
 import { currentRevenue } from '../../sim/projects';
 import { SiteScene, type CamPreset, type SiteState } from '../../render3d/siteScene';
 import { h, press, toast } from '../dom';
-import { fmt, kv, pct } from '../components';
+import { fmt, kv, nf, pct } from '../components';
+import { MACHINES, MATERIALS } from '../../data';
+import { incomingQty, stageNeeds, stockQty } from '../../sim/materials';
+import { crewCapacity } from '../../sim/construction';
 import type { App } from '../app';
 import { BULK_DISCOUNT } from '../../core/commands';
 import type { Project } from '../../core/types';
@@ -25,14 +28,14 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
   app.site = scene;
   const proj = () => app.store.state.projects.find((p) => p.id === projectId);
   const parcelOf = (p: Project) => app.store.state.parcels.find((x) => x.id === p.parcelId);
-  let sheetOpen = false, tab: 'genel' | 'asamalar' | 'maliyet' = 'genel', reportShown = false;
+  let sheetOpen = false, tab: 'genel' | 'asamalar' | 'kaynak' | 'maliyet' = 'genel', reportShown = false;
 
   const specOf = (p: Project) => { const pc = parcelOf(p)!, t = buildingType(p.type)!; return { type: p.type, quality: p.quality, seed: p.designSeed, floors: p.floors, footprint: Math.max(60, pc ? pc.area * pc.taks : 120), plotW: 40, plotD: 30, use: t.use, name: p.name, roads: pc?.roads ?? 1, corner: pc?.corner ?? false }; };
   const stateOf = (p: Project): SiteState => {
     const s = app.store.state, b = p.build;
     const u = p.status === 'taslak' ? 3 : p.status === 'insaat' && b ? b.stage + b.progress : 18;
     const field = s.staff.filter((x) => FIELD.has(x.type)).length;
-    return { u, stalled: b?.stalled === 'nakit', weather: s.weather[p.cityId] ?? 'acik', workers: Math.max(3, field + 2), done: false };
+    return { u, stalled: !!b?.stalled, weather: s.weather[p.cityId] ?? 'acik', workers: Math.max(3, field + 2), done: false };
   };
 
   // ---- Üst çubuk ----
@@ -63,6 +66,9 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
     let msg = '', tone = '';
     if (p.status === 'taslak') { msg = 'Proje taslağı — inşaatı başlatmak için aşağıdaki düğmeyi kullanın'; tone = 'info'; }
     else if (b?.stalled === 'nakit') { msg = 'Nakit yok — inşaat durdu! Gelir sağlayın veya gider azaltın'; tone = ''; }
+    else if (b?.stalled === 'malzeme') { msg = `Malzeme yok: ${MATERIALS.find((m) => m.id === b.matShort)?.label ?? ''} — Operasyon > Malzeme'den sipariş verin`; tone = 'warn'; }
+    else if (b?.stalled === 'kaza') { msg = `İş kazası — şantiye ${Math.max(0, (b.accidentUntil ?? 0) - s.clock.day)} gün kapalı`; tone = ''; }
+    else if (p.status === 'insaat' && b?.matShort) { msg = `Malzeme yetersiz (${MATERIALS.find((m) => m.id === b.matShort)?.label}): iş yavaşladı`; tone = 'warn'; }
     else if (p.status === 'insaat' && st?.permit) { msg = `Ruhsat bekleniyor (${Math.max(0, Math.round(b!.progress * 100))}%)`; tone = 'info'; }
     else if (p.status === 'insaat' && st?.outdoor && s.weather[p.cityId] !== 'acik') { msg = `${WORD[s.weather[p.cityId]!]} hava: dış işler yavaşlıyor`; tone = 'warn'; }
     banner.style.display = msg ? 'block' : 'none'; banner.className = `banner ${tone}`; banner.textContent = msg;
@@ -81,7 +87,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
     sheet.append(bar, h('div', { class: 'prog' }, h('i', { style: `width:${Math.round(overall * 100)}%` })));
     if (!sheetOpen) { sheet.style.height = ''; return; }
     const seg = h('div', { class: 'seg', style: 'margin:6px 12px 0', role: 'tablist' });
-    for (const [id, l] of [['genel', 'Genel'], ['asamalar', 'Aşamalar'], ['maliyet', 'Maliyet']] as const) seg.append(h('button', { class: tab === id ? 'on' : '', role: 'tab', onclick: () => { press(app); tab = id; drawSheet(proj()!); } }, l));
+    for (const [id, l] of [['genel', 'Genel'], ['asamalar', 'Aşamalar'], ['kaynak', 'Kaynaklar'], ['maliyet', 'Maliyet']] as const) seg.append(h('button', { class: tab === id ? 'on' : '', role: 'tab', onclick: () => { press(app); tab = id; drawSheet(proj()!); } }, l));
     const body = h('div', { class: 'body2' }); sheet.append(seg, body);
     if (tab === 'genel') {
       const rows: [string, string | Node, boolean?][] = [['Durum', p.status === 'insaat' ? 'İnşaat sürüyor' : p.status === 'taslak' ? 'Taslak' : p.status === 'tamamlandi' ? 'Tamamlandı' : 'Satıldı'], ['Planlanan süre', `~${p.expected.months} ay`]];
@@ -96,8 +102,17 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
     } else if (tab === 'asamalar') {
       STAGES.forEach((sg, i) => { if (i === 0) return; const done = p.status === 'tamamlandi' || p.status === 'satildi' || (b && i < b.stage), cur = b && p.status === 'insaat' && i === b.stage;
         body.append(h('div', { class: `stl ${done ? 'done' : cur ? 'cur' : ''}` }, h('span', { class: 'ic' }), h('span', {}, sg.label + (cur ? ` — ${Math.round(b!.progress * 100)}%` : '')), h('span', {}, b ? fmt(b.stageBudget[i]!) : fmt(Math.round((p.budget.total - p.budget.soil) * sg.cost / 100))))); });
+    } else if (tab === 'kaynak') {
+      const st = b && p.status === 'insaat' ? STAGES[b.stage]! : null;
+      if (!st || !b) body.append(h('div', { class: 'empty' }, 'Kaynak bilgisi inşaat sürerken görünür.'));
+      else {
+        const rows: [string, string | Node, boolean?][] = [['Aşama', st.label], ['Saha ekibi', st.office ? 'Ofis aşaması (mimar/mühendis gerekir)' : `kapasite ${crewCapacity(s, st.id, p.id).toFixed(1)} / gereken ${(p.brut / 70).toFixed(1)}`]];
+        for (const [id, q] of stageNeeds(p, b.stage)) { const m = MATERIALS.find((x) => x.id === id)!, have = stockQty(s, id), inc = incomingQty(s, id); rows.push([m.label, h('span', { class: have < q * (1 - b.progress) ? 'neg' : '' }, `kalan ihtiyaç ${nf(q * (1 - b.progress), 1)} · stok ${nf(have, 1)} · yolda ${nf(inc, 1)} ${m.unit}`)]); }
+        for (const mid of st.machines ?? []) { const owned = s.machines.find((x) => x.type === mid && x.brokenUntil <= s.clock.day); rows.push([MACHINES.find((x) => x.id === mid)!.label, owned ? 'Sizin (yakıt)' : s.machines.some((x) => x.type === mid) ? 'Arızalı → kiralanıyor' : 'Kiralanıyor (günlük)']); }
+        body.append(kv(rows), h('div', { class: 'hint' }, 'Operasyon sekmesinden malzeme siparişi, makine alımı ve ekip ataması yapabilirsiniz.'));
+      }
     } else {
-      const spent = b ? b.spent + b.unpaid : 0, rev = currentRevenue(s, { ...p, ...(p.result ? { result: p.result } : {}) }), land = parcelOf(p)?.costBasis ?? 0;
+      const spent = b ? b.spent + b.unpaid + (b.matCost ?? 0) : 0, rev = currentRevenue(s, { ...p, ...(p.result ? { result: p.result } : {}) }), land = parcelOf(p)?.costBasis ?? 0;
       body.append(kv([['Proje bütçesi', fmt(p.budget.total)], ['Harcanan (ödenen + tahakkuk)', fmt(spent)], ['Tasarım bedeli (ödendi)', fmt(p.budget.designFee)], ...(b && b.soilExtra !== 0 ? [['Zemin sürprizi', fmt(b.soilExtra)] as [string, string]] : []),
         ['Fiyat endeksi etkisi', b ? `×${(0.6 * s.macro.materialIndex / b.priceBase.mat + 0.4 * s.costIndex / b.priceBase.cost).toFixed(2)}` : '—'], ['Arsa maliyeti', fmt(land)], ['Tahmini satış değeri', fmt(rev)], ['Tahmini kâr', fmt(Math.round(rev * 0.98) - p.budget.total - land), true]]),
         h('div', { class: 'hint' }, 'Kendi saha ekibiniz taşeron işçilik bedelinin bir kısmını tasarruf ettirir; maaşlarınız ayrıca ödenir.'));

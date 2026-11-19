@@ -140,7 +140,7 @@ describe('kayıt göçü', () => {
     for (const k of ['macro', 'macroHistory', 'news', 'history', 'costIndex', 'taxLossCarry']) delete old[k];
     const r = unpack(pack(old));
     expect(r.ok).toBe(true);
-    if (r.ok) { expect(r.migrated).toBe(true); expect(r.state.meta.version).toBe(4); expect(r.state.parcels.length).toBeGreaterThan(0); advanceDays(r.state, 120); expect(checkInvariant(r.state)).toBe(true); expect(r.state.macroHistory.length).toBeGreaterThan(0); }
+    if (r.ok) { expect(r.migrated).toBe(true); expect(r.state.meta.version).toBe(5); expect(r.state.parcels.length).toBeGreaterThan(0); advanceDays(r.state, 120); expect(checkInvariant(r.state)).toBe(true); expect(r.state.macroHistory.length).toBeGreaterThan(0); }
   });
 });
 

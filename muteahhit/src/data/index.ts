@@ -9,6 +9,8 @@ import districtsRaw from './districts.json';
 import btRaw from './buildingTypes.json';
 import placesRaw from './places.json';
 import stagesRaw from './stages.json';
+import materialsRaw from './materials.json';
+import machinesRaw from './machines.json';
 
 export interface StaffTypeDef { id: string; label: string; baseSalaryTL: number }
 export interface OfficeDef { level: number; label: string; capacity: number; monthlyRentTL: number }
@@ -57,7 +59,7 @@ export interface BuildingTypeDef { id: string; label: string; use: 'konut' | 'ti
 export interface QualityDef { id: string; label: string; costMult: number; saleMult: number; blurb: string }
 export const BUILDING_TYPES = (btRaw as any).types as BuildingTypeDef[];
 export const QUALITIES = (btRaw as any).qualities as QualityDef[];
-export interface StageDef { id: string; label: string; cost: number; time: number; office?: string; prepaid?: boolean; permit?: boolean; outdoor?: boolean }
+export interface StageDef { id: string; label: string; cost: number; time: number; office?: string; prepaid?: boolean; permit?: boolean; outdoor?: boolean; materials?: [string, number][]; machines?: string[] }
 export const STAGES = stagesRaw as StageDef[];
 export const STAGE_SHARES: [string, number][] = STAGES.map((s) => [s.id, s.cost]);
 export const stageIndex = (id: string) => STAGES.findIndex((s) => s.id === id);
@@ -68,5 +70,15 @@ export const PLACES = placesRaw as { hoodPre: string[]; hoodSuf: string[]; proje
 // Veri bütünlüğü
 for (const c of CITIES) if (!cityData(c.id)) throw new Error(`Veri hatası: şehir ${c.id} için ilçe verisi yok`);
 { const sum = STAGE_SHARES.reduce((a, [, w]) => a + w, 0); if (Math.abs(sum - 100) > 0.001) throw new Error(`Veri hatası: aşama payları toplamı ${sum}`); if (STAGES.length !== 18) throw new Error('Veri hatası: 18 aşama olmalı'); }
+export interface MaterialDef { id: string; label: string; unit: string; priceTL: number; vol: number }
+export interface SupplierDef { id: string; label: string; price: number; lead: number; reliability: number; quality: number; blurb: string }
+export interface MachineDef { id: string; label: string; priceTL: number; rentTL: number; fuelTL: number; maintTL: number; blurb: string }
+export const MATERIALS = (materialsRaw as any).materials as MaterialDef[];
+export const SUPPLIERS = (materialsRaw as any).suppliers as SupplierDef[];
+export const MACHINES = machinesRaw as MachineDef[];
+export const material = (id: string) => MATERIALS.find((m) => m.id === id);
+export const supplier = (id: string) => SUPPLIERS.find((s) => s.id === id);
+export const machine = (id: string) => MACHINES.find((m) => m.id === id);
+for (const st of STAGES) { for (const [id] of st.materials ?? []) if (!material(id)) throw new Error(`Veri hatası: ${st.id} bilinmeyen malzeme ${id}`); for (const id of st.machines ?? []) if (!machine(id)) throw new Error(`Veri hatası: ${st.id} bilinmeyen makine ${id}`); if ((st.materials ?? []).reduce((a, [, f]) => a + f, 0) > 1.0001) throw new Error(`Veri hatası: ${st.id} malzeme payları > 1`); }
 export const staffType = (id: string) => STAFF_TYPES.find((t) => t.id === id);
 export const officeFor = (level: number) => OFFICES[Math.min(level, OFFICES.length) - 1]!;

@@ -6,6 +6,7 @@ import { compactLedger, post } from './ledger';
 import { macroMonthly } from './macro';
 import { listingsWeekly, marketMonthly } from './land';
 import { constructionDaily } from './construction';
+import { deliveries, materialsMonthly } from './materials';
 import { monthlyCosts, netWorth } from './finance';
 
 /**
@@ -23,6 +24,7 @@ export function advanceDay(s: GameState): GameEvent[] {
     if (isFirstOfMonth(day)) monthly(s, events);
     if (isMonday(day)) { listingsWeekly(s, events); events.push({ type: 'WEEK', day }); }
     processScheduled(s, events);
+    deliveries(s, events);
     constructionDaily(s, events, isMonday(day));
   }
   return events;
@@ -56,6 +58,8 @@ function monthly(s: GameState, events: GameEvent[]): void {
   const c = s.company!;
   macroMonthly(s, events);
   marketMonthly(s, events);
+  materialsMonthly(s, events);
+  moraleMonthly(s);
   s.costIndex *= 1 + (s.macro.inflation / 100 / 12) * 0.85;
   for (const x of monthlyCosts(s)) post(s, x.cat, -x.amount, { memo: x.memo });
   if ([1, 4, 7, 10].includes(dateOf(s.clock.day).month)) quarterlyTax(s, events);
@@ -63,6 +67,12 @@ function monthly(s: GameState, events: GameEvent[]): void {
   if (s.history.length > 240) s.history.shift();
   events.push({ type: 'MONTH', day: s.clock.day });
   if (c.cash < 0) events.push({ type: 'CASH_NEGATIVE', day: s.clock.day, pause: true, data: { cash: c.cash } });
+}
+
+/** Moral hedefe yaklaşır: güvenlik politikası, yakın kaza, nakit sıkıntısı etkiler. */
+function moraleMonthly(s: GameState): void {
+  const c = s.company!; const target = 68 + (c.safety === 'yuksek' ? 6 : c.safety === 'dusuk' ? -6 : 0) - (s.clock.day - c.lastAccidentDay < 90 ? 10 : 0) - (c.cash < 0 ? 8 : 0);
+  for (const x of s.staff) x.morale = Math.round(Math.min(100, Math.max(0, x.morale + (target - x.morale) * 0.25)));
 }
 
 export const CORPORATE_TAX = 0.25;

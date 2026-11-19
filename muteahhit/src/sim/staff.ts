@@ -10,7 +10,7 @@ export function createStaff(s: GameState, type: string): Staff {
   const experience = randInt(s.rng, 'misc', 10, 40);
   const salary = mul(TL(def.baseSalaryTL), 1 + (experience / 100) * 0.75);
   const name = `${pick(s.rng, 'misc', NAMES.first)} ${pick(s.rng, 'misc', NAMES.last)}`;
-  const st: Staff = { id: s.nextId++, type, name, salary, experience, hiredDay: s.clock.day };
+  const st: Staff = { id: s.nextId++, type, name, salary, experience, hiredDay: s.clock.day, morale: 70 };
   s.staff.push(st);
   return st;
 }

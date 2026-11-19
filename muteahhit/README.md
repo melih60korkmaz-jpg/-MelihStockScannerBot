@@ -10,4 +10,4 @@ Tasarım belgesi: `../docs/muteahhit-tasarim-belgesi.md`
     npm run dev     # geliştirme sunucusu
     npm run build   # dist/index.html (tek dosya)
 
-Durum: **Faz 1–5 tamam** (çekirdek, açılış/menü/ayarlar/müzik, şirket ve makro ekonomi, finans, arsa pazarı, inşaat simülasyonu ve 3D şantiye). Yalnızca yatay oyun. Sonraki: Faz 6 (personel, makine, malzeme/tedarik).
+Durum: **Faz 1–6 (temel düzen)** (çekirdek, açılış/menü/ayarlar/müzik, şirket ve makro ekonomi, finans, arsa pazarı, inşaat + 3D şantiye, malzeme/makine/personel temeli). Yalnızca yatay oyun. Sonraki: Faz 7 (satış ve müşteri).

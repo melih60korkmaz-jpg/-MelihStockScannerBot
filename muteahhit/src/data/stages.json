@@ -1,20 +1,295 @@
 [
-  { "id": "arsa",      "label": "Arsa seçimi",              "cost": 0,    "time": 0 },
-  { "id": "planlama",  "label": "Proje planlama",           "cost": 0.5,  "time": 3,  "office": "proje_yoneticisi", "prepaid": true },
-  { "id": "mimari",    "label": "Mimari tasarım",           "cost": 2.0,  "time": 8,  "office": "mimar", "prepaid": true },
-  { "id": "statik",    "label": "Statik proje",             "cost": 1.5,  "time": 5,  "office": "muhendis" },
-  { "id": "elmek",     "label": "Elektrik ve mekanik proje","cost": 1.0,  "time": 4,  "office": "muhendis" },
-  { "id": "ruhsat",    "label": "Ruhsat ve izinler",        "cost": 1.5,  "time": 10, "office": "muhasebeci", "permit": true },
-  { "id": "hafriyat",  "label": "Hafriyat",                 "cost": 3.0,  "time": 4,  "outdoor": true },
-  { "id": "temel",     "label": "Temel ve zemin",           "cost": 10.0, "time": 8,  "outdoor": true },
-  { "id": "betonarme", "label": "Betonarme taşıyıcı sistem","cost": 8.0,  "time": 6,  "outdoor": true },
-  { "id": "katlar",    "label": "Kat yükseltme",            "cost": 16.0, "time": 22, "outdoor": true },
-  { "id": "duvar",     "label": "Duvar ve bölme",           "cost": 6.0,  "time": 6,  "outdoor": true },
-  { "id": "tesisat",   "label": "Elektrik ve su tesisatı",  "cost": 9.0,  "time": 6 },
-  { "id": "yalitim",   "label": "Yalıtım",                  "cost": 4.0,  "time": 3,  "outdoor": true },
-  { "id": "cephe",     "label": "Sıva ve cephe",            "cost": 9.0,  "time": 6,  "outdoor": true },
-  { "id": "pencere",   "label": "Pencere ve kapılar",       "cost": 7.0,  "time": 3,  "outdoor": true },
-  { "id": "ic",        "label": "İç dekorasyon",           "cost": 17.0, "time": 8 },
-  { "id": "peyzaj",    "label": "Peyzaj ve çevre",          "cost": 2.5,  "time": 2,  "outdoor": true },
-  { "id": "teslim",    "label": "Kontrol ve teslimat",      "cost": 2.0,  "time": 2 }
+ {
+  "id": "arsa",
+  "label": "Arsa seçimi",
+  "cost": 0,
+  "time": 0
+ },
+ {
+  "id": "planlama",
+  "label": "Proje planlama",
+  "cost": 0.5,
+  "time": 3,
+  "office": "proje_yoneticisi",
+  "prepaid": true
+ },
+ {
+  "id": "mimari",
+  "label": "Mimari tasarım",
+  "cost": 2.0,
+  "time": 8,
+  "office": "mimar",
+  "prepaid": true
+ },
+ {
+  "id": "statik",
+  "label": "Statik proje",
+  "cost": 1.5,
+  "time": 5,
+  "office": "muhendis"
+ },
+ {
+  "id": "elmek",
+  "label": "Elektrik ve mekanik proje",
+  "cost": 1.0,
+  "time": 4,
+  "office": "muhendis"
+ },
+ {
+  "id": "ruhsat",
+  "label": "Ruhsat ve izinler",
+  "cost": 1.5,
+  "time": 10,
+  "office": "muhasebeci",
+  "permit": true
+ },
+ {
+  "id": "hafriyat",
+  "label": "Hafriyat",
+  "cost": 3.0,
+  "time": 4,
+  "outdoor": true,
+  "materials": [],
+  "machines": [
+   "ekskavator",
+   "kamyon"
+  ]
+ },
+ {
+  "id": "temel",
+  "label": "Temel ve zemin",
+  "cost": 10.0,
+  "time": 8,
+  "outdoor": true,
+  "materials": [
+   [
+    "beton",
+    0.55
+   ],
+   [
+    "demir",
+    0.35
+   ]
+  ],
+  "machines": [
+   "beton_pompasi",
+   "beton_mikseri"
+  ]
+ },
+ {
+  "id": "betonarme",
+  "label": "Betonarme taşıyıcı sistem",
+  "cost": 8.0,
+  "time": 6,
+  "outdoor": true,
+  "materials": [
+   [
+    "beton",
+    0.5
+   ],
+   [
+    "demir",
+    0.4
+   ]
+  ],
+  "machines": [
+   "kule_vinc",
+   "beton_pompasi",
+   "jenerator"
+  ]
+ },
+ {
+  "id": "katlar",
+  "label": "Kat yükseltme",
+  "cost": 16.0,
+  "time": 22,
+  "outdoor": true,
+  "materials": [
+   [
+    "beton",
+    0.5
+   ],
+   [
+    "demir",
+    0.4
+   ]
+  ],
+  "machines": [
+   "kule_vinc",
+   "beton_pompasi",
+   "jenerator"
+  ]
+ },
+ {
+  "id": "duvar",
+  "label": "Duvar ve bölme",
+  "cost": 6.0,
+  "time": 6,
+  "outdoor": true,
+  "materials": [
+   [
+    "tugla",
+    0.5
+   ],
+   [
+    "gazbeton",
+    0.3
+   ],
+   [
+    "cimento",
+    0.1
+   ],
+   [
+    "kum",
+    0.05
+   ]
+  ],
+  "machines": [
+   "forklift"
+  ]
+ },
+ {
+  "id": "tesisat",
+  "label": "Elektrik ve su tesisatı",
+  "cost": 9.0,
+  "time": 6,
+  "materials": [
+   [
+    "kablo",
+    0.45
+   ],
+   [
+    "boru",
+    0.45
+   ]
+  ],
+  "machines": [
+   "kompresor",
+   "jenerator"
+  ]
+ },
+ {
+  "id": "yalitim",
+  "label": "Yalıtım",
+  "cost": 4.0,
+  "time": 3,
+  "outdoor": true,
+  "materials": [
+   [
+    "yalitim",
+    0.9
+   ]
+  ],
+  "machines": [
+   "iskele"
+  ]
+ },
+ {
+  "id": "cephe",
+  "label": "Sıva ve cephe",
+  "cost": 9.0,
+  "time": 6,
+  "outdoor": true,
+  "materials": [
+   [
+    "cimento",
+    0.25
+   ],
+   [
+    "kum",
+    0.15
+   ],
+   [
+    "boya",
+    0.2
+   ],
+   [
+    "cati",
+    0.25
+   ]
+  ],
+  "machines": [
+   "iskele"
+  ]
+ },
+ {
+  "id": "pencere",
+  "label": "Pencere ve kapılar",
+  "cost": 7.0,
+  "time": 3,
+  "outdoor": true,
+  "materials": [
+   [
+    "cam",
+    0.4
+   ],
+   [
+    "aluminyum",
+    0.3
+   ],
+   [
+    "kapi_pencere",
+    0.3
+   ]
+  ],
+  "machines": [
+   "mobil_vinc"
+  ]
+ },
+ {
+  "id": "ic",
+  "label": "İç dekorasyon",
+  "cost": 17.0,
+  "time": 8,
+  "materials": [
+   [
+    "seramik",
+    0.35
+   ],
+   [
+    "parke",
+    0.25
+   ],
+   [
+    "boya",
+    0.2
+   ],
+   [
+    "kapi_pencere",
+    0.1
+   ]
+  ],
+  "machines": [
+   "forklift"
+  ]
+ },
+ {
+  "id": "peyzaj",
+  "label": "Peyzaj ve çevre",
+  "cost": 2.5,
+  "time": 2,
+  "outdoor": true,
+  "materials": [
+   [
+    "kum",
+    0.3
+   ],
+   [
+    "cakil",
+    0.4
+   ]
+  ],
+  "machines": [
+   "kepce",
+   "kamyon"
+  ]
+ },
+ {
+  "id": "teslim",
+  "label": "Kontrol ve teslimat",
+  "cost": 2.0,
+  "time": 2,
+  "materials": [],
+  "machines": []
+ }
 ]

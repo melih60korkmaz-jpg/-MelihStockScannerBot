@@ -12,6 +12,8 @@ export interface LedgerEntry {
 }
 
 export interface Staff {
+  project?: number;     // atandığı proje (yoksa ortak havuz)
+  morale: number;       // 0–100
   id: number;
   type: string;         // data/staffTypes id
   name: string;
@@ -29,6 +31,9 @@ export interface Company {
   reputation: number;   // 0-100
   creditScore: number;  // 0-1000
   stats: { completed: number; sold: number; profit: Money };
+  safety: 'dusuk' | 'normal' | 'yuksek';
+  procurement: { auto: boolean; supplier: string };
+  lastAccidentDay: number;
   cash: Money;          // ÖNBELLEK: her zaman ledgerBase + Σledger
 }
 
@@ -71,11 +76,16 @@ export interface BuildState {
   soilPlanned: number;         // plandaki zemin çarpanı
   permitMult: number;          // ruhsat süresi çarpanı
   priceBase: { mat: number; cost: number };
-  spent: Money;                // ödenen
+  spent: Money;                // ödenen (tahakkuk: işçilik, makine, diğer)
+  matCost?: Money;             // stoktan tüketilen malzemenin (alış fiyatıyla) bedeli
   unpaid: Money;               // tahakkuk eden, henüz ödenmeyen
   unpaidParts: { malzeme: Money; insaat: Money; makine: Money };
   qualitySum: number; qualityW: number;
-  stalled: null | 'nakit';
+  stalled: null | 'nakit' | 'malzeme' | 'kaza';
+  accidentUntil?: number;
+  machCover?: number;          // son günkü makine kapsama oranı (0–1)
+  matShort?: string;           // eksik malzeme (arayüz için)
+  qAdj?: number;               // mevcut aşamada kullanılan malzeme kalitesi (−1…+1, dp ağırlıklı)
   stalledDays: number;
   stallStreak?: number;        // art arda durma günü (olay tekrarını sınırlar)
   stallEvtDay?: number;        // son DURDU olayının günü
@@ -93,6 +103,8 @@ export interface Project {
   budget: { base: Money; soil: Money; soft: Money; total: Money; designFee: Money };
   expected: { revenue: Money; months: number };
 }
+export interface Order { id: number; material: string; qty: number; unitPrice: Money; supplier: string; placedDay: number; arriveDay: number; delayed: boolean; quality: number }
+export interface Machine { id: number; type: string; boughtDay: number; price: Money; brokenUntil: number; uses: number; usedDay?: number }
 export interface Scheduled { day: number; type: 'survey'; data: { parcelId: number; kind: 'soil' | 'market' } }
 
 export interface GameState {
@@ -118,6 +130,10 @@ export interface GameState {
   cityMarket: Record<string, CityMarket>;
   scheduled: Scheduled[];
   weather: Record<string, 'acik' | 'yagmur' | 'kar'>;
+  stock: Record<string, { qty: number; qual: number; cost: number }>;
+  orders: Order[];
+  matPrice: Record<string, number>;
+  machines: Machine[];
 }
 
 export interface GameEvent {

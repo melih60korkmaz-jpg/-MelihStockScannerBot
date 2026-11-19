@@ -1,12 +1,14 @@
 import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
-import { CITIES, background, buildingType, difficulty, officeFor, quality, staffType } from '../data';
+import { CITIES, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { post } from '../sim/ledger';
 import { createStaff } from '../sim/staff';
 import { DIFFICULTY_MACRO } from '../sim/macro';
 import { SURVEY_DAYS, TAPU_HARCI, QUICK_SALE_DISCOUNT, askPrice, fairValue, reservePrice, surveyCost } from '../sim/land';
 import { currentRevenue, newDesignSeed, planProject, projectName } from '../sim/projects';
-import { startConstruction, settle } from '../sim/construction';
+import { startConstruction, settle, activeProjects } from '../sim/construction';
+import { placeOrder, unitPrice } from '../sim/materials';
+import { machineValue, SELL_FACTOR } from '../sim/machines';
 
 /**
  * TÜM durum değişiklikleri komutla yapılır. UI'daki her buton bir komuta bağlıdır;
@@ -48,7 +50,7 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     s.company = {
       name: p.name.trim(), founderBackground: p.founderBackground, startCity: p.startCity,
       emblem: p.emblem ?? { shape: 0, color: 0 },
-      level: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0, stats: { completed: 0, sold: 0, profit: 0 },
+      level: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0, stats: { completed: 0, sold: 0, profit: 0 }, safety: 'normal', procurement: { auto: true, supplier: 'yerel' }, lastAccidentDay: -999,
     };
     post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
     for (const t of bg.staff) createStaff(s, t);
@@ -73,6 +75,7 @@ const hireStaff: CommandDef<HireStaffParams> = {
   },
 };
 
+void activeProjects;
 const fireStaff: CommandDef<FireStaffParams> = {
   validate(s, p) {
     if (!s.staff.some((x) => x.id === p.staffId)) return 'Çalışan bulunamadı.';
@@ -192,6 +195,42 @@ const startConstructionCmd: CommandDef<ProjectRef> = {
   validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr) return 'Proje bulunamadı.'; if (pr.status !== 'taslak') return 'Bu proje zaten başlatılmış.'; return null; },
   apply(s, p) { return startConstruction(s, s.projects.find((x) => x.id === p.projectId)!); },
 };
+export interface PlaceOrderParams { material: string; qty: number; supplier: string }
+export interface BuyMachineParams { type: string }
+export interface MachineRef { machineId: number }
+export interface AssignStaffParams { staffId: number; projectId: number | null }
+export interface SetPolicyParams { safety?: 'dusuk' | 'normal' | 'yuksek'; autoBuy?: boolean; supplier?: string }
+
+const placeOrderCmd: CommandDef<PlaceOrderParams> = {
+  validate(s, p) {
+    if (!s.company) return 'Önce şirket kurulmalı.'; if (!material(p.material)) return 'Bilinmeyen malzeme.'; if (!supplier(p.supplier)) return 'Bilinmeyen tedarikçi.';
+    if (!(p.qty > 0) || p.qty > 1e6) return 'Geçersiz miktar.';
+    if (s.company.cash < Math.round(unitPrice(s, p.material, p.supplier) * p.qty)) return 'Sipariş için yeterli nakit yok.';
+    return null;
+  },
+  apply(s, p) { const ev2: GameEvent[] = []; const r = placeOrder(s, p.material, p.qty, p.supplier, ev2); if (r.ok) ev2.push(ev(s, 'ORDER_PLACED', { orderId: r.order.id, arriveDay: r.order.arriveDay })); return ev2; },
+};
+const buyMachine: CommandDef<BuyMachineParams> = {
+  validate(s, p) { const m = machine(p.type); if (!s.company) return 'Önce şirket kurulmalı.'; if (!m) return 'Bilinmeyen makine.'; if (s.company.cash < TL(m.priceTL)) return 'Satın alma için yeterli nakit yok.'; return null; },
+  apply(s, p) { const m = machine(p.type)!, price = TL(m.priceTL); post(s, 'makine_alim', -price, { memo: m.label }); const id = s.nextId++; s.machines.push({ id, type: p.type, boughtDay: s.clock.day, price, brokenUntil: 0, uses: 0 }); return [ev(s, 'MACHINE_BOUGHT', { id, type: p.type })]; },
+};
+const sellMachine: CommandDef<MachineRef> = {
+  validate(s, p) { return s.machines.some((m) => m.id === p.machineId) ? null : 'Makine bulunamadı.'; },
+  apply(s, p) { const m = s.machines.find((x) => x.id === p.machineId)!; const v = Math.round(machineValue(s, m) * SELL_FACTOR); post(s, 'makine_alim', v, { memo: `${machine(m.type)!.label} satış` }); s.machines = s.machines.filter((x) => x.id !== m.id); return [ev(s, 'MACHINE_SOLD', { type: m.type, value: v })]; },
+};
+const assignStaff: CommandDef<AssignStaffParams> = {
+  validate(s, p) {
+    if (!s.staff.some((x) => x.id === p.staffId)) return 'Çalışan bulunamadı.';
+    if (p.projectId !== null && !s.projects.some((x) => x.id === p.projectId && x.status !== 'satildi')) return 'Proje bulunamadı.';
+    return null;
+  },
+  apply(s, p) { const x = s.staff.find((q) => q.id === p.staffId)!; if (p.projectId === null) delete x.project; else x.project = p.projectId; return [ev(s, 'STAFF_ASSIGNED', { staffId: x.id, projectId: p.projectId })]; },
+};
+const setPolicy: CommandDef<SetPolicyParams> = {
+  validate(s, p) { if (!s.company) return 'Önce şirket kurulmalı.'; if (p.safety && !['dusuk', 'normal', 'yuksek'].includes(p.safety)) return 'Geçersiz güvenlik düzeyi.'; if (p.supplier && !supplier(p.supplier)) return 'Bilinmeyen tedarikçi.'; return null; },
+  apply(s, p) { const c = s.company!; if (p.safety) c.safety = p.safety; if (p.autoBuy !== undefined) c.procurement.auto = p.autoBuy; if (p.supplier) c.procurement.supplier = p.supplier; return [ev(s, 'POLICY_CHANGED')]; },
+};
+
 export const BULK_DISCOUNT = 0.92;
 const sellProjectBulk: CommandDef<ProjectRef> = {
   validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr) return 'Proje bulunamadı.'; if (pr.status !== 'tamamlandi') return 'Yalnızca tamamlanmış projeler satılabilir.'; return null; },
@@ -209,7 +248,7 @@ const sellProjectBulk: CommandDef<ProjectRef> = {
 };
 
 export const COMMANDS = {
-  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk,
+  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,
   CreateCompany: createCompany,
   HireStaff: hireStaff,

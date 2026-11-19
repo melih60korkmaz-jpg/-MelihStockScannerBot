@@ -23,11 +23,11 @@ for (let i = 0; i < N; i++) {
   let d = 0; while (pr.status === 'insaat' && d < 2500) { advanceDays(s, 1); d++; if (s.company!.cash < 0) { broke++; break; } }
   if (pr.build!.stalledDays > 0) stalls++; if (pr.build!.soilExtra > 0) soilHits++;
   if (pr.status !== 'tamamlandi') continue; finished++;
-  days.push(pr.result!.days); planned.push(pr.result!.plannedDays); ratio.push(pr.build!.spent / (pr.budget.total - pr.budget.designFee)); qual.push(pr.result!.qualityScore);
+  days.push(pr.result!.days); planned.push(pr.result!.plannedDays); ratio.push((pr.build!.spent + (pr.build!.matCost ?? 0)) / (pr.budget.total - pr.budget.designFee)); qual.push(pr.result!.qualityScore);
   dispatch(s, 'SellProjectBulk', { projectId: pr.id }); profit.push((pr.result!.profit ?? 0) / (pr.result!.revenue ?? 1));
   const g = (netWorth(s) - nw0) / nw0; roi.push(g); annual.push(g * 365 / Math.max(1, s.clock.day - day0));
 }
-const q = (a: number[], f: number) => [...a].sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor(a.length * f))]!;
+const q = (a: number[], f: number) => a.length ? [...a].sort((x, y) => x - y)[Math.min(a.length - 1, Math.floor(a.length * f))]! : NaN;
 const f = (x: number, d = 1) => x.toFixed(d);
 console.log(`Ekip: ${crew} · ${N} deneme · tamamlanan ${finished} · nakitten batan ${broke} · duran inşaat %${f(stalls / N * 100, 0)} · zemin sürprizi %${f(soilHits / N * 100, 0)}`);
 console.log(`Süre (gün): medyan ${f(q(days, .5), 0)} (plan ${f(q(planned, .5), 0)}) · p10 ${f(q(days, .1), 0)} · p90 ${f(q(days, .9), 0)}`);

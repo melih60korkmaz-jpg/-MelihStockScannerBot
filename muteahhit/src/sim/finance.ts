@@ -1,9 +1,11 @@
 import { monthKey } from '../core/calendar';
 import { TL, mul, type Money } from '../core/money';
 import type { GameState } from '../core/types';
-import { STAGES, ledgerCat, officeFor } from '../data';
+import { MATERIALS, STAGES, ledgerCat, officeFor } from '../data';
+const MAT_BASE = new Map(MATERIALS.map((m) => [m.id, TL(m.priceTL)]));
 import { landAssetValue } from './land';
 import { currentRevenue } from './projects';
+import { machineAssetValue, machineMonthlyMaint } from './machines';
 
 /** Her ay yapılan sabit giderler. Hem motor (ödeme) hem arayüz (beklenen gider) bunu kullanır → tek doğru. */
 export function monthlyCosts(s: GameState): { cat: string; amount: Money; memo: string }[] {
@@ -12,7 +14,9 @@ export function monthlyCosts(s: GameState): { cat: string; amount: Money; memo: 
   const off = officeFor(c.level), ci = s.costIndex;
   const out: { cat: string; amount: Money; memo: string }[] = [];
   if (wages > 0) out.push({ cat: 'maas', amount: wages, memo: `${s.staff.length} çalışan` });
-  out.push({ cat: 'sigorta', amount: Math.round(wages * 0.02) + mul(TL(4000), ci), memo: 'İş güvenliği ve sigorta' });
+  const sp = c.safety === 'dusuk' ? 0.005 : c.safety === 'yuksek' ? 0.06 : 0.02;
+  out.push({ cat: 'sigorta', amount: Math.round(wages * sp) + mul(TL(4000), ci), memo: `İş güvenliği (${c.safety})` });
+  const maint = machineMonthlyMaint(s); if (maint > 0) out.push({ cat: 'makine', amount: maint, memo: `${s.machines.length} makine bakımı` });
   out.push({ cat: 'kira', amount: mul(TL(off.monthlyRentTL), ci), memo: off.label });
   out.push({ cat: 'ofis', amount: mul(TL(12000) + TL(1500) * s.staff.length, ci), memo: 'Elektrik, internet, kırtasiye' });
   return out;
@@ -49,8 +53,9 @@ export function monthlyRows(s: GameState): MonthRow[] {
 
 /** Net varlık = nakit + varlıklar − borçlar. (Arsa/proje/kredi sistemleri geldikçe genişler.) */
 /** Net varlık = nakit + arsalar (piyasa) + inşaat halindeki projelerin ödenen maliyeti + biten/satılmamış binaların tahmini değeri (%90). */
-export const projectAssetValue = (s: GameState): Money => s.projects.reduce((a, p) => a + (p.status === 'insaat' ? p.build!.spent : p.status === 'tamamlandi' ? Math.round(currentRevenue(s, p) * 0.9) : 0), 0);
-export const netWorth = (s: GameState): Money => (s.company ? s.company.cash + landAssetValue(s) + projectAssetValue(s) : 0);
+export const projectAssetValue = (s: GameState): Money => s.projects.reduce((a, p) => a + (p.status === 'insaat' ? p.build!.spent + (p.build!.matCost ?? 0) : p.status === 'tamamlandi' ? Math.round(currentRevenue(s, p) * 0.9) : 0), 0);
+export const stockValue = (s: GameState): Money => Object.entries(s.stock).reduce((a, [id, it]) => a + Math.round(it.qty * (MAT_BASE.get(id) ?? 0) * (s.macro.materialIndex / 100) * (s.matPrice[id] ?? 1)), 0);
+export const netWorth = (s: GameState): Money => (s.company ? s.company.cash + landAssetValue(s) + projectAssetValue(s) + machineAssetValue(s) + stockValue(s) : 0);
 
 /**
  * Nakit yeterlilik süresi (ay): kasa / aylık net yanma. Yanma = beklenen sabit gider − son 3 tam ayın ort. geliri.

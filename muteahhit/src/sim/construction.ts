@@ -1,40 +1,42 @@
 import { dateOf } from '../core/calendar';
-import { gauss, rand } from '../core/rng';
-import type { Money } from '../core/money';
+import { gauss, rand, randInt } from '../core/rng';
+import { TL, type Money } from '../core/money';
 import type { BuildState, GameEvent, GameState, Project } from '../core/types';
 import { SOIL_COST, STAGES } from '../data';
 import { post } from './ledger';
+import { autoBuy, stageNeeds, stockQty } from './materials';
+import { useMachines } from './machines';
 
 const TOTAL_TIME = STAGES.reduce((a, s) => a + s.time, 0);
 const SPLIT = { malzeme: 0.55, insaat: 0.35, makine: 0.1 } as const;
 const TIER_Q: Record<string, number> = { ekonomik: 62, standart: 74, premium: 86, luks: 94 };
 export const LAST_STAGE = STAGES.length - 1; // 17
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
+const FIELD = new Set(['isci', 'usta', 'kalipci', 'demirci', 'elektrikci', 'tesisatci', 'santiye_sefi']);
 
 export const activeProjects = (s: GameState) => s.projects.filter((p) => p.status === 'insaat');
 
-/** Aşama günleri: planlanan toplam süreyi aşama zaman paylarına böler. */
 export function stageDays(p: Project): number[] {
   const total = Math.max(60, p.expected.months * 30);
   return STAGES.map((st) => (total * st.time) / TOTAL_TIME);
 }
 
-/** Saha ekibi kapasitesi (kişi eşdeğeri). Santiye şefi verimi artırır. Çalışanlar aktif projeler arasında bölünür. */
-export function crewCapacity(s: GameState, stageId: string): number {
+/** Saha ekibi kapasitesi (kişi eşdeğeri): bu projeye atananlar tam, atanmamışlar (ortak havuz) aktif projelere bölünür; moral verimi etkiler. */
+export function crewCapacity(s: GameState, stageId: string, projectId?: number): number {
   const concrete = stageId === 'temel' || stageId === 'betonarme' || stageId === 'katlar';
   const w: Record<string, number> = { isci: 1, usta: 1.6, kalipci: concrete ? 1.6 : 1, demirci: concrete ? 1.6 : 1, elektrikci: stageId === 'tesisat' ? 1.7 : 1, tesisatci: stageId === 'tesisat' ? 1.7 : 1 };
-  let cap = 0, chief = false;
-  for (const x of s.staff) { cap += (w[x.type] ?? 0) * (0.8 + 0.4 * (x.experience / 100)); if (x.type === 'santiye_sefi') chief = true; }
+  const nActive = Math.max(1, activeProjects(s).length); let cap = 0, chief = false;
+  for (const x of s.staff) {
+    if (x.project !== undefined && x.project !== projectId) continue;
+    const share = x.project === undefined ? 1 / nActive : 1;
+    cap += (w[x.type] ?? 0) * (0.8 + 0.4 * (x.experience / 100)) * (0.85 + 0.3 * (x.morale / 100)) * share;
+    if (x.type === 'santiye_sefi') chief = true;
+  }
   return cap * (chief ? 1.15 : 1);
 }
-/** Ekibin işi karşılama oranı (r = kapasite / gereken); 1 = yeterli. */
-export function crewRatio(s: GameState, p: Project, stageId: string): number {
-  const n = Math.max(1, activeProjects(s).length), need = Math.max(2, p.brut / 70);
-  return crewCapacity(s, stageId) / n / need;
-}
+export function crewRatio(s: GameState, p: Project, stageId: string): number { return crewCapacity(s, stageId, p.id) / Math.max(2, p.brut / 70); }
 export function crewFactor(s: GameState, p: Project, stageId: string): number {
   const r = crewRatio(s, p, stageId);
-  // Ekipsiz: taşeron yavaşlığı (×0,25). Yeterli ekip: ×1,0. Fazla ekip: azalan getiriyle en çok ×1,3.
   return r < 1 ? 0.25 + 0.75 * r : Math.min(1.3, 1 + (r - 1) * 0.3);
 }
 const hasRole = (s: GameState, role: string) => s.staff.some((x) => x.type === role);
@@ -80,7 +82,7 @@ const priceFactor = (s: GameState, b: BuildState) => 0.6 * (s.macro.materialInde
 
 function onStageStart(s: GameState, p: Project, b: BuildState, events: GameEvent[]): void {
   const st = STAGES[b.stage]!;
-  b.stageStarted = true; b.stageStartDay = s.clock.day; b.stageMult = +(0.96 + rand(s.rng, 'construction') * 0.11).toFixed(3);
+  b.stageStarted = true; b.stageStartDay = s.clock.day; b.stageMult = +(0.96 + rand(s.rng, 'construction') * 0.11).toFixed(3); b.qAdj = 0;
   if (st.permit) b.permitMult = +(0.8 + rand(s.rng, 'construction') * 1.0).toFixed(2);
   if (st.id === 'hafriyat') {
     const parcel = s.parcels.find((x) => x.id === p.parcelId)!;
@@ -92,16 +94,36 @@ function onStageStart(s: GameState, p: Project, b: BuildState, events: GameEvent
       events.push({ type: 'SOIL_REVEALED', day: s.clock.day, ...(Math.abs(extra) > 0 ? { pause: extra > 0 } : {}), data: { projectId: p.id, soil: parcel.soil, extra } });
     }
   }
+  autoBuy(s, p, events); // yeni aşamanın malzemesini sipariş et
 }
 
 function completeStage(s: GameState, p: Project, b: BuildState, crew: number, events: GameEvent[]): void {
   const st = STAGES[b.stage]!;
-  if (b.stage >= 6) { // yapım aşamaları kaliteyi belirler
-    const q = clamp((TIER_Q[p.quality] ?? 74) + (crew - 1) * 8 + gauss(s.rng, 'construction') * 3, 30, 100);
+  if (b.stage >= 6) { // yapım aşamaları kaliteyi belirler: kademe + ekip + malzeme kalitesi (A +6, C −6)
+    const q = clamp((TIER_Q[p.quality] ?? 74) + (crew - 1) * 8 + (b.qAdj ?? 0) * 6 + gauss(s.rng, 'construction') * 3, 30, 100);
     b.qualitySum += q * st.cost; b.qualityW += st.cost;
   }
   events.push({ type: 'STAGE_COMPLETED', day: s.clock.day, data: { projectId: p.id, stage: b.stage, id: st.id } });
   b.stage++; b.progress = 0; b.stageStarted = false;
+}
+
+const SAFETY_MULT = { dusuk: 1.8, normal: 1, yuksek: 0.45 } as const;
+function maybeAccident(s: GameState, p: Project, b: BuildState, cap: number, weather: string, events: GameEvent[]): boolean {
+  const c = s.company!, workers = Math.min(25, cap), chief = s.staff.some((x) => x.type === 'santiye_sefi');
+  const prob = 0.0005 * Math.sqrt(workers + 1) * SAFETY_MULT[c.safety] * (weather === 'acik' ? 1 : 1.3) * (chief ? 0.7 : 1);
+  if (rand(s.rng, 'construction') >= prob) return false;
+  const days = randInt(s.rng, 'construction', 3, 9), comp = Math.round(TL(randInt(s.rng, 'construction', 60, 260) * 1000) * s.costIndex);
+  b.accidentUntil = s.clock.day + days; b.stalled = 'kaza';
+  post(s, 'insaat', -comp, { projectId: p.id, memo: 'İş kazası tazminat ve sağlık' });
+  for (const x of s.staff) if (FIELD.has(x.type)) x.morale = clamp(x.morale - 8, 0, 100);
+  c.reputation = clamp(c.reputation - 2, 0, 100); c.lastAccidentDay = s.clock.day;
+  events.push({ type: 'ACCIDENT', day: s.clock.day, pause: true, data: { projectId: p.id, days, cost: comp } });
+  return true;
+}
+
+function stall(s: GameState, p: Project, b: BuildState, reason: 'nakit' | 'malzeme' | 'kaza', events: GameEvent[]) {
+  if (b.stalled !== reason && s.clock.day - (b.stallEvtDay ?? -999) > 14) { events.push({ type: 'CONSTRUCTION_STALLED', day: s.clock.day, data: { projectId: p.id, reason } }); b.stallEvtDay = s.clock.day; }
+  b.stalled = reason; b.stalledDays++; b.stallStreak = (b.stallStreak ?? 0) + 1;
 }
 
 export function advanceConstruction(s: GameState, p: Project, events: GameEvent[]): void {
@@ -111,32 +133,60 @@ export function advanceConstruction(s: GameState, p: Project, events: GameEvent[
   while (remaining > 1e-9 && b.stage <= LAST_STAGE) {
     const st = STAGES[b.stage]!;
     if (!b.stageStarted) onStageStart(s, p, b, events);
+    if (b.accidentUntil !== undefined) { if (s.clock.day < b.accidentUntil) { stall(s, p, b, 'kaza', events); return; } delete b.accidentUntil; b.stalled = null; }
+    const cap = st.office ? 0 : crewCapacity(s, st.id, p.id);
     const crew = st.office ? (hasRole(s, st.office) ? 1.25 : 0.85) : crewFactor(s, p, st.id);
+    if (!st.office && b.stage >= 6 && maybeAccident(s, p, b, cap, weather, events)) return;
     const wm = st.outdoor ? (weather === 'kar' ? 0.2 : weather === 'yagmur' ? 0.5 : 1) : 1;
     const mult = Math.max(0.05, crew * wm), d = (days[b.stage]! * (st.permit ? b.permitMult : 1)) || 1;
-    const need = ((1 - b.progress) * d) / mult;       // bu aşamayı bitirmek için gereken (gün)
-    const use = Math.min(remaining, need), dp = (use * mult) / d;
-    // Kendi ekibiniz taşeron işçilik bedelinin (%35) karşıladığı kısmı tasarruf ettirir; maaşı zaten ayrıca ödüyorsunuz.
-    const cov = st.office ? 0 : Math.min(1, crewRatio(s, p, st.id)), labor = 1 - SPLIT.insaat * cov;
-    const stageCost = st.prepaid ? 0 : b.stageBudget[b.stage]! * priceFactor(s, b) * b.stageMult * labor, cost = Math.round(stageCost * dp);
-    if (cost > 0 && cost > (s.company!.cash - b.unpaid)) { // nakit yok: iş durur
-      // Olay tekrarı sınırlı: kısa süreli "bir gün çalışıp bir gün durma" dalgalanması bildirim yağdırmasın
-      if (!b.stalled && s.clock.day - (b.stallEvtDay ?? -999) > 14) { events.push({ type: 'CONSTRUCTION_STALLED', day: s.clock.day, data: { projectId: p.id, reason: 'nakit' } }); b.stallEvtDay = s.clock.day; }
-      b.stalled = 'nakit'; b.stalledDays++; b.stallStreak = (b.stallStreak ?? 0) + 1; return;
-    }
+    const need = ((1 - b.progress) * d) / mult;
+    let use = Math.min(remaining, need), dp = (use * mult) / d;
+
+    // malzeme: stok yetmiyorsa ilerleme stokla sınırlanır, hiç yoksa iş durur
+    const needs = stageNeeds(p, b.stage); let short = '';
+    for (const [id, q] of needs) { const can = q > 0 ? stockQty(s, id) / q : Infinity; if (can < dp) { dp = can; short = id; } }
+    if (dp < 1e-6) { b.matShort = short; stall(s, p, b, 'malzeme', events); if (s.clock.day % 3 === 0) autoBuy(s, p, events); return; }
+    if (short) { use = (dp * d) / mult; b.matShort = short; } else delete b.matShort;
+
+    // maliyet: tahakkuk (işçilik, malzeme kalemi dışı giderler) + makine günü (sahip: yakıt, değilse kira)
+    const full = st.prepaid ? 0 : b.stageBudget[b.stage]! * priceFactor(s, b) * b.stageMult;
+    const cov = st.office ? 0 : Math.min(1, crewRatio(s, p, st.id));
+    const fracSum = (st.materials ?? []).reduce((a, [, f]) => a + f, 0), hasMach = !!st.machines?.length;
+    const partMal = full * SPLIT.malzeme * (1 - fracSum) * dp, partIns = full * SPLIT.insaat * (1 - SPLIT.insaat * 0 - cov) * dp, partMak0 = hasMach ? 0 : full * SPLIT.makine * dp;
+    // machine usage probe (cost only; breakdown rolled only when the day is committed below)
+    const probe = hasMach && !st.prepaid ? machineProbe(s, st.machines!) : { cost: 0, cover: 0 };
+    const mDay = Math.round(probe.cost * use);
+    const cost = Math.round(partMal + partIns + partMak0 + mDay);
+    if (cost > 0 && cost > (s.company!.cash - b.unpaid)) { stall(s, p, b, 'nakit', events); return; }
     if (b.stalled) { b.stalled = null; if ((b.stallStreak ?? 0) >= 3) events.push({ type: 'CONSTRUCTION_RESUMED', day: s.clock.day, data: { projectId: p.id } }); b.stallStreak = 0; }
+    if (hasMach && !st.prepaid) { const u = useMachines(s, st.machines!, events); b.machCover = u.cover; }
+    // stok tüket + malzeme kalitesi
+    let qa = 0; for (const [id, q] of needs) { const it = s.stock[id]; if (it) { b.matCost = (b.matCost ?? 0) + Math.round(q * dp * it.cost); it.qty = Math.max(0, it.qty - q * dp); qa += (q > 0 ? (st.materials!.find((m) => m[0] === id)![1]) : 0) * it.qual; } }
+    if (needs.length) b.qAdj = (b.qAdj ?? 0) + (qa / Math.max(0.0001, fracSum)) * dp;
     b.progress += dp; remaining -= use;
-    if (cost > 0) { b.unpaid += cost; for (const k of ['malzeme', 'insaat', 'makine'] as const) b.unpaidParts[k] += cost * (SPLIT[k] * (k === 'insaat' ? (1 - cov) / labor : 1 / labor)); }
+    if (cost > 0) { b.unpaid += cost; b.unpaidParts.malzeme += partMal; b.unpaidParts.insaat += partIns; b.unpaidParts.makine += partMak0 + mDay; }
     if (b.progress >= 1 - 1e-9) completeStage(s, p, b, crew, events);
   }
   if (b.stage > LAST_STAGE) finishProject(s, p, events);
 }
 
+/** Maliyet tahmini için makine durumu (arıza kontrolü yok). */
+function machineProbe(s: GameState, req: string[]): { cover: number; cost: Money } {
+  let found = 0, cost = 0; const taken = new Set<number>();
+  for (const type of req) {
+    const m = s.machines.find((x) => x.type === type && x.brokenUntil <= s.clock.day && x.usedDay !== s.clock.day && !taken.has(x.id));
+    const def = MACH.get(type)!; if (m) { found++; taken.add(m.id); cost += TL(def.fuelTL) * s.costIndex; } else cost += TL(def.rentTL) * s.costIndex;
+  }
+  return { cover: found / req.length, cost: Math.round(cost) };
+}
+import { MACHINES } from '../data';
+const MACH = new Map(MACHINES.map((m) => [m.id, m]));
+
 function finishProject(s: GameState, p: Project, events: GameEvent[]): void {
   const b = p.build!; settle(s, p);
   const q = b.qualityW > 0 ? b.qualitySum / b.qualityW : 70, days = s.clock.day - b.startDay, planned = p.expected.months * 30;
   b.doneDay = s.clock.day; p.status = 'tamamlandi';
-  p.result = { qualityScore: Math.round(q * 10) / 10, cost: b.spent + p.budget.designFee, days, plannedDays: planned };
+  p.result = { qualityScore: Math.round(q * 10) / 10, cost: b.spent + (b.matCost ?? 0) + p.budget.designFee, days, plannedDays: planned };
   const c = s.company!; c.stats.completed++;
   const rep = Math.round((q - 60) / 8) + (days <= planned * 1.05 ? 2 : days > planned * 1.3 ? -2 : 0);
   c.reputation = clamp(c.reputation + rep, 0, 100);
@@ -145,8 +195,9 @@ function finishProject(s: GameState, p: Project, events: GameEvent[]): void {
 
 export function constructionDaily(s: GameState, events: GameEvent[], monday: boolean): void {
   updateWeather(s);
-  for (const p of activeProjects(s)) { advanceConstruction(s, p, events); if (monday && p.status === 'insaat') settle(s, p); }
+  const act = activeProjects(s);
+  if (monday && s.company?.procurement.auto) for (const p of act) autoBuy(s, p, events);
+  for (const p of act) { advanceConstruction(s, p, events); if (monday && p.status === 'insaat') settle(s, p); }
 }
 
-/** Bina bitti ve kalite puanı: toplu satış fiyatı için kalite çarpanı ×(1 + (q−74)×0,004). */
 export const qualityMult = (q: number) => 1 + (q - 74) * 0.004;

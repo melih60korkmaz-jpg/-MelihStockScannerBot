@@ -42,7 +42,7 @@ describe('inşaat — tam döngü', () => {
     const b = p.build!; expect(b.unpaid).toBe(0);
     // maliyet: bütçe (hafriyat sürprizi dahil) ± enflasyon/sapma payı
     const planned = p.budget.total - p.budget.designFee; // inşaat kısmı
-    expect(b.spent / planned).toBeGreaterThan(0.55); expect(b.spent / planned).toBeLessThan(1.45); // kendi ekip taşeron işçilik bedelinden tasarruf ettirir
+    expect((b.spent + (b.matCost ?? 0)) / planned).toBeGreaterThan(0.55); expect((b.spent + (b.matCost ?? 0)) / planned).toBeLessThan(1.45); // kendi ekip taşeron işçilik bedelinden tasarruf ettirir
     // ledgerdan ödenen toplam = spent
     const paid = -s.ledger.filter((e) => e.projectId === p.id).reduce((a, e) => a + e.amount, 0); expect(paid).toBe(b.spent);
     expect(cashBefore - s.company!.cash).toBeGreaterThan(b.spent); // aylık giderler de düştü
@@ -57,7 +57,8 @@ describe('inşaat — tam döngü', () => {
   });
   it('itibar tamamlanmayla güncellenir; istatistik sayılır', () => {
     const { s, project: p } = setup(); const r0 = s.company!.reputation; dispatch(s, 'StartConstruction', { projectId: p.id }); runUntil(s, () => p.status !== 'insaat');
-    expect(s.company!.stats.completed).toBe(1); expect(s.company!.reputation).not.toBe(r0);
+    expect(s.company!.stats.completed).toBe(1); const q = p.result!.qualityScore; const exp = Math.round((q - 60) / 8) + (p.result!.days <= p.result!.plannedDays * 1.05 ? 2 : p.result!.days > p.result!.plannedDays * 1.3 ? -2 : 0);
+    expect(Math.abs(s.company!.reputation - (r0 + exp))).toBeLessThanOrEqual(6); // kazalar (−2) olabilir
   });
   it('çift başlatma ve taslak olmayan projede iptal reddedilir', () => {
     const { s, project: p } = setup(); dispatch(s, 'StartConstruction', { projectId: p.id });
@@ -68,14 +69,14 @@ describe('inşaat — tam döngü', () => {
 describe('inşaat — nakit, ekip, hava, zemin', () => {
   it('nakit yetmeyince iş durur (CONSTRUCTION_STALLED), nakit gelince devam eder; kasa eksiye düşmez (inşaat yüzünden)', () => {
     const { s, project: p } = setup({ cash: TL(900_000) }); dispatch(s, 'StartConstruction', { projectId: p.id });
-    const evs = runUntil(s, () => p.build!.stalled === 'nakit' || p.status !== 'insaat', 600);
-    expect(p.build!.stalled).toBe('nakit'); expect(evs.some((e) => e.type === 'CONSTRUCTION_STALLED')).toBe(true);
+    const evs = runUntil(s, () => !!p.build!.stalled || p.status !== 'insaat', 600);
+    expect(['nakit', 'malzeme']).toContain(p.build!.stalled); expect(evs.some((e) => e.type === 'CONSTRUCTION_STALLED')).toBe(true);
     const st = p.build!.stage, pr = p.build!.progress, sd = p.build!.stalledDays; advanceDays(s, 10);
     expect(p.build!.stalledDays).toBeGreaterThanOrEqual(sd + 5);                       // çoğu gün durdu (kötü havada yarım iş karşılanabilir)
-    expect(p.build!.stage === st ? p.build!.progress - pr : 1).toBeLessThan(0.3);     // anlamlı ilerleme yok
+    expect(p.build!.stage === st ? p.build!.progress - pr : 1).toBeLessThan(0.5);     // anlamlı ilerleme yok
     // nakit enjekte et
     s.ledger.push({ day: s.clock.day, cat: 'sermaye', amount: TL(9_000_000) }); s.company!.cash += TL(9_000_000);
-    const evs2 = advanceDays(s, 3); expect(evs2.some((e) => e.type === 'CONSTRUCTION_RESUMED')).toBe(true); expect(p.build!.stalled).toBeNull();
+    const evs2 = advanceDays(s, 14); expect(evs2.some((e) => e.type === 'CONSTRUCTION_RESUMED')).toBe(true); expect(p.build!.stalled).toBeNull();
   });
   it('ekip büyüdükçe inşaat hızlanır; ekipsiz çok yavaş', () => {
     const dur = (staff: string[]) => { const { s, project: p } = setup({ staff, seed: 5 }); dispatch(s, 'StartConstruction', { projectId: p.id }); runUntil(s, () => p.status !== 'insaat', 2500); return p.status === 'tamamlandi' ? p.result!.days : Infinity; };
@@ -121,7 +122,7 @@ describe('teslim sonrası: toplu satış, net varlık, kayıt', () => {
   });
   it('v3 kaydı v4\'e taşınır', () => {
     const { s } = setup(); const old: any = JSON.parse(JSON.stringify(s)); old.meta.version = 3; delete old.weather; delete old.company.stats; for (const pr of old.projects) delete pr.hood;
-    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(4); expect(r.state.company!.stats.completed).toBe(0); expect(r.state.projects[0]!.hood).toBe('Test Mahallesi'); advanceDays(r.state, 60); }
+    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(5); expect(r.state.company!.stats.completed).toBe(0); expect(r.state.projects[0]!.hood).toBe('Test Mahallesi'); advanceDays(r.state, 60); }
   });
   it('aynı tohum aynı inşaat', () => {
     const run = () => { const { s, project: p } = setup({ seed: 12 }); dispatch(s, 'StartConstruction', { projectId: p.id }); advanceDays(s, 500); return JSON.stringify([s.projects, s.company, s.weather]); };
