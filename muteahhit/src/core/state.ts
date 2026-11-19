@@ -1,7 +1,11 @@
 import { seedStreams } from './rng';
-import type { Difficulty, GameState } from './types';
+import type { Difficulty, GameState, MacroState } from './types';
 
-export const SAVE_VERSION = 1;
+export function initialMacro(): MacroState {
+  return { regime: 'normal', regimeSince: 0, regimeEnd: 24 * 30, calmUntilDay: 0, policyRate: 18, inflation: 14, confidence: 58, materialIndex: 100 };
+}
+
+export const SAVE_VERSION = 2;
 
 export function newGameState(seed: number, difficulty: Difficulty = 'gercekci'): GameState {
   return {
@@ -13,5 +17,11 @@ export function newGameState(seed: number, difficulty: Difficulty = 'gercekci'):
     staff: [],
     ledgerBase: 0,
     ledger: [],
+    macro: initialMacro(),
+    macroHistory: [],
+    news: [],
+    history: [],
+    costIndex: 1,
+    taxLossCarry: 0,
   };
 }

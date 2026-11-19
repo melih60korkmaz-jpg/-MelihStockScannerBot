@@ -1,62 +1,181 @@
-import { formatDate } from '../../core/calendar';
-import { formatMoney } from '../../core/money';
+import { dateOf, formatDate } from '../../core/calendar';
+import { formatMoney, TL } from '../../core/money';
 import type { Speed } from '../../core/store';
-import { STAFF_TYPES } from '../../data';
-import { checkInvariant } from '../../sim/ledger';
+import { OFFICES, STAFF_TYPES, ledgerCat, officeFor } from '../../data';
+import { REGIMES } from '../../sim/macro';
+import { alerts, monthlyRows, netWorth, projectedMonthlyCost, runwayMonths } from '../../sim/finance';
+import { barChart, hbars, lineChart, sparkline } from '../charts';
 import { h, press, toast } from '../dom';
 import { emblemSvg } from '../emblem';
 import type { App } from '../app';
 import { openSettings } from './settings';
 
-/**
- * GEÇİCİ şirket paneli (Faz 3'te gerçek "Şirket Genel Bakış" ekranı bunun yerini alacak).
- * Faz 1 çekirdeğini (komutlar, zaman, defter, kayıt) gerçek oyun akışı içinde doğrular.
- */
+const LEVELS = ['Şahıs Müteahhit', 'Küçük Firma', 'Yerel Firma', 'Bölge Firması', 'Şehir Markası', 'Çok Şehirli Firma', 'Ulusal Firma', 'Holding'];
+const ICON = {
+  home: '<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
+  chart: '<svg viewBox="0 0 24 24"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 15l4-4 3 3 5-6"/></svg>',
+  globe: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>',
+  team: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14c3 0 5 2 5 5"/></svg>',
+  gear: '<svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M4 12h3M11 12h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/><circle cx="9" cy="12" r="0.01"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M8 5v14M16 5v14" stroke-width="3.2"/></svg>',
+  menu: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+};
+type Tab = 'sirket' | 'finans' | 'piyasa' | 'ekip';
+const TABS: [Tab, string, keyof typeof ICON][] = [['sirket', 'Şirket', 'home'], ['finans', 'Finans', 'chart'], ['piyasa', 'Piyasa', 'globe'], ['ekip', 'Ekip', 'team']];
+
+const monthLabel = (key: string) => { const [y, m] = key.split('-'); return `${['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][Number(m) - 1]} ${y!.slice(2)}`; };
+const dayLabel = (d: number) => { const x = dateOf(d); return monthLabel(`${x.year}-${String(x.month).padStart(2, '0')}`); };
+const signed = (m: number) => `<span class="${m > 0 ? 'pos' : m < 0 ? 'neg' : ''}">${m > 0 ? '+' : ''}${formatMoney(m)}</span>`;
+
+/** Şirket kabuğu: kalıcı HUD + 4 sekme. Tüm sayılar sim/finans katmanından türetilir (ikinci bir "doğru" yok). */
 export function hubScreen(app: App): HTMLElement {
   app.scene?.stop(); app.audio.setMood('off');
-  const root = h('div', { class: 'page', style: 'background:var(--bg)' });
-  const log: string[] = []; let msg = '';
+  const root = h('div', { class: 'shell' });
+  let tab: Tab = 'sirket', sub = 'ozet';
+  const hud = h('header', { class: 'hud' }), view = h('div', { class: 'view' }), tabs = h('nav', { class: 'tabs', 'aria-label': 'Ana sekmeler' });
+  root.append(hud, view, tabs);
+
+  // HUD bir kez kurulur, olaylarda yerinde güncellenir (hızlı akışta dokunma kaybolmasın)
+  const ref: { cash?: HTMLElement; cashPill?: HTMLElement; date?: HTMLElement; sub?: HTMLElement; speed?: HTMLButtonElement[] } = {};
+  const buildHud = () => {
+    const c = app.store.state.company!;
+    const speeds: [Speed, string][] = [[0, ''], [1, '1×'], [2, '2×'], [4, '4×']];
+    const seg = h('div', { class: 'seg speeds', role: 'group', 'aria-label': 'Oyun hızı' });
+    ref.speed = [];
+    for (const [v, l] of speeds) { const b = h('button', { 'aria-label': v === 0 ? 'Duraklat' : `Hız ${l}`, ...(v === 0 ? { html: ICON.pause } : {}), onclick: () => { press(app); app.store.setSpeed(v); } }, v === 0 ? null : l) as HTMLButtonElement; b.dataset.v = String(v); ref.speed.push(b); seg.append(b); }
+    seg.append(h('button', { 'aria-label': 'Olay çıkana kadar en çok 30 gün atla', onclick: () => { press(app); app.store.skip(30); } }, '⏭30'));
+    ref.cash = h('b', {}); ref.cashPill = h('div', { class: 'pill cash' }, h('small', {}, 'KASA'), ref.cash);
+    ref.date = h('b', { style: 'font-size:17px' }); ref.sub = h('small', {});
+    hud.innerHTML = '';
+    hud.append(
+      h('div', { class: 'id' }, h('span', { html: emblemSvg(c.emblem.shape, c.emblem.color, 38) }), h('div', { style: 'min-width:0' }, h('b', {}, c.name), ref.sub)),
+      ref.cashPill, h('div', { class: 'sp' }), h('div', { class: 'pill' }, h('small', {}, 'TARİH'), ref.date), seg,
+      h('button', { class: 'btn ibtn', 'aria-label': 'Ayarlar', html: ICON.gear, onclick: () => { press(app); openSettings({ ...app, activeTier: () => app.scene?.activeTier ?? 'mid' }); } }),
+      h('button', { class: 'btn ibtn', 'aria-label': 'Ana menü', html: ICON.menu, onclick: async () => { press(app); app.store.setSpeed(0); try { await app.saves.autosave(app.store.state); } catch { /* menü yine açılır */ } app.menu(); } }),
+    );
+  };
+  const drawHud = () => {
+    const s = app.store.state, c = s.company; if (!c || !ref.cash) return;
+    ref.cash.textContent = formatMoney(c.cash); ref.cashPill!.classList.toggle('neg', c.cash < 0);
+    ref.date!.textContent = formatDate(s.clock.day); ref.sub!.textContent = `${LEVELS[c.level - 1]} · İtibar ${c.reputation}`;
+    for (const b of ref.speed!) { const on = Number(b.dataset.v) === app.store.speed; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
+  };
+  const drawTabs = () => {
+    tabs.innerHTML = '';
+    for (const [id, label, ic] of TABS) tabs.append(h('button', { class: `tab ${tab === id ? 'on' : ''}`, 'aria-current': tab === id ? 'page' : null, onclick: () => { if (tab === id) return; press(app); tab = id; drawTabs(); drawView(); } }, h('span', { html: ICON[ic], style: 'display:flex' }), label));
+  };
+
+  // ---------------- Şirket ----------------
+  const overview = (): HTMLElement => {
+    const s = app.store.state, c = s.company!;
+    const rows = monthlyRows(s).filter((r) => r.key < `${dateOf(s.clock.day).year}-${String(dateOf(s.clock.day).month).padStart(2, '0')}`);
+    const last = rows.at(-1);
+    const hist = s.history.slice(-13);
+    const prev = hist.length >= 2 ? hist.at(-2)!.netWorth : null;
+    const delta = prev === null ? null : netWorth(s) - prev;
+    const rw = runwayMonths(s);
+    const pct = rw === null ? 100 : Math.min(100, (rw / 12) * 100);
+    const col = rw === null || rw >= 6 ? 'var(--ok)' : rw >= 3 ? 'var(--warn)' : 'var(--bad)';
+    const m = s.macro;
+    const left = h('div', { class: 'col' },
+      h('div', { class: 'card' },
+        h('div', { class: 'lbl-s' }, 'Net varlık'),
+        h('div', { style: 'display:flex;gap:12px;align-items:flex-end;justify-content:space-between' },
+          h('div', {}, h('div', { class: `big ${netWorth(s) < 0 ? 'neg' : ''}` }, formatMoney(netWorth(s))), h('div', { class: 'mute', style: 'font-size:12px', html: delta === null ? 'İlk ay sonunda karşılaştırma başlar' : `Geçen aya göre ${signed(delta)}` })),
+          h('div', { style: 'width:42%;min-width:110px', html: sparkline(hist.map((p) => p.netWorth), '#F5B700', 44) })),
+        h('div', { class: 'lbl-s', style: 'margin-top:12px' }, `Nakit yeterlilik · ${rw === null ? 'sınırsız (gelir giderleri karşılıyor)' : rw.toFixed(1) + ' ay'}`),
+        h('div', { class: 'meter', role: 'img', 'aria-label': 'Nakit yeterlilik' }, h('i', { style: `width:${pct}%;background:${col}` }))),
+      h('div', { class: 'card kpis' },
+        h('div', { class: 'kpi', html: `<small>${last ? 'Son ay gelir' : 'Gelir'}</small><b class="${last && last.income > 0 ? 'pos' : ''}">${last ? formatMoney(last.income) : '—'}</b>` }),
+        h('div', { class: 'kpi', html: `<small>${last ? 'Son ay gider' : 'Beklenen aylık gider'}</small><b>${formatMoney(last ? last.expense : projectedMonthlyCost(s))}</b>` }),
+        h('div', { class: 'kpi', html: `<small>Son ay net</small><b>${last ? signed(last.net) : '—'}</b>` })));
+    const right = h('div', { class: 'col' },
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Bugün'), ...alerts(s, formatMoney, formatDate).map((a) => h('div', { class: 'alert' }, h('span', { class: `dot ${a.tone}` }), h('span', {}, a.text)))),
+      h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('div', { class: 'lbl-s', style: 'margin:0' }, 'Piyasa nabzı'), h('span', { class: `regime ${m.regime}` }, REGIMES[m.regime].label)),
+        h('div', { class: 'kpis', style: 'margin-top:8px' },
+          h('div', { class: 'kpi', html: `<small>Faiz</small><b>%${m.policyRate.toFixed(1)}</b>` }), h('div', { class: 'kpi', html: `<small>Enflasyon</small><b>%${m.inflation.toFixed(1)}</b>` }), h('div', { class: 'kpi', html: `<small>Güven</small><b>${m.confidence.toFixed(0)}</b>` }))));
+    return h('div', { class: 'cols' }, left, right);
+  };
+
+  // ---------------- Finans ----------------
+  const finance = (): HTMLElement => {
+    const s = app.store.state, rows = monthlyRows(s);
+    const seg = h('div', { class: 'seg', role: 'group', style: 'margin-bottom:10px;align-self:flex-start' });
+    for (const [id, label] of [['ozet', 'Gelir-Gider'], ['nakit', 'Nakit akışı'], ['gider', 'Gider dağılımı'], ['bilanco', 'Bilanço']] as const)
+      seg.append(h('button', { class: sub === id ? 'on' : '', 'aria-pressed': String(sub === id), onclick: () => { press(app); sub = id; drawView(); } }, label));
+    const body = h('div', {});
+    if (sub === 'ozet') {
+      const last = rows.slice(-6);
+      const t = h('table', { class: 'tbl' }, h('tr', {}, ...['Ay', 'Gelir', 'Gider', 'Vergi', 'Net'].map((x) => h('th', {}, x))));
+      for (const r of last) t.append(h('tr', {}, h('td', {}, monthLabel(r.key)), h('td', { html: formatMoney(r.income) }), h('td', { html: formatMoney(r.expense) }), h('td', { html: formatMoney(r.tax) }), h('td', { html: signed(r.net) })));
+      const tot = last.reduce((a, r) => ({ i: a.i + r.income, e: a.e + r.expense, t: a.t + r.tax, n: a.n + r.net }), { i: 0, e: 0, t: 0, n: 0 });
+      t.append(h('tr', { class: 'tot' }, h('td', {}, 'Toplam'), h('td', { html: formatMoney(tot.i) }), h('td', { html: formatMoney(tot.e) }), h('td', { html: formatMoney(tot.t) }), h('td', { html: signed(tot.n) })));
+      body.append(h('div', { class: 'card', style: 'overflow:auto' }, h('div', { class: 'lbl-s' }, 'Aylık gelir tablosu (son 6 ay)'), t), h('p', { class: 'mute', style: 'font-size:12px' }, `Vergi: çeyrek kârının %25'i. Devreden zarar: ${formatMoney(s.taxLossCarry)}. Sermaye, yatırım ve finansman hareketleri gelir tablosuna girmez.`));
+    } else if (sub === 'nakit') {
+      const net = rows.map((r) => ({ label: monthLabel(r.key), value: r.operating + r.investing + r.financing }));
+      body.append(h('div', { class: 'cols' },
+        h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Ay sonu kasa'), lineChart(rows.map((r) => ({ label: monthLabel(r.key), value: r.endCash })))),
+        h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Aylık net nakit değişimi'), barChart(net))));
+    } else if (sub === 'gider') {
+      const tot: Record<string, number> = {};
+      for (const r of rows.slice(-12)) for (const [k, v] of Object.entries(r.byCat)) { const kind = ledgerCat(k)?.kind; if (kind === 'gider' || kind === 'vergi') tot[k] = (tot[k] ?? 0) - v; }
+      const items = Object.entries(tot).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: ledgerCat(k)?.label ?? k, value: v }));
+      body.append(h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Son 12 ay gider dağılımı'), hbars(items)));
+    } else {
+      const cash = s.company!.cash;
+      const t = h('table', { class: 'tbl' }, h('tr', {}, h('th', {}, 'Kalem'), h('th', {}, 'Tutar')),
+        h('tr', {}, h('td', {}, 'Nakit (kasa)'), h('td', { html: formatMoney(cash) })), h('tr', { class: 'tot' }, h('td', {}, 'Toplam varlık'), h('td', { html: formatMoney(cash) })),
+        h('tr', {}, h('td', {}, 'Banka borçları'), h('td', {}, formatMoney(0))), h('tr', { class: 'tot' }, h('td', {}, 'Özkaynak (net varlık)'), h('td', { html: signed(netWorth(s)) })));
+      body.append(h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Bilanço özeti'), t), h('p', { class: 'mute', style: 'font-size:12px' }, 'Arsa, devam eden projeler, makine ve krediler ilgili sistemler eklendikçe bu tabloya girer. Kasa her zaman defter toplamına eşittir.'));
+    }
+    return h('div', { style: 'display:flex;flex-direction:column' }, seg, body);
+  };
+
+  // ---------------- Piyasa ----------------
+  const market = (): HTMLElement => {
+    const s = app.store.state, m = s.macro, H = s.macroHistory;
+    const mc = (label: string, val: string, key: 'policyRate' | 'inflation' | 'confidence' | 'materialIndex', color: string) =>
+      h('div', { class: 'card mc' }, h('div', { class: 'lbl-s' }, label), h('b', {}, val), h('div', { html: H.length >= 2 ? sparkline(H.slice(-24).map((p) => p[key]), color) : '<div class="mute" style="font-size:11px;margin-top:6px">Ay sonlarında birikir</div>' }));
+    return h('div', { style: 'display:flex;flex-direction:column;gap:12px' },
+      h('div', { class: 'card', style: 'display:flex;gap:12px;align-items:center;flex-wrap:wrap' }, h('span', { class: `regime ${m.regime}` }, REGIMES[m.regime].label), h('span', { style: 'flex:1;min-width:200px' }, REGIMES[m.regime].blurb), h('span', { class: 'mute', style: 'font-size:12px' }, `${Math.max(0, Math.round((s.clock.day - m.regimeSince) / 30))} aydır`)),
+      h('div', { class: 'mgrid' }, mc('Politika faizi (yıllık)', `%${m.policyRate.toFixed(1)}`, 'policyRate', '#F5B700'), mc('Enflasyon (yıllık)', `%${m.inflation.toFixed(1)}`, 'inflation', '#FF7A1A'), mc('Piyasa güveni', m.confidence.toFixed(0), 'confidence', '#2ECC8F'), mc('Malzeme endeksi', m.materialIndex.toFixed(0), 'materialIndex', '#3E7BFA')),
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Haber bandı'), ...(s.news.length ? s.news.slice(0, 12).map((n) => h('div', { class: 'news' }, h('small', {}, formatDate(n.day)), h('span', { class: `dot ${n.tone}` }), h('span', {}, n.text))) : [h('div', { class: 'empty' }, 'Henüz haber yok. Piyasa değişimleri burada duyurulur.')])));
+  };
+
+  // ---------------- Ekip ----------------
+  const team = (): HTMLElement => {
+    const s = app.store.state, c = s.company!, cap = officeFor(c.level).capacity;
+    const payroll = s.staff.reduce((a, x) => a + x.salary, 0);
+    const list = h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('div', { class: 'lbl-s', style: 'margin:0' }, `Çalışanlar ${s.staff.length}/${cap}`), h('span', { class: 'mute', style: 'font-size:12px' }, `Aylık maaş: ${formatMoney(payroll)}`)),
+      ...(s.staff.length ? s.staff.map((p) => h('div', { class: 'row', style: 'min-height:48px;padding:6px 0' }, h('div', { class: 'lbl' }, p.name, h('small', {}, `${STAFF_TYPES.find((t) => t.id === p.type)?.label} · deneyim ${p.experience}`)), h('span', { class: 'num', style: 'font-size:13px' }, `${formatMoney(p.salary)}/ay`),
+        h('button', { class: 'btn danger', style: 'min-height:38px', onclick: () => { if (!confirm(`${p.name} işten çıkarılsın mı?`)) return; const r = app.store.run('FireStaff', { staffId: p.id }); if (r.ok) app.audio.sfx('click'); } }, 'Çıkar'))) : [h('div', { class: 'empty' }, 'Henüz çalışan yok.')]));
+    const hire = h('div', { class: 'hire' });
+    for (const t of STAFF_TYPES) hire.append(h('div', { class: 'card' }, h('h3', {}, t.label), h('small', {}, `~${formatMoney(TL(t.baseSalaryTL * 1.075))} – ${formatMoney(TL(t.baseSalaryTL * 1.3))} /ay (deneyime göre)`),
+      h('button', { class: 'btn gold', style: 'min-height:40px', disabled: s.staff.length >= cap, onclick: () => { const r = app.store.run('HireStaff', { type: t.id }); if (r.ok) { press(app, 'confirm'); toast(`${t.label} işe alındı.`); } else { app.audio.sfx('error'); toast(r.error); } } }, s.staff.length >= cap ? 'Ofis dolu' : 'İşe al')));
+    const nextOffice = OFFICES[c.level];
+    return h('div', { class: 'cols' }, list, h('div', { class: 'col' }, h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `Ofis: ${officeFor(c.level).label}`), h('div', { class: 'mute', style: 'font-size:12px' }, `Kapasite ${cap} kişi · kira ${formatMoney(TL(officeFor(c.level).monthlyRentTL))}/ay (enflasyonla artar).${nextOffice ? ` Sonraki: ${nextOffice.label} (${nextOffice.capacity} kişi) — şirket seviyesi yükselince.` : ''}`)), hire));
+  };
+
+  const drawView = () => {
+    const keep = view.scrollTop; view.innerHTML = '';
+    view.append(tab === 'sirket' ? overview() : tab === 'finans' ? finance() : tab === 'piyasa' ? market() : team());
+    view.scrollTop = keep;
+  };
+
+  // Olaylar: gün akışı yalnızca HUD'u günceller; ay/komut olayları sekmeyi yeniler
+  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE']);
   const unsub = app.store.subscribe((evs) => {
     if (!root.isConnected) { unsub(); return; }
-    for (const e of evs) if (e.type !== 'DAY' && e.type !== 'SPEED') log.unshift(`${formatDate(e.day)} · ${e.type}`);
-    if (evs.some((e) => e.type === 'MONTH')) void app.saves.autosave(app.store.state).catch(() => {});
-    draw();
+    let redraw = false;
+    for (const e of evs) {
+      if (REDRAW.has(e.type)) redraw = true;
+      if (e.type === 'MONTH') void app.saves.autosave(app.store.state).catch(() => {});
+      if (e.type === 'MACRO_NEWS') { const d = e.data as { text: string; tone: string }; app.audio.sfx(d.tone === 'bad' ? 'error' : 'confirm'); toast(d.text, 5000); }
+      if (e.type === 'YEAR') toast(`Yeni yıl: personel maaşlarına %${((e.data!.raise as number) * 100).toFixed(0)} zam yapıldı.`, 4500);
+      if (e.type === 'CASH_NEGATIVE') { app.audio.sfx('error'); toast('Kasa eksiye düştü! Oyun duraklatıldı.', 5000); }
+    }
+    drawHud(); if (redraw) drawView();
   });
-
-  const draw = () => {
-    const s = app.store.state, c = s.company;
-    root.innerHTML = '';
-    if (!c) { app.menu(); return; }
-    const speeds: [Speed, string][] = [[0, '⏸'], [1, '1×'], [2, '2×'], [4, '4×']];
-    const body = h('div', { class: 'body' });
-    body.append(
-      h('div', { class: 'grid g2', style: 'align-items:start' },
-        h('div', { class: 'card' },
-          h('div', { class: 'mute', style: 'font-size:11px;letter-spacing:.12em' }, 'KASA'),
-          h('div', { class: `num ${c.cash < 0 ? '' : ''}`, style: `font:700 40px var(--font-h);color:${c.cash < 0 ? 'var(--bad)' : 'var(--text)'}` }, formatMoney(c.cash)),
-          h('div', { class: 'mute', style: 'font-size:12px;margin:2px 0 10px' }, `İtibar ${c.reputation} · Kredi notu ${c.creditScore} · Defter ${checkInvariant(s) ? 'tutarlı' : 'TUTARSIZ'} (${s.ledger.length} kayıt)`),
-          h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
-            ...speeds.map(([v, l]) => h('button', { class: `btn ${app.store.speed === v ? 'gold' : ''}`, style: 'min-width:56px;padding:0 12px', onclick: () => { press(app); app.store.setSpeed(v); } }, l)),
-            h('button', { class: 'btn', onclick: () => { press(app); app.store.setSpeed(0); for (let i = 0; i < 30; i++) app.store.stepDay(); draw(); } }, '+30 gün'))),
-        h('div', { class: 'card' },
-          h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
-            (() => { const sel = h('select', { class: 'input', style: 'flex:1;min-width:150px', 'aria-label': 'Personel tipi' }, ...STAFF_TYPES.map((t) => h('option', { value: t.id }, t.label))) as HTMLSelectElement;
-              const b = h('button', { class: 'btn gold', onclick: () => { const r = app.store.run('HireStaff', { type: sel.value }); if (r.ok) press(app, 'confirm'); else { app.audio.sfx('error'); msg = r.error; } draw(); } }, 'İşe Al');
-              return h('div', { style: 'display:flex;gap:8px;width:100%' }, sel, b); })()),
-          h('div', { class: 'err' }, msg),
-          h('div', {}, ...(s.staff.length ? s.staff.map((p) => h('div', { class: 'row', style: 'min-height:44px;padding:6px 0' }, h('div', { class: 'lbl' }, p.name, h('small', {}, `${STAFF_TYPES.find((t) => t.id === p.type)?.label} · deneyim ${p.experience}`)), h('span', { class: 'num', style: 'font-size:13px' }, `${formatMoney(p.salary)}/ay`),
-            h('button', { class: 'btn danger', style: 'min-height:38px', onclick: () => { const r = app.store.run('FireStaff', { staffId: p.id }); if (r.ok) app.audio.sfx('click'); draw(); } }, 'Çıkar'))) : [h('div', { class: 'mute' }, 'Henüz çalışan yok')]))),
-      ),
-      h('div', { class: 'card', style: 'margin-top:12px' }, h('div', { class: 'mute', style: 'font-size:11px;letter-spacing:.12em;margin-bottom:6px' }, 'OLAYLAR'), h('div', { style: 'font-size:12px;color:var(--mute);max-height:90px;overflow:auto' }, ...(log.length ? log.slice(0, 25).map((l) => h('div', {}, l)) : ['—']))),
-    );
-    root.append(
-      h('header', {}, h('span', { html: emblemSvg(c.emblem.shape, c.emblem.color, 40) }), h('h2', {}, `${c.name} · ${formatDate(s.clock.day)}`),
-        h('button', { class: 'btn', onclick: () => { press(app); openSettings({ ...app, activeTier: () => app.scene?.activeTier ?? 'mid' }); } }, 'Ayarlar'),
-        h('button', { class: 'btn', onclick: async () => { press(app); try { await app.saves.saveManual(1, s); toast('Manuel slot 1 kaydedildi.'); } catch { toast('Kaydedilemedi.'); app.audio.sfx('error'); } } }, 'Kaydet'),
-        h('button', { class: 'btn', onclick: async () => { press(app); app.store.setSpeed(0); try { await app.saves.autosave(app.store.state); } catch { /* menü yine açılır */ } app.menu(); } }, 'Ana Menü')),
-      body,
-      h('footer', {}, h('span', { class: 'mute', style: 'font-size:12px' }, 'Geçici geliştirme paneli — Faz 3\'te şirket ekranı gelecek.')));
-  };
-  draw();
+  buildHud(); drawHud(); drawTabs(); drawView();
   return root;
 }

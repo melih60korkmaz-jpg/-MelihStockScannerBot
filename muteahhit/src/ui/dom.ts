@@ -17,8 +17,12 @@ export interface UiCtx { audio: AudioEngine; haptic: (k?: 'light' | 'medium' | '
 
 export function press(ctx: UiCtx, sfx: Sfx = 'click', hk: 'light' | 'medium' | 'heavy' = 'light') { ctx.audio.sfx(sfx); ctx.haptic(hk); }
 
+/** Bildirimler üst üste binmesin: ortak kapta alt alta dizilir (en çok 3). */
 export function toast(msg: string, ms = 2600) {
-  const t = h('div', { class: 'toast', role: 'status' }, msg); document.body.append(t);
+  let box = document.getElementById('toasts');
+  if (!box) { box = h('div', { id: 'toasts', 'aria-live': 'polite' }); document.body.append(box); }
+  const t = h('div', { class: 'toast', role: 'status' }, msg); box.append(t);
+  while (box.children.length > 3) box.firstElementChild!.remove();
   setTimeout(() => t.remove(), ms);
 }
 

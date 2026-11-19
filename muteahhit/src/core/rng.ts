@@ -37,3 +37,9 @@ export function pick<T>(rng: RngState, stream: StreamName, arr: readonly T[]): T
   if (arr.length === 0) throw new Error('pick: boş dizi');
   return arr[Math.floor(rand(rng, stream) * arr.length)] as T;
 }
+
+/** ~N(0,1): Box–Muller (her çağrıda tam 2 rastgele sayı tüketir → akış kayması olmaz). */
+export function gauss(rng: RngState, stream: StreamName): number {
+  const u = Math.max(1e-9, rand(rng, stream)), v = rand(rng, stream);
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}

@@ -68,6 +68,14 @@ const onHide = () => {
 document.addEventListener('visibilitychange', onHide);
 addEventListener('pagehide', onHide);
 addEventListener('resize', () => scene?.resize());
+// Yalnızca yatay: dikey tutulursa oyun duraklar ve sahne durur; yatay dönünce kaldığı yerden devam eder.
+const portraitMq = matchMedia('(orientation: portrait)');
+const onOrient = () => {
+  if (portraitMq.matches) { sceneWasRunning = !!scene && (scene as any).running || sceneWasRunning; scene?.stop(); app.store.pauseForBackground(); audio.suspend(); }
+  else { if (sceneWasRunning) scene?.start(); audio.resume(); setTimeout(() => scene?.resize(), 150); }
+};
+portraitMq.addEventListener('change', onOrient);
+try { (screen.orientation as any)?.lock?.('landscape').catch(() => {}); } catch { /* iOS Safari desteklemez; yerel uygulamada kilitlenecek */ }
 addEventListener('orientationchange', () => setTimeout(() => scene?.resize(), 200));
 
 (async function boot() {

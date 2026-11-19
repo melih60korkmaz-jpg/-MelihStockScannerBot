@@ -4,6 +4,7 @@ import namesRaw from './names.json';
 import backgroundsRaw from './backgrounds.json';
 import difficultiesRaw from './difficulties.json';
 import citiesRaw from './cities.json';
+import ledgerCatsRaw from './ledgerCategories.json';
 
 export interface StaffTypeDef { id: string; label: string; baseSalaryTL: number }
 export interface OfficeDef { level: number; label: string; capacity: number; monthlyRentTL: number }
@@ -38,5 +39,9 @@ export const CITIES = citiesRaw as CityDef[];
 for (const b of BACKGROUNDS) for (const t of b.staff) if (!STAFF_TYPES.some((x) => x.id === t)) throw new Error(`Veri hatası: ${b.id} bilinmeyen personel ${t}`);
 export const background = (id: string) => BACKGROUNDS.find((b) => b.id === id);
 export const difficulty = (id: string) => DIFFICULTIES.find((d) => d.id === id);
+export type LedgerKind = 'sermaye' | 'gelir' | 'gider' | 'vergi' | 'yatirim' | 'finansman';
+export interface LedgerCatDef { id: string; label: string; kind: LedgerKind }
+export const LEDGER_CATS = ledgerCatsRaw as LedgerCatDef[];
+export const ledgerCat = (id: string) => LEDGER_CATS.find((c) => c.id === id);
 export const staffType = (id: string) => STAFF_TYPES.find((t) => t.id === id);
 export const officeFor = (level: number) => OFFICES[Math.min(level, OFFICES.length) - 1]!;

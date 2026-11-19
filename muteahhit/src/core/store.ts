@@ -31,6 +31,19 @@ export class Store {
   /** Tek gün ilerlet (atlama düğmeleri için); olayları yayınlar. */
   stepDay(): void { const evs = advanceDay(this.state); this.emit(evs); }
 
+  /** En çok n gün atlar; duraklatıcı olay (kriz, eksi kasa…) çıkınca durur. Olaylar tek seferde yayınlanır. */
+  skip(n: number): void {
+    const all: GameEvent[] = [];
+    for (let i = 0; i < n; i++) {
+      const evs = advanceDay(this.state);
+      all.push(...evs.filter((e) => e.type !== 'DAY'));
+      if (evs.some((e) => e.pause)) break;
+    }
+    all.push({ type: 'DAY', day: this.state.clock.day });
+    this.setSpeedSilent(0); this.emit(all);
+  }
+  private setSpeedSilent(sp: Speed) { this.speed = sp; this.acc = 0; }
+
   setSpeed(sp: Speed) { this.speed = sp; this.acc = 0; this.emit([{ type: 'SPEED', day: this.state.clock.day, data: { speed: sp } }]); }
 
   /** requestAnimationFrame'den çağrılır. Büyük dt (arka plandan dönüş) sınırlanır. */

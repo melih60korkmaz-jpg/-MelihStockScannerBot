@@ -1,8 +1,10 @@
 import { dateOf, isFirstOfMonth, isMonday, isNewYear } from '../core/calendar';
 import type { GameEvent, GameState } from '../core/types';
-import { TL } from '../core/money';
-import { officeFor } from '../data';
-import { post } from './ledger';
+import { monthKey } from '../core/calendar';
+import { ledgerCat } from '../data';
+import { compactLedger, post } from './ledger';
+import { macroMonthly } from './macro';
+import { monthlyCosts, netWorth } from './finance';
 
 /**
  * Tek günlük ilerleme. Saf mantık: DOM/Three bilmez. `s` yerinde güncellenir (hız için),
@@ -15,21 +17,57 @@ export function advanceDay(s: GameState): GameEvent[] {
   events.push({ type: 'DAY', day });
 
   if (s.company) {
+    if (isNewYear(day)) yearly(s, events);
     if (isFirstOfMonth(day)) monthly(s, events);
     if (isMonday(day)) events.push({ type: 'WEEK', day });
-    if (isNewYear(day)) events.push({ type: 'YEAR', day, data: { year: dateOf(day).year } });
   }
   return events;
 }
 
+/** Yıllık maaş artışı: enflasyonun %90'ı kadar (işçi kaybetmemek için). */
+function yearly(s: GameState, events: GameEvent[]): void {
+  const k = 1 + (s.macro.inflation / 100) * 0.9;
+  for (const p of s.staff) p.salary = Math.round(p.salary * k);
+  compactLedger(s, s.clock.day - 730); // 2 yıldan eski kayıtlar aylık toplamlara indirgenir (kayıt boyutu/performans)
+  events.push({ type: 'YEAR', day: s.clock.day, data: { year: dateOf(s.clock.day).year, raise: k - 1 } });
+}
+
 function monthly(s: GameState, events: GameEvent[]): void {
   const c = s.company!;
-  const wages = s.staff.reduce((a, x) => a + x.salary, 0);
-  if (wages > 0) post(s, 'maas', -wages, { memo: `${s.staff.length} çalışan` });
-  const rent = TL(officeFor(c.level).monthlyRentTL);
-  post(s, 'kira', -rent, { memo: officeFor(c.level).label });
+  macroMonthly(s, events);
+  s.costIndex *= 1 + (s.macro.inflation / 100 / 12) * 0.85;
+  for (const x of monthlyCosts(s)) post(s, x.cat, -x.amount, { memo: x.memo });
+  if ([1, 4, 7, 10].includes(dateOf(s.clock.day).month)) quarterlyTax(s, events);
+  s.history.push({ day: s.clock.day, cash: c.cash, netWorth: netWorth(s) });
+  if (s.history.length > 240) s.history.shift();
   events.push({ type: 'MONTH', day: s.clock.day });
   if (c.cash < 0) events.push({ type: 'CASH_NEGATIVE', day: s.clock.day, pause: true, data: { cash: c.cash } });
+}
+
+export const CORPORATE_TAX = 0.25;
+
+/**
+ * Çeyreklik geçici vergi: önceki çeyreğin faaliyet sonucu (gelir − gider). Zarar devreder; kâr önce devreden zarara mahsup edilir.
+ * Sermaye, yatırım ve finansman hareketleri matraha girmez.
+ */
+function quarterlyTax(s: GameState, events: GameEvent[]): void {
+  const day = s.clock.day;
+  const d = dateOf(day);
+  const startMonth = d.month - 3 <= 0 ? d.month + 9 : d.month - 3, startYear = d.month - 3 <= 0 ? d.year - 1 : d.year;
+  const startKey = `${startYear}-${String(startMonth).padStart(2, '0')}`, endKey = monthKey(day);
+  let result = 0;
+  for (const e of s.ledger) {
+    if (e.day >= day) continue;
+    const k = monthKey(e.day);
+    if (k < startKey || k >= endKey) continue;
+    const kind = ledgerCat(e.cat)?.kind;
+    if (kind === 'gelir' || kind === 'gider') result += e.amount;
+  }
+  if (result <= 0) { s.taxLossCarry += -result; return; }
+  const taxable = Math.max(0, result - s.taxLossCarry);
+  s.taxLossCarry = Math.max(0, s.taxLossCarry - result);
+  const tax = Math.round(taxable * CORPORATE_TAX);
+  if (tax > 0) { post(s, 'vergi', -tax, { memo: 'Çeyreklik geçici vergi' }); events.push({ type: 'TAX_PAID', day, data: { amount: tax } }); }
 }
 
 /** Birden çok gün; `pause` bayraklı olayda durur (oyuncu karar versin). */

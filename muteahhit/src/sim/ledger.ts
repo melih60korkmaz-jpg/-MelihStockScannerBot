@@ -1,11 +1,13 @@
 import type { Money } from '../core/money';
 import { monthKey } from '../core/calendar';
 import type { GameState, LedgerEntry } from '../core/types';
+import { ledgerCat } from '../data';
 
 /** Tek giriş noktası: para yalnızca buradan hareket eder, nakit önbelleği aynı anda güncellenir. */
 export function post(s: GameState, cat: string, amount: Money, opts: { projectId?: number; memo?: string } = {}): void {
   if (!Number.isInteger(amount)) throw new Error(`Ledger: tamsayı olmayan tutar (${amount})`);
   if (!s.company) throw new Error('Ledger: şirket yok');
+  if (!ledgerCat(cat)) throw new Error(`Ledger: bilinmeyen kategori '${cat}'`);
   const e: LedgerEntry = { day: s.clock.day, cat, amount };
   if (opts.projectId !== undefined) e.projectId = opts.projectId;
   if (opts.memo) e.memo = opts.memo;

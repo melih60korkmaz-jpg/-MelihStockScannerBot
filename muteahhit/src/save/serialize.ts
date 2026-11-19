@@ -18,7 +18,12 @@ export type LoadResult =
 
 /** v(n) → v(n+1) dönüştürücüler. Şema değişince buraya eklenir; eski kayıtlar açılabilir kalır. */
 export const MIGRATIONS: Record<number, (s: any) => any> = {
-  // 1: (s) => { ...; s.meta.version = 2; return s; },
+  // v1 → v2 (Faz 3): makro ekonomi, haberler, geçmiş, maliyet endeksi, vergi devri
+  1: (s) => {
+    s.macro = { regime: 'normal', regimeSince: s.clock.day, regimeEnd: s.clock.day + 20 * 30, calmUntilDay: s.clock.day + 20 * 30, policyRate: 18, inflation: 14, confidence: 58, materialIndex: 100 };
+    s.macroHistory = []; s.news = []; s.history = []; s.costIndex = 1; s.taxLossCarry = 0;
+    s.meta.version = 2; return s;
+  },
 };
 
 export function pack(state: GameState, now = Date.now()): string {
@@ -40,6 +45,9 @@ export function validateState(s: any): string | null {
   if (!Number.isInteger(s.nextId)) return 'nextId bozuk';
   if (!Array.isArray(s.staff) || !Array.isArray(s.ledger)) return 'liste eksik';
   if (!Number.isInteger(s.ledgerBase)) return 'ledgerBase bozuk';
+  if (!s.macro || typeof s.macro.policyRate !== 'number' || typeof s.macro.inflation !== 'number' || !s.macro.regime) return 'makro eksik';
+  if (!Array.isArray(s.macroHistory) || !Array.isArray(s.news) || !Array.isArray(s.history)) return 'geçmiş eksik';
+  if (typeof s.costIndex !== 'number' || !Number.isInteger(s.taxLossCarry)) return 'maliyet endeksi bozuk';
   if (s.company) {
     if (!Number.isInteger(s.company.cash)) return 'kasa bozuk';
     const sum = s.ledger.reduce((a: number, e: any) => a + e.amount, 0);

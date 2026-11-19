@@ -3,6 +3,7 @@ import type { GameEvent, GameState } from './types';
 import { CITIES, background, difficulty, officeFor, staffType } from '../data';
 import { post } from '../sim/ledger';
 import { createStaff } from '../sim/staff';
+import { DIFFICULTY_MACRO } from '../sim/macro';
 
 /**
  * TÜM durum değişiklikleri komutla yapılır. UI'daki her buton bir komuta bağlıdır;
@@ -48,6 +49,10 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     };
     post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
     for (const t of bg.staff) createStaff(s, t);
+    // Zorluk: ilk dengeli dönemin uzunluğu = krizsiz korumalı başlangıç
+    s.macro.calmUntilDay = s.clock.day + DIFFICULTY_MACRO[s.meta.difficulty].calmMonths * 30;
+    s.macro.regimeSince = s.clock.day; s.macro.regimeEnd = s.macro.calmUntilDay;
+    s.history.push({ day: s.clock.day, cash: s.company.cash, netWorth: s.company.cash });
     return [ev(s, 'COMPANY_CREATED', { name: s.company.name })];
   },
 };

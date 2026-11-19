@@ -446,7 +446,7 @@ Nakit akış tablosu (aylık), gelir-gider, bilanço özeti (varlık = nakit + a
 | 27 | İflas/oyun sonu | Toparlanma seçenekleri |
 | 28 | Haber bandı & bildirim merkezi | Piyasa/olay akışı |
 
-**Navigasyon (YATAY öncelikli, bkz. Revizyon v0.2):** Alt sekme çubuğu: **Şirket · Harita · Şantiye · Piyasa · Finans** (+ "Daha fazla": personel, makine, banka, ihale, görev…). Üstte kalıcı HUD: şirket adı, kasa, itibar, ayarlar, tarih + hız kontrolleri. Detaylar yan/alt panellerle açılır; böylece 3D sahne hiç terk edilmez. Dikey ekran desteklenir ama ikincil.
+**Navigasyon (yalnızca YATAY, bkz. Revizyon v0.2):** Alt sekme çubuğu: **Şirket · Harita · Şantiye · Piyasa · Finans** (+ "Daha fazla": personel, makine, banka, ihale, görev…). Üstte kalıcı HUD: şirket adı, kasa, itibar, ayarlar, tarih + hız kontrolleri. Detaylar yan/alt panellerle açılır; böylece 3D sahne hiç terk edilmez. Dikey düzen yoktur.
 
 ---
 
@@ -766,7 +766,7 @@ Her faz **çalışır halde** bitirilir, bir sonrakine geçmeden **çıkış kri
 
 Kullanıcının daha önceki oyununun ekran kaydı incelendi. Çıkarımlar:
 
-- **Yatay (landscape) öncelikli oyun.** Arayüz ~390 px yüksekliğe sığacak şekilde tasarlanır; menü, sihirbaz ve paneller buna göre sıkıdır. Dikey düzen ikincil/uyumlu.
+- **YALNIZCA yatay (landscape) oyun** (kullanıcı kararı). Arayüz ~390 px yüksekliğe sığacak şekilde tasarlanır. Dikey tutulursa "telefonu yatay çevirin" uyarısı çıkar ve oyun duraklar; yerel uygulamada yön kilitlenecek.
 - **Görsel dil:** koyu petrol-lacivert zemin, altın sarısı birincil vurgu, yuvarlak köşeli kartlar, hap biçimli sekmeler, alt sekme çubuğu (ikon + etiket), üst HUD (kasa / ayar / tarih). Palet referansla uyumlu olacak şekilde petrol tonuna çekildi (`#07161d`, `#0e2430`, `#153242`); altın `#F5B700` korundu.
 - **Ekran fikirleri (ileri fazlara not):** Türkiye haritası + şehir/ilçe kartları, proje kartları (illüstratif bina görseli + ilerleme çubuğu + durum rozeti), "Bugün" aksiyon kutuları, kâr/zarar grafiği kartı, borsa/ortaklık/yatırım sekmeleri, rakip ve piyasa panelleri. Bunlar Faz 3–9'da ilgili sistemle birlikte eklenecek (çalışmayan ekran bırakılmaz).
 - Referanstaki oyundan **görsel varlık veya metin kopyalanmaz**; yalnızca düzen/bilgi mimarisi ilham olarak kullanılır.
