@@ -167,7 +167,7 @@ html[data-motion=reduced] #rotate svg { animation:none; transform:rotate(-90deg)
 /* ===== Faz 4: harita, arsa dosyası, projeler ===== */
 .mapwrap { display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; }
 .mapbox { position:relative; border-radius:var(--r); overflow:hidden; border:1px solid var(--line); background:#141518; }
-.mapbox { width:fit-content; } .mapbox svg { display:block; height:clamp(210px, calc(100vh - 235px), 470px); width:auto; aspect-ratio:1.4/1; }
+.mapbox { width:fit-content; } .mapbox svg { display:block; height:clamp(150px, calc(100vh - 225px), 470px); width:auto; aspect-ratio:1.4/1; }
 .tile { cursor:pointer; transition:filter .12s; } .tile:active { filter:brightness(1.25); } .tile.sel rect.t { stroke:#fff; stroke-width:1.4; }
 .tile text { font-family:var(--font); pointer-events:none; } .tile .nm { font-weight:700; font-size:5.6px; fill:#fff; } .tile .vl { font-size:4.8px; fill:#fffd; } .tile .ct { font-size:3.9px; fill:#fffb; }
 .legend { display:flex; gap:8px; align-items:center; font-size:11px; color:var(--mute); padding:6px 10px; } .legend i { flex:1; height:6px; border-radius:3px; background:linear-gradient(90deg,#34353B,#9A9CA6); }
@@ -224,8 +224,8 @@ html[data-motion=reduced] .stages i.cur { animation:none; }
 
 /* ===== 81 il haritası ===== */
 .tmap { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr); gap:12px; align-items:start; }
-.tmap .mapbox { width:auto; } .tmap .mapbox svg { height:clamp(210px, calc(100vh - 215px), 520px); width:100%; aspect-ratio:auto; touch-action:none; cursor:grab; background:radial-gradient(circle at 50% 40%,#212227,#131416); }
-.tmap path.pv { stroke:#ffffff55; stroke-width:5; stroke-linejoin:round; cursor:pointer; vector-effect:non-scaling-stroke; transition:fill-opacity .12s; } .tmap path.pv:hover { stroke:#fff; }
+.tmap .mapbox { width:auto; } .tmap .mapbox svg { height:clamp(130px, calc(100vh - 215px), 520px); width:100%; aspect-ratio:auto; touch-action:none; cursor:grab; background:radial-gradient(circle at 50% 40%,#212227,#131416); }
+.tmap path.pv { stroke:#ffffff66; stroke-width:1px; stroke-linejoin:round; cursor:pointer; vector-effect:non-scaling-stroke; transition:fill-opacity .12s; } .tmap path.pv:hover { stroke:#fff; }
 .tmap path.pv.open { stroke:var(--accent2); stroke-width:1.6px; } .tmap path.pv.sel { stroke:var(--accent2); stroke-width:2.6px; fill:var(--accent) !important; fill-opacity:.78 !important; } .tmap path.pv.lock { fill-opacity:.62; }
 .tmap path.dv { stroke:#d8d6d8aa; stroke-width:1px; vector-effect:non-scaling-stroke; cursor:pointer; stroke-linejoin:round; } .tmap path.dv.sel { stroke:#F2F0F0; stroke-width:2.2px; fill:var(--accent) !important; fill-opacity:.88 !important; }
 .tmap text { pointer-events:none; font-family:var(--font); fill:#fff; paint-order:stroke; stroke:#0009; stroke-width:.35em; stroke-linejoin:round; font-weight:700; }
@@ -245,3 +245,23 @@ body:has(.evtmodal) #toasts { display:none; }
 .view > * { animation:viewin .22s ease-out both; } @keyframes viewin { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion: reduce) { .view > * { animation:none; } }
 
+
+/* ===== Dar yatay ekranlar (çentikli iPhone, uygulama içi görüntüleyici): HUD tek satırda kalır, sekmeler sığar ===== */
+.hud > * { min-width:0; } .hud .speeds { flex:none; } .hud .pill, .hud .ibtn { flex:none; }
+@media (max-width:900px) and (orientation:landscape) {
+  .hud { flex-wrap:nowrap; gap:6px; }
+  .hud .id b { max-width:20vw; font-size:16px; } .hud .id small { display:none; }
+  .hud .id svg { width:34px; height:34px; }
+  .pill { padding:3px 10px; } .pill b { font-size:18px; } .pill small { font-size:8px; letter-spacing:.1em; }
+  .speeds button { min-width:34px; padding:6px 5px; font-size:12px; }
+  .ibtn { width:38px; height:38px; }
+  .tabs { gap:2px; } .tab { gap:4px; padding:0 4px; font-size:11px; } .tab svg { width:19px; height:19px; }
+}
+@media (max-width:700px) and (orientation:landscape) {
+  .hud .id b { display:none; } .hud .id > div { display:none; }
+  .pill small { display:none; } .pill b { font-size:16px; }
+}
+@media (max-width:620px) and (orientation:landscape) {
+  .tab { font-size:0; gap:0; } .tab svg { width:22px; height:22px; } .tab.on { font-size:11px; gap:5px; }
+  .speeds button { min-width:30px; padding:5px 3px; }
+}
