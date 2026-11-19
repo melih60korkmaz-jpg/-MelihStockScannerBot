@@ -135,8 +135,10 @@ function hit(ctx: Ctx, bus: AudioNode, t: number, gain: number) {
 
 const ARP_PATTERNS = [[0, 1, 2, 3, 2, 1, 2, 1], [0, 2, 1, 3, 1, 2, 3, 2], [3, 2, 1, 0, 1, 2, 1, 2]];
 
-export interface MusicState { bar: number; rnd: () => number; arpPattern: number; variantOffset: number }
-export const newMusicState = (seed: number): MusicState => { const rnd = musicRng(seed); return { bar: 0, rnd, arpPattern: 0, variantOffset: rnd() < 0.5 ? 0 : 1 }; };
+/** menu: tam sinematik; game: oyun içi arka plan (daha ince, seyrek); tense: kriz/borç baskısı (koyu, vuruşlu). */
+export type MusicMode = 'menu' | 'game' | 'tense';
+export interface MusicState { bar: number; rnd: () => number; arpPattern: number; variantOffset: number; mode: MusicMode }
+export const newMusicState = (seed: number, mode: MusicMode = 'menu'): MusicState => { const rnd = musicRng(seed); return { bar: 0, rnd, arpPattern: 0, variantOffset: rnd() < 0.5 ? 0 : 1, mode }; };
 
 /** [bar başlangıcı] için o barın tüm notalarını zamanlar ve bar sayacını ilerletir. */
 export function scheduleBar(ctx: Ctx, mb: MusicBus, t: number, st: MusicState): void {
@@ -145,22 +147,24 @@ export function scheduleBar(ctx: Ctx, mb: MusicBus, t: number, st: MusicState): 
   const alt = (cycle + st.variantOffset) % 2 === 1;
   const c = CHORDS[alt && ALT[bi] !== undefined ? ALT[bi]! : bi]!;
   const rnd = st.rnd;
-  pad(ctx, bus, t, BAR, c.tones, 0.17, 900 + (cycle % 2) * 250);
-  bass(ctx, bus, t, BAR, c.root, 0.34);
-  if (bi === 0) { hit(ctx, bus, t, cycle === 0 ? 0.16 : 0.22); }
-  if (bi === 3 || bi === 7) swell(ctx, bus, t + BAR * 0.2, BAR * 0.8, rnd); // yeni tura/geçişe doğru yükseliş
+  const mode = st.mode ?? 'menu', game = mode === 'game', tense = mode === 'tense';
+  pad(ctx, bus, t, BAR, tense ? [...c.tones.slice(0, 3), c.tones[0]! + 1] : c.tones, game ? 0.1 : tense ? 0.15 : 0.17, tense ? 520 : game ? 700 + (cycle % 2) * 200 : 900 + (cycle % 2) * 250);
+  bass(ctx, bus, t, BAR, c.root, game ? 0.22 : 0.34);
+  if (tense) { if (bi % 2 === 0) hit(ctx, bus, t, 0.2); hit(ctx, bus, t + BEAT * 2, 0.08); }
+  else if (bi === 0 && !game) { hit(ctx, bus, t, cycle === 0 ? 0.16 : 0.22); }
+  if ((bi === 3 || bi === 7) && !game) swell(ctx, bus, t + BAR * 0.2, BAR * 0.8, rnd); // yeni tura/geçişe doğru yükseliş
   // Arpej: ilk tur sadeleştirilmiş (giriş), sonra tam
-  if (cycle > 0 || bi >= 2) {
+  if ((cycle > 0 || bi >= 2) && (!game || bi % 2 === 1) && !(tense && bi % 4 === 3)) {
     if (bi % 2 === 0) st.arpPattern = Math.floor(rnd() * ARP_PATTERNS.length);
     const pat = ARP_PATTERNS[st.arpPattern]!;
     pat.forEach((ti, i) => {
-      if (rnd() < 0.12) return; // doğal boşluk
-      const midi = c.tones[ti]! + 12;
-      pluck(ctx, mb, t + i * (BEAT / 2) + (rnd() - 0.5) * 0.012, midi, 0.05 + rnd() * 0.035 + (i % 4 === 0 ? 0.02 : 0));
+      if (rnd() < (game ? 0.35 : tense ? 0.05 : 0.12)) return; // doğal boşluk
+      const midi = c.tones[ti]! + (tense ? 0 : 12);
+      pluck(ctx, mb, t + i * (BEAT / 2) + (rnd() - 0.5) * 0.012, midi, (0.05 + rnd() * 0.035 + (i % 4 === 0 ? 0.02 : 0)) * (game ? 0.7 : 1));
     });
   }
   // Seyrek melodi (ilk turda yok)
-  if (cycle > 0 && rnd() < 0.62) {
+  if (cycle > 0 && !tense && rnd() < (game ? 0.3 : 0.62)) {
     const target = c.tones[1 + Math.floor(rnd() * 2)]! + 12;
     const pool = SCALE.filter((n) => Math.abs(n - target) <= 5);
     const n1 = pool[Math.floor(rnd() * pool.length)] ?? target;

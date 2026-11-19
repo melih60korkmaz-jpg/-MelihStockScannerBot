@@ -21,7 +21,7 @@ const WORD: Record<string, string> = { acik: 'Açık', yagmur: 'Yağmurlu', kar:
 
 /** Aktif şantiye: sim durumundan üretilen 3D sahne + aşama şeridi + özet paneli. */
 export function siteScreen(app: App, projectId: number, backTo: () => void): HTMLElement {
-  app.scene?.stop(); app.audio.setMood('off');
+  app.scene?.stop(); app.audio.setMood('game');
   const root = h('div', { class: 'site' });
   const canvas = h('canvas', { class: 'sitecv', 'aria-label': '3D şantiye görünümü' }) as HTMLCanvasElement; root.append(canvas);
   let scene: SiteScene | null = null;
@@ -50,7 +50,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
   const cams = h('div', { class: 'cams' }, ...CAMS.map(([id, l]) => h('button', { class: 'btn glass', 'aria-label': `Kamera: ${l}`, onclick: () => { press(app); scene?.preset(id); } }, l)));
   root.append(top, h('div', { class: 'ov', style: 'top:calc(var(--st) + 58px);display:flex;justify-content:center' }, stagesEl), banner, cams, sheet);
 
-  const leave = () => { unsub(); scene?.dispose(); app.site = null; backTo(); };
+  const leave = () => { unsub(); app.audio.ambient({ on: false, working: false, weather: 'acik' }); scene?.dispose(); app.site = null; backTo(); };
 
   // ---- Çizimler ----
   const draw = () => {
@@ -74,7 +74,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
     else if (p.status === 'insaat' && st?.permit) { msg = `Ruhsat bekleniyor (${Math.max(0, Math.round(b!.progress * 100))}%)`; tone = 'info'; }
     else if (p.status === 'insaat' && st?.outdoor && s.weather[p.cityId] !== 'acik') { msg = `${WORD[s.weather[p.cityId]!]} hava: dış işler yavaşlıyor`; tone = 'warn'; }
     banner.style.display = msg ? 'block' : 'none'; banner.className = `banner ${tone}`; banner.textContent = msg;
-    scene?.setState(stateOf(p)); scene?.setSpeed(app.store.speed);
+    scene?.setState(stateOf(p)); scene?.setSpeed(app.store.speed); { const st2 = stateOf(p); app.audio.ambient({ on: p.status === 'insaat' || p.status === 'taslak', working: p.status === 'insaat' && !st2.stalled && app.store.speed > 0, weather: st2.weather }); }
     drawSheet(p);
   };
 
@@ -155,6 +155,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
 
   const p0 = proj(); if (!p0) { queueMicrotask(leave); return root; }
   if (scene) {
+    { const st0 = stateOf(p0); app.audio.ambient({ on: p0.status === 'insaat' || p0.status === 'taslak', working: p0.status === 'insaat' && !st0.stalled && app.store.speed > 0, weather: st0.weather }); }
     scene.setReduced(app.settings.reduced); scene.setQuality(app.settings.value.quality); scene.setSpec(specOf(p0)); scene.setState(stateOf(p0), true);
     scene.onContext = (lost) => { if (lost) toast('Grafik bağlamı kaybedildi; sahne yeniden yüklenecek.'); }; scene.resize(); scene.start();
   } else root.append(h('div', { class: 'banner warn', style: 'display:block;top:50%' }, '3D görünüm bu cihazda kullanılamıyor; veriler aşağıda.'));

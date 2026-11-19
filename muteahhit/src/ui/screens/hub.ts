@@ -7,7 +7,7 @@ import { alerts, monthlyRows, netWorth, projectAssetValue, projectedMonthlyCost,
 import { machineAssetValue } from '../../sim/machines';
 import { advancesTotal, receivablesTotal } from '../../sim/sales';
 import { barChart, hbars, lineChart, sparkline } from '../charts';
-import { h, press, toast } from '../dom';
+import { celebrate, h, press, toast } from '../dom';
 import { emblemSvg } from '../emblem';
 import type { App } from '../app';
 import { cityData } from '../../data';
@@ -47,7 +47,7 @@ const signed = (m: number) => `<span class="${m > 0 ? 'pos' : m < 0 ? 'neg' : ''
 
 /** Şirket kabuğu: kalıcı HUD + 4 sekme. Tüm sayılar sim/finans katmanından türetilir (ikinci bir "doğru" yok). */
 export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
-  app.scene?.stop(); app.audio.setMood('off');
+  app.scene?.stop(); app.audio.ambient({ on: false, working: false, weather: 'acik' });
   const root = h('div', { class: 'shell' });
   let tab: Tab = startTab, sub = 'ozet';
   const hud = h('header', { class: 'hud' }), view = h('div', { class: 'view' }), tabs = h('nav', { class: 'tabs', 'aria-label': 'Ana sekmeler' });
@@ -72,9 +72,19 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       h('button', { class: 'btn ibtn', 'aria-label': 'Ana menü', html: ICON.menu, onclick: async () => { press(app); app.store.setSpeed(0); try { await app.saves.autosave(app.store.state); } catch { /* menü yine açılır */ } app.menu(); } }),
     );
   };
+  // Kasa göstergesi: değişimde kısa sayaç animasyonu ve yeşil/kırmızı vurgu
+  let shownCash: number | null = null, tween = 0;
+  const setCash = (v: number) => {
+    const el = ref.cash!; if (shownCash === null || app.settings.reduced || Math.abs(v - shownCash) < 100) { shownCash = v; el.textContent = formatMoney(v); return; }
+    const from = shownCash, t0 = performance.now(), up = v > from; cancelAnimationFrame(tween); shownCash = v;
+    ref.cashPill!.classList.remove('up', 'down'); ref.cashPill!.classList.add(up ? 'up' : 'down');
+    const step = (now: number) => { const k = Math.min(1, (now - t0) / 550), e = 1 - Math.pow(1 - k, 3); el.textContent = formatMoney(Math.round(from + (v - from) * e)); if (k < 1) tween = requestAnimationFrame(step); else { el.textContent = formatMoney(v); setTimeout(() => ref.cashPill?.classList.remove('up', 'down'), 500); } };
+    tween = requestAnimationFrame(step);
+  };
+  const moodNow = () => { const s = app.store.state, c = s.company; return c && (s.macro.regime === 'kriz' || c.cash < 0 || s.loans.some((l) => l.missed > 0)) ? 'tense' as const : 'game' as const; };
   const drawHud = () => {
     const s = app.store.state, c = s.company; if (!c || !ref.cash) return;
-    ref.cash.textContent = formatMoney(c.cash); ref.cashPill!.classList.toggle('neg', c.cash < 0);
+    setCash(c.cash); ref.cashPill!.classList.toggle('neg', c.cash < 0);
     ref.date!.textContent = formatDate(s.clock.day); ref.sub!.textContent = `${LEVELS[c.level - 1]} · İtibar ${c.reputation}`;
     for (const b of ref.speed!) { const on = Number(b.dataset.v) === app.store.speed; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
   };
@@ -183,7 +193,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'SURVEY_DONE') { app.audio.sfx('confirm'); toast((e.data!.kind === 'soil' ? 'Zemin etüdü tamamlandı.' : 'Piyasa araştırması tamamlandı.'), 4000); }
       if (e.type === 'LAND_SOLD') { app.audio.sfx('confirm'); if (!e.data!.quick) toast(`Arsanız satıldı: ${formatMoney(e.data!.price as number)}`, 4500); }
       if (e.type === 'CONSTRUCTION_STALLED') { app.audio.sfx('error'); toast('Bir şantiyede nakit bitti: inşaat durdu!', 5000); }
-      if (e.type === 'UNIT_SOLD') { app.audio.sfx('confirm'); toast(`Daire satıldı: ${formatMoney(e.data!.price as number)}`, 3200); }
+      if (e.type === 'UNIT_SOLD') { app.audio.sfx('coin'); toast(`Daire satıldı: ${formatMoney(e.data!.price as number)}`, 3200); }
       if (e.type === 'KAPORA') toast('Bir müşteri kapora bıraktı.', 2800);
       if (e.type === 'DEFAULT') { app.audio.sfx('error'); toast(`Bir alıcı taksitleri ödemedi: daire stoğa döndü (kayıp ${formatMoney(e.data!.lost as number)}).`, 5000); }
       if (e.type === 'DELIVERED') toast(`Daireler teslim edildi · müşteri memnuniyeti ${e.data!.avgSat}.`, 4500);
@@ -195,22 +205,24 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'SOIL_REVEALED') { app.audio.sfx((e.data!.extra as number) > 0 ? 'error' : 'confirm'); toast((e.data!.extra as number) === 0 ? 'Hafriyat: zemin beklendiği gibi çıktı.' : `Hafriyatta zemin ortaya çıktı: ${(e.data!.extra as number) > 0 ? 'ek maliyet +' : 'tasarruf '}${formatMoney(Math.abs(e.data!.extra as number))}`, 5000); }
       if (e.type === 'PROJECT_COMPLETED') { app.audio.sfx('stamp'); toast('Bir proje tamamlandı! Projeler sekmesinden şantiyeyi açın.', 5000); }
       if (e.type === 'PROJECT_STARTED') toast('İnşaat başladı.');
-      if (e.type === 'PROJECT_SOLD') { app.audio.sfx('confirm'); toast(`Bina satıldı: ${formatMoney(e.data!.price as number)}`, 4500); }
+      if (e.type === 'PROJECT_SOLD') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast(`Bina satıldı: ${formatMoney(e.data!.price as number)}`, 4500); }
       if (e.type === 'YEAR') toast(`Yeni yıl: personel maaşlarına %${((e.data!.raise as number) * 100).toFixed(0)} zam yapıldı.`, 4500);
       if (e.type === 'LOAN_MISSED') { app.audio.sfx('error'); toast(`Kredi taksiti ödenemedi (${e.data!.missed}/3)! Kredi notu düştü. 3 kaçırmada haciz başlar.`, 6000); }
-      if (e.type === 'SEIZURE') { app.audio.sfx('error'); app.haptic('heavy'); toast(`Haciz: varlıklarınız zorla satıldı (${formatMoney(e.data!.raised as number)}).`, 6000); }
+      if (e.type === 'SEIZURE') { app.audio.sfx('alarm'); app.haptic('heavy'); toast(`Haciz: varlıklarınız zorla satıldı (${formatMoney(e.data!.raised as number)}).`, 6000); }
       if (e.type === 'LOAN_DRAWN') toast(`İnşaat kredisinden ${formatMoney(e.data!.amount as number)} kullanıldı.`, 3000);
       if (e.type === 'LOAN_ROLLED') toast('İnşaat kredisi vadesi doldu: ticari krediye devredildi.', 4500);
+      if (e.type === 'HAKEDIS') app.audio.sfx('coin');
       if (e.type === 'TENDER_NEW' && !evs.some((x) => x.type === 'TENDER_NEW' && x !== e && evs.indexOf(x) < evs.indexOf(e))) toast(evs.filter((x) => x.type === 'TENDER_NEW').length > 1 ? 'Yeni ihaleler açıldı. İhale sekmesine bakın.' : 'Yeni ihale açıldı. İhale sekmesine bakın.', 3500);
-      if (e.type === 'TENDER_WON') { app.audio.sfx('stamp'); toast('İhaleyi kazandınız! Avans yattı; projeyi Projeler sekmesinden başlatın.', 6000); }
+      if (e.type === 'TENDER_WON') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast('İhaleyi kazandınız! Avans yattı; projeyi Projeler sekmesinden başlatın.', 6000); }
       if (e.type === 'TENDER_LOST') { app.audio.sfx('error'); toast(e.data!.reason === 'elendi' ? 'İhaleden elendiniz: olağan dışı düşük teklif.' : `İhaleyi kaybettiniz. Kazanan: ${e.data!.winner}.`, 5000); }
       if (e.type === 'HAKEDIS') toast(`Hakediş tahsil edildi: ${formatMoney(e.data!.amount as number)}`, 3500);
-      if (e.type === 'CONTRACT_DONE') { app.audio.sfx('stamp'); toast(`İhale işi teslim edildi · kâr ${formatMoney(e.data!.profit as number)}${(e.data!.penalty as number) > 0 ? ` (gecikme cezası ${formatMoney(e.data!.penalty as number)})` : ''}`, 6000); }
+      if (e.type === 'CONTRACT_DONE') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast(`İhale işi teslim edildi · kâr ${formatMoney(e.data!.profit as number)}${(e.data!.penalty as number) > 0 ? ` (gecikme cezası ${formatMoney(e.data!.penalty as number)})` : ''}`, 6000); }
       if (e.type === 'INVESTOR_PAID') toast(`Yatırımcıya ödeme yapıldı: ${formatMoney(e.data!.amount as number)}`, 4000);
       if (e.type === 'DIVIDEND') toast(`Ortaklara temettü: ${formatMoney(e.data!.amount as number)}`, 4000);
-      if (e.type === 'EVENT_DECISION') openEventDecision(app);
+      if (e.type === 'MONTH') app.audio.setMood(moodNow());
+      if (e.type === 'EVENT_DECISION') { app.audio.sfx('bell'); openEventDecision(app); }
       if (e.type === 'EVENT_RESOLVED') { const d = eventDef(e.data!.id as string); const ch = d?.ch[e.data!.choice as number]; toast(`${d?.t ?? 'Olay'}: ${ch?.l ?? ''}${e.data!.auto ? ' (süre doldu)' : ''}${e.data!.success === true ? ' — başarılı' : e.data!.success === false ? ' — olmadı' : ''}`, 4500); }
-      if (e.type === 'BANKRUPT') { app.audio.sfx('error'); app.haptic('heavy'); showBankrupt(); }
+      if (e.type === 'BANKRUPT') { app.audio.sfx('alarm'); app.haptic('heavy'); showBankrupt(); }
       if (e.type === 'CASH_NEGATIVE') { app.audio.sfx('error'); toast('Kasa eksiye düştü! Oyun duraklatıldı.', 5000); }
     }
     drawHud(); if (redraw) drawView();
@@ -222,6 +234,6 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
   if (app.store.state.company?.bankrupt) showBankrupt();
   if (app.store.state.pending) setTimeout(() => openEventDecision(app), 0);
-  buildHud(); drawHud(); drawTabs(); drawView();
+  buildHud(); drawHud(); drawTabs(); drawView(); app.audio.setMood(moodNow());
   return root;
 }

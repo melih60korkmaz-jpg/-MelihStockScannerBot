@@ -13,7 +13,7 @@ Tasarım belgesi: `../docs/muteahhit-tasarim-belgesi.md`
     npm run dev     # geliştirme sunucusu
     npm run build   # dist/index.html (tek dosya)
 
-Durum: **Faz 1–9 + 81 il haritası** (çekirdek, açılış/menü/ayarlar/müzik, şirket ve makro ekonomi, finans, arsa pazarı, inşaat + 3D şantiye, malzeme/makine/personel temeli, daire satışı ve müşteri, banka/kredi/yatırımcı/ihale, rakipler, 48 olay, dinamik piyasa). Yalnızca yatay oyun. Sonraki: Faz 10 (animasyon, ses, atmosfer).
+Durum: **Faz 1–10 + 81 il haritası** (çekirdek, açılış/menü/ayarlar/müzik, şirket ve makro ekonomi, finans, arsa pazarı, inşaat + 3D şantiye, malzeme/makine/personel temeli, daire satışı ve müşteri, banka/kredi/yatırımcı/ihale, rakipler, 48 olay, dinamik piyasa, ses/animasyon cilası). Yalnızca yatay oyun. Sonraki: Faz 11 (görevler, başarımlar, seviyeler, şube/ofis).
 
 ## Veri kaynakları ve atıf
 

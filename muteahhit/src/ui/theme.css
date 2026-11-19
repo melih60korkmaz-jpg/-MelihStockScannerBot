@@ -233,3 +233,11 @@ html[data-motion=reduced] .stages i.cur { animation:none; }
 .prow .plate { width:28px; font:700 13px var(--font-h); color:var(--mute); } .prow .nm { flex:1; min-width:0; font-weight:600; } .prow .nm small { display:block; color:var(--mute); font-weight:400; font-size:11px; }
 @media (max-width:760px) { .tmap { grid-template-columns:1fr; } }
 body:has(.evtmodal) #toasts { display:none; }
+.confetti { position:fixed; inset:0; z-index:70; pointer-events:none; overflow:hidden; }
+.confetti i { position:absolute; top:-14px; width:8px; height:14px; border-radius:2px; animation:conf 2s ease-in forwards; opacity:.95; }
+@keyframes conf { to { transform:translateY(110vh) rotate(720deg); opacity:.2; } }
+.confetti.glow { background:radial-gradient(circle at 50% 40%, #F5B70033, transparent 60%); animation:in .3s both; }
+.pill.cash.up b { color:var(--good,#2ECC8F); transition:color .2s; } .pill.cash.down b { color:var(--bad,#ff6b6b); transition:color .2s; }
+.view > * { animation:viewin .22s ease-out both; } @keyframes viewin { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion: reduce) { .view > * { animation:none; } }
+

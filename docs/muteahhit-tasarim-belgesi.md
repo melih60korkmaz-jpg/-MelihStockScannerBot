@@ -841,3 +841,12 @@ Kullanıcı kararı: bu fazda **temel düzen** kurulur, ince ayar ve hatalar son
 - **Rakip firmalar** (`sim/rivals.ts`): 5 kalıcı firma (agresif/dengeli/temkinli), ev şehri, nakit, itibar, teknik güç. Aylık: oyuncunun şehirlerinde en değerli ilanlardan birini kapar (haber çıkar), proje başlatır (bölge arzı artar → satış şansı %15'e kadar düşer, fazla arzda konut endeksi hafif aşağı), teslim eder, ihalelere girer ve kazanır. Kriz/daralmada temkinliler geri çekilir; nakdi biten firma **iflas eder** ve ev şehrinde %18 indirimli 2 arsa piyasaya çıkar. Yeni girişimciler gelir. İhale rakipleri bu kalıcı firmalardır.
 - **Olay kataloğu** (`data/events.json`, 48 olay; `sim/events.ts`): mevzuat, piyasa, doğa, insan, hukuk, güvenlik, fırsat, rakip, finans. Ayda %55 olasılıkla koşullara uyan bir olay ağırlıklı seçilir (aynı olay 300 gün tekrarlanmaz). Oyun durur; 2–3 seçimli karar penceresi sabit etkileri ve riskli seçimin olasılığını gösterir; 20 gün cevap verilmezse varsayılan seçim uygulanır. Etkiler: kasa (firma büyüklüğüne ölçekli), itibar, kredi notu, moral, memnuniyet, konut/arsa/malzeme fiyatı, şantiye durması, personel ayrılması, faiz, makine, rakip.
 - **Dinamik piyasa**: ara sıra bir ilde gerçek talep dalgası (haber + endeks etkisi); rakip arzı ve olaylar endeksleri kaydırır. Save v9.
+
+
+## Uygulama notları — Faz 10 (animasyon, ses, atmosfer)
+
+- **Müzik kipleri**: aynı üretken müzik üç kipte çalar: `menu` (tam sinematik), `game` (oyun içi: daha ince pad/bas, seyrek arpej, nadir melodi, vuruş yok) ve `tense` (kriz, nakit eksi veya kaçırılmış taksit: koyu pad + yarım ton sürtünme, her ikinci barda vuruş, yoğun arpej). Kipler arası geçişte döngü yeniden başlamaz, ton değişir. Hub ayda bir ve açılışta kipi seçer.
+- **Efektler**: `coin` (daire satışı, hakediş), `bell` (karar olayı), `alarm` (haciz, iflas), `fanfare` (bina satışı, ihale kazanma, iş teslimi), `hammer`, `whoosh`. **Ortam sesi**: şantiyede düşük uğultu + rastgele çekiç/metal sesi (yalnızca çalışırken), yağmurda yağmur gürültüsü; şantiyeden çıkınca kapanır, SFX ayarına uyar.
+- **Arayüz hareketi**: kasa göstergesi değişimde sayaç gibi akar ve yeşil/kırmızı vurgulanır; sekme geçişleri kısa kayma-solma; bina satışı/ihale/teslimde konfeti (hareket azaltma açıksa yalnızca hafif parıltı).
+- **3D atmosfer**: çalışan şantiyede açık havada yükselen yumuşak toz bulutları (yuvarlak sprite, toplamsal karışım; düşük kalitede kapalı).
+- **Test**: sahte AudioContext ile kip yoğunlukları (game < menu < tense) ve determinizm doğrulanır.

@@ -1,8 +1,9 @@
 import type { SettingsStore } from '../platform/settings';
 import { BAR, buildMusicBus, newMusicState, scheduleBar, type MusicBus, type MusicState } from './music';
 
-export type Sfx = 'click' | 'toggle' | 'confirm' | 'error' | 'clink' | 'stamp';
-export type MusicMood = 'menu' | 'off';
+export type Sfx = 'click' | 'toggle' | 'confirm' | 'error' | 'clink' | 'stamp' | 'coin' | 'bell' | 'alarm' | 'hammer' | 'fanfare' | 'whoosh';
+export type MusicMood = 'menu' | 'game' | 'tense' | 'off';
+export interface Ambience { on: boolean; working: boolean; weather: 'acik' | 'yagmur' | 'kar' }
 
 /**
  * Tek AudioContext, tek arka plan müziği (aynı anda ikisi çalamaz: mood değişince eskisi fade-out olur).
@@ -49,7 +50,8 @@ export class AudioEngine {
         this.applyVolumes();
       }
       if (this.ctx.state !== 'running') await this.ctx.resume();
-      if (this.mood === 'menu') this.startLoop();
+      if (this.mood !== 'off') this.startLoop();
+      this.applyAmbient();
     } catch { this.failed = true; }
   }
 
@@ -57,7 +59,7 @@ export class AudioEngine {
     if (!this.ctx) return;
     const s = this.settings.value, t = this.ctx.currentTime;
     this.musicGain.gain.setTargetAtTime(s.musicOn ? s.musicVol * 0.9 : 0, t, 0.08);
-    this.sfxGain.gain.setTargetAtTime(s.sfxOn ? s.sfxVol : 0, t, 0.03);
+    this.sfxGain.gain.setTargetAtTime(s.sfxOn ? s.sfxVol : 0, t, 0.03); this.applyAmbient();
   }
 
   suspend() { if (this.ctx && this.ctx.state === 'running') void this.ctx.suspend().catch(() => {}); }
@@ -66,15 +68,17 @@ export class AudioEngine {
   // ---- Müzik ----
   setMood(m: MusicMood) {
     if (m === this.mood) return;
-    this.mood = m;
+    const was = this.mood; this.mood = m;
     if (!this.ctx) return; // unlock sonrası başlar
-    if (m === 'menu') this.startLoop(); else this.fadeOutAndStop();
+    if (m === 'off') { this.fadeOutAndStop(); return; }
+    if (was !== 'off' && this.timer !== null) { this.st.mode = m; return; } // aynı döngüde ton değişir, yeniden başlamaz
+    this.startLoop();
   }
 
   private startLoop() {
     const ctx = this.ctx; if (!ctx || this.timer !== null) return;
     // Her başlangıç farklı tohum: aynı müzik hep baştan aynı başlamasın
-    this.st = newMusicState((Date.now() ^ 0x5bd1e995) >>> 0);
+    this.st = newMusicState((Date.now() ^ 0x5bd1e995) >>> 0, this.mood === 'off' ? 'menu' : this.mood);
     this.moodGain = ctx.createGain(); this.moodGain.gain.value = 0.0001; this.moodGain.connect(this.musicGain);
     this.moodGain.gain.setValueAtTime(0.0001, ctx.currentTime);
     this.moodGain.gain.exponentialRampToValueAtTime(1, ctx.currentTime + 2.5); // fade-in
@@ -95,6 +99,28 @@ export class AudioEngine {
     if (g) { g.gain.cancelScheduledValues(ctx.currentTime); g.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.6); setTimeout(() => { try { g.disconnect(); } catch { /* */ } void bus; }, 4500); }
   }
 
+  // ---- Ortam sesi (şantiye, yağmur) ----
+  private amb: Ambience = { on: false, working: false, weather: 'acik' };
+  private ambNodes: { rumble: GainNode; rain: GainNode } | null = null; private ambTimer: number | null = null;
+  ambient(a: Ambience) { this.amb = a; this.applyAmbient(); }
+  private noise(ctx: AudioContext): AudioBufferSourceNode {
+    const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0); let b = 0;
+    for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; b = (b + 0.02 * w) / 1.02; d[i] = b * 3.5 + w * 0.2; }
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; return src;
+  }
+  private applyAmbient() {
+    const ctx = this.ctx; if (!ctx) return;
+    if (!this.ambNodes) {
+      const mk = (type: BiquadFilterType, f: number) => { const s = this.noise(ctx), fl = ctx.createBiquadFilter(); fl.type = type; fl.frequency.value = f; const g = ctx.createGain(); g.gain.value = 0.0001; s.connect(fl).connect(g).connect(this.sfxGain); s.start(); return g; };
+      this.ambNodes = { rumble: mk('lowpass', 260), rain: mk('highpass', 2400) };
+    }
+    const t = ctx.currentTime, a = this.amb, on = a.on && this.settings.value.sfxOn;
+    this.ambNodes.rumble.gain.setTargetAtTime(on ? (a.working ? 0.16 : 0.07) : 0.0001, t, 0.6);
+    this.ambNodes.rain.gain.setTargetAtTime(on && a.weather === 'yagmur' ? 0.07 : 0.0001, t, 0.8);
+    if (on && a.working && this.ambTimer === null) { const tick = () => { if (this.amb.on && this.amb.working) this.sfx(Math.random() < 0.6 ? 'hammer' : 'clink'); this.ambTimer = window.setTimeout(tick, 1400 + Math.random() * 3200); }; this.ambTimer = window.setTimeout(tick, 800); }
+    if ((!on || !a.working) && this.ambTimer !== null) { clearTimeout(this.ambTimer); this.ambTimer = null; }
+  }
+
   // ---- Efektler ----
   sfx(kind: Sfx) {
     const ctx = this.ctx; if (!ctx || ctx.state !== 'running' || !this.settings.value.sfxOn) return;
@@ -112,6 +138,12 @@ export class AudioEngine {
       case 'clink': // metal tınısı: uyumsuz kısmi sesler
         for (const [f, v] of [[1180, 0.12], [1763, 0.08], [2951, 0.05]] as const) tone(f, 0.55, v, 'sine'); break;
       case 'stamp': tone(110, 0.28, 0.35, 'sine', 0, 45); tone(2400, 0.04, 0.1, 'square'); break;
+      case 'coin': tone(1568, 0.09, 0.12, 'square'); tone(2093, 0.28, 0.12, 'square', 0.07); tone(3136, 0.35, 0.05, 'sine', 0.07); break;
+      case 'bell': tone(880, 0.6, 0.12, 'sine'); tone(1320, 0.5, 0.07, 'sine', 0.01); tone(1760, 0.4, 0.04, 'sine', 0.02); tone(880, 0.6, 0.08, 'sine', 0.35); break;
+      case 'alarm': for (let i = 0; i < 3; i++) { tone(520, 0.16, 0.16, 'sawtooth', i * 0.22, 420); tone(390, 0.16, 0.1, 'square', i * 0.22 + 0.01); } break;
+      case 'hammer': tone(180, 0.07, 0.12, 'triangle', 0, 90); tone(2200, 0.03, 0.05, 'square'); tone(180, 0.07, 0.08, 'triangle', 0.18, 90); break;
+      case 'fanfare': for (const [f, at] of [[523, 0], [659, 0.12], [784, 0.24], [1047, 0.38]] as const) { tone(f, 0.34, 0.13, 'triangle', at); tone(f * 2, 0.3, 0.04, 'sine', at); } tone(1047, 0.8, 0.12, 'triangle', 0.5); tone(1319, 0.8, 0.08, 'triangle', 0.5); break;
+      case 'whoosh': tone(300, 0.14, 0.05, 'sine', 0, 700); break;
     }
   }
 }

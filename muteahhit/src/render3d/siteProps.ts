@@ -154,6 +154,36 @@ export class Workers {
 }
 
 /** Yağmur (çizgiler) ve kar (noktalar). */
+/** Şantiye tozu: çalışırken zeminden yükselen soluk toz bulutçukları (toplamsal karışım → sönerken kaybolur). */
+export class Dust {
+  points: THREE.Points; private N: number; private pos: Float32Array; private col: Float32Array; private life: Float32Array; private vx: Float32Array; private vz: Float32Array;
+  constructor(n: number) {
+    this.N = n; this.pos = new Float32Array(n * 3); this.col = new Float32Array(n * 3); this.life = new Float32Array(n); this.vx = new Float32Array(n); this.vz = new Float32Array(n);
+    for (let i = 0; i < n; i++) this.life[i] = Math.random();
+    const g = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(this.pos, 3)).setAttribute('color', new THREE.BufferAttribute(this.col, 3));
+    let map: THREE.Texture | null = null;
+    try { const cv = document.createElement('canvas'); cv.width = cv.height = 32; const c2 = cv.getContext('2d')!; const gr = c2.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, '#fff'); gr.addColorStop(1, '#0000'); c2.fillStyle = gr; c2.fillRect(0, 0, 32, 32); map = new THREE.CanvasTexture(cv); } catch { /* düz nokta */ }
+    this.points = new THREE.Points(g, new THREE.PointsMaterial({ size: 3.2, ...(map ? { map } : {}), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.55 }));
+    this.points.frustumCulled = false; this.points.visible = false;
+  }
+  update(dt: number, on: boolean, hw: number, hd: number) {
+    this.points.visible = this.N > 0 && (on || this.anyAlive());
+    if (!this.points.visible) return;
+    for (let i = 0; i < this.N; i++) {
+      this.life[i] = this.life[i]! - dt * 0.28;
+      if (this.life[i]! <= 0) {
+        if (!on) { this.col[i * 3] = this.col[i * 3 + 1] = this.col[i * 3 + 2] = 0; continue; }
+        const a = Math.random() * Math.PI * 2, r = 0.55 + Math.random() * 0.8; this.life[i] = 0.6 + Math.random() * 0.4;
+        this.pos[i * 3] = Math.cos(a) * hw * r; this.pos[i * 3 + 1] = 0.3 + Math.random() * 1.2; this.pos[i * 3 + 2] = Math.sin(a) * hd * r; this.vx[i] = (Math.random() - 0.5) * 0.8; this.vz[i] = (Math.random() - 0.5) * 0.8;
+      }
+      this.pos[i * 3] = this.pos[i * 3]! + this.vx[i]! * dt; this.pos[i * 3 + 1] = this.pos[i * 3 + 1]! + dt * 1.1; this.pos[i * 3 + 2] = this.pos[i * 3 + 2]! + this.vz[i]! * dt;
+      const f = Math.max(0, this.life[i]!) * 0.38; this.col[i * 3] = f * 0.9; this.col[i * 3 + 1] = f * 0.82; this.col[i * 3 + 2] = f * 0.66;
+    }
+    (this.points.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true; (this.points.geometry.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
+  }
+  private anyAlive() { for (let i = 0; i < this.N; i++) if (this.life[i]! > 0) return true; return false; }
+}
+
 export class Weather {
   rain: THREE.LineSegments; snow: THREE.Points; private N = 700; private pos!: Float32Array; private spos!: Float32Array;
   constructor() {

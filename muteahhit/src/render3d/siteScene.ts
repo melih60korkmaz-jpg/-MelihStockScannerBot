@@ -3,12 +3,12 @@ import type { Quality } from '../platform/settings';
 import { SiteBuilding, designOf, ramp, rng, type BuildingSpec } from './siteBuilding';
 import { Surroundings } from './siteSurroundings';
 import type { Region } from '../data/geo';
-import { Excavator, SiteProps, TowerCrane, Weather, Workers, makeTruck } from './siteProps';
+import { Dust, Excavator, SiteProps, TowerCrane, Weather, Workers, makeTruck } from './siteProps';
 
 export interface SiteSpec extends BuildingSpec { use: 'konut' | 'ticari' | 'sanayi'; name: string; roads: number; corner: boolean; region?: Region; density?: number }
 export interface SiteState { u: number; stalled: boolean; weather: 'acik' | 'yagmur' | 'kar'; workers: number; done: boolean; occupancy?: number }
 type Tier = Exclude<Quality, 'auto'>;
-const TIER = { low: { pr: 1, shadows: false, workers: 8, fps: 30, rain: false }, mid: { pr: 1.5, shadows: false, workers: 16, fps: 60, rain: true }, high: { pr: 2, shadows: true, workers: 24, fps: 60, rain: true } };
+const TIER = { low: { pr: 1, shadows: false, workers: 8, fps: 30, rain: false, dust: 0 }, mid: { pr: 1.5, shadows: false, workers: 16, fps: 60, rain: true, dust: 50 }, high: { pr: 2, shadows: true, workers: 24, fps: 60, rain: true, dust: 90 } };
 export type CamPreset = 'kus' | 'yan' | 'on' | 'yakin' | 'ust';
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
@@ -18,7 +18,7 @@ export class SiteScene {
   private renderer: THREE.WebGLRenderer; private scene = new THREE.Scene(); private camera = new THREE.PerspectiveCamera(42, 1, 0.5, 2500);
   private sun = new THREE.DirectionalLight(0xffffff, 3); private hemi = new THREE.HemisphereLight(0x9bb8e0, 0x3a3228, 1);
   private sky: THREE.Mesh; private skyU: { top: { value: THREE.Color }; hor: { value: THREE.Color } };
-  private building!: SiteBuilding; private props!: SiteProps; private crane!: TowerCrane; private crane2: TowerCrane | null = null; private excavator = new Excavator(); private workers = new Workers(); private weather = new Weather();
+  private building!: SiteBuilding; private props!: SiteProps; private crane!: TowerCrane; private crane2: TowerCrane | null = null; private excavator = new Excavator(); private workers = new Workers(); private weather = new Weather(); private dust = new Dust(90);
   private trucks: { g: THREE.Group; kind: string; off: number; speed: number; drum?: THREE.Mesh }[] = []; private ground!: THREE.Mesh; private world = new THREE.Group(); private surround: Surroundings | null = null;
   private nightGlow = { value: 0 }; private covers: THREE.Mesh[] = []; private spec!: SiteSpec; private disposed = false; private moon = new THREE.DirectionalLight(0x7f9bd6, 0); private plotW = 40; private plotD = 30;
   private state: SiteState = { u: 1, stalled: false, weather: 'acik', workers: 3, done: false }; private u = 1; private time = 0; private tod = 0.6; private speed = 0; private reduced = false;
@@ -49,7 +49,7 @@ export class SiteScene {
   setSpec(spec: SiteSpec) {
     this.spec = spec; const r = rng(spec.seed ^ 0x9e3779b9), asp = 1 + r() * 0.5;
     const plotArea = Math.max(spec.footprint * 1.9, spec.footprint + 160); this.plotW = Math.sqrt(plotArea * asp); this.plotD = plotArea / this.plotW;
-    this.world.clear(); this.trucks = [];
+    this.world.clear(); this.trucks = []; this.world.add(this.dust.points);
     this.building = new SiteBuilding({ ...spec, plotW: this.plotW, plotD: this.plotD }, spec.use); this.world.add(this.building.group);
     this.props = new SiteProps(this.plotW, this.plotD, spec.name, spec.seed); this.world.add(this.props.group);
     const ext = this.building.extent, reach = Math.max(ext.w, ext.d) * 0.75 + 14;
@@ -157,6 +157,7 @@ export class SiteScene {
     const wc = u < 1.5 ? 0 : Math.min(T.workers, Math.max(2, st.workers)); this.workers.setCount(st.done ? 0 : wc, hw * 1.6, hd * 1.6);
     this.workers.update(dt, this.time, anim, hw * 1.6, hd * 1.6, Math.max(0, top2 - 1), !st.stalled && u >= 1.5 && u < 17.9);
     this.weather.update(dt, T.rain && anim ? w : 'acik', T.rain && anim);
+    this.dust.update(dt, anim && T.dust > 0 && !st.stalled && w === 'acik' && u >= 1.5 && u < 17.9, hw * 1.15, hd * 1.15);
     // kamera
     const g = this.goal, c = this.cam, k = 1 - Math.exp(-dt * 7);
     if (this.orbitAuto && anim) g.yaw += dt * 0.18; else if (!this.ptrs.size && anim && this.speed === 0) { this.idle += dt; }
