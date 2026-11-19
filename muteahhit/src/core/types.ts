@@ -63,7 +63,7 @@ export interface Parcel {
   growth: number; growthKnown: boolean;     // gerçek gelişim potansiyeli (0–0.3): piyasa araştırmasıyla netleşir
   unitBase: Money;                          // m² başına adil değer (endeks 1.0'da, kuruş)
   askMult: number; reserveMult: number;     // satıcının istediği ve gizli kabul eşiği (adil değere göre)
-  negoLockUntil: number;
+  negoLockUntil: number; lastOffer?: number;
   owner: 'market' | 'player';
   boughtDay?: number; costBasis?: Money;
   clientLand?: boolean;                     // ihale sahası: işveren arsası, şirketin malı değil

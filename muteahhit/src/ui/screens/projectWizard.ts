@@ -43,6 +43,11 @@ export function openProjectWizard(app: App, parcelId: number, onDone?: () => voi
       const t = buildingType(st.type)!, q = quality(st.q)!;
       body.append(h('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px' }, h('span', { class: 'chip' }, h('b', {}, t.label)), h('span', { class: 'chip' }, h('b', {}, q.label))), planTable(plan, { landOwned: true, soilKnown: p.soilKnown }),
         h('div', { class: 'hint' }, `Onayladığınızda mimari ve proje bedeli olan ${fmt(plan.cost.designFee)} hemen ödenir ve geri alınmaz. Kalan bedeller inşaat aşamalarında ödenecek.`));
+      // Finansman kontrolü: ilk aylar için önerilen nakit (bütçenin %30'u) — yoksa çıkış yolları gösterilir
+      const cashAfter = s.company!.cash - plan.cost.designFee, need = Math.round(plan.cost.total * 0.3);
+      if (cashAfter < need) body.append(h('div', { class: 'card', style: 'margin-top:8px;border-color:var(--warn)' }, h('b', {}, 'Finansman gerekli'), h('div', { class: 'hint', style: 'margin:4px 0 8px' }, `Tasarım bedelinden sonra nakdiniz ${fmt(cashAfter)}; inşaatın ilk aylarında yaklaşık ${fmt(need)} gerekir. Nakit biterse şantiye durur. Projeyi onaylayıp aşağıdaki yollardan finansman bulabilirsiniz.`),
+        h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' }, h('button', { class: 'btn', onclick: () => { close(); app.openTab?.('finans', 'krediler'); document.querySelectorAll('.pfile,.modal').forEach((m) => m.remove()); } }, 'Kredi seçenekleri'), h('button', { class: 'btn', onclick: () => { close(); app.openTab?.('finans', 'ortaklar'); document.querySelectorAll('.pfile,.modal').forEach((m) => m.remove()); } }, 'Yatırımcı bul (proje sonrası)'))));
+      else body.append(h('div', { class: 'hint' }, `Nakit yeterli: tasarımdan sonra ${fmt(cashAfter)} kalır (önerilen başlangıç nakdi ${fmt(need)}).`));
       if (!p.soilKnown) body.append(h('div', { class: 'hint warn' }, 'Zemin etüdü yapılmadı: gerçek zemin maliyeti plandan farklı çıkabilir. Arsa dosyasından etüt yaptırabilirsiniz.'));
     }
 
@@ -54,7 +59,13 @@ export function openProjectWizard(app: App, parcelId: number, onDone?: () => voi
       if (!r.ok) { app.audio.sfx('error'); toast(r.error); return; }
       press(app, 'stamp', 'heavy'); toast('Proje oluşturuldu: tasarım bedeli ödendi.'); close(); onDone?.();
     } }, st.step < 2 ? 'İleri' : `Onayla ve tasarımı öde${plan ? ` (${fmt(plan.cost.designFee)})` : ''}`);
-    foot.append(back, next);
+    const create = (go: boolean) => {
+      const r = app.store.run('CreateProject', { parcelId, type: st.type, quality: st.q });
+      if (!r.ok) { app.audio.sfx('error'); toast(r.error); return; }
+      press(app, 'stamp', 'heavy'); toast('Proje oluşturuldu: tasarım bedeli ödendi.'); close(); onDone?.();
+      if (go) { const pr = app.store.state.projects.find((x) => x.parcelId === parcelId); if (pr) { document.querySelectorAll('.pfile').forEach((m) => m.parentElement?.remove()); app.openSite(pr.id); } }
+    };
+    foot.append(back, ...(st.step === 2 ? [h('button', { class: 'btn', disabled: !plan?.ok, onclick: () => create(false) }, 'Yalnızca oluştur'), h('button', { class: 'btn gold', disabled: !plan?.ok, onclick: () => create(true) }, `Öde ve şantiyeye git${plan ? ` (${fmt(plan.cost.designFee)})` : ''}`)] : [next]));
   };
   render(); document.body.append(modal);
 }

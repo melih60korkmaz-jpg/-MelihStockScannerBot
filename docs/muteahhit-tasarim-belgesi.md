@@ -885,3 +885,11 @@ Petrol mavisi/altın/turkuaz arayüz kimliği kaldırıldı. Renkler `src/ui/the
 - **Grafikler**: çizgi çizilerek, çubuklar büyüyerek gelir; yeni "Gelir ve gider" çift çubuk grafiği ve "Net varlık gelişimi" çizgisi (ikisi de defter/geçmiş verisi). İlerleme çubukları yumuşak dolar.
 - **Mikro animasyonlar**: kasa ve net varlık sayacı, para hareketinde +/− süzülen etiket, yeni proje geri bildirimi (damga sesi + sekme halkası), bildirim giriş/çıkışı, düğme bırakma yayı.
 - **3D şantiye**: beton pompası (beton aşamalarında bom binaya uzanır, uçtan beton akar), gece makine farları ve çalışma lambası, hologram taslak bordo. **Bellek**: şantiyeden her çıkışta eski sahne tamamen serbest bırakılır (dokular, malzemeler, dinleyiciler); önceden her giriş ~0,8 MB JS belleği sızdırıyordu, şimdi ~0,1 MB.
+
+
+## Revizyon v0.5 — Harita → arsa → proje akışı
+
+- **Pazarlık**: reddedilen tekliften sonra aynı/düşük teklif 3 gün kilitli, **daha yüksek teklif (en çok %100) hemen verilebilir**; istenen fiyat her zaman kabul edilir. Ret sonrası kaydırıcı otomatik +5 puan yükselir.
+- **Satın alma ekranı**: nakit yetersizse düğme "Nakit yetersiz" olur ve gereken tutarı gösterir; kilit/nakit durumu kaydırıcıyla anlık güncellenir. Tapu sonrası **proje sihirbazı otomatik açılır**.
+- **Harita (il görünümü)**: 5 adımlı yol haritası (ilçe → arsa → satın al → proje başlat → şantiye); kilitli ilde "Şube aç" kartı en üstte; arsa kartlarında "Alabilirsiniz / Nakit yetersiz" etiketi, "Alabileceklerim" filtresi, "Sizin için öneri" (yalnızca pozitif marjlı); sahip olunan arsa kartında doğrudan "Proje başlat" / "Şantiye". Dokunmatikte sürükleme eşiği 10 px (tıklama kaçmaz).
+- **Proje sihirbazı**: özet adımında finansman kontrolü (bütçenin %30'u ilk aylar için); yetmiyorsa Kredi/Yatırımcı kısayolları; "Öde ve şantiyeye git".

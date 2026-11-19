@@ -1,15 +1,17 @@
-import { DEFAULT_CITIES, PROVINCES, branchCost, cityData, provinceStats, type DistrictDef, type Province } from '../../data';
+import { DEFAULT_CITIES, PROVINCES, branchCost, buildingType, cityData, provinceStats, type DistrictDef, type Province } from '../../data';
 import { TL } from '../../core/money';
-import { askPrice, canTrade, growthLabel, marketParcels, ownedParcels } from '../../sim/land';
+import { TAPU_HARCI, askPrice, canTrade, growthLabel, marketParcels, ownedParcels } from '../../sim/land';
 import { h, press, toast } from '../dom';
+import { planProject } from '../../sim/projects';
 import { fmt, fmtM2, nf, pct, skylineSvg, statBar, ZONING_LABEL } from '../components';
 import type { App } from '../app';
 import { openParcel } from './parcel';
+import { openProjectWizard } from './projectWizard';
 
 type Metric = 'fiyat' | 'gelir' | 'rekabet' | 'gelisim';
 const METRICS: [Metric, string][] = [['fiyat', 'Satış fiyatı'], ['gelir', 'Gelir'], ['rekabet', 'Rekabet'], ['gelisim', 'Gelişim']];
 const RANGE: Record<Metric, [number, number]> = { fiyat: [16000, 60000], gelir: [28, 78], rekabet: [30, 78], gelisim: [3, 12] };
-const mem = { zoomTo: '' as string, mode: 'turkey' as 'turkey' | 'province', city: '', district: '', metric: 'fiyat' as Metric, q: '', vb: null as null | { x: number; y: number; w: number; h: number }, vbKey: '' };
+const mem = { onlyAffordable: false, zoomTo: '' as string, mode: 'turkey' as 'turkey' | 'province', city: '', district: '', metric: 'fiyat' as Metric, q: '', vb: null as null | { x: number; y: number; w: number; h: number }, vbKey: '' };
 const TR_BOX = (() => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const p of PROVINCES) { x0 = Math.min(x0, p.bbox[0]); y0 = Math.min(y0, p.bbox[1]); x1 = Math.max(x1, p.bbox[2]); y1 = Math.max(y1, p.bbox[3]); } return { x: x0 - 80, y: y0 - 80, w: x1 - x0 + 160, h: y1 - y0 + 160 }; })();
 const norm = (s: string) => s.toLocaleLowerCase('tr').replace(/[ıİ]/g, 'i');
 /** Değer → antrasit gri kademesi (düşük: koyu, yüksek: açık); seçili bölge CSS ile bordo vurgulanır. */
@@ -27,7 +29,7 @@ function panZoom(svg: SVGSVGElement, full: { x: number; y: number; w: number; h:
   svg.addEventListener('pointerdown', (e) => { ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = false; if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = Math.hypot(a!.x - b!.x, a!.y - b!.y); } });
   svg.addEventListener('pointermove', (e) => {
     const p = ptrs.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y;
-    if (ptrs.size === 1) { if (Math.hypot(dx, dy) > 4 || moved) { moved = true; const r = svg.getBoundingClientRect(); vb.x -= (dx / r.width) * vb.w; vb.y -= (dy / r.height) * vb.h; apply(); p.x = e.clientX; p.y = e.clientY; } }
+    if (ptrs.size === 1) { if (Math.hypot(dx, dy) > (e.pointerType === 'touch' ? 10 : 4) || moved) { moved = true; const r = svg.getBoundingClientRect(); vb.x -= (dx / r.width) * vb.w; vb.y -= (dy / r.height) * vb.h; apply(); p.x = e.clientX; p.y = e.clientY; } }
     else if (ptrs.size === 2) { moved = true; const other = [...ptrs.entries()].find(([id]) => id !== e.pointerId)![1]; const d0 = Math.hypot(p.x - other.x, p.y - other.y), d1 = Math.hypot(e.clientX - other.x, e.clientY - other.y); if (d0 > 0) zoomAt((e.clientX + other.x) / 2, (e.clientY + other.y) / 2, d1 / d0); p.x = e.clientX; p.y = e.clientY; }
   });
   const up = (e: PointerEvent) => { ptrs.delete(e.pointerId); }; svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
@@ -134,18 +136,35 @@ function provinceView(app: App, refresh: () => void, prov: Province): HTMLElemen
     requestAnimationFrame(() => { const el = svg.querySelector(`path[data-id="${zid}"]`) as SVGGraphicsElement | null; if (!el || !el.isConnected) return; const b = el.getBBox(), pad = Math.max(b.width, b.height) * 0.9, w = Math.max(full.w / 2.6, Math.max(b.width, b.height) * 2.6, b.width + pad); const tw = Math.min(full.w, w); pz.animateTo({ x: b.x + b.width / 2 - tw / 2, y: b.y + b.height / 2 - (tw * (full.h / full.w)) / 2, w: tw, h: tw * (full.h / full.w) }, 420); });
   }
   const market = marketParcels(s), mine = ownedParcels(s);
-  const list = market.filter((p) => p.city === prov.id && p.district === d.id).sort((a, b2) => askPrice(s, a) - askPrice(s, b2)), mineHere = mine.filter((p) => p.city === prov.id && p.district === d.id);
+  const allHere = market.filter((p) => p.city === prov.id && p.district === d.id).sort((a, b2) => askPrice(s, a) - askPrice(s, b2)), mineHere = mine.filter((p) => p.city === prov.id && p.district === d.id);
+  const list = mem.onlyAffordable ? allHere.filter((p) => c.cash >= Math.round(askPrice(s, p) * (1 + TAPU_HARCI) * 0.8)) : allHere;
+  const canAfford = (p: typeof market[number]) => c.cash >= Math.round(askPrice(s, p) * (1 + TAPU_HARCI) * 0.8);
   const pcard = (p: typeof market[number], isMine: boolean) => h('div', { class: `card pcard ${isMine ? 'mine' : ''}`, role: 'button', tabindex: 0, onclick: () => { press(app); openParcel(app, p.id, refresh); } },
     h('div', { style: 'min-width:0' }, h('div', { class: 't' }, p.hood), h('div', { class: 's' }, `${nf(p.area)} m² · ${ZONING_LABEL[p.zoning]} · KAKS ${p.kaks.toFixed(2).replace('.', ',')} · ${p.maxFloors} kat`),
-      h('div', { style: 'margin-top:4px;display:flex;gap:5px;flex-wrap:wrap' }, h('span', { class: 'chip' }, 'Gelişim ', h('b', {}, growthLabel(p).label + (growthLabel(p).sure ? '' : '?'))), p.soilKnown ? h('span', { class: 'chip' }, 'Zemin etüdü ✓') : null, p.corner ? h('span', { class: 'chip' }, 'Köşe') : null, isMine && p.projectId !== undefined ? h('span', { class: 'chip good' }, 'Projeli') : null)),
-    h('div', { class: 'pr' }, isMine ? 'Sizin' : fmt(askPrice(s, p)), h('small', {}, isMine ? 'dosyayı aç' : fmtM2(askPrice(s, p) / p.area))));
+      h('div', { style: 'margin-top:4px;display:flex;gap:5px;flex-wrap:wrap' }, !isMine ? (canAfford(p) ? h('span', { class: 'chip good' }, 'Alabilirsiniz') : h('span', { class: 'chip bad' }, 'Nakit yetersiz')) : null, h('span', { class: 'chip' }, 'Gelişim ', h('b', {}, growthLabel(p).label + (growthLabel(p).sure ? '' : '?'))), p.soilKnown ? h('span', { class: 'chip' }, 'Zemin etüdü ✓') : null, p.corner ? h('span', { class: 'chip' }, 'Köşe') : null, isMine && p.projectId !== undefined ? h('span', { class: 'chip good' }, 'Projeli') : null)),
+    h('div', { class: 'pr' }, isMine ? 'Sizin' : fmt(askPrice(s, p)), h('small', {}, isMine ? 'dosyayı aç' : fmtM2(askPrice(s, p) / p.area))),
+    isMine && p.projectId === undefined ? h('button', { class: 'btn gold', style: 'min-height:40px', onclick: (e: Event) => { e.stopPropagation(); press(app); openProjectWizard(app, p.id, refresh); } }, 'Proje başlat') : null,
+    isMine && p.projectId !== undefined ? h('button', { class: 'btn', style: 'min-height:40px', onclick: (e: Event) => { e.stopPropagation(); press(app); const pr = s.projects.find((x) => x.id === p.projectId); if (pr) app.openSite(pr.id); } }, 'Şantiye') : null);
   const cost = TL(branchCost(prov.id));
+  // Öneri: bu ilçede nakitle alınabilen ilanlar arasında en yüksek tahmini marjlı (arsa + yapı tipi) kombinasyon
+  let suggestion: HTMLElement | null = null;
+  if (open) {
+    let best: { p: typeof market[number]; type: string; m: number } | null = null;
+    for (const p of allHere) { if (!canAfford(p)) continue; for (const tp of ['mustakil', 'apartman', 'villa', 'ofis', 'site', 'fabrika', 'depo', 'is_merkezi']) { try { const pl = planProject(s, p, tp, 'standart', Math.round(askPrice(s, p) * (1 + TAPU_HARCI))); if (pl.ok && pl.margin > 0.02 && (!best || pl.margin > best.m)) best = { p, type: tp, m: pl.margin }; } catch { /* uygun değil */ } } }
+    if (!best && allHere.some(canAfford)) suggestion = h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Sizin için öneri'), h('div', { class: 'mute', style: 'font-size:13px' }, 'Bu ilçedeki alabileceğiniz arsalarda kârlı bir proje görünmüyor (marj ≤ %2). Başka bir ilçe ya da il deneyin.'));
+    if (best) suggestion = h('div', { class: 'card', style: 'border-color:var(--accent-bd)' }, h('div', { class: 'lbl-s' }, 'Sizin için öneri'), h('div', { style: 'display:flex;gap:10px;align-items:center' }, h('div', { style: 'flex:1;min-width:0' }, h('b', {}, best.p.hood), h('div', { class: 'mute', style: 'font-size:12px' }, `${nf(best.p.area)} m² · ${buildingType(best.type)?.label} · tahmini marj %${Math.round(best.m * 100)} · ${fmt(askPrice(s, best.p))}`)), h('button', { class: 'btn gold', style: 'min-height:40px', onclick: () => { press(app); openParcel(app, best!.p.id, refresh); } }, 'İncele')));
+  }
   const side = h('div', { class: 'col' },
+    ...(open ? [] : [h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'İlanlar kilitli'), h('p', { class: 'mute', style: 'font-size:13px;margin:0 0 8px' }, `${prov.name} ilinde arsa görmek ve almak için şube açın (${fmt(cost)} + aylık şube gideri).`), h('button', { class: 'btn gold block', disabled: c.cash < cost, onclick: () => { if (!confirm(`${prov.name} şubesi açılsın mı? ${fmt(cost)}`)) return; const r = app.store.run('OpenBranch', { cityId: prov.id }); if (r.ok) { press(app, 'stamp', 'heavy'); toast(`${prov.name} şubesi açıldı.`); } else { app.audio.sfx('error'); toast(r.error); } } }, `Şube aç · ${fmt(cost)}`))]),
     h('div', { class: 'card' }, h('div', { html: skylineSvg(d.id, d.density, d.income, d.transit), style: 'margin:-4px -4px 8px;border-radius:10px;overflow:hidden' }), h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('h3', { style: 'font-size:24px' }, d.label), h('span', { class: 'mute', style: 'font-size:12px' }, `Konut ≈ ${fmtM2(Math.round(d.saleBase * 100 * hi))} · ${nf(d.areaKm2)} km²`)),
       statBar('Gelir düzeyi', d.income), statBar('Nüfus yoğunluğu', d.density), statBar('Altyapı', d.infra), statBar('Ulaşım', d.transit), statBar('Ticari potansiyel', d.commercial), statBar('Rekabet', d.competition)),
-    ...(open ? [] : [h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'İlanlar kilitli'), h('p', { class: 'mute', style: 'font-size:13px;margin:0 0 8px' }, `${prov.name} ilinde arsa görmek ve almak için şube açın (${fmt(cost)} + aylık şube gideri).`), h('button', { class: 'btn gold block', disabled: c.cash < cost, onclick: () => { if (!confirm(`${prov.name} şubesi açılsın mı? ${fmt(cost)}`)) return; const r = app.store.run('OpenBranch', { cityId: prov.id }); if (r.ok) { press(app, 'stamp', 'heavy'); toast(`${prov.name} şubesi açıldı.`); } else { app.audio.sfx('error'); toast(r.error); } } }, `Şube aç · ${fmt(cost)}`))]),
     ...(open && mineHere.length ? [h('div', { class: 'lbl-s' }, 'Bu ilçedeki arsalarınız'), ...mineHere.map((p) => pcard(p, true))] : []),
-    ...(open ? [h('div', { class: 'lbl-s' }, `Satılık arsalar (${list.length})`), ...(list.length ? list.map((p) => pcard(p, false)) : [h('div', { class: 'card empty' }, 'Bu ilçede şu an ilan yok; her ay yeni ilanlar çıkar.')])] : []));
+    ...(open && suggestion ? [suggestion] : []),
+    ...(open ? [h('div', { style: 'display:flex;justify-content:space-between;align-items:center;gap:8px' }, h('div', { class: 'lbl-s', style: 'margin:0' }, `Satılık arsalar (${list.length}/${allHere.length})`), h('div', { class: 'seg', role: 'group' }, h('button', { class: !mem.onlyAffordable ? 'on' : '', onclick: () => { press(app); mem.onlyAffordable = false; refresh(); } }, 'Tümü'), h('button', { class: mem.onlyAffordable ? 'on' : '', onclick: () => { press(app); mem.onlyAffordable = true; refresh(); } }, 'Alabileceklerim'))), ...(list.length ? list.map((p) => pcard(p, false)) : [h('div', { class: 'card empty' }, 'Bu ilçede şu an ilan yok; her ay yeni ilanlar çıkar.')])] : []));
   void DEFAULT_CITIES;
-  return h('div', { style: 'display:flex;flex-direction:column' }, toolbar, h('div', { class: 'tmap' }, wrap, side));
+  // İlk oyuncular için yol haritası: bulunduğu adım vurgulanır
+  const draft = s.projects.some((x) => x.status === 'taslak'), anyProj = s.projects.length > 0, ownedIdle = mine.some((x) => x.projectId === undefined);
+  const stepNow = draft ? 5 : ownedIdle ? 4 : anyProj ? 0 : 2;
+  const guide = anyProj && !draft && !ownedIdle ? null : h('div', { class: 'guide' }, ...['1 · İlçe seç', '2 · Arsa seç', '3 · Satın al', '4 · Proje başlat', '5 · Şantiyeyi başlat'].map((l, i) => h('span', { class: `gstep ${i + 1 === stepNow || (stepNow === 2 && i === 1) ? 'on' : i + 1 < stepNow ? 'done' : ''}` }, l)));
+  return h('div', { style: 'display:flex;flex-direction:column' }, toolbar, ...(guide ? [guide] : []), h('div', { class: 'tmap' }, wrap, side));
 }

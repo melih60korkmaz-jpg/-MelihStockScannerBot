@@ -130,7 +130,7 @@ const buyLand: CommandDef<BuyLandParams> = {
     if (pc.owner !== 'market') return 'Bu arsa zaten sizin.';
     if (!canTrade(s, pc.city)) return 'Bu ilde şubeniz yok: önce şube açın.';
     if (!(p.offerPct >= 0.8 && p.offerPct <= 1)) return "Teklif, istenen fiyatın %80–%100'ü arasında olmalı.";
-    if (s.clock.day < pc.negoLockUntil) return `Satıcı ${pc.negoLockUntil - s.clock.day} gün daha pazarlığa yanaşmayacak.`;
+    if (s.clock.day < pc.negoLockUntil && p.offerPct <= (pc.lastOffer ?? 1) + 1e-9) return `Satıcı bu teklife ${pc.negoLockUntil - s.clock.day} gün daha yanaşmayacak; daha yüksek bir teklif (en çok %100) hemen verebilirsiniz.`;
     const price = Math.round(askPrice(s, pc) * p.offerPct);
     if (s.company.cash < Math.round(price * (1 + TAPU_HARCI))) return 'Arsa ve tapu harcı için yeterli nakit yok.';
     return null;
@@ -139,7 +139,7 @@ const buyLand: CommandDef<BuyLandParams> = {
     const pc = parcelOf(s, p.parcelId)!;
     const price = Math.round(askPrice(s, pc) * p.offerPct);
     if (price < reservePrice(s, pc)) {
-      pc.negoLockUntil = s.clock.day + 3;
+      pc.negoLockUntil = s.clock.day + 3; pc.lastOffer = p.offerPct;
       return [ev(s, 'LAND_REJECTED', { parcelId: pc.id, offer: price }, false)];
     }
     const harc = Math.round(price * TAPU_HARCI);

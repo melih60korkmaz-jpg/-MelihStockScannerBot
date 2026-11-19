@@ -100,15 +100,26 @@ export function openParcel(app: App, parcelId: number, onChange?: () => void): v
       rng.style.setProperty('--p', `${(st.offer - 80) * 5}%`);
       rng.oninput = () => { st.offer = Number(rng.value); out.textContent = fmt(priceOf()); rng.style.setProperty('--p', `${(st.offer - 80) * 5}%`); lab.textContent = `Teklif %${st.offer}`; };
       const lab = h('small', { class: 'mute', style: 'min-width:74px' }, `Teklif %${st.offer}`);
-      const locked = s.clock.day < p.negoLockUntil;
-      act.append(h('div', { class: 'offer' }, lab, rng, out),
-        h('button', { class: 'btn gold lg', disabled: locked, onclick: () => {
-          const r = app.store.run('BuyLand', { parcelId: p.id, offerPct: st.offer / 100 });
-          if (!r.ok) { app.audio.sfx('error'); toast(r.error); return; }
-          const ev = r.events[0]!;
-          if (ev.type === 'LAND_REJECTED') { app.audio.sfx('error'); app.haptic('medium'); toast('Satıcı bu fiyata yanaşmadı. 3 gün sonra yeniden deneyebilirsiniz.'); render(); return; }
-          tapuAnimation(app, p.hood, `${city.label} / ${d.label}`, p.area, ev.data!.price as number, ev.data!.harc as number, () => { render(); onChange?.(); });
-        } }, locked ? `Pazarlık kilitli (${p.negoLockUntil - s.clock.day} gün)` : 'Pazarlık yap ve satın al'));
+      // Satın alma: teklif kaydırıcısı + durum (kilit, nakit) anlık güncellenir; istenen fiyat (%100) her zaman kabul edilir.
+      const cash = s.company!.cash, needOf = (pctv: number) => Math.round(Math.round(askPrice(s, p) * pctv / 100) * (1 + TAPU_HARCI));
+      const buy = h('button', { class: 'btn gold lg' }, 'Pazarlık yap ve satın al') as HTMLButtonElement;
+      const note = h('div', { class: 'hint', style: 'flex-basis:100%;margin:0;min-height:16px' }, '');
+      const sync = () => {
+        const lockedNow = s.clock.day < p.negoLockUntil && st.offer / 100 <= (p.lastOffer ?? 1) + 1e-9, need = needOf(st.offer), poor = cash < need;
+        buy.disabled = lockedNow || poor;
+        buy.textContent = poor ? 'Nakit yetersiz' : lockedNow ? `Bu teklif kilitli (${p.negoLockUntil - s.clock.day} gün)` : st.offer >= 100 ? 'İstenen fiyata satın al' : 'Pazarlık yap ve satın al';
+        note.className = `hint ${poor || lockedNow ? 'warn' : ''}`;
+        note.textContent = poor ? `Gerekli: ${fmt(need)} (arsa + tapu harcı) · Nakitiniz: ${fmt(cash)}. Daha düşük teklif, daha ucuz arsa seçin ya da Finans sekmesinden kredi alın.` : lockedNow ? `Satıcı bu teklife yanaşmadı. Daha yüksek bir teklif hemen verebilirsiniz (%100 her zaman kabul edilir).` : `Satıcının kabul eşiği gizli: düşük teklif reddedilebilir; %100 (istenen fiyat) her zaman kabul edilir. Gerekli: ${fmt(need)}.`;
+      };
+      rng.addEventListener('input', sync);
+      buy.onclick = () => {
+        const r = app.store.run('BuyLand', { parcelId: p.id, offerPct: st.offer / 100 });
+        if (!r.ok) { app.audio.sfx('error'); toast(r.error); return; }
+        const ev = r.events[0]!;
+        if (ev.type === 'LAND_REJECTED') { app.audio.sfx('error'); app.haptic('medium'); toast(`Satıcı %${st.offer} teklifine yanaşmadı. Daha yüksek teklif verin (%100 her zaman kabul edilir).`, 4500); st.offer = Math.min(100, st.offer + 5); render(); return; }
+        tapuAnimation(app, p.hood, `${city.label} / ${d.label}`, p.area, ev.data!.price as number, ev.data!.harc as number, () => { render(); onChange?.(); if (app.store.state.company!.cash > 0) openProjectWizard(app, p.id, () => { render(); onChange?.(); }); });
+      };
+      act.append(h('div', { class: 'offer' }, lab, rng, out), buy, note); sync();
       void reservePrice;
     } else {
       const proj = s.projects.find((x) => x.id === p.projectId);

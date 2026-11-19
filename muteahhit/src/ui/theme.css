@@ -305,3 +305,6 @@ html[data-motion=reduced] .chart .ln, html[data-motion=reduced] .chart .ar, html
 .pill.cash { position:relative; overflow:visible; } .fly { position:absolute; left:50%; top:100%; transform:translateX(-50%); font:700 15px var(--font-h); white-space:nowrap; pointer-events:none; z-index:5; text-shadow:0 2px 8px #000c; animation:flyup 1.1s ease-out both; } .fly.up { color:var(--ok); } .fly.down { color:var(--bad); } @keyframes flyup { from { opacity:0; transform:translate(-50%,-4px); } 15% { opacity:1; } to { opacity:0; transform:translate(-50%,26px); } }
 .tab.ping { animation:tabping .9s ease-out; } @keyframes tabping { 0% { box-shadow:0 0 0 0 #C6425299; } 100% { box-shadow:0 0 0 14px #C6425200; } }
 html[data-motion=reduced] .toast, html[data-motion=reduced] .toast.out, html[data-motion=reduced] .tab.ping, html[data-motion=reduced] .fly { animation:none; }
+
+/* ===== Harita yol haritası ===== */
+.guide { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 8px; } .gstep { padding:4px 10px; border-radius:99px; font:600 12px var(--font); background:var(--s2); color:var(--mute); } .gstep.done { color:var(--ok); } .gstep.on { background:var(--accent); color:#fff; }

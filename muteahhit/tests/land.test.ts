@@ -82,10 +82,16 @@ describe('satın alma, pazarlık, etüt', () => {
     const s = start(); const p = mk(s, { reserveMult: 1.05, askMult: 1.15 });
     const r = dispatch(s, 'BuyLand', { parcelId: p.id, offerPct: 0.8 }); expect(r.ok && r.events[0]!.type).toBe('LAND_REJECTED');
     expect(p.owner).toBe('market'); expect(s.company!.cash).toBe(s.ledgerBase + s.ledger.reduce((a, e) => a + e.amount, 0));
-    expect(dispatch(s, 'BuyLand', { parcelId: p.id, offerPct: 0.9 }).ok).toBe(false); // kilitli
+    expect(dispatch(s, 'BuyLand', { parcelId: p.id, offerPct: 0.8 }).ok).toBe(false); // aynı/düşük teklif kilitli
     advanceDays(s, 3); const reserve = reservePrice(s, p), ask = askPrice(s, p);
     const ok = dispatch(s, 'BuyLand', { parcelId: p.id, offerPct: Math.min(1, reserve / ask + 0.001) });
     expect(ok.ok && ok.events[0]!.type).toBe('LAND_BOUGHT');
+  });
+  it('reddedilen tekliften sonra daha yüksek teklif kilide takılmaz; istenen fiyat her zaman alınır', () => {
+    const s = start(); const p = mk(s, { reserveMult: 1.05, askMult: 1.15 });
+    expect(dispatch(s, 'BuyLand', { parcelId: p.id, offerPct: 0.8 }).ok && p.owner === 'market').toBe(true);
+    expect(dispatch(s, 'BuyLand', { parcelId: p.id, offerPct: 0.85 }).ok).toBe(true); // 0,85 > 0,80: kilit yok
+    const hi = dispatch(s, 'BuyLand', { parcelId: p.id, offerPct: 1 }); expect(hi.ok && hi.events[0]!.type).toBe('LAND_BOUGHT'); expect(checkInvariant(s)).toBe(true);
   });
   it('geçersiz teklif/yetersiz nakit reddedilir, durum değişmez', () => {
     const s = start(); const p = mk(s); const n = s.ledger.length;
