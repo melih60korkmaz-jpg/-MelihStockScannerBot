@@ -1,12 +1,13 @@
 import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
-import { CITIES, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
+import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { post } from '../sim/ledger';
 import { createStaff } from '../sim/staff';
 import { DIFFICULTY_MACRO } from '../sim/macro';
 import { SURVEY_DAYS, TAPU_HARCI, QUICK_SALE_DISCOUNT, askPrice, fairValue, reservePrice, surveyCost } from '../sim/land';
 import { newDesignSeed, planProject, projectName } from '../sim/projects';
 import { bulkSellRemaining, unitsOf } from '../sim/sales';
+import { canTrade, openCity } from '../sim/land';
 import { startConstruction, settle, activeProjects } from '../sim/construction';
 import { placeOrder, unitPrice } from '../sim/materials';
 import { machineValue, SELL_FACTOR } from '../sim/machines';
@@ -55,6 +56,7 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     };
     post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
     for (const t of bg.staff) createStaff(s, t);
+    s.openCities = [p.startCity]; s.weather[p.startCity] ??= 'acik';
     // Zorluk: ilk dengeli dönemin uzunluğu = krizsiz korumalı başlangıç
     s.macro.calmUntilDay = s.clock.day + DIFFICULTY_MACRO[s.meta.difficulty].calmMonths * 30;
     s.macro.regimeSince = s.clock.day; s.macro.regimeEnd = s.macro.calmUntilDay;
@@ -103,6 +105,7 @@ const orderSurvey: CommandDef<OrderSurveyParams> = {
   validate(s, p) {
     const pc = parcelOf(s, p.parcelId); if (!s.company) return 'Önce şirket kurulmalı.'; if (!pc) return 'Arsa bulunamadı.';
     if (p.kind !== 'soil' && p.kind !== 'market') return 'Geçersiz etüt.';
+    if (!canTrade(s, pc.city)) return 'Bu ilde şubeniz yok: önce şube açın.';
     if (p.kind === 'soil' ? pc.soilKnown : pc.growthKnown) return 'Bu etüt zaten yapılmış.';
     if (s.scheduled.some((x) => x.type === 'survey' && x.data.parcelId === p.parcelId && x.data.kind === p.kind)) return 'Bu etüt zaten sürüyor.';
     if (s.company.cash < surveyCost(pc, p.kind)) return 'Etüt için yeterli nakit yok.';
@@ -120,6 +123,7 @@ const buyLand: CommandDef<BuyLandParams> = {
   validate(s, p) {
     const pc = parcelOf(s, p.parcelId); if (!s.company) return 'Önce şirket kurulmalı.'; if (!pc) return 'Arsa bulunamadı (başkasına satılmış olabilir).';
     if (pc.owner !== 'market') return 'Bu arsa zaten sizin.';
+    if (!canTrade(s, pc.city)) return 'Bu ilde şubeniz yok: önce şube açın.';
     if (!(p.offerPct >= 0.8 && p.offerPct <= 1)) return "Teklif, istenen fiyatın %80–%100'ü arasında olmalı.";
     if (s.clock.day < pc.negoLockUntil) return `Satıcı ${pc.negoLockUntil - s.clock.day} gün daha pazarlığa yanaşmayacak.`;
     const price = Math.round(askPrice(s, pc) * p.offerPct);
@@ -232,6 +236,17 @@ const setPolicy: CommandDef<SetPolicyParams> = {
   apply(s, p) { const c = s.company!; if (p.safety) c.safety = p.safety; if (p.autoBuy !== undefined) c.procurement.auto = p.autoBuy; if (p.supplier) c.procurement.supplier = p.supplier; return [ev(s, 'POLICY_CHANGED')]; },
 };
 
+export interface OpenBranchParams { cityId: string }
+const openBranch: CommandDef<OpenBranchParams> = {
+  validate(s, p) {
+    if (!s.company) return 'Önce şirket kurulmalı.'; const prov = provinceData(p.cityId); if (!prov) return 'Bilinmeyen il.';
+    if (s.openCities.includes(p.cityId)) return 'Bu ilde zaten şubeniz var.';
+    if (s.company.cash < TL(branchCost(p.cityId))) return 'Şube açılışı için yeterli nakit yok.';
+    return null;
+  },
+  apply(s, p) { post(s, 'sube', -TL(branchCost(p.cityId)), { memo: `${provinceData(p.cityId)!.name} şubesi` }); openCity(s, p.cityId); return [ev(s, 'BRANCH_OPENED', { cityId: p.cityId })]; },
+};
+
 export const BULK_DISCOUNT = 0.92;
 const sellProjectBulk: CommandDef<ProjectRef> = {
   validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr) return 'Proje bulunamadı.'; if (pr.status !== 'tamamlandi') return 'Yalnızca tamamlanmış projeler satılabilir.'; if (!unitsOf(s, pr.id).some((u) => u.status !== 'satildi')) return 'Satılacak daire kalmadı.'; return null; },
@@ -253,7 +268,7 @@ const setSalesPolicy: CommandDef<SalesPolicyParams> = {
 };
 
 export const COMMANDS = {
-  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
+  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,
   CreateCompany: createCompany,
   HireStaff: hireStaff,

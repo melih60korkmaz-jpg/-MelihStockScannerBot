@@ -1,0 +1,569 @@
+{
+"01": {
+"region": "Akdeniz",
+"tier": 2,
+"anchor": 28000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"02": {
+"region": "Güneydoğu Anadolu",
+"tier": 3,
+"anchor": 23500,
+"costMult": 0.798,
+"branchCostTL": 1000000
+},
+"03": {
+"region": "Ege",
+"tier": 3,
+"anchor": 25500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"04": {
+"region": "Doğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"05": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"06": {
+"region": "İç Anadolu",
+"tier": 1,
+"anchor": 37000,
+"costMult": 1.0,
+"branchCostTL": 3500000
+},
+"07": {
+"region": "Akdeniz",
+"tier": 2,
+"anchor": 38000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"08": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"09": {
+"region": "Ege",
+"tier": 2,
+"anchor": 30000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"10": {
+"region": "Marmara",
+"tier": 3,
+"anchor": 28500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"11": {
+"region": "Marmara",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"12": {
+"region": "Doğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"13": {
+"region": "Doğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"14": {
+"region": "Karadeniz",
+"tier": 3,
+"anchor": 28500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"15": {
+"region": "Akdeniz",
+"tier": 3,
+"anchor": 25500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"16": {
+"region": "Marmara",
+"tier": 2,
+"anchor": 33000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"17": {
+"region": "Marmara",
+"tier": 3,
+"anchor": 29500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"18": {
+"region": "İç Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"19": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"20": {
+"region": "Ege",
+"tier": 2,
+"anchor": 27000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"21": {
+"region": "Güneydoğu Anadolu",
+"tier": 3,
+"anchor": 25000,
+"costMult": 0.798,
+"branchCostTL": 1000000
+},
+"22": {
+"region": "Marmara",
+"tier": 3,
+"anchor": 27500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"23": {
+"region": "Doğu Anadolu",
+"tier": 3,
+"anchor": 25500,
+"costMult": 0.798,
+"branchCostTL": 1000000
+},
+"24": {
+"region": "Doğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"25": {
+"region": "Doğu Anadolu",
+"tier": 3,
+"anchor": 26000,
+"costMult": 0.798,
+"branchCostTL": 1000000
+},
+"26": {
+"region": "İç Anadolu",
+"tier": 2,
+"anchor": 28000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"27": {
+"region": "Güneydoğu Anadolu",
+"tier": 2,
+"anchor": 28000,
+"costMult": 0.912,
+"branchCostTL": 2000000
+},
+"28": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"29": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"30": {
+"region": "Doğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"31": {
+"region": "Akdeniz",
+"tier": 3,
+"anchor": 25000,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"32": {
+"region": "Akdeniz",
+"tier": 3,
+"anchor": 25500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"33": {
+"region": "Akdeniz",
+"tier": 2,
+"anchor": 29000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"34": {
+"region": "Marmara",
+"tier": 1,
+"anchor": 48000,
+"costMult": 1.12,
+"branchCostTL": 3500000
+},
+"35": {
+"region": "Ege",
+"tier": 1,
+"anchor": 41000,
+"costMult": 1.05,
+"branchCostTL": 3500000
+},
+"36": {
+"region": "Doğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"37": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"38": {
+"region": "İç Anadolu",
+"tier": 2,
+"anchor": 27000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"39": {
+"region": "Marmara",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"40": {
+"region": "İç Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"41": {
+"region": "Marmara",
+"tier": 2,
+"anchor": 34000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"42": {
+"region": "İç Anadolu",
+"tier": 2,
+"anchor": 27000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"43": {
+"region": "Ege",
+"tier": 3,
+"anchor": 24500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"44": {
+"region": "Doğu Anadolu",
+"tier": 3,
+"anchor": 26000,
+"costMult": 0.798,
+"branchCostTL": 1000000
+},
+"45": {
+"region": "Ege",
+"tier": 3,
+"anchor": 27500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"46": {
+"region": "Akdeniz",
+"tier": 3,
+"anchor": 25000,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"47": {
+"region": "Güneydoğu Anadolu",
+"tier": 3,
+"anchor": 24000,
+"costMult": 0.798,
+"branchCostTL": 1000000
+},
+"48": {
+"region": "Ege",
+"tier": 2,
+"anchor": 40000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"49": {
+"region": "Doğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"50": {
+"region": "İç Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"51": {
+"region": "İç Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"52": {
+"region": "Karadeniz",
+"tier": 3,
+"anchor": 26000,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"53": {
+"region": "Karadeniz",
+"tier": 3,
+"anchor": 28500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"54": {
+"region": "Marmara",
+"tier": 2,
+"anchor": 28000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"55": {
+"region": "Karadeniz",
+"tier": 3,
+"anchor": 28500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"56": {
+"region": "Güneydoğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"57": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"58": {
+"region": "İç Anadolu",
+"tier": 3,
+"anchor": 25000,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"59": {
+"region": "Marmara",
+"tier": 2,
+"anchor": 31000,
+"costMult": 0.96,
+"branchCostTL": 2000000
+},
+"60": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"61": {
+"region": "Karadeniz",
+"tier": 3,
+"anchor": 30500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"62": {
+"region": "Doğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"63": {
+"region": "Güneydoğu Anadolu",
+"tier": 3,
+"anchor": 24500,
+"costMult": 0.798,
+"branchCostTL": 1000000
+},
+"64": {
+"region": "Ege",
+"tier": 3,
+"anchor": 25000,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"65": {
+"region": "Doğu Anadolu",
+"tier": 3,
+"anchor": 23500,
+"costMult": 0.798,
+"branchCostTL": 1000000
+},
+"66": {
+"region": "İç Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"67": {
+"region": "Karadeniz",
+"tier": 3,
+"anchor": 25000,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"68": {
+"region": "İç Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"69": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"70": {
+"region": "İç Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"71": {
+"region": "İç Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"72": {
+"region": "Güneydoğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"73": {
+"region": "Güneydoğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"74": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"75": {
+"region": "Doğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"76": {
+"region": "Doğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"77": {
+"region": "Marmara",
+"tier": 3,
+"anchor": 34500,
+"costMult": 0.84,
+"branchCostTL": 1000000
+},
+"78": {
+"region": "Karadeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"79": {
+"region": "Güneydoğu Anadolu",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.684,
+"branchCostTL": 500000
+},
+"80": {
+"region": "Akdeniz",
+"tier": 4,
+"anchor": 24000,
+"costMult": 0.72,
+"branchCostTL": 500000
+},
+"81": {
+"region": "Karadeniz",
+"tier": 3,
+"anchor": 26000,
+"costMult": 0.84,
+"branchCostTL": 1000000
+}
+}

@@ -51,6 +51,7 @@ export function openSettings(ctx: UiCtx & { settings: SettingsStore; activeTier?
       row('Grafik kalitesi', seg<Quality>([['auto', 'Otomatik'], ['low', 'Düşük'], ['mid', 'Orta'], ['high', 'Yüksek']], () => S.value.quality, (v) => S.set('quality', v)),
         S.value.quality === 'auto' && ctx.activeTier ? `Şu an: ${({ low: 'Düşük', mid: 'Orta', high: 'Yüksek' } as Record<string, string>)[ctx.activeTier()] ?? ''}` : undefined),
       h('p', { class: 'mute', style: 'font-size:12px;margin-top:14px' }, 'Tercihleriniz bu cihazda otomatik saklanır.'),
+      h('p', { class: 'mute', style: 'font-size:11px;margin-top:6px' }, 'Harita verisi: geoBoundaries (CC BY 4.0), www.geoboundaries.org — il ve ilçe sınırları sadeleştirilmiştir.'),
     );
   };
   draw();

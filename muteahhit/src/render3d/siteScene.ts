@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import type { Quality } from '../platform/settings';
 import { SiteBuilding, designOf, ramp, rng, type BuildingSpec } from './siteBuilding';
-import { applyWindows } from './windowShader';
+import { Surroundings } from './siteSurroundings';
+import type { Region } from '../data/geo';
 import { Excavator, SiteProps, TowerCrane, Weather, Workers, makeTruck } from './siteProps';
 
-export interface SiteSpec extends BuildingSpec { use: 'konut' | 'ticari' | 'sanayi'; name: string; roads: number; corner: boolean }
+export interface SiteSpec extends BuildingSpec { use: 'konut' | 'ticari' | 'sanayi'; name: string; roads: number; corner: boolean; region?: Region; density?: number }
 export interface SiteState { u: number; stalled: boolean; weather: 'acik' | 'yagmur' | 'kar'; workers: number; done: boolean; occupancy?: number }
 type Tier = Exclude<Quality, 'auto'>;
 const TIER = { low: { pr: 1, shadows: false, workers: 8, fps: 30, rain: false }, mid: { pr: 1.5, shadows: false, workers: 16, fps: 60, rain: true }, high: { pr: 2, shadows: true, workers: 24, fps: 60, rain: true } };
@@ -18,7 +19,7 @@ export class SiteScene {
   private sun = new THREE.DirectionalLight(0xffffff, 3); private hemi = new THREE.HemisphereLight(0x9bb8e0, 0x3a3228, 1);
   private sky: THREE.Mesh; private skyU: { top: { value: THREE.Color }; hor: { value: THREE.Color } };
   private building!: SiteBuilding; private props!: SiteProps; private crane!: TowerCrane; private crane2: TowerCrane | null = null; private excavator = new Excavator(); private workers = new Workers(); private weather = new Weather();
-  private trucks: { g: THREE.Group; kind: string; off: number; speed: number; drum?: THREE.Mesh }[] = []; private ground!: THREE.Mesh; private world = new THREE.Group(); private neighbors!: THREE.InstancedMesh;
+  private trucks: { g: THREE.Group; kind: string; off: number; speed: number; drum?: THREE.Mesh }[] = []; private ground!: THREE.Mesh; private world = new THREE.Group(); private surround: Surroundings | null = null;
   private nightGlow = { value: 0 }; private covers: THREE.Mesh[] = []; private spec!: SiteSpec; private disposed = false; private moon = new THREE.DirectionalLight(0x7f9bd6, 0); private plotW = 40; private plotD = 30;
   private state: SiteState = { u: 1, stalled: false, weather: 'acik', workers: 3, done: false }; private u = 1; private time = 0; private tod = 0.6; private speed = 0; private reduced = false;
   private tierSetting: Quality = 'auto'; private tier: Tier = 'mid'; private raf = 0; private running = false; private last = 0;
@@ -67,23 +68,13 @@ export class SiteScene {
     for (const h of this.building.holes) shape.holes.push(new THREE.Path([new THREE.Vector2(h.x - h.w / 2, -(h.z - h.d / 2)), new THREE.Vector2(h.x + h.w / 2, -(h.z - h.d / 2)), new THREE.Vector2(h.x + h.w / 2, -(h.z + h.d / 2)), new THREE.Vector2(h.x - h.w / 2, -(h.z + h.d / 2))].reverse()));
     for (const c of this.covers) { this.scene.remove(c); c.geometry.dispose(); } this.covers = [];
     const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
-    this.ground = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: '#8f8a7d', roughness: 1 })); this.ground.receiveShadow = true; this.scene.add(this.ground);
+    this.ground = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 })); this.ground.receiveShadow = true; this.scene.add(this.ground);
     // Çukur kapalıyken delik görünmesin: zemin rengiyle kapak
-    for (const h of this.building.holes) { const c = new THREE.Mesh(new THREE.PlaneGeometry(h.w, h.d), this.ground.material); c.rotation.x = -Math.PI / 2; c.position.set(h.x, 0.01, h.z); c.receiveShadow = true; this.covers.push(c); this.scene.add(c); }
-    // yollar + komşu binalar (parsel çevresi)
-    const hw = this.plotW / 2, hd = this.plotD / 2, road = new THREE.MeshStandardMaterial({ color: '#4a4f58', roughness: 0.95 }), walk = new THREE.MeshStandardMaterial({ color: '#9a9a94', roughness: 0.9 });
-    const strip = (x: number, z: number, w: number, d: number, m: THREE.Material, y = 0.04) => { const s = new THREE.Mesh(new THREE.BoxGeometry(w, 0.08, d), m); s.position.set(x, y, z); s.receiveShadow = true; this.world.add(s); return s; };
-    strip(0, hd + 9, 400, 10, road); strip(0, hd + 3.4, 400, 1.6, walk, 0.07); if (this.spec.roads >= 2) { strip(hw + 9, 0, 10, 400, road); strip(hw + 3.4, 0, 1.6, 400, walk, 0.07); } if (this.spec.roads >= 3) { strip(0, -hd - 9, 400, 10, road); strip(0, -hd - 3.4, 400, 1.6, walk, 0.07); }
-    const r = rng(this.spec.seed + 5), pal = ['#6a7385', '#7b7f8c', '#8a7e74', '#5d6a7c'].map((c) => new THREE.Color(c)); const nm: THREE.Matrix4[] = [], cols: THREE.Color[] = []; const m = new THREE.Matrix4();
-    for (let i = 0; i < 26; i++) {
-      const a = r() * Math.PI * 2, rad = Math.max(hw, hd) + 30 + r() * 90, x = Math.cos(a) * rad, z = Math.sin(a) * rad; if (Math.abs(z - (hd + 9)) < 11 || (this.spec.roads >= 2 && Math.abs(x - (hw + 9)) < 11)) continue;
-      const w = 8 + r() * 10, d = 8 + r() * 10, h = 7 + r() * 20; nm.push(m.clone().compose(new THREE.Vector3(x, 0, z), new THREE.Quaternion(), new THREE.Vector3(w, h, d))); cols.push(pal[i % pal.length]!.clone().multiplyScalar(0.8 + r() * 0.35));
-    }
-    if (this.neighbors) { this.scene.remove(this.neighbors); this.neighbors.dispose(); }
-    const nmat = new THREE.MeshStandardMaterial({ color: '#fff', roughness: 0.9, flatShading: true }); applyWindows(nmat, this.nightGlow);
-    const geoN = new THREE.BoxGeometry(1, 1, 1); geoN.translate(0, 0.5, 0);
-    this.neighbors = new THREE.InstancedMesh(geoN, nmat, Math.max(1, nm.length));
-    nm.forEach((x, i) => { this.neighbors.setMatrixAt(i, x); this.neighbors.setColorAt(i, cols[i]!); }); this.neighbors.castShadow = true; this.neighbors.receiveShadow = true; this.scene.add(this.neighbors);
+    for (const h of this.building.holes) { const pg = new THREE.PlaneGeometry(h.w, h.d); const uv = pg.getAttribute('uv') as THREE.BufferAttribute, ps = pg.getAttribute('position') as THREE.BufferAttribute; for (let i = 0; i < uv.count; i++) uv.setXY(i, h.x + ps.getX(i), -(h.z - ps.getY(i))); const c = new THREE.Mesh(pg, this.ground.material); c.rotation.x = -Math.PI / 2; c.position.set(h.x, 0.01, h.z); c.receiveShadow = true; this.covers.push(c); this.scene.add(c); }
+    // Çevre: yollar, kaldırım, komşu konut/apartman/park, ağaçlar, arabalar, lambalar, dağlar, bulutlar (bölgeye göre)
+    if (this.surround) { this.scene.remove(this.surround.group); this.surround.dispose(); }
+    this.surround = new Surroundings({ plotW: this.plotW, plotD: this.plotD, roads: this.spec.roads, region: this.spec.region ?? 'Marmara', density: this.spec.density ?? 60, seed: this.spec.seed }, this.nightGlow, this.ground.material as THREE.MeshStandardMaterial);
+    this.scene.add(this.surround.group); this.surround.setTier(this.tier);
   }
 
   // ---------- Kontrol ----------
@@ -103,7 +94,7 @@ export class SiteScene {
   start() { if (this.running || this.contextLost) return; this.running = true; this.last = performance.now(); this.raf = requestAnimationFrame(this.frame); }
   stop() { this.running = false; cancelAnimationFrame(this.raf); }
   dispose() { this.disposed = true; this.stop(); this.scene.traverse((o) => { const m = o as THREE.Mesh; m.geometry?.dispose?.(); }); this.renderer.dispose(); this.renderer.forceContextLoss(); }
-  private applyTier() { const T = TIER[this.tier]; this.renderer.shadowMap.enabled = T.shadows; this.sun.castShadow = T.shadows; this.scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m) m.needsUpdate = true; }); this.resize(); }
+  private applyTier() { const T = TIER[this.tier]; this.surround?.setTier(this.tier); this.renderer.shadowMap.enabled = T.shadows; this.sun.castShadow = T.shadows; this.scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m) m.needsUpdate = true; }); this.resize(); }
 
   private bindControls() {
     const c = this.canvas;
@@ -143,7 +134,7 @@ export class SiteScene {
     const top = new THREE.Color('#0a1428').lerp(new THREE.Color(w === 'acik' ? '#4f8fd0' : '#7d8794'), day), hor = new THREE.Color('#1b2745').lerp(new THREE.Color(w === 'acik' ? '#cfe3f2' : '#a9b2ba'), day).lerp(new THREE.Color('#f2a35e'), gold * 0.7 * (w === 'acik' ? 1 : 0.3));
     this.skyU.top.value.copy(top); this.skyU.hor.value.copy(hor); (this.scene.fog as THREE.Fog).color.copy(hor); (this.scene.fog as THREE.Fog).near = w === 'acik' ? 140 : 70; (this.scene.fog as THREE.Fog).far = w === 'acik' ? 700 : 380;
     this.renderer.toneMappingExposure = 1.1 - 0.2 * day;
-    (this.ground.material as THREE.MeshStandardMaterial).color.set(w === 'kar' ? '#e8edf2' : w === 'yagmur' ? '#6a665c' : '#8f8a7d');
+    this.surround?.update(dt, this.time, night, w, anim);
     this.sky.position.copy(this.camera.position);
     // bina
     this.building.update(u, this.time, night, st.occupancy ?? 0); this.nightGlow.value = night * 0.95; for (const c of this.covers) c.visible = !(u > 6.01 && u < 8.0);

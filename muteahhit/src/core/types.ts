@@ -147,6 +147,8 @@ export interface GameState {
   machines: Machine[];
   units: Unit[];
   receivables: Receivable[];
+  /** Şubesi olan (ilan görüp alım yapabildiğiniz) iller. Başlangıç şehri ücretsizdir. */
+  openCities: string[];
 }
 
 export interface GameEvent {

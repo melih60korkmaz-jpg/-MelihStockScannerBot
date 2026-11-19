@@ -1,7 +1,7 @@
 import { TL, type Money } from '../core/money';
 import { gauss, rand, randInt, pick } from '../core/rng';
 import type { GameEvent, GameState, Parcel, Soil } from '../core/types';
-import { CITY_DATA, PLACES, buildingType, cityData, districtData, type DistrictDef, type Zoning } from '../data';
+import { DEFAULT_CITIES, PLACES, buildingType, cityData, districtData, listingTarget, type DistrictDef, type Zoning } from '../data';
 import { post } from './ledger';
 
 export const COMMON_RATIO: Record<string, { brut: number; sat: number }> = { konut: { brut: 1.3, sat: 0.85 }, ticari: { brut: 1.35, sat: 0.8 }, sanayi: { brut: 1.05, sat: 0.95 } };
@@ -15,7 +15,6 @@ export function qualityFit(q: string, income: number): number {
 export const targetMargin = (d: DistrictDef) => 0.17 - 0.07 * (d.competition / 100);
 export const TAPU_HARCI = 0.04;
 export const QUICK_SALE_DISCOUNT = 0.92;
-export const LISTING_TARGET = 4;
 const SOIL_PRICE: Record<Soil, number> = { saglam: 1, kaya: 0.97, kil: 0.97, dolgu: 0.92, yeralti_suyu: 0.88, egimli: 0.9 };
 const SOIL_W: [Soil, number][] = [['saglam', 45], ['kaya', 10], ['kil', 20], ['dolgu', 12], ['yeralti_suyu', 7], ['egimli', 6]];
 
@@ -76,15 +75,20 @@ export function generateParcel(s: GameState, cityId: string, districtId: string,
   };
 }
 
-export function initMarket(s: GameState): void {
-  for (const c of CITY_DATA) s.cityMarket[c.id] = { landIndex: 1, housingIndex: 1 };
-  for (const c of CITY_DATA) {
-    for (const d of c.districts) for (let i = 0; i < LISTING_TARGET; i++) s.parcels.push(generateParcel(s, c.id, d.id));
-    // Başlangıç için her şehirde en ucuz bölgede 2 küçük arsa (ilk müstakil/dubleks projesi için)
-    const cheapest = [...c.districts].sort((a, b) => a.saleBase - b.saleBase)[0]!;
-    for (let i = 0; i < 2; i++) s.parcels.push(generateParcel(s, c.id, cheapest.id, { zoning: 'konut', area: 180 + 20 * i + randInt(s.rng, 'market', 0, 20), kaks: 1.0, taks: 0.5 }));
-  }
+/** Bir ilin ilanlarını üretir: her ilçede yoğunluğa göre 1–3 ilan + en ucuz ilçede 2 küçük başlangıç arsası. */
+export function generateCityListings(s: GameState, cityId: string): void {
+  const c = cityData(cityId)!; s.cityMarket[cityId] ??= { landIndex: 1, housingIndex: 1 }; s.weather[cityId] ??= 'acik';
+  for (const d of c.districts) for (let i = 0; i < listingTarget(d); i++) s.parcels.push(generateParcel(s, cityId, d.id));
+  const cheapest = [...c.districts].sort((a, b) => a.saleBase - b.saleBase)[0]!;
+  for (let i = 0; i < 2; i++) s.parcels.push(generateParcel(s, cityId, cheapest.id, { zoning: 'konut', area: 180 + 20 * i + randInt(s.rng, 'market', 0, 20), kaks: 1.0, taks: 0.5 }));
 }
+export function initMarket(s: GameState): void { for (const id of DEFAULT_CITIES) generateCityListings(s, id); }
+/** Yeni ilde şube açılışı: ilanlar üretilir (bir kez). */
+export function openCity(s: GameState, cityId: string): void {
+  if (!s.openCities.includes(cityId)) s.openCities.push(cityId);
+  if (!s.parcels.some((p) => p.city === cityId)) generateCityListings(s, cityId); else { s.cityMarket[cityId] ??= { landIndex: 1, housingIndex: 1 }; s.weather[cityId] ??= 'acik'; }
+}
+export const canTrade = (s: GameState, cityId: string) => s.openCities.includes(cityId);
 
 // ---------- Değerleme ----------
 export const landIndex = (s: GameState, p: Parcel) => s.cityMarket[p.city]?.landIndex ?? 1;
@@ -120,7 +124,8 @@ export function reservePrice(s: GameState, p: Parcel): Money {
 const REGIME_HOUSING: Record<string, number> = { kriz: -0.8, daralma: -0.25, genisleme: 0.25, asiri_isinma: 0.4, normal: 0, toparlanma: 0.1 };
 export function marketMonthly(s: GameState, events: GameEvent[]): void {
   const m = s.macro, vol = s.meta.difficulty === 'acimasiz' ? 1.3 : s.meta.difficulty === 'rahat' ? 0.8 : 1;
-  for (const c of CITY_DATA) {
+  for (const cid of Object.keys(s.cityMarket)) {
+    const c = { id: cid };
     const cm = (s.cityMarket[c.id] ??= { landIndex: 1, housingIndex: 1 });
     const pct = m.inflation / 12 * 0.85 + (m.confidence - 55) * 0.012 - (m.policyRate - m.inflation - 4) * 0.025 + (REGIME_HOUSING[m.regime] ?? 0) + gauss(s.rng, 'market') * 0.35 * vol;
     const h = clamp(pct, -3, 4);
@@ -132,9 +137,9 @@ export function marketMonthly(s: GameState, events: GameEvent[]): void {
   // Piyasa devri: ilanların bir kısmı başkasına satılır, yenileri çıkar
   let sold = 0;
   s.parcels = s.parcels.filter((p) => { if (p.owner === 'market' && rand(s.rng, 'market') < 0.12) { sold++; return false; } return true; });
-  for (const c of CITY_DATA) for (const d of c.districts) {
-    const n = s.parcels.filter((p) => p.owner === 'market' && p.city === c.id && p.district === d.id).length;
-    for (let i = n; i < LISTING_TARGET; i++) s.parcels.push(generateParcel(s, c.id, d.id));
+  for (const cid of Object.keys(s.cityMarket)) for (const d of cityData(cid)!.districts) {
+    const n = s.parcels.filter((p) => p.owner === 'market' && p.city === cid && p.district === d.id).length;
+    for (let i = n; i < listingTarget(d); i++) s.parcels.push(generateParcel(s, cid, d.id));
   }
   void sold; void events;
 }

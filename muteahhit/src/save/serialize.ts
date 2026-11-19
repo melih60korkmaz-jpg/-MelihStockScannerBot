@@ -51,6 +51,13 @@ export const MIGRATIONS: Record<number, (s: any) => any> = {
     for (const p of s.projects) if (p.status === 'insaat' || p.status === 'tamamlandi') { p.sales = defaultSales(); s.units.push(...generateUnits(s, p)); }
     s.meta.version = 6; return s;
   },
+  // v6 → v7 (81 il): şube/açık iller; başlangıç şehri ve mevcut arsa/projelerin bulunduğu iller açık sayılır
+  6: (s) => {
+    const open = new Set<string>(); if (s.company?.startCity) open.add(s.company.startCity);
+    for (const p of s.parcels) if (p.owner === 'player') open.add(p.city);
+    for (const pr of s.projects) open.add(pr.cityId);
+    s.openCities = [...open]; for (const c of open) s.weather[c] ??= 'acik'; s.meta.version = 7; return s;
+  },
 };
 
 export function pack(state: GameState, now = Date.now()): string {
@@ -75,6 +82,7 @@ export function validateState(s: any): string | null {
   if (!s.macro || typeof s.macro.policyRate !== 'number' || typeof s.macro.inflation !== 'number' || !s.macro.regime) return 'makro eksik';
   if (!Array.isArray(s.macroHistory) || !Array.isArray(s.news) || !Array.isArray(s.history)) return 'geçmiş eksik';
   if (!s.weather) return 'hava durumu eksik';
+  if (!Array.isArray(s.openCities)) return 'şube verisi eksik';
   if (!Array.isArray(s.units) || !Array.isArray(s.receivables)) return 'daire/alacak verisi eksik';
   if (!s.stock || !Array.isArray(s.orders) || !Array.isArray(s.machines) || !s.matPrice) return 'kaynak verisi eksik';
   if (!Array.isArray(s.parcels) || !Array.isArray(s.projects) || !Array.isArray(s.scheduled) || !s.cityMarket) return 'arsa/proje verisi eksik';

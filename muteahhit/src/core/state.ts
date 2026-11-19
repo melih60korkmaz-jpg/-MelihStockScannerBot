@@ -7,7 +7,7 @@ export function initialMacro(): MacroState {
   return { regime: 'normal', regimeSince: 0, regimeEnd: 24 * 30, calmUntilDay: 0, policyRate: 18, inflation: 14, confidence: 58, materialIndex: 100 };
 }
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export function newGameState(seed: number, difficulty: Difficulty = 'gercekci'): GameState {
   const s: GameState = {
@@ -36,6 +36,7 @@ export function newGameState(seed: number, difficulty: Difficulty = 'gercekci'):
     machines: [],
     units: [],
     receivables: [],
+    openCities: [],
   };
   initMarket(s);
   return s;

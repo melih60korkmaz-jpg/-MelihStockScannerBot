@@ -67,7 +67,7 @@ export function makeTruck(kind: 'dump' | 'mixer' | 'lorry', color: string) {
 
 /** Çit + levha + konteyner + malzeme yığınları; ağaçlar peyzaj aşamasında büyür. */
 export class SiteProps {
-  group = new THREE.Group(); fence: THREE.InstancedMesh; trees: THREE.InstancedMesh; crowns: THREE.InstancedMesh; grass: THREE.Mesh; lamps: THREE.Mesh[] = []; piles = new THREE.Group(); stakes: THREE.InstancedMesh; sign: THREE.Mesh;
+  group = new THREE.Group(); dirt: THREE.Mesh; fence: THREE.InstancedMesh; trees: THREE.InstancedMesh; crowns: THREE.InstancedMesh; grass: THREE.Mesh; lamps: THREE.Mesh[] = []; piles = new THREE.Group(); stakes: THREE.InstancedMesh; sign: THREE.Mesh;
   private treeCount = 0;
   constructor(public plotW: number, public plotD: number, name: string, seed: number) {
     const r = rng(seed), g = this.group, hw = plotW / 2, hd = plotD / 2;
@@ -88,6 +88,8 @@ export class SiteProps {
     // plan aşaması kazıkları (kırmızı-beyaz bayraklı)
     const sm: THREE.Matrix4[] = []; for (const [sx, sz] of [[-hw + 2, -hd + 2], [hw - 2, -hd + 2], [hw - 2, hd - 2], [-hw + 2, hd - 2]] as const) sm.push(new THREE.Matrix4().compose(p.set(sx, 0.9, sz), q.identity(), s.set(0.08, 1.8, 0.08)));
     this.stakes = new THREE.InstancedMesh(BOX, std('#d64545'), 4); sm.forEach((x2, i) => this.stakes.setMatrixAt(i, x2)); g.add(this.stakes);
+    // şantiye toprağı: peyzaj başlayana kadar çimin yerine
+    this.dirt = mesh(new THREE.PlaneGeometry(plotW - 0.6, plotD - 0.6), std('#8a7250', { roughness: 1 }), 0, 0.025, 0, 1, 1, 1, false); this.dirt.rotation.x = -Math.PI / 2; g.add(this.dirt);
     // çim ve ağaçlar
     this.grass = mesh(new THREE.PlaneGeometry(plotW - 1, plotD - 1), std('#4d7a3c', { roughness: 1 }), 0, 0.03, 0, 1, 1, 1, false); this.grass.rotation.x = -Math.PI / 2; this.grass.visible = false; g.add(this.grass);
     this.treeCount = Math.min(30, Math.max(6, Math.round(plotW * plotD / 120)));
@@ -117,7 +119,7 @@ export class SiteProps {
   setStage(u: number) {
     const on: Record<string, boolean> = { demir: u >= 7 && u < 10.5, beton: u >= 7 && u < 10, tugla: u >= 9.5 && u < 12.5, boru: u >= 10.5 && u < 13, cam: u >= 13.5 && u < 15.6 };
     for (const p of this.piles2) p.g.visible = !!on[p.id];
-    this.stakes.visible = u >= 1 && u < 7; this.sign.visible = true;
+    this.stakes.visible = u >= 1 && u < 7; this.sign.visible = true; this.dirt.visible = u < 16.4;
   }
   setLandscape(f: number) { this.grass.visible = f > 0.02; const n = Math.floor(this.treeCount * f); this.trees.count = this.crowns.count = n; }
 }

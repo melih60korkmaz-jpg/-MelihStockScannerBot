@@ -4,10 +4,11 @@ import { newGameState } from '../src/core/state';
 import { TL } from '../src/core/money';
 import { advanceDays } from '../src/sim/engine';
 import { checkInvariant } from '../src/sim/ledger';
-import { LISTING_TARGET, askPrice, fairValue, landAssetValue, marketParcels, ownedParcels, reservePrice, surveyCost, valueBand } from '../src/sim/land';
+import { askPrice, fairValue, landAssetValue, marketParcels, ownedParcels, reservePrice, surveyCost, valueBand } from '../src/sim/land';
 import { buildable, planProject } from '../src/sim/projects';
 import { netWorth } from '../src/sim/finance';
 import { pack, unpack } from '../src/save/serialize';
+import { DEFAULT_CITIES, cityData } from '../src/data';
 import type { GameState, Parcel } from '../src/core/types';
 
 const start = (seed = 5, bg = 'emlakci') => {
@@ -32,7 +33,7 @@ describe('arsa pazarı', () => {
       expect(p.reserveMult).toBeLessThan(p.askMult); expect(p.area % 5).toBe(0);
     }
     const per = new Map<string, number>(); for (const p of marketParcels(s)) per.set(`${p.city}/${p.district}`, (per.get(`${p.city}/${p.district}`) ?? 0) + 1);
-    expect(per.size).toBe(15); for (const n of per.values()) expect(n).toBeGreaterThanOrEqual(LISTING_TARGET);
+    const total = DEFAULT_CITIES.reduce((a, id) => a + cityData(id)!.districts.length, 0); expect(per.size).toBe(total); expect(total).toBe(39 + 25 + 30); for (const n of per.values()) expect(n).toBeGreaterThanOrEqual(1);
   });
   it('başlangıç sermayesiyle alınabilir küçük arsa her şehirde var', () => {
     for (const seed of [1, 2, 3, 4, 5, 6]) {
@@ -210,6 +211,6 @@ describe('kayıt göçü v2→v3 ve gidiş-dönüş', () => {
   });
   it('v2 kaydı v3\'e taşınır: pazar oluşur', () => {
     const s = start(); const old: any = JSON.parse(JSON.stringify(s)); old.meta.version = 2; for (const k of ['parcels', 'projects', 'cityMarket', 'scheduled']) delete old[k];
-    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(6); expect(marketParcels(r.state).length).toBeGreaterThanOrEqual(15 * LISTING_TARGET); }
+    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(7); expect(marketParcels(r.state).length).toBeGreaterThanOrEqual(94); }
   });
 });

@@ -8,7 +8,14 @@ Tasarım belgesi: `../docs/muteahhit-tasarim-belgesi.md`
     npm run sim:land -- 40                 # arsa/proje marj dengesi raporu
     npm run sim:build -- 300 orta          # inşaat dengesi (ekip: yok|kucuk|orta|buyuk)
     npm run sim:sales -- 12                # satış stratejileri raporu
+    npm run sim:geo                        # 81 il ekonomik denge raporu
     npm run dev     # geliştirme sunucusu
     npm run build   # dist/index.html (tek dosya)
 
-Durum: **Faz 1–7** (çekirdek, açılış/menü/ayarlar/müzik, şirket ve makro ekonomi, finans, arsa pazarı, inşaat + 3D şantiye, malzeme/makine/personel temeli, daire satışı ve müşteri). Yalnızca yatay oyun. Sonraki: Faz 8 (banka, kredi, ihaleler).
+Durum: **Faz 1–7 + 81 il haritası** (çekirdek, açılış/menü/ayarlar/müzik, şirket ve makro ekonomi, finans, arsa pazarı, inşaat + 3D şantiye, malzeme/makine/personel temeli, daire satışı ve müşteri). Yalnızca yatay oyun. Sonraki: Faz 8 (banka, kredi, ihaleler).
+
+## Veri kaynakları ve atıf
+
+- **İl ve ilçe sınırları:** [geoBoundaries](https://www.geoboundaries.org) gbOpen TUR ADM1/ADM2, lisans **CC BY 4.0** (Runfola ve ark., 2020). Oyun için sadeleştirilmiş çokgenler `src/data/geo/` altındadır; `tools/build-geo.py` ile yeniden üretilir:
+  `python3 tools/build-geo.py adm1.geojson adm2.geojson`
+- 81 il / 973 ilçe; ilçe ekonomik özellikleri (fiyat, gelir, yoğunluk…) **oyun için kurgusal/stilize** değerlerdir, gerçek istatistik değildir.

@@ -1,6 +1,6 @@
 import { newGameState } from '../core/state';
 import { dispatch } from '../core/commands';
-import { BUILDING_TYPES, QUALITIES, CITY_DATA } from '../data';
+import { BUILDING_TYPES, QUALITIES } from '../data';
 import { askPrice, marketParcels } from '../sim/land';
 import { planProject } from '../sim/projects';
 
@@ -31,4 +31,4 @@ console.log('Bölge (en iyi marj medyanı):', [...byDist].map(([k, v]) => `${k.s
 console.log('Tip/kalite medyanı (standart):', BUILDING_TYPES.map((t) => { const v = byType.get(`${t.id}/standart`) ?? []; return v.length ? `${t.id} ${pct(q(v, 0.5))}` : ''; }).filter(Boolean).join(' · '));
 console.log('En iyi seçenek olma payı:', BUILDING_TYPES.map((t) => `${t.id} %${((wins.get(t.id) ?? 0) / best.length * 100).toFixed(0)}`).join(' · '));
 console.log('Küçük başlangıç arsalarında (≤280 m², konut) tip medyanı:', [...starter].map(([k, v]) => `${k} ${pct(q(v, 0.5))}`).join(' · '));
-void CITY_DATA;
+

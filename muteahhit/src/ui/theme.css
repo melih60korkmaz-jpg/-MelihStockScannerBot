@@ -217,3 +217,18 @@ html[data-motion=reduced] .stages i.cur { animation:none; }
 .stars { font-size:30px; letter-spacing:6px; color:var(--gold); } .stars .off { color:#ffffff30; }
 
 .pfile > .bd { flex:1; min-height:0; overflow:auto; padding:10px 14px; -webkit-overflow-scrolling:touch; }
+
+/* ===== 81 il haritası ===== */
+.tmap { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr); gap:12px; align-items:start; }
+.tmap .mapbox { width:auto; } .tmap .mapbox svg { height:clamp(210px, calc(100vh - 215px), 520px); width:100%; aspect-ratio:auto; touch-action:none; cursor:grab; background:radial-gradient(circle at 50% 40%,#0f2a3a,#081822); }
+.tmap path.pv { stroke:#ffffff55; stroke-width:5; stroke-linejoin:round; cursor:pointer; vector-effect:non-scaling-stroke; transition:fill-opacity .12s; } .tmap path.pv:hover { stroke:#fff; }
+.tmap path.pv.open { stroke:#F5B700; stroke-width:1.6px; } .tmap path.pv.sel { stroke:#fff; stroke-width:2.4px; } .tmap path.pv.lock { fill-opacity:.62; }
+.tmap path.dv { stroke:#ffffff80; stroke-width:1px; vector-effect:non-scaling-stroke; cursor:pointer; stroke-linejoin:round; } .tmap path.dv.sel { stroke:#fff; stroke-width:2.4px; }
+.tmap text { pointer-events:none; font-family:var(--font); fill:#fff; paint-order:stroke; stroke:#0009; stroke-width:.35em; stroke-linejoin:round; font-weight:700; }
+.tmap text.lb2 { opacity:0; transition:opacity .15s; } .tmap svg[data-z="2"] text.lb2, .tmap svg[data-z="3"] text.lb2 { opacity:1; }
+.tmap .zbtns { position:absolute; right:8px; top:8px; display:flex; flex-direction:column; gap:6px; } .tmap .zbtns button { width:40px; height:40px; padding:0; font-size:20px; }
+.tmap .crumb { position:absolute; left:8px; top:8px; display:flex; gap:6px; align-items:center; }
+.tmap .search { min-height:42px; margin-bottom:8px; font-size:15px; }
+.plist { max-height:calc(100vh - 330px); min-height:120px; overflow:auto; -webkit-overflow-scrolling:touch; } .prow { display:flex; gap:8px; align-items:center; padding:8px 4px; border-bottom:1px solid var(--line); cursor:pointer; min-height:46px; } .prow.sel { background:#f5b70018; } .prow:active { background:#ffffff10; }
+.prow .plate { width:28px; font:700 13px var(--font-h); color:var(--mute); } .prow .nm { flex:1; min-width:0; font-weight:600; } .prow .nm small { display:block; color:var(--mute); font-weight:400; font-size:11px; }
+@media (max-width:760px) { .tmap { grid-template-columns:1fr; } }

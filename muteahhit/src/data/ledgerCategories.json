@@ -40,6 +40,11 @@
   "kind": "gider"
  },
  {
+  "id": "sube",
+  "label": "Şube açılışı",
+  "kind": "gider"
+ },
+ {
   "id": "malzeme",
   "label": "Malzeme",
   "kind": "gider"

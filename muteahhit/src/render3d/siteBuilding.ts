@@ -8,9 +8,10 @@ export const ramp = (u: number, a: number, b: number) => Math.min(1, Math.max(0,
 export function rng(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
 const PALETTES = [
-  { wall: '#eadfc8', accent: '#b5543a', roof: '#8c3b2a', glass: '#6fa8c8' }, { wall: '#d9d9d4', accent: '#3d4f66', roof: '#4a4f57', glass: '#5f8fb0' },
-  { wall: '#f0ede6', accent: '#c9a227', roof: '#6b5b4a', glass: '#7fb0c4' }, { wall: '#c9a98a', accent: '#7a3e2a', roof: '#5c3b2e', glass: '#6a97b0' },
-  { wall: '#bfc7c9', accent: '#1f2d3d', roof: '#2c3640', glass: '#4b86a6' }, { wall: '#e6d3bd', accent: '#2f6f5e', roof: '#40505a', glass: '#7aa6b8' },
+  { wall: '#f2e6cf', accent: '#c0562b', roof: '#9a3a22', glass: '#5ea4cf' }, { wall: '#dfe4e8', accent: '#2c4a6b', roof: '#3d4651', glass: '#4f8fbf' },
+  { wall: '#f6f1e4', accent: '#d9a406', roof: '#7a5a3a', glass: '#7cc0d8' }, { wall: '#d9b48c', accent: '#8a3b22', roof: '#6a3d2a', glass: '#5f9bbd' },
+  { wall: '#c7d0d4', accent: '#1d3550', roof: '#2a3a48', glass: '#3f88b5' }, { wall: '#efd8c0', accent: '#2f8a6e', roof: '#2f5a5a', glass: '#7ec3c9' },
+  { wall: '#e9c8c0', accent: '#a63d4a', roof: '#6a2f35', glass: '#6aa6c9' }, { wall: '#cfe0c8', accent: '#4a7a3a', roof: '#5a4a35', glass: '#78b5c4' },
 ];
 export type FacadeStyle = 'serit' | 'balkon' | 'cam' | 'tugla' | 'tas' | 'metal';
 export type RoofKind = 'teras' | 'egimli' | 'tac' | 'sanayi';

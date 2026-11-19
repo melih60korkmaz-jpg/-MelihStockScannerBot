@@ -7,7 +7,7 @@ import { currentRevenue } from '../../sim/projects';
 import { SiteScene, type CamPreset, type SiteState } from '../../render3d/siteScene';
 import { h, press, toast } from '../dom';
 import { fmt, kv, nf, pct } from '../components';
-import { MACHINES, MATERIALS } from '../../data';
+import { MACHINES, MATERIALS, cityData, districtData } from '../../data';
 import { incomingQty, stageNeeds, stockQty } from '../../sim/materials';
 import { crewCapacity } from '../../sim/construction';
 import type { App } from '../app';
@@ -31,7 +31,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
   const parcelOf = (p: Project) => app.store.state.parcels.find((x) => x.id === p.parcelId);
   let sheetOpen = false, tab: 'genel' | 'asamalar' | 'kaynak' | 'maliyet' = 'genel', reportShown = false;
 
-  const specOf = (p: Project) => { const pc = parcelOf(p)!, t = buildingType(p.type)!; return { type: p.type, quality: p.quality, seed: p.designSeed, floors: p.floors, footprint: Math.max(60, pc ? pc.area * pc.taks : 120), plotW: 40, plotD: 30, use: t.use, name: p.name, roads: pc?.roads ?? 1, corner: pc?.corner ?? false }; };
+  const specOf = (p: Project) => { const pc = parcelOf(p)!, t = buildingType(p.type)!; return { type: p.type, quality: p.quality, seed: p.designSeed, floors: p.floors, footprint: Math.max(60, pc ? pc.area * pc.taks : 120), plotW: 40, plotD: 30, use: t.use, name: p.name, roads: pc?.roads ?? 1, corner: pc?.corner ?? false, region: cityData(p.cityId)?.province.region, density: pc ? districtData(pc.city, pc.district)?.density : 60 }; };
   const stateOf = (p: Project): SiteState => {
     const s = app.store.state, b = p.build;
     const u = p.status === 'taslak' ? 3 : p.status === 'insaat' && b ? b.stage + b.progress : 18;

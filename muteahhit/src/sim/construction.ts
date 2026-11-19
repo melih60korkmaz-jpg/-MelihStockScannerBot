@@ -2,7 +2,7 @@ import { dateOf } from '../core/calendar';
 import { gauss, rand, randInt } from '../core/rng';
 import { TL, type Money } from '../core/money';
 import type { BuildState, GameEvent, GameState, Project } from '../core/types';
-import { SOIL_COST, STAGES } from '../data';
+import { CLIMATE, SOIL_COST, STAGES, cityData } from '../data';
 import { post } from './ledger';
 import { autoBuy, stageNeeds, stockQty } from './materials';
 import { useMachines } from './machines';
@@ -43,12 +43,13 @@ export function crewFactor(s: GameState, p: Project, stageId: string): number {
 const hasRole = (s: GameState, role: string) => s.staff.some((x) => x.type === role);
 
 const RAIN = [0.28, 0.26, 0.24, 0.2, 0.16, 0.08, 0.03, 0.03, 0.08, 0.16, 0.24, 0.28];
-const SNOW: Record<string, number> = { istanbul: 0.35, ankara: 0.55, izmir: 0.05 };
+/** İl bazlı hava: bölge iklimi (yağış çarpanı, kar olasılığı) × mevsim. */
 export function updateWeather(s: GameState): void {
   const m = dateOf(s.clock.day).month;
   for (const city of Object.keys(s.weather)) {
+    const cl = CLIMATE[cityData(city)?.province.region ?? 'Marmara'];
     const winter = m === 12 || m <= 2 ? 1 : m === 3 || m === 11 ? 0.3 : 0;
-    const snow = RAIN[m - 1]! * (SNOW[city] ?? 0.2) * winter, rain = RAIN[m - 1]! - snow, r = rand(s.rng, 'construction');
+    const wet = Math.min(0.6, RAIN[m - 1]! * cl.rain), snow = wet * cl.snow * winter, rain = wet - snow, r = rand(s.rng, 'construction');
     s.weather[city] = r < snow ? 'kar' : r < snow + rain ? 'yagmur' : 'acik';
   }
 }
@@ -64,7 +65,7 @@ export function startConstruction(s: GameState, p: Project): GameEvent[] {
     priceBase: { mat: s.macro.materialIndex, cost: s.costIndex }, spent: 0, unpaid: 0, unpaidParts: { malzeme: 0, insaat: 0, makine: 0 },
     qualitySum: 0, qualityW: 0, stalled: null, stalledDays: 0, soilExtra: 0,
   };
-  p.status = 'insaat'; p.build = b; p.sales = defaultSales(); s.units.push(...generateUnits(s, p));
+  s.weather[p.cityId] ??= 'acik'; p.status = 'insaat'; p.build = b; p.sales = defaultSales(); s.units.push(...generateUnits(s, p));
   return [{ type: 'PROJECT_STARTED', day: s.clock.day, data: { projectId: p.id } }];
 }
 

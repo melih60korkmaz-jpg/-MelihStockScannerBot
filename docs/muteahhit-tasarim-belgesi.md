@@ -816,3 +816,11 @@ Kullanıcı kararı: bu fazda **temel düzen** kurulur, ince ayar ve hatalar son
 - **Teslim**: müşteri memnuniyeti (kalite, gecikme, fiyat/değer) → şirket memnuniyeti ve itibar. **Garanti**: 24 ay boyunca düşük kalitede daha sık ve pahalı talepler. Satılmamış dairelerin aylık gideri.
 - **Muhasebe**: alacaklar varlık, ön satış avansları yükümlülük (satıştan sahte kâr doğmaz); tüm daireler satılınca proje kapanır, kâr kesinleşir.
 - **Ölçüm** (`npm run sim:sales`): fiyatı artırmak kârı artırır ama satışı yavaşlatır; emlakçı ve taksit satışı hızlandırır. **Not**: faiz/kredi (Faz 8) gelmeden yüksek fiyat stratejisi aşırı avantajlı kalıyor; ön satışın değeri nakit kısıtı geldikçe ortaya çıkacak.
+
+
+## Uygulama notları — 81 il haritası ve 3D çevre
+
+- **Harita**: gerçek il (81) ve ilçe (973) sınırları (geoBoundaries, CC BY 4.0), sadeleştirilip gömülü. Türkiye görünümünde il seçimi (dokun, sürükle, kıstır-yakınlaştır, arama + liste), il görünümünde gerçek sınırlı ilçeler; katmanlar: satış fiyatı, gelir, rekabet, gelişim. Başlangıç şehri ücretsiz; diğer illerde **şube açma** (kademeye göre 0,5–3,5 M₺ + aylık şube gideri) ilanları ve işlemi açar. Kilitli illerin istatistikleri görünür.
+- **İl verisi**: her ile bölge (7), kademe (1–4), fiyat çıpası, maliyet çarpanı, şube maliyeti; ilçeler alan/konumdan türetilen yoğunluk, gelir, altyapı, ulaşım, ticaret, rekabet, büyüme ve imar dağılımı alır; 74 önemli ilçe (turistik, merkez) ve 15 eski el ayarlı ilçe korunur. Denge (`npm run sim:geo`): her kademede en iyi seçenek medyan marjı %5–9, kârlı ilan payı %68–87.
+- **İklim**: il bölgesine göre yağış çarpanı ve kar olasılığı (Doğu Anadolu karlı, Karadeniz yağışlı, Akdeniz kar yok) inşaat hızını etkiler.
+- **3D çevre**: parselin yanları artık boş değil: yola bakan konut/apartman/park/bahçe hücreleri, yol, kaldırım ve şeritler, hareket eden arabalar, sokak lambaları, bölgeye göre bitki örtüsü (çam, palmiye, bozkır), dağlar ve karlı zirveler, bulutlar; kalite kademesine göre yarıçap/ağaç/araba sayısı. Bina paletleri zenginleştirildi.
