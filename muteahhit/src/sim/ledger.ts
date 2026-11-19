@@ -3,6 +3,11 @@ import { monthKey } from '../core/calendar';
 import type { GameState, LedgerEntry } from '../core/types';
 import { ledgerCat } from '../data';
 
+let postHook: ((s: GameState, cat: string, amount: Money, projectId?: number) => void) | null = null;
+/** Para hareketi sonrası çalışan kanca (ör. proje gelirinden inşaat kredisi kapatma). */
+export const setPostHook = (f: typeof postHook) => { postHook = f; };
+let inHook = false;
+
 /** Tek giriş noktası: para yalnızca buradan hareket eder, nakit önbelleği aynı anda güncellenir. */
 export function post(s: GameState, cat: string, amount: Money, opts: { projectId?: number; memo?: string } = {}): void {
   if (!Number.isInteger(amount)) throw new Error(`Ledger: tamsayı olmayan tutar (${amount})`);
@@ -13,6 +18,7 @@ export function post(s: GameState, cat: string, amount: Money, opts: { projectId
   if (opts.memo) e.memo = opts.memo;
   s.ledger.push(e);
   s.company.cash += amount;
+  if (postHook && !inHook && opts.projectId !== undefined) { inHook = true; try { postHook(s, cat, amount, opts.projectId); } finally { inHook = false; } }
 }
 
 export const ledgerSum = (s: GameState): Money => s.ledger.reduce((a, e) => a + e.amount, 0);

@@ -2,6 +2,7 @@ import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { post } from '../sim/ledger';
+import { quoteLoan, takeLoan, repayLoan, restructureLoan, type LoanKind } from '../sim/loans';
 import { createStaff } from '../sim/staff';
 import { DIFFICULTY_MACRO } from '../sim/macro';
 import { SURVEY_DAYS, TAPU_HARCI, QUICK_SALE_DISCOUNT, askPrice, fairValue, reservePrice, surveyCost } from '../sim/land';
@@ -52,7 +53,7 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     s.company = {
       name: p.name.trim(), founderBackground: p.founderBackground, startCity: p.startCity,
       emblem: p.emblem ?? { shape: 0, color: 0 },
-      level: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0, stats: { completed: 0, sold: 0, profit: 0 }, safety: 'normal', procurement: { auto: true, supplier: 'yerel' }, lastAccidentDay: -999, satisfaction: 60,
+      level: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0, stats: { completed: 0, sold: 0, profit: 0 }, safety: 'normal', procurement: { auto: true, supplier: 'yerel' }, lastAccidentDay: -999, satisfaction: 60, ownership: 100, bankrupt: false,
     };
     post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
     for (const t of bg.staff) createStaff(s, t);
@@ -201,7 +202,7 @@ const startConstructionCmd: CommandDef<ProjectRef> = {
   apply(s, p) { return startConstruction(s, s.projects.find((x) => x.id === p.projectId)!); },
 };
 export interface PlaceOrderParams { material: string; qty: number; supplier: string }
-export interface BuyMachineParams { type: string }
+export interface BuyMachineParams { type: string; financed?: boolean; bank?: string }
 export interface MachineRef { machineId: number }
 export interface AssignStaffParams { staffId: number; projectId: number | null }
 export interface SetPolicyParams { safety?: 'dusuk' | 'normal' | 'yuksek'; autoBuy?: boolean; supplier?: string }
@@ -216,8 +217,30 @@ const placeOrderCmd: CommandDef<PlaceOrderParams> = {
   apply(s, p) { const ev2: GameEvent[] = []; const r = placeOrder(s, p.material, p.qty, p.supplier, ev2); if (r.ok) ev2.push(ev(s, 'ORDER_PLACED', { orderId: r.order.id, arriveDay: r.order.arriveDay })); return ev2; },
 };
 const buyMachine: CommandDef<BuyMachineParams> = {
-  validate(s, p) { const m = machine(p.type); if (!s.company) return 'Önce şirket kurulmalı.'; if (!m) return 'Bilinmeyen makine.'; if (s.company.cash < TL(m.priceTL)) return 'Satın alma için yeterli nakit yok.'; return null; },
-  apply(s, p) { const m = machine(p.type)!, price = TL(m.priceTL); post(s, 'makine_alim', -price, { memo: m.label }); const id = s.nextId++; s.machines.push({ id, type: p.type, boughtDay: s.clock.day, price, brokenUntil: 0, uses: 0 }); return [ev(s, 'MACHINE_BOUGHT', { id, type: p.type })]; },
+  validate(s, p) { const m = machine(p.type); if (!s.company) return 'Önce şirket kurulmalı.'; if (!m) return 'Bilinmeyen makine.'; const price = TL(m.priceTL);
+    if (p.financed) { const down = Math.round(price * 0.2); if (s.company.cash < down) return 'Peşinat için yeterli nakit yok.'; const q = quoteLoan(s, { kind: 'makine', bank: p.bank ?? 'ozel', amount: price - down, term: 36 }); return q.ok ? null : (q.error ?? 'Kredi verilemedi.'); }
+    if (s.company.cash < price) return 'Satın alma için yeterli nakit yok.'; return null; },
+  apply(s, p) {
+    const m = machine(p.type)!, price = TL(m.priceTL), out: GameEvent[] = [];
+    post(s, 'makine_alim', -price, { memo: m.label }); const id = s.nextId++; s.machines.push({ id, type: p.type, boughtDay: s.clock.day, price, brokenUntil: 0, uses: 0 });
+    if (p.financed) { const down = Math.round(price * 0.2); const r = takeLoan(s, { kind: 'makine', bank: p.bank ?? 'ozel', amount: price - down, term: 36, machineId: id }, out); void r; }
+    out.push(ev(s, 'MACHINE_BOUGHT', { id, type: p.type })); return out;
+  },
+};
+export interface TakeLoanParams { kind: LoanKind; bank: string; amount: number; term?: number; projectId?: number }
+const takeLoanCmd: CommandDef<TakeLoanParams> = {
+  validate(s, p) { if (!s.company) return 'Önce şirket kurulmalı.'; const q = quoteLoan(s, p); return q.ok ? null : (q.error ?? 'Kredi verilemedi.'); },
+  apply(s, p) { const out: GameEvent[] = []; takeLoan(s, p, out); return out; },
+};
+export interface RepayLoanParams { loanId: number; amount: number }
+const repayLoanCmd: CommandDef<RepayLoanParams> = {
+  validate(s, p) { const l = s.loans.find((x) => x.id === p.loanId); if (!l) return 'Kredi bulunamadı.'; if (!(p.amount > 0)) return 'Geçersiz tutar.'; if (l.balance <= 0) return 'Bu kredinin borcu yok.'; if (s.company!.cash < Math.min(p.amount, l.balance)) return 'Nakit yetersiz.'; return null; },
+  apply(s, p) { const r = repayLoan(s, p.loanId, p.amount); return [ev(s, 'LOAN_REPAID', { loanId: p.loanId, paid: r.paid ?? 0 })]; },
+};
+export interface RestructureParams { loanId: number }
+const restructureCmd: CommandDef<RestructureParams> = {
+  validate(s, p) { const l = s.loans.find((x) => x.id === p.loanId); if (!l || l.balance <= 0) return 'Kredi bulunamadı.'; if (s.company!.creditScore < 250) return 'Kredi notu yeniden yapılandırma için yetersiz (en az 250).'; if (s.company!.cash < Math.round(l.balance * 0.03)) return 'Yapılandırma masrafı için nakit yetersiz.'; return null; },
+  apply(s, p) { restructureLoan(s, p.loanId); return [ev(s, 'LOAN_RESTRUCTURED', { loanId: p.loanId })]; },
 };
 const sellMachine: CommandDef<MachineRef> = {
   validate(s, p) { return s.machines.some((m) => m.id === p.machineId) ? null : 'Makine bulunamadı.'; },
@@ -268,7 +291,7 @@ const setSalesPolicy: CommandDef<SalesPolicyParams> = {
 };
 
 export const COMMANDS = {
-  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
+  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, TakeLoan: takeLoanCmd, RepayLoan: repayLoanCmd, RestructureLoan: restructureCmd, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,
   CreateCompany: createCompany,
   HireStaff: hireStaff,

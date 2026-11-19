@@ -108,5 +108,30 @@
   "id": "kredi_odeme",
   "label": "Kredi anapara ödemesi",
   "kind": "finansman"
+ },
+ {
+  "id": "ortak",
+  "label": "Ortak/yatırımcı katkısı",
+  "kind": "finansman"
+ },
+ {
+  "id": "ortak_odeme",
+  "label": "Ortak ödemesi",
+  "kind": "finansman"
+ },
+ {
+  "id": "temettu",
+  "label": "Temettü",
+  "kind": "finansman"
+ },
+ {
+  "id": "teminat",
+  "label": "İhale teminatı",
+  "kind": "finansman"
+ },
+ {
+  "id": "kredi_harc",
+  "label": "Kredi masrafı",
+  "kind": "gider"
  }
 ]

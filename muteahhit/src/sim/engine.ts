@@ -9,6 +9,7 @@ import { constructionDaily } from './construction';
 import { deliveries, materialsMonthly } from './materials';
 import { salesDaily, salesMonthly } from './sales';
 import { monthlyCosts, netWorth } from './finance';
+import { loansMonthly, forcedLiquidation, debtTotal } from './loans';
 
 /**
  * Tek günlük ilerleme. Saf mantık: DOM/Three bilmez. `s` yerinde güncellenir (hız için),
@@ -16,6 +17,7 @@ import { monthlyCosts, netWorth } from './finance';
  */
 export function advanceDay(s: GameState): GameEvent[] {
   const events: GameEvent[] = [];
+  if (s.company?.bankrupt) return events;
   s.clock.day += 1;
   const day = s.clock.day;
   events.push({ type: 'DAY', day });
@@ -63,12 +65,15 @@ function monthly(s: GameState, events: GameEvent[]): void {
   materialsMonthly(s, events);
   moraleMonthly(s);
   salesMonthly(s, events);
+  loansMonthly(s, events);
   s.costIndex *= 1 + (s.macro.inflation / 100 / 12) * 0.85;
   for (const x of monthlyCosts(s)) post(s, x.cat, -x.amount, { memo: x.memo });
   if ([1, 4, 7, 10].includes(dateOf(s.clock.day).month)) quarterlyTax(s, events);
   s.history.push({ day: s.clock.day, cash: c.cash, netWorth: netWorth(s) });
   if (s.history.length > 240) s.history.shift();
   events.push({ type: 'MONTH', day: s.clock.day });
+  if (c.cash < 0) { forcedLiquidation(s, -c.cash, events); }
+  if (c.cash < 0 && netWorth(s) < 0 && s.loans.length + debtTotal(s) >= 0) { c.bankrupt = true; events.push({ type: 'BANKRUPT', day: s.clock.day, pause: true, data: {} }); }
   if (c.cash < 0) events.push({ type: 'CASH_NEGATIVE', day: s.clock.day, pause: true, data: { cash: c.cash } });
 }
 

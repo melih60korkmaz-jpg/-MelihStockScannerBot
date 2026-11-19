@@ -1,4 +1,5 @@
 import { monthKey } from '../core/calendar';
+import { debtTotal } from './loans';
 import { TL, mul, type Money } from '../core/money';
 import type { GameState } from '../core/types';
 import { MATERIALS, STAGES, branchCost, ledgerCat, officeFor } from '../data';
@@ -56,7 +57,9 @@ export function monthlyRows(s: GameState): MonthRow[] {
 /** Net varlık = nakit + arsalar (piyasa) + inşaat halindeki projelerin ödenen maliyeti + biten/satılmamış binaların tahmini değeri (%90). */
 export const projectAssetValue = (s: GameState): Money => s.projects.reduce((a, p) => a + (p.status === 'insaat' ? p.build!.spent + (p.build!.matCost ?? 0) : 0), 0) + unsoldValue(s);
 export const stockValue = (s: GameState): Money => Object.entries(s.stock).reduce((a, [id, it]) => a + Math.round(it.qty * (MAT_BASE.get(id) ?? 0) * (s.macro.materialIndex / 100) * (s.matPrice[id] ?? 1)), 0);
-export const netWorth = (s: GameState): Money => (s.company ? s.company.cash + landAssetValue(s) + projectAssetValue(s) + machineAssetValue(s) + stockValue(s) + receivablesTotal(s) - advancesTotal(s) : 0);
+/** Yatırımcılara proje sonunda geri ödenecek anapara (kâr payı hariç). */
+export const investorLiability = (s: GameState): Money => s.investments.filter((i) => !i.paidOut).reduce((a, i) => a + i.amount, 0);
+export const netWorth = (s: GameState): Money => (s.company ? s.company.cash + landAssetValue(s) + projectAssetValue(s) + machineAssetValue(s) + stockValue(s) + receivablesTotal(s) - advancesTotal(s) - debtTotal(s) - investorLiability(s) : 0);
 
 /**
  * Nakit yeterlilik süresi (ay): kasa / aylık net yanma. Yanma = beklenen sabit gider − son 3 tam ayın ort. geliri.

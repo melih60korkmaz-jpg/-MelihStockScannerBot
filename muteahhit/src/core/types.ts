@@ -35,6 +35,8 @@ export interface Company {
   procurement: { auto: boolean; supplier: string };
   lastAccidentDay: number;
   satisfaction: number;        // müşteri memnuniyeti (kayan ortalama, 0–100)
+  ownership: number;           // şirketin sizdeki payı (%100 = hisse satılmadı)
+  bankrupt: boolean;
   cash: Money;          // ÖNBELLEK: her zaman ledgerBase + Σledger
 }
 
@@ -98,6 +100,7 @@ export interface Project {
   status: 'taslak' | 'insaat' | 'tamamlandi' | 'satildi';
   build?: BuildState;
   sales?: SalesPolicy;
+  contract?: Contract;
   result?: { qualityScore: number; cost: Money; days: number; plannedDays: number; revenue?: Money; profit?: Money; soldDay?: number };
   createdDay: number; cityId: string;
   floors: number; emsal: number; brut: number; satilabilir: number;
@@ -116,6 +119,20 @@ export interface Unit {
 }
 export interface Receivable { id: number; unitId: number; projectId: number; amount: Money; dueDay: number; kind: 'taksit' | 'teslim'; missed: number }
 export interface SalesPolicy { priceMult: number; agent: boolean; installments: boolean; presale: boolean; contract: Money; commission: Money; sold: number }
+export interface Loan {
+  id: number; kind: 'ticari' | 'insaat' | 'makine' | 'kisa'; bank: string; principal: Money; balance: Money; rate: number; term: number; remaining: number;
+  payment: Money; schedule: 'annuity' | 'interest' | 'bullet'; start: number; nextDue: number; missed: number;
+  projectId?: number; machineId?: number; limit?: Money;
+}
+export interface Investment { id: number; projectId: number; amount: Money; share: number; day: number; paidOut?: boolean }
+export interface TenderReq { rep: number; score: number; completed: number; staff: number; machines: number }
+export interface Tender {
+  id: number; kind: string; title: string; city: string; client: 'kamu' | 'ozel'; type: string; quality: string; area: number; months: number;
+  refCost: Money; trueCost: Money; req: TenderReq; bondPct: number; openDay: number; evalDay: number;
+  bid?: { price: Money; day: number }; rivals: { name: string; price: Money; tech: number; rep: number }[];
+  status: 'acik' | 'kazandi' | 'kaybetti' | 'elendi' | 'iptal'; result?: { winner: string; scores: { name: string; score: number }[]; reason?: string };
+}
+export interface Contract { tenderId: number; price: Money; advance: Money; deadline: number; bond: Money; hakedisPaid?: Money }
 export interface Scheduled { day: number; type: 'survey'; data: { parcelId: number; kind: 'soil' | 'market' } }
 
 export interface GameState {
@@ -149,6 +166,9 @@ export interface GameState {
   receivables: Receivable[];
   /** Şubesi olan (ilan görüp alım yapabildiğiniz) iller. Başlangıç şehri ücretsizdir. */
   openCities: string[];
+  loans: Loan[];
+  investments: Investment[];
+  tenders: Tender[];
 }
 
 export interface GameEvent {

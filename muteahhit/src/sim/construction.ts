@@ -159,7 +159,7 @@ export function advanceConstruction(s: GameState, p: Project, events: GameEvent[
     const probe = hasMach && !st.prepaid ? machineProbe(s, st.machines!) : { cost: 0, cover: 0 };
     const mDay = Math.round(probe.cost * use);
     const cost = Math.round(partMal + partIns + partMak0 + mDay);
-    if (cost > 0 && cost > (s.company!.cash - b.unpaid)) { stall(s, p, b, 'nakit', events); return; }
+    if (cost > 0 && cost > (s.company!.cash - b.unpaid) && !ensureCash(s, p.id, cost + b.unpaid, events)) { stall(s, p, b, 'nakit', events); return; }
     if (b.stalled) { b.stalled = null; if ((b.stallStreak ?? 0) >= 3) events.push({ type: 'CONSTRUCTION_RESUMED', day: s.clock.day, data: { projectId: p.id } }); b.stallStreak = 0; }
     if (hasMach && !st.prepaid) { const u = useMachines(s, st.machines!, events); b.machCover = u.cover; }
     // stok tüket + malzeme kalitesi
@@ -182,6 +182,7 @@ function machineProbe(s: GameState, req: string[]): { cover: number; cost: Money
   return { cover: found / req.length, cost: Math.round(cost) };
 }
 import { MACHINES } from '../data';
+import { ensureCash } from './loans';
 const MACH = new Map(MACHINES.map((m) => [m.id, m]));
 
 function finishProject(s: GameState, p: Project, events: GameEvent[]): void {
@@ -189,7 +190,7 @@ function finishProject(s: GameState, p: Project, events: GameEvent[]): void {
   const q = b.qualityW > 0 ? b.qualitySum / b.qualityW : 70, days = s.clock.day - b.startDay, planned = p.expected.months * 30;
   b.doneDay = s.clock.day; p.status = 'tamamlandi';
   p.result = { qualityScore: Math.round(q * 10) / 10, cost: b.spent + (b.matCost ?? 0) + p.budget.designFee, days, plannedDays: planned };
-  const c = s.company!; c.stats.completed++;
+  const c = s.company!; c.stats.completed++; c.creditScore = clamp(c.creditScore + 10, 100, 900);
   const rep = Math.round((q - 60) / 8) + (days <= planned * 1.05 ? 2 : days > planned * 1.3 ? -2 : 0);
   c.reputation = clamp(c.reputation + rep, 0, 100);
   events.push({ type: 'PROJECT_COMPLETED', day: s.clock.day, pause: true, data: { projectId: p.id, quality: p.result.qualityScore, days, planned, rep } });

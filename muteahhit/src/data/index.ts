@@ -10,6 +10,7 @@ import placesRaw from './places.json';
 import stagesRaw from './stages.json';
 import materialsRaw from './materials.json';
 import machinesRaw from './machines.json';
+import banksRaw from './banks.json';
 
 export interface StaffTypeDef { id: string; label: string; baseSalaryTL: number }
 export interface OfficeDef { level: number; label: string; capacity: number; monthlyRentTL: number }
@@ -79,5 +80,8 @@ export const material = (id: string) => MATERIALS.find((m) => m.id === id);
 export const supplier = (id: string) => SUPPLIERS.find((s) => s.id === id);
 export const machine = (id: string) => MACHINES.find((m) => m.id === id);
 for (const st of STAGES) { for (const [id] of st.materials ?? []) if (!material(id)) throw new Error(`Veri hatası: ${st.id} bilinmeyen malzeme ${id}`); for (const id of st.machines ?? []) if (!machine(id)) throw new Error(`Veri hatası: ${st.id} bilinmeyen makine ${id}`); if ((st.materials ?? []).reduce((a, [, f]) => a + f, 0) > 1.0001) throw new Error(`Veri hatası: ${st.id} malzeme payları > 1`); }
+export interface BankDef { id: string; label: string; margin: number; minScore: number; fee: number; products: string[]; blurb: string }
+export const BANKS = banksRaw as BankDef[];
+export const bank = (id: string) => BANKS.find((b) => b.id === id);
 export const staffType = (id: string) => STAFF_TYPES.find((t) => t.id === id);
 export const officeFor = (level: number) => OFFICES[Math.min(level, OFFICES.length) - 1]!;

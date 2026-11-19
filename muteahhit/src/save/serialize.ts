@@ -58,6 +58,12 @@ export const MIGRATIONS: Record<number, (s: any) => any> = {
     for (const pr of s.projects) open.add(pr.cityId);
     s.openCities = [...open]; for (const c of open) s.weather[c] ??= 'acik'; s.meta.version = 7; return s;
   },
+  // v7 → v8 (Faz 8): krediler, yatırımcılar, ihaleler, ortaklık
+  7: (s) => {
+    s.loans = []; s.investments = []; s.tenders = [];
+    if (s.company) { s.company.ownership = 100; s.company.bankrupt = false; }
+    s.meta.version = 8; return s;
+  },
 };
 
 export function pack(state: GameState, now = Date.now()): string {
@@ -87,6 +93,7 @@ export function validateState(s: any): string | null {
   if (!s.stock || !Array.isArray(s.orders) || !Array.isArray(s.machines) || !s.matPrice) return 'kaynak verisi eksik';
   if (!Array.isArray(s.parcels) || !Array.isArray(s.projects) || !Array.isArray(s.scheduled) || !s.cityMarket) return 'arsa/proje verisi eksik';
   if (typeof s.costIndex !== 'number' || !Number.isInteger(s.taxLossCarry)) return 'maliyet endeksi bozuk';
+  if (!Array.isArray(s.loans) || !Array.isArray(s.investments) || !Array.isArray(s.tenders)) return 'finans verisi eksik';
   if (s.company) {
     if (!Number.isInteger(s.company.cash)) return 'kasa bozuk';
     const sum = s.ledger.reduce((a: number, e: any) => a + e.amount, 0);

@@ -125,7 +125,7 @@ describe('kayıt (v6)', () => {
   });
   it('v5 kaydı v6\'ya taşınır: mevcut projelere daireler üretilir', () => {
     const { s, project: p } = setup(); dispatch(s, 'StartConstruction', { projectId: p.id }); const old: any = JSON.parse(JSON.stringify(s)); old.meta.version = 5; delete old.units; delete old.receivables; delete old.company.satisfaction; delete old.projects[0].sales;
-    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(7); expect(r.state.units.length).toBeGreaterThan(0); expect(r.state.projects[0]!.sales).toBeDefined(); expect(r.state.company!.satisfaction).toBe(60); advanceDays(r.state, 60); }
+    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(8); expect(r.state.units.length).toBeGreaterThan(0); expect(r.state.projects[0]!.sales).toBeDefined(); expect(r.state.company!.satisfaction).toBe(60); advanceDays(r.state, 60); }
   });
   it('liste fiyatı = adil değer × politika çarpanı', () => {
     const { s, project: p } = setup(); dispatch(s, 'StartConstruction', { projectId: p.id }); const u = unitsOf(s, p.id)[0]!, per = fairPerM2(s, p); p.sales!.priceMult = 1.1;

@@ -1,4 +1,5 @@
 import { gauss, rand, randInt } from '../core/rng';
+import { ensureCash } from './loans';
 import { TL, type Money } from '../core/money';
 import type { GameEvent, GameState, Order, Project } from '../core/types';
 import { MATERIALS, STAGES, material, supplier } from '../data';
@@ -64,7 +65,7 @@ export function autoBuy(s: GameState, p: Project, events: GameEvent[]): void {
   for (const [id, q] of need) {
     const deficit = q - stockQty(s, id) - incomingQty(s, id); if (deficit <= 1e-6) continue;
     const price = unitPrice(s, id, sup); let qty = Math.ceil(deficit * 1000) / 1000;
-    if (price * qty > budget) qty = Math.floor((budget / price) * 1000) / 1000; if (qty <= 0) continue;
+    if (price * qty > budget) { if (p.build && p.status === 'insaat') { ensureCash(s, p.id, Math.round(price * qty) + reserve, events); budget = Math.max(0, c.cash - reserve); } if (price * qty > budget) qty = Math.floor((budget / price) * 1000) / 1000; } if (qty <= 0) continue;
     const r2 = placeOrder(s, id, qty, sup, events); if (r2.ok) budget -= Math.round(price * qty);
   }
 }

@@ -78,7 +78,7 @@ describe('malzeme ve tedarik', () => {
 
 describe('makine', () => {
   it('satın alma: nakit düşer, makine eklenir; satış %90×değer; değer yıllık %12 düşer (en az %25)', () => {
-    const { s } = setup(); const c0 = s.company!.cash; expect(dispatch(s, 'BuyMachine', { type: 'forklift' }).ok).toBe(true);
+    const { s } = setup({ cash: TL(900_000_000) }); const c0 = s.company!.cash; expect(dispatch(s, 'BuyMachine', { type: 'forklift' }).ok).toBe(true);
     expect(c0 - s.company!.cash).toBe(TL(650000)); const m = s.machines[0]!; expect(machineValue(s, m)).toBe(TL(650000));
     advanceDays(s, 365); expect(machineValue(s, m)).toBe(Math.round(TL(650000) * 0.88)); advanceDays(s, 365 * 10); expect(machineValue(s, m)).toBe(Math.round(TL(650000) * 0.25));
     const c1 = s.company!.cash; dispatch(s, 'SellMachine', { machineId: m.id }); expect(s.company!.cash - c1).toBe(Math.round(Math.round(TL(650000) * 0.25) * 0.9)); expect(s.machines).toHaveLength(0);
@@ -140,7 +140,7 @@ describe('kayıt ve göç (v5)', () => {
   });
   it('v4 kaydı v5\'e taşınır', () => {
     const { s } = setup(); const old: any = JSON.parse(JSON.stringify(s)); old.meta.version = 4; for (const k of ['stock', 'orders', 'machines', 'matPrice']) delete old[k]; for (const x of old.staff) delete x.morale; delete old.company.safety; delete old.company.procurement; delete old.company.lastAccidentDay;
-    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(7); expect(r.state.staff[0]!.morale).toBe(70); expect(r.state.company!.safety).toBe('normal'); expect(r.state.company!.procurement.auto).toBe(true); advanceDays(r.state, 60); }
+    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(8); expect(r.state.staff[0]!.morale).toBe(70); expect(r.state.company!.safety).toBe('normal'); expect(r.state.company!.procurement.auto).toBe(true); advanceDays(r.state, 60); }
   });
   it('aşama günleri hâlâ planlanan süreyi verir', () => { const { project: p } = setup(); expect(stageDays(p).reduce((a, x) => a + x, 0)).toBeCloseTo(Math.max(60, p.expected.months * 30), 6); });
 });
