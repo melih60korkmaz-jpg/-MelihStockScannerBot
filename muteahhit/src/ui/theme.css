@@ -325,7 +325,7 @@ html[data-motion=reduced] .toast, html[data-motion=reduced] .toast.out, html[dat
 .pcover { border-radius:10px; overflow:hidden; border:1px solid var(--line); align-self:start; line-height:0; } .pbody { min-width:0; }
 .pjfacts { display:flex; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--mute); margin-top:6px; } .pjfacts b { color:var(--text); }
 @media (max-height:420px) { .pj { grid-template-columns:96px 1fr; } }
-.pj h3 { flex:1 1 150px; font-size:21px; line-height:1.05; }
+.pj h3 { flex:1 1 100%; font-size:20px; line-height:1.05; }
 
 /* ===== Genel Merkez ===== */
 .hero { cursor:pointer; } .hgo { position:absolute; right:12px; bottom:10px; z-index:2; font:600 12px var(--font); padding:5px 10px; border-radius:99px; background:#101113cc; border:1px solid var(--accent-bd); color:var(--text); } .hero:active .hgo { background:var(--accent); }
