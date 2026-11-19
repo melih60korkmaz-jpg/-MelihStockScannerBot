@@ -2,18 +2,21 @@ import { DEFAULT_CITIES, PROVINCES, branchCost, cityData, provinceStats, type Di
 import { TL } from '../../core/money';
 import { askPrice, canTrade, growthLabel, marketParcels, ownedParcels } from '../../sim/land';
 import { h, press, toast } from '../dom';
-import { fmt, fmtM2, nf, pct, statBar, ZONING_LABEL } from '../components';
+import { fmt, fmtM2, nf, pct, skylineSvg, statBar, ZONING_LABEL } from '../components';
 import type { App } from '../app';
 import { openParcel } from './parcel';
 
 type Metric = 'fiyat' | 'gelir' | 'rekabet' | 'gelisim';
 const METRICS: [Metric, string][] = [['fiyat', 'Satış fiyatı'], ['gelir', 'Gelir'], ['rekabet', 'Rekabet'], ['gelisim', 'Gelişim']];
 const RANGE: Record<Metric, [number, number]> = { fiyat: [16000, 60000], gelir: [28, 78], rekabet: [30, 78], gelisim: [3, 12] };
-const mem = { mode: 'turkey' as 'turkey' | 'province', city: '', district: '', metric: 'fiyat' as Metric, q: '', vb: null as null | { x: number; y: number; w: number; h: number }, vbKey: '' };
+const mem = { zoomTo: '' as string, mode: 'turkey' as 'turkey' | 'province', city: '', district: '', metric: 'fiyat' as Metric, q: '', vb: null as null | { x: number; y: number; w: number; h: number }, vbKey: '' };
 const TR_BOX = (() => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const p of PROVINCES) { x0 = Math.min(x0, p.bbox[0]); y0 = Math.min(y0, p.bbox[1]); x1 = Math.max(x1, p.bbox[2]); y1 = Math.max(y1, p.bbox[3]); } return { x: x0 - 80, y: y0 - 80, w: x1 - x0 + 160, h: y1 - y0 + 160 }; })();
 const norm = (s: string) => s.toLocaleLowerCase('tr').replace(/[ıİ]/g, 'i');
 /** Değer → antrasit gri kademesi (düşük: koyu, yüksek: açık); seçili bölge CSS ile bordo vurgulanır. */
-const shade = (t: number) => { const k = Math.max(0, Math.min(1, t)), c = (a: number, b: number) => Math.round(a + (b - a) * k).toString(16).padStart(2, '0'); return { fill: `#${c(0x3a, 0x92)}${c(0x3b, 0x94)}${c(0x42, 0x9e)}`, op: '0.95' }; };
+const RAMP = ['#3E4C8E', '#6B5BA8', '#B0507A', '#E0804E', '#E8C15A'] as const; // düşük → yüksek: çivit → mor → gül → turuncu → sarı (bordo temayla uyumlu)
+const hexRgb = (h2: string) => [1, 3, 5].map((i) => parseInt(h2.slice(i, i + 2), 16));
+export const rampColor = (t: number): string => { const k = Math.max(0, Math.min(1, t)) * (RAMP.length - 1), i = Math.min(RAMP.length - 2, Math.floor(k)), f = k - i, a = hexRgb(RAMP[i]!), b = hexRgb(RAMP[i + 1]!); return '#' + a.map((v, j) => Math.round(v + (b[j]! - v) * f).toString(16).padStart(2, '0')).join(''); };
+const shade = (t: number) => ({ fill: rampColor(t), op: '0.92' });
 
 /** Dokunma/kaydırma/yakınlaştırma: SVG viewBox'ını yönetir. Dokunuş ile sürükleme ayrılır (tıklama yalnızca sürüklenmediyse). */
 function panZoom(svg: SVGSVGElement, full: { x: number; y: number; w: number; h: number }, vb: { x: number; y: number; w: number; h: number }, onChange: (z: number) => void) {
@@ -30,9 +33,17 @@ function panZoom(svg: SVGSVGElement, full: { x: number; y: number; w: number; h:
   const up = (e: PointerEvent) => { ptrs.delete(e.pointerId); }; svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
   svg.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
   apply(); void pinch;
-  return { wasDrag: () => moved, zoom: (f: number) => { const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, f); }, reset: () => { Object.assign(vb, full); apply(); } };
+  let anim = 0;
+  const animateTo = (box: { x: number; y: number; w: number; h: number }, ms = 380, done?: () => void) => {
+    cancelAnimationFrame(anim); const from = { ...vb }, reduced = document.documentElement.dataset.motion === 'reduced'; const t0 = performance.now();
+    const step = (now: number) => { const k = reduced ? 1 : Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - k, 3); vb.x = from.x + (box.x - from.x) * e; vb.y = from.y + (box.y - from.y) * e; vb.w = from.w + (box.w - from.w) * e; vb.h = vb.w * (full.h / full.w); apply(); if (k < 1) anim = requestAnimationFrame(step); else done?.(); };
+    anim = requestAnimationFrame(step);
+  };
+  return { animateTo, wasDrag: () => moved, zoom: (f: number) => { const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, f); }, reset: () => animateTo({ ...full }, 320) };
 }
 
+/** Görünüm kimliği: mod/il değişince kaydırma sıfırlanır. */
+export const mapKey = () => `${mem.mode}:${mem.mode === 'province' ? mem.city : ''}`;
 export function mapView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, c = s.company!; if (!mem.city) { mem.city = c.startCity; }
   const prov = PROVINCES.find((p) => p.id === mem.city)!;
@@ -76,10 +87,11 @@ function turkeyView(app: App, refresh: () => void, sel: Province): HTMLElement {
   fill();
   const stt = provinceStats(sel.id), open = s.openCities.includes(sel.id), cost = TL(branchCost(sel.id));
   const card = h('div', { class: 'card', style: 'margin-bottom:8px' },
+    h('div', { html: skylineSvg(sel.id, cityData(sel.id)!.districts.reduce((a, x) => a + x.density, 0) / cityData(sel.id)!.districts.length, stt.income, cityData(sel.id)!.districts.reduce((a, x) => a + x.transit, 0) / cityData(sel.id)!.districts.length), style: 'margin:-4px -4px 8px;border-radius:10px;overflow:hidden' }),
     h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:8px' }, h('h3', { style: 'font-size:24px' }, `${sel.name}`), h('span', { class: 'mute', style: 'font-size:12px' }, `${sel.plate} · ${sel.region}`)),
     statBar('Gelir düzeyi', stt.income), statBar('Rekabet', stt.competition), h('div', { class: 'kv', style: 'margin-top:6px' }, h('span', {}, 'Konut fiyatı (ort.)'), h('span', {}, fmtM2(Math.round(stt.saleBase * hiOf(sel.id) * 100))), h('span', {}, 'İlçe sayısı'), h('span', {}, String(stt.districts)), h('span', {}, 'Şube durumu'), h('span', {}, open ? (sel.id === c.startCity ? 'Başlangıç şehri' : 'Açık') : 'Kilitli')),
     h('div', { style: 'display:flex;gap:8px;margin-top:10px;flex-wrap:wrap' },
-      h('button', { class: 'btn gold', style: 'flex:1', onclick: () => { press(app); mem.mode = 'province'; mem.vb = null; refresh(); } }, 'İlçeleri gör'),
+      h('button', { class: 'btn gold', style: 'flex:1', onclick: () => { press(app); const b = sel.bbox, pad = Math.max(b[2] - b[0], b[3] - b[1]) * 0.25, w = (b[2] - b[0]) + pad * 2; pz.animateTo({ x: b[0] - pad, y: b[1] - pad, w, h: w * (TR_BOX.h / TR_BOX.w) }, 420, () => { mem.mode = 'province'; mem.vb = null; refresh(); }); } }, 'İlçeleri gör'),
       open ? null : h('button', { class: 'btn', style: 'flex:1', disabled: c.cash < cost, onclick: () => { if (!confirm(`${sel.name} şubesi açılsın mı? ${fmt(cost)} (tek seferlik) + aylık şube gideri.`)) return; const r = app.store.run('OpenBranch', { cityId: sel.id }); if (r.ok) { press(app, 'stamp', 'heavy'); toast(`${sel.name} şubesi açıldı: ilanlar görünür.`); } else { app.audio.sfx('error'); toast(r.error); } } }, `Şube aç · ${fmt(cost)}`)));
   return h('div', { style: 'display:flex;flex-direction:column' }, toolbar, h('div', { class: 'tmap' }, wrap, h('div', {}, card, input, list)));
 }
@@ -112,11 +124,15 @@ function provinceView(app: App, refresh: () => void, prov: Province): HTMLElemen
   svg.innerHTML = `<rect x="${full.x}" y="${full.y}" width="${full.w}" height="${full.h}" fill="transparent"/>${paths}${labels}`;
   const key = `p:${prov.id}`, vb = mem.vb && mem.vbKey === key ? mem.vb : { ...full }; mem.vb = vb; mem.vbKey = key;
   const pz = panZoom(svg, full, vb, (z) => svg.setAttribute('data-z', z > 2.8 ? '3' : z > 1.6 ? '2' : '1'));
-  svg.addEventListener('click', (e) => { if (pz.wasDrag()) return; const el = (e.target as Element).closest('[data-id]'); if (!el) return; press(app); mem.district = el.getAttribute('data-id')!; refresh(); });
+  svg.addEventListener('click', (e) => { if (pz.wasDrag()) return; const el = (e.target as Element).closest('[data-id]'); if (!el) return; press(app); mem.district = el.getAttribute('data-id')!; mem.zoomTo = mem.district; mem.vb = { ...vb }; refresh(); });
   const wrap = h('div', { class: 'mapbox', style: 'position:relative' }, svg, h('div', { class: 'legend' }, h('span', {}, 'Düşük'), h('i', {}), h('span', {}, 'Yüksek')));
   wrap.append(h('div', { class: 'zbtns' }, h('button', { class: 'btn glass', 'aria-label': 'Yakınlaştır', onclick: () => pz.zoom(1.6) }, '+'), h('button', { class: 'btn glass', 'aria-label': 'Uzaklaştır', onclick: () => pz.zoom(1 / 1.6) }, '−'), h('button', { class: 'btn glass', 'aria-label': 'Sıfırla', onclick: () => pz.reset() }, '⌂')));
 
   const d = city.districts.find((x) => x.id === mem.district)!; void fv;
+  if (mem.zoomTo) { // seçilen ilçeye akıcı yakınlaşma (yeni görünüm kurulduktan sonra)
+    const zid = mem.zoomTo; mem.zoomTo = '';
+    requestAnimationFrame(() => { const el = svg.querySelector(`path[data-id="${zid}"]`) as SVGGraphicsElement | null; if (!el || !el.isConnected) return; const b = el.getBBox(), pad = Math.max(b.width, b.height) * 0.9, w = Math.max(full.w / 2.6, Math.max(b.width, b.height) * 2.6, b.width + pad); const tw = Math.min(full.w, w); pz.animateTo({ x: b.x + b.width / 2 - tw / 2, y: b.y + b.height / 2 - (tw * (full.h / full.w)) / 2, w: tw, h: tw * (full.h / full.w) }, 420); });
+  }
   const market = marketParcels(s), mine = ownedParcels(s);
   const list = market.filter((p) => p.city === prov.id && p.district === d.id).sort((a, b2) => askPrice(s, a) - askPrice(s, b2)), mineHere = mine.filter((p) => p.city === prov.id && p.district === d.id);
   const pcard = (p: typeof market[number], isMine: boolean) => h('div', { class: `card pcard ${isMine ? 'mine' : ''}`, role: 'button', tabindex: 0, onclick: () => { press(app); openParcel(app, p.id, refresh); } },
@@ -125,7 +141,7 @@ function provinceView(app: App, refresh: () => void, prov: Province): HTMLElemen
     h('div', { class: 'pr' }, isMine ? 'Sizin' : fmt(askPrice(s, p)), h('small', {}, isMine ? 'dosyayı aç' : fmtM2(askPrice(s, p) / p.area))));
   const cost = TL(branchCost(prov.id));
   const side = h('div', { class: 'col' },
-    h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('h3', { style: 'font-size:24px' }, d.label), h('span', { class: 'mute', style: 'font-size:12px' }, `Konut ≈ ${fmtM2(Math.round(d.saleBase * 100 * hi))} · ${nf(d.areaKm2)} km²`)),
+    h('div', { class: 'card' }, h('div', { html: skylineSvg(d.id, d.density, d.income, d.transit), style: 'margin:-4px -4px 8px;border-radius:10px;overflow:hidden' }), h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('h3', { style: 'font-size:24px' }, d.label), h('span', { class: 'mute', style: 'font-size:12px' }, `Konut ≈ ${fmtM2(Math.round(d.saleBase * 100 * hi))} · ${nf(d.areaKm2)} km²`)),
       statBar('Gelir düzeyi', d.income), statBar('Nüfus yoğunluğu', d.density), statBar('Altyapı', d.infra), statBar('Ulaşım', d.transit), statBar('Ticari potansiyel', d.commercial), statBar('Rekabet', d.competition)),
     ...(open ? [] : [h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'İlanlar kilitli'), h('p', { class: 'mute', style: 'font-size:13px;margin:0 0 8px' }, `${prov.name} ilinde arsa görmek ve almak için şube açın (${fmt(cost)} + aylık şube gideri).`), h('button', { class: 'btn gold block', disabled: c.cash < cost, onclick: () => { if (!confirm(`${prov.name} şubesi açılsın mı? ${fmt(cost)}`)) return; const r = app.store.run('OpenBranch', { cityId: prov.id }); if (r.ok) { press(app, 'stamp', 'heavy'); toast(`${prov.name} şubesi açıldı.`); } else { app.audio.sfx('error'); toast(r.error); } } }, `Şube aç · ${fmt(cost)}`))]),
     ...(open && mineHere.length ? [h('div', { class: 'lbl-s' }, 'Bu ilçedeki arsalarınız'), ...mineHere.map((p) => pcard(p, true))] : []),

@@ -12,7 +12,7 @@ import { emblemSvg } from '../emblem';
 import type { App } from '../app';
 import { cityData } from '../../data';
 import { openSettings } from './settings';
-import { mapView } from './map';
+import { mapKey, mapView } from './map';
 import { projectsView } from './projects';
 import { opsView } from './ops';
 import { landAssetValue, ownedParcels } from '../../sim/land';
@@ -178,8 +178,9 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Haber bandı'), ...(s.news.length ? s.news.slice(0, 12).map((n) => h('div', { class: 'news' }, h('small', {}, formatDate(n.day)), h('span', { class: `dot ${n.tone}` }), h('span', {}, n.text))) : [h('div', { class: 'empty' }, 'Henüz haber yok. Piyasa değişimleri burada duyurulur.')])));
   };
 
+  let lastViewKey = '';
   const drawView = () => {
-    const keep = view.scrollTop; view.innerHTML = '';
+    const vkey = `${tab}:${tab === 'harita' ? mapKey() : ''}`, keep = vkey === lastViewKey ? view.scrollTop : 0; lastViewKey = vkey; view.innerHTML = '';
     view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'finans' ? finance() : market());
     view.scrollTop = keep;
   };

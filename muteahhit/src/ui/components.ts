@@ -67,3 +67,26 @@ export function planTable(plan: Plan, o: { landOwned: boolean; soilKnown: boolea
   wrap.append(h('div', { style: 'height:6px' }), k, h('div', { class: 'hint' }, 'Tüm fiyatlar bugünün piyasa endekslerine göredir. Satış gelirleri proje bitince ve satıldıkça gelir; arada piyasa değişebilir.'));
   void TL; return wrap;
 }
+
+
+/**
+ * Bölge silueti: GERÇEK bölge verisinden çizilir — nüfus yoğunluğu → bina sayısı/yüksekliği, gelir düzeyi → cephe (yüksek gelirde bordo cam),
+ * ulaşım → metro hattı ve istasyon, düşük yoğunlukta ağaçlar. Tohum bölge kimliğidir (her bölge farklı, aynı bölge hep aynı).
+ */
+export function skylineSvg(id: string, density: number, income: number, transit: number, W = 260, H = 58): string {
+  let hsh = 2166136261; for (const ch of id) hsh = Math.imul(hsh ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const rnd = () => { hsh = (Math.imul(hsh, 1664525) + 1013904223) >>> 0; return hsh / 4294967296; };
+  const n = 6 + Math.round(density / 12), maxH = 14 + density * 0.34, bw = W / n;
+  const wall = income > 62 ? '#3a2a31' : '#2c2d33', glass = income > 62 ? '#C64252' : '#8E919B';
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" role="img" aria-label="Bölge silueti"><rect width="${W}" height="${H}" fill="#16171A"/>`;
+  for (let i = 0; i < n; i++) {
+    const w = bw * (0.7 + rnd() * 0.5), x = i * bw + (bw - w) / 2, hh = Math.min(H - 12, maxH * (0.45 + rnd() * 0.75)), y = H - 9 - hh;
+    s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${hh.toFixed(1)}" fill="${wall}"/>`;
+    const cols = Math.max(1, Math.floor(w / 5)), rows = Math.floor(hh / 6);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (rnd() < 0.42) s += `<rect x="${(x + 1.5 + c * 5).toFixed(1)}" y="${(y + 2 + r * 6).toFixed(1)}" width="2.4" height="3" fill="${glass}" opacity="${(0.35 + rnd() * 0.5).toFixed(2)}"/>`;
+  }
+  if (density < 45) for (let i = 0; i < 5; i++) { const x = 10 + rnd() * (W - 20); s += `<circle cx="${x.toFixed(1)}" cy="${H - 14}" r="${(3 + rnd() * 2).toFixed(1)}" fill="#3FBF8A" opacity=".55"/><rect x="${(x - 0.6).toFixed(1)}" y="${H - 12}" width="1.2" height="4" fill="#5b5d66"/>`; }
+  s += `<rect x="0" y="${H - 9}" width="${W}" height="9" fill="#101113"/>`;
+  if (transit > 55) { s += `<line x1="0" x2="${W}" y1="${H - 4.5}" y2="${H - 4.5}" stroke="#A83246" stroke-width="1.6" stroke-dasharray="${transit > 75 ? '' : '6 4'}"/>`; for (let i = 1; i < 4; i++) s += `<circle cx="${(W * i) / 4}" cy="${H - 4.5}" r="2.4" fill="#F2F0F0"/>`; }
+  return s + '</svg>';
+}
