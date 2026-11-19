@@ -13,7 +13,7 @@ import { machineAssetValue, machineMonthlyMaint } from './machines';
 export function monthlyCosts(s: GameState): { cat: string; amount: Money; memo: string }[] {
   const c = s.company; if (!c) return [];
   const wages = s.staff.reduce((a, x) => a + x.salary, 0);
-  const off = officeFor(c.level), ci = s.costIndex;
+  const off = officeFor(c.office), ci = s.costIndex;
   const out: { cat: string; amount: Money; memo: string }[] = [];
   if (wages > 0) out.push({ cat: 'maas', amount: wages, memo: `${s.staff.length} çalışan` });
   const sp = c.safety === 'dusuk' ? 0.005 : c.safety === 'yuksek' ? 0.06 : 0.02;
@@ -97,7 +97,7 @@ export function alerts(s: GameState, fmt: (m: Money) => string, fmtDate: (d: num
   const idle = s.parcels.filter((p) => p.owner === 'player' && p.projectId === undefined && !p.listed);
   if (idle.length) out.push({ tone: 'info', text: idle.length === 1 ? `Boş arsanız var (${idle[0]!.hood}): proje başlatın ya da satışa koyun.` : `${idle.length} boş arsanız var: proje başlatın ya da satışa koyun.` });
   if (s.staff.length === 0) out.push({ tone: 'info', text: 'Ekibiniz yok. Ekip sekmesinden personel alabilirsiniz.' });
-  const cap = officeFor(c.level).capacity;
+  const cap = officeFor(c.office).capacity;
   if (s.staff.length >= cap) out.push({ tone: 'info', text: `Ofis kapasitesi dolu (${s.staff.length}/${cap}). Büyümek için daha büyük ofis gerekir.` });
   const latest = s.news[0]; if (latest && s.clock.day - latest.day <= 45) out.push({ tone: latest.tone, text: latest.text });
   // sonraki maaş günü

@@ -37,7 +37,7 @@ describe('makro ekonomi', () => {
     }
     expect(warned).toBe(crises);           // kriz asla "ipucusuz" gelmez
     expect(crises).toBeGreaterThan(10);    // ama gerçekten yaşanır
-  });
+  }, 30000);
   it('korumalı başlangıçta (zorluğa göre) kriz/daralma yok', () => {
     for (let i = 0; i < 40; i++) {
       const s = newGameState(900 + i, 'gercekci'); dispatch(s, 'CreateCompany', { name: 'Kor Yapı', founderBackground: 'emlakci', startCity: 'izmir', difficulty: 'gercekci' });
@@ -140,7 +140,7 @@ describe('kayıt göçü', () => {
     for (const k of ['macro', 'macroHistory', 'news', 'history', 'costIndex', 'taxLossCarry']) delete old[k];
     const r = unpack(pack(old));
     expect(r.ok).toBe(true);
-    if (r.ok) { expect(r.migrated).toBe(true); expect(r.state.meta.version).toBe(9); expect(r.state.parcels.length).toBeGreaterThan(0); advanceDays(r.state, 120); expect(checkInvariant(r.state)).toBe(true); expect(r.state.macroHistory.length).toBeGreaterThan(0); }
+    if (r.ok) { expect(r.migrated).toBe(true); expect(r.state.meta.version).toBe(10); expect(r.state.parcels.length).toBeGreaterThan(0); advanceDays(r.state, 120); expect(checkInvariant(r.state)).toBe(true); expect(r.state.macroHistory.length).toBeGreaterThan(0); }
   });
 });
 

@@ -12,6 +12,7 @@ import materialsRaw from './materials.json';
 import machinesRaw from './machines.json';
 import banksRaw from './banks.json';
 import eventsRaw from './events.json';
+import progressRaw from './progress.json';
 
 export interface StaffTypeDef { id: string; label: string; baseSalaryTL: number }
 export interface OfficeDef { level: number; label: string; capacity: number; monthlyRentTL: number }
@@ -85,10 +86,19 @@ export interface BankDef { id: string; label: string; margin: number; minScore: 
 export const BANKS = banksRaw as BankDef[];
 export const bank = (id: string) => BANKS.find((b) => b.id === id);
 export const staffType = (id: string) => STAFF_TYPES.find((t) => t.id === id);
-export const officeFor = (level: number) => OFFICES[Math.min(level, OFFICES.length) - 1]!;
+export const officeFor = (office: number) => OFFICES[Math.min(Math.max(1, office || 1), OFFICES.length) - 1]!;
 
 export type EffectTuple = [string, ...(number | string)[]];
 export interface EventChoice { l: string; e: EffectTuple[]; p?: number; s?: EffectTuple[]; f?: EffectTuple[] }
 export interface EventDef { id: string; c: string; t: string; x: string; w: number; need: string[]; ch: EventChoice[]; def?: number }
 export const EVENTS = eventsRaw as unknown as EventDef[];
 export const eventDef = (id: string) => EVENTS.find((e) => e.id === id);
+
+export interface LevelDef { level: number; label: string; need: { completed?: number; nw?: number; rep?: number; cities?: number } }
+export interface QuestDef { id: string; t: string; x: string; m: string; n: number; r: { cash?: number; rep?: number; score?: number } }
+export interface AchDef { id: string; t: string; x: string; m: string; n: number }
+export interface OfficeStep { office: number; minLevel: number; costTL: number }
+export const LEVEL_DEFS = (progressRaw as any).levels as LevelDef[];
+export const QUESTS = (progressRaw as any).quests as QuestDef[];
+export const ACHIEVEMENTS = (progressRaw as any).achievements as AchDef[];
+export const OFFICE_STEPS = (progressRaw as any).offices as OfficeStep[];

@@ -850,3 +850,12 @@ Kullanıcı kararı: bu fazda **temel düzen** kurulur, ince ayar ve hatalar son
 - **Arayüz hareketi**: kasa göstergesi değişimde sayaç gibi akar ve yeşil/kırmızı vurgulanır; sekme geçişleri kısa kayma-solma; bina satışı/ihale/teslimde konfeti (hareket azaltma açıksa yalnızca hafif parıltı).
 - **3D atmosfer**: çalışan şantiyede açık havada yükselen yumuşak toz bulutları (yuvarlak sprite, toplamsal karışım; düşük kalitede kapalı).
 - **Test**: sahte AudioContext ile kip yoğunlukları (game < menu < tense) ve determinizm doğrulanır.
+
+
+## Uygulama notları — Faz 11 (görevler, başarımlar, seviyeler, ofis)
+
+- **Seviyeler** (`data/progress.json`, `sim/progress.ts`): 8 unvan (Şahıs Müteahhit → Holding). Seviye; tamamlanan proje, net varlık, itibar ve şube sayısı şartlarıyla **otomatik** atlanır; ödül kredi notu +15, itibar +2, oyun duraklar, konfeti. Şirketin 81 ilin hepsinde şube açabilmesi Faz 7'den beri mümkündür; şehir şartları (2/3/5/8/12) büyümeyi yönlendirir.
+- **Ofis**: açık komut `UpgradeOffice` (4 kademe; seviye 2/4/6 ve 0,3/1,5/6 M₺ taşınma masrafı); kapasite ve kira artar. Önceden seviye kapasiteyi belirliyordu; artık oyuncu seçimi.
+- **Görevler**: 14 görevlik zincir (arsa → ekip → proje → teslim → satış → kredi → makine → ikinci şehir → ihale → kriz atlatma); ilk 3 açık görev ve ilerleme çubuğu Şirket sekmesinde; ödül nakit/itibar/not, gün ilerleyince verilir (komutla değil).
+- **Başarımlar**: 30 başarım (proje, satış, servet, şehir, ihale, kalite, itibar, kredi, ortaklık, olay, kriz, süre, seviye); ödülsüz, kalıcı, kilitli/açık listesi.
+- **Altyapı**: sayaçlar olaylardan türetilir (`track`); ölçütler tek `metric()` fonksiyonundan okunur; günlük kontrol 6 günde bir (performans). Save v10: eski kayıtlar sessizce işlenir (ödül/bildirim yok).

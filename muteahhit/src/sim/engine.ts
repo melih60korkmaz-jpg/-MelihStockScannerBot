@@ -9,6 +9,7 @@ import { constructionDaily } from './construction';
 import { deliveries, materialsMonthly } from './materials';
 import { salesDaily, salesMonthly } from './sales';
 import { monthlyCosts, netWorth } from './finance';
+import { checkProgress, progressMonthly, track } from './progress';
 import { rivalsMonthly } from './rivals';
 import { eventsDaily, eventsMonthly } from './events';
 import { tendersDaily, tendersMonthly } from './tenders';
@@ -36,6 +37,7 @@ export function advanceDay(s: GameState): GameEvent[] {
     tendersDaily(s, events);
     eventsDaily(s, events);
   }
+  track(s, events); if (s.clock.day % 6 === 0) checkProgress(s, events);
   return events;
 }
 
@@ -74,6 +76,7 @@ function monthly(s: GameState, events: GameEvent[]): void {
   loansMonthly(s, events);
   tendersMonthly(s, events);
   eventsMonthly(s, events);
+  progressMonthly(s);
   s.costIndex *= 1 + (s.macro.inflation / 100 / 12) * 0.85;
   for (const x of monthlyCosts(s)) post(s, x.cat, -x.amount, { memo: x.memo });
   if ([1, 4, 7, 10].includes(dateOf(s.clock.day).month)) quarterlyTax(s, events);

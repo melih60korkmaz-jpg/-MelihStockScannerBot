@@ -140,7 +140,7 @@ describe('kayıt ve göç (v5)', () => {
   });
   it('v4 kaydı v5\'e taşınır', () => {
     const { s } = setup(); const old: any = JSON.parse(JSON.stringify(s)); old.meta.version = 4; for (const k of ['stock', 'orders', 'machines', 'matPrice']) delete old[k]; for (const x of old.staff) delete x.morale; delete old.company.safety; delete old.company.procurement; delete old.company.lastAccidentDay;
-    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(9); expect(r.state.staff[0]!.morale).toBe(70); expect(r.state.company!.safety).toBe('normal'); expect(r.state.company!.procurement.auto).toBe(true); advanceDays(r.state, 60); }
+    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(10); expect(r.state.staff[0]!.morale).toBe(70); expect(r.state.company!.safety).toBe('normal'); expect(r.state.company!.procurement.auto).toBe(true); advanceDays(r.state, 60); }
   });
   it('aşama günleri hâlâ planlanan süreyi verir', () => { const { project: p } = setup(); expect(stageDays(p).reduce((a, x) => a + x, 0)).toBeCloseTo(Math.max(60, p.expected.months * 30), 6); });
 });

@@ -28,6 +28,7 @@ export interface Company {
   startCity: string;
   emblem: { shape: number; color: number };
   level: number;
+  office: number;
   reputation: number;   // 0-100
   creditScore: number;  // 0-1000
   stats: { completed: number; sold: number; profit: Money };
@@ -71,6 +72,7 @@ export interface Parcel {
 }
 export interface CityMarket { landIndex: number; housingIndex: number; supply?: number }
 export interface Rival { id: number; name: string; style: 'agresif' | 'dengeli' | 'temkinli'; home: string; cash: Money; rep: number; tech: number; projects: number; wins: number; failed: boolean; since: number; last?: string }
+export interface Progress { ach: Record<string, number>; quests: Record<string, number>; c: { loans: number; tendersWon: number; bids: number; events: number; unitsSold: number; started: number; bestQuality: number; crisisMonths: number; investors: number; equitySold: number } }
 export interface PendingEvent { id: string; day: number; projectId?: number; city?: string }
 export interface BuildState {
   stage: number;               // STAGES indeksi (1–17); 18 = bitti
@@ -175,6 +177,7 @@ export interface GameState {
   rivals: Rival[];
   pending: PendingEvent | null;
   evtLast: Record<string, number>;
+  progress: Progress;
 }
 
 export interface GameEvent {

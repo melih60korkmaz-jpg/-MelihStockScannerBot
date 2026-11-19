@@ -1,4 +1,5 @@
 import { SAVE_VERSION } from '../core/state';
+import { checkProgress } from '../sim/progress';
 import type { GameState } from '../core/types';
 import { crc32 } from './crc32';
 import { initMarket } from '../sim/land';
@@ -65,6 +66,7 @@ export const MIGRATIONS: Record<number, (s: any) => any> = {
     s.meta.version = 8; return s;
   },
   // v8 → v9 (Faz 9): rakipler, olay kataloğu
+  9: (s) => { s.progress = { ach: {}, quests: {}, c: { loans: 0, tendersWon: 0, bids: 0, events: 0, unitsSold: 0, started: 0, bestQuality: 0, crisisMonths: 0, investors: 0, equitySold: 0 } }; if (s.company) s.company.office = 1; s.meta.version = 10; return s; },
   8: (s) => { s.rivals = []; s.pending = null; s.evtLast = {}; s.meta.version = 9; return s; },
 };
 
@@ -95,6 +97,7 @@ export function validateState(s: any): string | null {
   if (!s.stock || !Array.isArray(s.orders) || !Array.isArray(s.machines) || !s.matPrice) return 'kaynak verisi eksik';
   if (!Array.isArray(s.parcels) || !Array.isArray(s.projects) || !Array.isArray(s.scheduled) || !s.cityMarket) return 'arsa/proje verisi eksik';
   if (typeof s.costIndex !== 'number' || !Number.isInteger(s.taxLossCarry)) return 'maliyet endeksi bozuk';
+  if (!s.progress || typeof s.progress.ach !== 'object' || !s.progress.c) return 'ilerleme verisi eksik';
   if (!Array.isArray(s.rivals) || typeof s.evtLast !== 'object') return 'rakip/olay verisi eksik';
   if (!Array.isArray(s.loans) || !Array.isArray(s.investments) || !Array.isArray(s.tenders)) return 'finans verisi eksik';
   if (s.company) {
@@ -121,5 +124,6 @@ export function unpack(text: string): LoadResult {
   }
   const bad = validateState(state);
   if (bad) return { ok: false, reason: 'yapı', detail: bad };
+  if (migrated && state.company) checkProgress(state as GameState, [], true); // eski kayıtta mevcut başarımlar sessizce işlenir
   return { ok: true, state: state as GameState, migrated };
 }

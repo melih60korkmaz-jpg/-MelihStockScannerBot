@@ -2,6 +2,7 @@ import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { post } from '../sim/ledger';
+import { checkProgress, officeStepFor, track } from '../sim/progress';
 import { resolveEvent } from '../sim/events';
 import { bidError, placeBid } from '../sim/tenders';
 import { quoteInvestor, takeInvestor, equityQuote, sellEquity, refundInvestor } from '../sim/investors';
@@ -56,7 +57,7 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     s.company = {
       name: p.name.trim(), founderBackground: p.founderBackground, startCity: p.startCity,
       emblem: p.emblem ?? { shape: 0, color: 0 },
-      level: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0, stats: { completed: 0, sold: 0, profit: 0 }, safety: 'normal', procurement: { auto: true, supplier: 'yerel' }, lastAccidentDay: -999, satisfaction: 60, ownership: 100, bankrupt: false,
+      level: 1, office: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0, stats: { completed: 0, sold: 0, profit: 0 }, safety: 'normal', procurement: { auto: true, supplier: 'yerel' }, lastAccidentDay: -999, satisfaction: 60, ownership: 100, bankrupt: false,
     };
     post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
     for (const t of bg.staff) createStaff(s, t);
@@ -73,7 +74,7 @@ const hireStaff: CommandDef<HireStaffParams> = {
   validate(s, p) {
     if (!s.company) return 'Önce şirket kurulmalı.';
     if (!staffType(p.type)) return 'Bilinmeyen personel tipi.';
-    if (s.staff.length >= officeFor(s.company.level).capacity) return 'Ofis kapasitesi dolu; daha büyük ofis gerekli.';
+    if (s.staff.length >= officeFor(s.company.office).capacity) return 'Ofis kapasitesi dolu; daha büyük ofis gerekli.';
     return null;
   },
   apply(s, p) {
@@ -266,6 +267,10 @@ const resolveEventCmd: CommandDef<ResolveEventParams> = {
   validate(s, p) { if (!s.pending) return 'Bekleyen karar yok.'; return Number.isInteger(p.choice) && p.choice >= 0 ? null : 'Geçersiz seçim.'; },
   apply(s, p) { const out: GameEvent[] = []; resolveEvent(s, p.choice, out); return out; },
 };
+const upgradeOffice: CommandDef<Record<string, never>> = {
+  validate(s) { const c = s.company; if (!c) return 'Önce şirket kurulmalı.'; const st = officeStepFor(s); if (!st) return 'Ofis zaten en büyük boyutta.'; if (c.level < st.minLevel) return `Bu ofis için şirket seviyesi ${st.minLevel} gerekir.`; if (c.cash < TL(st.costTL)) return 'Taşınma masrafı için yeterli nakit yok.'; return null; },
+  apply(s) { const st = officeStepFor(s)!; post(s, 'ofis', -TL(st.costTL), { memo: 'Ofis taşınma ve dekorasyon' }); s.company!.office = st.office; return [ev(s, 'OFFICE_UPGRADED', { office: st.office })]; },
+};
 const sellMachine: CommandDef<MachineRef> = {
   validate(s, p) { return s.machines.some((m) => m.id === p.machineId) ? null : 'Makine bulunamadı.'; },
   apply(s, p) { const m = s.machines.find((x) => x.id === p.machineId)!; const v = Math.round(machineValue(s, m) * SELL_FACTOR); post(s, 'makine_alim', v, { memo: `${machine(m.type)!.label} satış` }); s.machines = s.machines.filter((x) => x.id !== m.id); return [ev(s, 'MACHINE_SOLD', { type: m.type, value: v })]; },
@@ -315,7 +320,7 @@ const setSalesPolicy: CommandDef<SalesPolicyParams> = {
 };
 
 export const COMMANDS = {
-  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, ResolveEvent: resolveEventCmd, PlaceBid: placeBidCmd, TakeLoan: takeLoanCmd, TakeInvestor: takeInvestorCmd, SellEquity: sellEquityCmd, RepayLoan: repayLoanCmd, RestructureLoan: restructureCmd, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
+  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, UpgradeOffice: upgradeOffice, ResolveEvent: resolveEventCmd, PlaceBid: placeBidCmd, TakeLoan: takeLoanCmd, TakeInvestor: takeInvestorCmd, SellEquity: sellEquityCmd, RepayLoan: repayLoanCmd, RestructureLoan: restructureCmd, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,
   CreateCompany: createCompany,
   HireStaff: hireStaff,
@@ -331,5 +336,6 @@ export function dispatch<N extends CommandName>(s: GameState, name: N, params: P
   const def = COMMANDS[name] as CommandDef<typeof params>;
   const err = def.validate(s, params);
   if (err) return { ok: false, error: err };
-  return { ok: true, events: def.apply(s, params) };
+  const events = def.apply(s, params); track(s, events); checkProgress(s, events, false, true);
+  return { ok: true, events };
 }

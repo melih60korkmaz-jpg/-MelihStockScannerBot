@@ -28,7 +28,7 @@ describe('rakip firmalar', () => {
     const s = setup(); s.cityMarket.ankara!.supply = 0; expect(rivalPressure(s, 'ankara')).toBe(1); s.cityMarket.ankara!.supply = 10; expect(rivalPressure(s, 'ankara')).toBeLessThan(0.9); expect(rivalPressure(s, 'ankara')).toBeGreaterThanOrEqual(0.85);
   });
   it('eski kayıt (rakipsiz) açılır ve rakipler oluşur', () => {
-    const s = setup(); const old: any = JSON.parse(JSON.stringify(s)); delete old.rivals; delete old.pending; delete old.evtLast; old.meta.version = 8;
+    const s = setup(); const old: any = JSON.parse(JSON.stringify(s)); delete old.rivals; delete old.pending; delete old.evtLast; old.meta.version = 8; delete old.progress; delete old.company.office;
     const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { advanceDays(r.state, 35); expect(r.state.rivals.length).toBeGreaterThanOrEqual(5); }
   });
 });

@@ -22,7 +22,7 @@ export function opsView(app: App, refresh: () => void): HTMLElement {
 }
 
 function team(app: App, refresh: () => void): HTMLElement {
-  const s = app.store.state, c = s.company!, cap = officeFor(c.level).capacity, payroll = s.staff.reduce((a, x) => a + x.salary, 0);
+  const s = app.store.state, c = s.company!, cap = officeFor(c.office).capacity, payroll = s.staff.reduce((a, x) => a + x.salary, 0);
   const projects = s.projects.filter((p) => p.status === 'insaat' || p.status === 'taslak');
   const avgMorale = s.staff.length ? Math.round(s.staff.reduce((a, x) => a + x.morale, 0) / s.staff.length) : 0;
   const list = h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px' }, h('div', { class: 'lbl-s', style: 'margin:0' }, `Çalışanlar ${s.staff.length}/${cap}`), h('span', { class: 'mute', style: 'font-size:12px' }, `Aylık maaş ${fmt(payroll)} · ortalama moral ${avgMorale}`)),
@@ -39,7 +39,7 @@ function team(app: App, refresh: () => void): HTMLElement {
   for (const t of STAFF_TYPES) hire.append(h('div', { class: 'card' }, h('h3', {}, t.label), h('small', {}, `~${fmt(TL(t.baseSalaryTL * 1.075))} – ${fmt(TL(t.baseSalaryTL * 1.3))} /ay`),
     h('button', { class: 'btn gold', style: 'min-height:40px', disabled: s.staff.length >= cap, onclick: () => { const r = app.store.run('HireStaff', { type: t.id }); if (r.ok) { press(app, 'confirm'); toast(`${t.label} işe alındı.`); } else { app.audio.sfx('error'); toast(r.error); } } }, s.staff.length >= cap ? 'Ofis dolu' : 'İşe al')));
   const nextOffice = OFFICES[c.level];
-  return h('div', { class: 'cols' }, list, h('div', { class: 'col' }, h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `Ofis: ${officeFor(c.level).label}`), h('div', { class: 'mute', style: 'font-size:12px' }, `Kapasite ${cap} kişi · kira ${fmt(TL(officeFor(c.level).monthlyRentTL))}/ay (enflasyonla artar).${nextOffice ? ` Sonraki: ${nextOffice.label} (${nextOffice.capacity} kişi) — şirket seviyesi yükselince.` : ''}`)), hire));
+  return h('div', { class: 'cols' }, list, h('div', { class: 'col' }, h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `Ofis: ${officeFor(c.office).label}`), h('div', { class: 'mute', style: 'font-size:12px' }, `Kapasite ${cap} kişi · kira ${fmt(TL(officeFor(c.office).monthlyRentTL))}/ay (enflasyonla artar).${nextOffice ? ` Sonraki: ${nextOffice.label} (${nextOffice.capacity} kişi) — şirket seviyesi yükselince.` : ''}`)), hire));
 }
 
 function orderModal(app: App, matId: string, refresh: () => void) {

@@ -18,6 +18,8 @@ import { opsView } from './ops';
 import { landAssetValue, ownedParcels } from '../../sim/land';
 import { loansView, partnersView } from './bank';
 import { tendersView } from './tenders';
+import { levelCard, questsCard } from './progress';
+import { ACHIEVEMENTS, LEVEL_DEFS, QUESTS } from '../../data';
 import { openEventDecision } from './eventModal';
 import { STYLE_LABEL, aliveRivals } from '../../sim/rivals';
 import { eventDef } from '../../data';
@@ -25,7 +27,7 @@ import { debtTotal } from '../../sim/loans';
 import { investorLiability } from '../../sim/finance';
 import { contractAssets } from '../../sim/tenders';
 
-const LEVELS = ['Şahıs Müteahhit', 'Küçük Firma', 'Yerel Firma', 'Bölge Firması', 'Şehir Markası', 'Çok Şehirli Firma', 'Ulusal Firma', 'Holding'];
+const LEVELS = LEVEL_DEFS.map((l) => l.label);
 const ICON = {
   home: '<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
   chart: '<svg viewBox="0 0 24 24"><path d="M4 20V4"/><path d="M4 20h16"/><path d="M8 15l4-4 3 3 5-6"/></svg>',
@@ -118,6 +120,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
         h('div', { class: 'kpi', html: `<small>${last ? 'Son ay gider' : 'Beklenen aylık gider'}</small><b>${formatMoney(last ? last.expense : projectedMonthlyCost(s))}</b>` }),
         h('div', { class: 'kpi', html: `<small>Son ay net</small><b>${last ? signed(last.net) : '—'}</b>` })));
     const right = h('div', { class: 'col' },
+      questsCard(app), levelCard(app, drawView),
       h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Bugün'), ...alerts(s, formatMoney, formatDate).map((a) => h('div', { class: 'alert' }, h('span', { class: `dot ${a.tone}` }), h('span', {}, a.text)))),
       h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('div', { class: 'lbl-s', style: 'margin:0' }, 'Piyasa nabzı'), h('span', { class: `regime ${m.regime}` }, REGIMES[m.regime].label)),
         h('div', { class: 'kpis', style: 'margin-top:8px' },
@@ -182,7 +185,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
 
   // Olaylar: gün akışı yalnızca HUD'u günceller; ay/komut olayları sekmeyi yeniler
-  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED']);
+  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED', 'QUEST_DONE', 'ACHIEVEMENT', 'LEVEL_UP', 'OFFICE_UPGRADED']);
   const unsub = app.store.subscribe((evs) => {
     if (!root.isConnected) { unsub(); return; }
     let redraw = false;
@@ -222,6 +225,9 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'MONTH') app.audio.setMood(moodNow());
       if (e.type === 'EVENT_DECISION') { app.audio.sfx('bell'); openEventDecision(app); }
       if (e.type === 'EVENT_RESOLVED') { const d = eventDef(e.data!.id as string); const ch = d?.ch[e.data!.choice as number]; toast(`${d?.t ?? 'Olay'}: ${ch?.l ?? ''}${e.data!.auto ? ' (süre doldu)' : ''}${e.data!.success === true ? ' — başarılı' : e.data!.success === false ? ' — olmadı' : ''}`, 4500); }
+      if (e.type === 'QUEST_DONE') { app.audio.sfx('confirm'); toast(`Görev tamam: ${QUESTS.find((q) => q.id === e.data!.id)?.t ?? ''}`, 4000); }
+      if (e.type === 'ACHIEVEMENT') { app.audio.sfx('fanfare'); toast(`🏆 Başarım: ${ACHIEVEMENTS.find((a) => a.id === e.data!.id)?.t ?? ''}`, 4500); }
+      if (e.type === 'LEVEL_UP') { app.audio.sfx('fanfare'); app.haptic('heavy'); celebrate(app.settings.reduced); toast(`Seviye atladınız: ${e.data!.label}!`, 6000); }
       if (e.type === 'BANKRUPT') { app.audio.sfx('alarm'); app.haptic('heavy'); showBankrupt(); }
       if (e.type === 'CASH_NEGATIVE') { app.audio.sfx('error'); toast('Kasa eksiye düştü! Oyun duraklatıldı.', 5000); }
     }
