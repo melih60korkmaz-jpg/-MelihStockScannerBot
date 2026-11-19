@@ -3,6 +3,8 @@ import { cityData, buildingType, quality } from '../../data';
 import { h, press, toast } from '../dom';
 import { fmt, nf } from '../components';
 import type { App } from '../app';
+import { buildingArt } from '../art';
+import { hbars } from '../charts';
 import type { Tender } from '../../core/types';
 import { bidLimits, bondOf, eligibility } from '../../sim/tenders';
 
@@ -14,19 +16,21 @@ export function tendersView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, open = s.tenders.filter((t) => t.status === 'acik'), done = s.tenders.filter((t) => t.status !== 'acik');
   const card = (t: Tender) => {
     const el = eligibility(s, t), st = STATUS[t.status]!, bt = buildingType(t.type);
-    return h('div', { class: 'card', style: 'margin-bottom:10px' },
+    const floorsOf = Math.max(2, Math.round(t.area / 700) + 1);
+    return h('div', { class: `card pj st-${t.status === 'acik' ? 'insaat' : t.status === 'kazandi' ? 'tamamlandi' : 'taslak'}`, style: 'margin-bottom:10px' }, h('div', { class: 'pcover', html: buildingArt(t.type, floorsOf, 1, t.id, t.quality) }), h('div', { class: 'pbody' },
       h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' }, h('h3', { style: 'font-size:20px;flex:1' }, t.title), h('span', { class: 'chip' }, KIND[t.kind] ?? t.kind), h('span', { class: 'chip' }, t.client === 'kamu' ? 'Kamu ihalesi' : 'Özel ihale'), h('span', { class: `chip ${st[1]}` }, st[0])),
       h('div', { class: 'mute', style: 'font-size:12px;margin:4px 0 8px' }, `${cityData(t.city)?.label} · ${bt?.label} · ${quality(t.quality)?.label} · ${nf(t.area)} m² arsa · süre ${t.months} ay · ${t.status === 'acik' ? `sonuç ${formatDate(t.evalDay)}` : ''}`),
       h('div', { class: 'kpis' }, h('div', { class: 'kpi', html: `<small>Yaklaşık maliyet</small><b>${fmt(t.refCost)}</b>` }), h('div', { class: 'kpi', html: `<small>Teklif aralığı</small><b>${fmt(bidLimits(t).min)} – ${fmt(bidLimits(t).max)}</b>` }), h('div', { class: 'kpi', html: `<small>${t.bid ? 'Teklifiniz' : 'Teminat'}</small><b>${t.bid ? fmt(t.bid.price) : '%' + (t.bondPct * 100).toFixed(0)}</b>` })),
+      t.status === 'acik' ? h('div', { class: 'pjfacts' }, h('span', {}, '🏢 Rakip ', h('b', {}, String(t.rivals.length))), h('span', {}, '📊 Rekabet ', h('b', {}, t.rivals.length >= 4 ? 'yüksek' : 'orta')), h('span', {}, '📜 Teminat ', h('b', {}, '%' + (t.bondPct * 100).toFixed(0)))) : null,
       t.status === 'acik' ? h('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;margin-top:8px' }, ...el.checks.map((c) => h('span', { class: `chip ${c.ok ? 'good' : 'bad'}`, title: `${c.label}: gerekli ${c.need}, sizde ${c.have}` }, `${c.label} ${c.have}/${c.need}`))) : null,
-      t.result ? h('div', { class: 'mute', style: 'font-size:12px;margin-top:8px' }, `${t.result.reason ? t.result.reason + ' ' : ''}Kazanan: ${t.result.winner}.`, ...(t.result.scores.length ? [h('div', {}, t.result.scores.map((x) => `${x.name} ${x.score}`).join(' · '))] : [])) : null,
-      t.status === 'acik' && !t.bid ? h('div', { style: 'display:flex;justify-content:flex-end;margin-top:10px' }, h('button', { class: 'btn gold', disabled: !s.openCities.includes(t.city), onclick: () => { press(app); openBid(app, t, refresh); } }, s.openCities.includes(t.city) ? (el.ok ? 'Teklif ver' : 'Teklif ver (şart eksik)') : 'Şube gerekli')) : t.bid && t.status === 'acik' ? h('div', { class: 'chip good', style: 'margin-top:8px' }, 'Teklif verildi, sonuç bekleniyor') : null);
+      t.result ? h('div', { style: 'margin-top:8px' }, h('div', { class: 'mute', style: 'font-size:12px' }, `${t.status === 'kazandi' ? '🏆' : '📉'} ${t.result.reason ? t.result.reason + ' ' : ''}Kazanan: ${t.result.winner}.`), ...(t.result.scores.length ? [hbars(t.result.scores.map((x) => ({ label: x.name, value: x.score })), (n) => String(n))] : [])) : null,
+      t.status === 'acik' && !t.bid ? h('div', { style: 'display:flex;justify-content:flex-end;margin-top:10px' }, h('button', { class: 'btn gold', disabled: !s.openCities.includes(t.city), onclick: () => { press(app); openBid(app, t, refresh); } }, s.openCities.includes(t.city) ? (el.ok ? 'Teklif ver' : 'Teklif ver (şart eksik)') : 'Şube gerekli')) : t.bid && t.status === 'acik' ? h('div', { class: 'chip good', style: 'margin-top:8px' }, 'Teklif verildi, sonuç bekleniyor') : null));
   };
   const contracts = s.projects.filter((p) => p.contract && p.status !== 'satildi');
   return h('div', { class: 'cols' },
-    h('div', { class: 'col' }, h('div', { class: 'lbl-s' }, 'Açık ihaleler'), ...(open.length ? open.map(card) : [h('div', { class: 'card empty' }, 'Şu an açık ihale yok. İhaleler her ay şubenizin bulunduğu illerde açılır; yeni il için Harita sekmesinden şube açın.')])),
+    h('div', { class: 'col' }, h('div', { class: 'lbl-s' }, '📜 Açık ihaleler'), ...(open.length ? open.map(card) : [h('div', { class: 'card empty' }, 'Şu an açık ihale yok. İhaleler her ay şubenizin bulunduğu illerde açılır; yeni il için Harita sekmesinden şube açın.')])),
     h('div', { class: 'col' },
-      h('div', { class: 'lbl-s' }, 'Sözleşmeli işler'), ...(contracts.length ? contracts.map((p) => h('div', { class: 'card', style: 'margin-bottom:8px' }, h('b', {}, p.name), h('div', { class: 'mute', style: 'font-size:12px' }, `${p.contract!.client} · sözleşme ${fmt(p.contract!.price)} · teslim ${formatDate(p.contract!.deadline)} · bekleyen hakediş ${fmt(p.contract!.pending.reduce((a, x) => a + x.amount, 0))}`), h('div', { class: 'mute', style: 'font-size:12px' }, 'Gecikmede günlük %0,1 ceza (en çok %10). Projeler sekmesinden inşaatı başlatın.'))) : [h('div', { class: 'card empty' }, 'Sözleşmeli iş yok.')]),
+      h('div', { class: 'lbl-s' }, '🤝 Sözleşmeli işler'), ...(contracts.length ? contracts.map((p) => h('div', { class: 'card', style: 'margin-bottom:8px' }, h('b', {}, p.name), h('div', { class: 'mute', style: 'font-size:12px' }, `${p.contract!.client} · sözleşme ${fmt(p.contract!.price)} · teslim ${formatDate(p.contract!.deadline)} · bekleyen hakediş ${fmt(p.contract!.pending.reduce((a, x) => a + x.amount, 0))}`), h('div', { class: 'mute', style: 'font-size:12px' }, 'Gecikmede günlük %0,1 ceza (en çok %10). Projeler sekmesinden inşaatı başlatın.'))) : [h('div', { class: 'card empty' }, 'Sözleşmeli iş yok.')]),
       h('div', { class: 'lbl-s', style: 'margin-top:12px' }, 'Sonuçlanan ihaleler'), ...(done.length ? [...done].reverse().map(card) : [h('div', { class: 'card empty' }, 'Henüz sonuçlanan ihale yok.')])));
 }
 

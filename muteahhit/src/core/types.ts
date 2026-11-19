@@ -178,6 +178,8 @@ export interface GameState {
   pending: PendingEvent | null;
   evtLast: Record<string, number>;
   progress: Progress;
+  /** Malzeme fiyat geçmişi (aylık etkin çarpan; en çok 36 ay). Eski kayıtlarda yoktur. */
+  matHist?: Record<string, number[]>;
 }
 
 export interface GameEvent {

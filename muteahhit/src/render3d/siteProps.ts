@@ -133,13 +133,21 @@ export class Workers {
     for (let i = 0; i < this.max; i++) this.st.push({ x: 0, z: 0, y: 0, tx: 0, tz: 0, ty: 0, wait: 0, top: false });
   }
   setCount(n: number, hw: number, hd: number) { n = Math.max(0, Math.min(this.max, n)); if (n > this.n) for (let i = this.n; i < n; i++) { const s = this.st[i]!; s.x = s.tx = (this.r() - 0.5) * hw; s.z = s.tz = hd + 2; } this.n = n; this.mesh.count = this.heads.count = n; }
-  update(dt: number, t: number, active: boolean, hw: number, hd: number, topY: number, working: boolean) {
+  /** `stage`: aktif aşama (u). Görev aşamaya göre değişir: kazıda çukurda, betonda pompa çevresinde, cephede binanın dibinde, peyzajda dış alanda. */
+  update(dt: number, t: number, active: boolean, hw: number, hd: number, topY: number, working: boolean, stage = 9, focus?: { x: number; z: number }) {
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
     for (let i = 0; i < this.n; i++) {
       const w = this.st[i]!;
       if (working && active) {
         w.wait -= dt;
-        if (w.wait <= 0) { w.top = i % 4 === 0 && topY > 4; const a = this.r() * Math.PI * 2, rx = hw * 0.5 + 2 + this.r() * 4, rz = hd * 0.5 + 2 + this.r() * 4; w.tx = Math.cos(a) * rx; w.tz = Math.sin(a) * rz; w.ty = w.top ? topY : 0; w.wait = 3 + this.r() * 6; }
+        if (w.wait <= 0) {
+          w.top = i % 4 === 0 && topY > 4 && stage >= 8; const a = this.r() * Math.PI * 2; let rx = hw * 0.5 + 2 + this.r() * 4, rz = hd * 0.5 + 2 + this.r() * 4; w.wait = 3 + this.r() * 6;
+          if (stage < 7.3) { w.tx = (this.r() - 0.5) * hw * 0.6; w.tz = (this.r() - 0.5) * hd * 0.6; w.ty = stage >= 6.1 ? -1.1 : 0; w.top = false; }               // kazı: çukur içinde
+          else if (stage < 10.4 && focus && i % 3 !== 0) { w.tx = focus.x + (this.r() - 0.5) * 5; w.tz = focus.z + (this.r() - 0.5) * 5; w.ty = 0; w.top = false; }  // beton: pompa çevresinde
+          else if (stage >= 11 && stage < 16) { rx = hw * 0.5 + 0.8 + this.r() * 1.6; rz = hd * 0.5 + 0.8 + this.r() * 1.6; w.tx = Math.cos(a) * rx; w.tz = Math.sin(a) * rz; w.ty = w.top ? topY * (0.3 + this.r() * 0.7) : 0; }   // cephe/iç: bina dibinde, bir kısmı iskelede
+          else if (stage >= 16) { rx = hw * 0.9 + 2 + this.r() * 5; rz = hd * 0.9 + 2 + this.r() * 5; w.tx = Math.cos(a) * rx; w.tz = Math.sin(a) * rz; w.ty = 0; w.top = false; }  // peyzaj: dış alan
+          else { w.tx = Math.cos(a) * rx; w.tz = Math.sin(a) * rz; w.ty = w.top ? topY : 0; }
+        }
         const dx = w.tx - w.x, dz = w.tz - w.z, dist = Math.hypot(dx, dz), sp = Math.min(dist, 1.3 * dt); if (dist > 0.05) { w.x += (dx / dist) * sp; w.z += (dz / dist) * sp; }
         w.y += (w.ty - w.y) * Math.min(1, dt * 1.2);
       } else { // bekle: kapı yakınında dağıl
@@ -194,10 +202,10 @@ export class Weather {
     this.snow = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(this.spos, 3)), new THREE.PointsMaterial({ color: '#ffffff', size: 0.45, transparent: true, opacity: 0.9, depthWrite: false }));
     this.rain.frustumCulled = this.snow.frustumCulled = false; this.rain.visible = this.snow.visible = false;
   }
-  update(dt: number, kind: 'acik' | 'yagmur' | 'kar', on: boolean) {
+  update(dt: number, kind: 'acik' | 'yagmur' | 'kar', on: boolean, wind = 0) {
     this.rain.visible = on && kind === 'yagmur'; this.snow.visible = on && kind === 'kar';
-    if (this.rain.visible) { for (let i = 0; i < this.N; i++) { let y = this.pos[i * 6 + 1]! - dt * 38; if (y < 0) y += 60; this.pos[i * 6 + 1] = y; this.pos[i * 6 + 4] = y - 2.2; } (this.rain.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true; }
-    if (this.snow.visible) { for (let i = 0; i < this.N; i++) { let y = this.spos[i * 3 + 1]! - dt * 3.2; if (y < 0) y += 60; this.spos[i * 3 + 1] = y; this.spos[i * 3] = this.spos[i * 3]! + Math.sin(y + i) * dt * 0.6; } (this.snow.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true; }
+    if (this.rain.visible) { for (let i = 0; i < this.N; i++) { let y = this.pos[i * 6 + 1]! - dt * 38, x = this.pos[i * 6]! + dt * wind * 9; if (y < 0) y += 60; if (x > 60) x -= 120; this.pos[i * 6 + 1] = y; this.pos[i * 6] = x; this.pos[i * 6 + 3] = x - 0.3 - wind * 1.1; this.pos[i * 6 + 4] = y - 2.2; } (this.rain.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true; }
+    if (this.snow.visible) { for (let i = 0; i < this.N; i++) { let y = this.spos[i * 3 + 1]! - dt * 3.2; if (y < 0) y += 60; this.spos[i * 3 + 1] = y; this.spos[i * 3] = this.spos[i * 3]! + Math.sin(y + i) * dt * 0.6 + dt * wind * 3; } (this.snow.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true; }
   }
 }
 

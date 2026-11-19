@@ -19,3 +19,21 @@ describe('müzik kipleri', () => {
   it('aynı tohum aynı müziği üretir (deterministik)', () => { expect(run('game')).toBe(run('game')); expect(run('tense')).toBe(run('tense')); });
   it('varsayılan kip menü', () => { expect(newMusicState(1).mode).toBe('menu'); });
 });
+
+import { newQuality, qualityStep } from '../src/render3d/quality';
+describe('otomatik kalite politikası', () => {
+  it('iki düşük pencere → kademe düşer; tek düşük pencere → düşmez', () => {
+    const q = newQuality('high'); expect(qualityStep(q, 20)).toBeNull(); expect(qualityStep(q, 58)).toBeNull(); expect(q.bad).toBe(0);
+    expect(qualityStep(q, 20)).toBeNull(); expect(qualityStep(q, 20)).toBe('mid'); expect(q.tier).toBe('mid');
+  });
+  it('10 sn iyi FPS → tavana kadar yükselir; tavanı aşmaz', () => {
+    const q = newQuality('high'); q.tier = 'low'; let got: string | null = null; for (let i = 0; i < 5; i++) got = qualityStep(q, 29) ?? got; expect(got).toBe('mid'); expect(q.tier).toBe('mid');
+    for (let i = 0; i < 5; i++) got = qualityStep(q, 60) ?? got; expect(q.tier).toBe('high'); for (let i = 0; i < 10; i++) qualityStep(q, 60); expect(q.tier).toBe('high');
+    const c = newQuality('mid'); for (let i = 0; i < 20; i++) qualityStep(c, 60); expect(c.tier).toBe('mid');
+  });
+  it('yükselip hemen düşme iki kez olursa yükseltme bırakılır (salınım yok)', () => {
+    const q = newQuality('high'); q.tier = 'mid';
+    for (let k = 0; k < 2; k++) { for (let i = 0; i < 5; i++) qualityStep(q, 60); expect(q.tier).toBe('high'); qualityStep(q, 10); qualityStep(q, 10); expect(q.tier).toBe('mid'); }
+    for (let i = 0; i < 12; i++) qualityStep(q, 60); expect(q.tier).toBe('mid'); expect(q.upFails).toBe(2);
+  });
+});

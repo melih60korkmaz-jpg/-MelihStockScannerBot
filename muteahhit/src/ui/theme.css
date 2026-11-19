@@ -336,3 +336,25 @@ html[data-motion=reduced] .toast, html[data-motion=reduced] .toast.out, html[dat
 .hqbld.rise { transform-box:fill-box; transform-origin:center bottom; animation:hqrise .9s cubic-bezier(.2,.9,.3,1.1) both; } @keyframes hqrise { from { transform:scaleY(.35); opacity:.2; } to { transform:none; opacity:1; } }
 html[data-motion=reduced] .monln, html[data-motion=reduced] .hqcar, html[data-motion=reduced] .hqbld.rise { animation:none; stroke-dashoffset:0; }
 @media (max-height:420px) { .hq .hqcard { height:min(96vh,360px); } }
+
+/* ===== Piyasa ===== */
+.mkt-hero { display:flex; gap:14px; align-items:center; flex-wrap:wrap; } .rings { display:flex; gap:6px; } .rings svg { display:block; }
+.ringfg { animation:ringin .9s cubic-bezier(.2,.8,.2,1) both; } @keyframes ringin { from { stroke-dasharray:0 200; } } html[data-motion=reduced] .ringfg { animation:none; }
+.ncard { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px; line-height:1.35; animation:cardin .3s ease-out both; } .ncard:last-child { border:0; } .ncard .nem { font-size:20px; flex:none; width:28px; text-align:center; } .ncard.bad { box-shadow:inset 3px 0 0 var(--bad); padding-left:8px; } .ncard.warn { box-shadow:inset 3px 0 0 var(--warn); padding-left:8px; } .ncard.ok { box-shadow:inset 3px 0 0 var(--ok); padding-left:8px; }
+
+.gauges { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; text-align:center; } .gg { display:flex; flex-direction:column; align-items:center; gap:2px; } .gg small { color:var(--mute); font-size:11px; }
+@media (max-width:640px) { .gauges { grid-template-columns:repeat(2,1fr); } }
+
+/* ===== Sinematik sahneler ===== */
+.cine { position:fixed; inset:0; z-index:95; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 50% 40%,rgba(40,20,26,.92),rgba(10,10,12,.96)); animation:cinein .35s ease-out both; } .cine.out { animation:cineout .26s ease-in both; }
+@keyframes cinein { from { opacity:0; } } @keyframes cineout { to { opacity:0; } }
+.cinebox { text-align:center; max-width:90vw; display:flex; flex-direction:column; align-items:center; gap:6px; animation:cinebox .6s cubic-bezier(.2,.9,.3,1.15) both; } @keyframes cinebox { from { opacity:0; transform:translateY(24px) scale(.94); } }
+.cinebox h2 { font-size:clamp(26px,7vh,40px); line-height:1.05; } .ctitle { font:700 13px var(--font); letter-spacing:.32em; color:var(--accent2); } .cart { width:min(300px,50vw); border-radius:14px; overflow:hidden; border:1px solid var(--accent-bd); box-shadow:0 12px 40px #000a; line-height:0; } .cart.sm { width:min(180px,36vw); }
+.cstars { font-size:26px; letter-spacing:6px; color:var(--accent2); } .cfacts { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; font-size:14px; color:var(--mute); } .cemoji { font-size:56px; animation:cinebox .8s both; }
+.delivery .cart { animation:deliv 1.2s cubic-bezier(.2,.9,.3,1) both; } @keyframes deliv { from { transform:translateY(40px) scale(.8); filter:brightness(.4); } }
+html[data-motion=reduced] .cine, html[data-motion=reduced] .cinebox, html[data-motion=reduced] .delivery .cart { animation:none; }
+.hud.lossflash { animation:lossf 1.2s ease-out; } @keyframes lossf { 0%,40% { box-shadow:inset 0 -3px 0 var(--bad), 0 0 24px #ff4d5a66; background:linear-gradient(180deg,#3a1d22,#16171A); } 100% { box-shadow:none; } }
+
+/* ===== Rozetler ===== */
+.badges { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; } .bcard { display:flex; flex-direction:column; align-items:center; text-align:center; gap:2px; padding:10px 6px; border-radius:12px; background:var(--s2); border:1px solid var(--line); opacity:.62; } .bcard.got { opacity:1; border-color:var(--accent-bd); animation:cardin .35s ease-out both; } .bcard b { font:700 14px/1.1 var(--font-h); } .bcard small { font-size:10.5px; line-height:1.25; }
+.ladder { display:flex; flex-direction:column; gap:6px; } .lstep { display:flex; flex-direction:column; gap:2px; padding:8px 10px; border-radius:10px; background:var(--s2); border:1px solid var(--line); opacity:.65; } .lstep.got { opacity:1; } .lstep.next { opacity:1; border-color:var(--accent-bd); box-shadow:inset 3px 0 0 var(--accent); }

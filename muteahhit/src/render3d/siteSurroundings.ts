@@ -168,10 +168,12 @@ export class Surroundings {
     this.tier = q; const c = QUAL[q];
     this.carsB.count = this.carsC.count = c.cars; this.clouds.forEach((cl, i) => (cl.visible = i < c.clouds)); this.rebuildTrees();
   }
+  private wetKey = '';
   update(dt: number, time: number, night: number, weather: 'acik' | 'yagmur' | 'kar', animate: boolean) {
     this.lampMat.color.set('#ffe8b0').multiplyScalar(0.25 + night * 1.6); this.lampHeads.visible = true;
     const snow = weather === 'kar', rain = weather === 'yagmur';
-    this.groundMat.map = snow ? null : this.groundTex; this.groundMat.color.set(snow ? '#e8edf2' : rain ? '#b8c0b0' : '#ffffff'); this.groundMat.needsUpdate = true;
+    const wk = snow ? 's' : rain ? 'r' : 'c'; if (wk !== this.wetKey) { this.wetKey = wk; // yalnızca hava değişince (her karede malzeme yeniden derlenmez)
+    this.groundMat.map = snow ? null : this.groundTex; this.groundMat.color.set(snow ? '#e8edf2' : rain ? '#8f9a8c' : '#ffffff'); this.groundMat.roughness = rain ? 0.4 : 1; this.groundMat.metalness = rain ? 0.14 : 0; this.groundMat.needsUpdate = true; } // ıslak zemin: koyulaşır, yansıma kazanır
     for (const m of this.yardMats) m.emissive.set(snow ? '#9aa4ae' : '#000000');
     const L = 150, m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
     if (animate) for (const c of this.cars) c.t = (c.t + dt * c.sp) % 1;

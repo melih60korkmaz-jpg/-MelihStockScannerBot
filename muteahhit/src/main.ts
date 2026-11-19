@@ -19,6 +19,7 @@ import { hubScreen } from './ui/screens/hub';
 import { siteScreen } from './ui/screens/site';
 import { playIntro, tapGate } from './ui/screens/intro';
 import { openEventDecision } from './ui/screens/eventModal';
+import { siteIntro } from './ui/cinema';
 
 const settings = new SettingsStore();
 const audio = new AudioEngine(settings);
@@ -46,7 +47,7 @@ const app: App = {
   },
   setStore(s) { this.store = s; },
   menu() { this.go(menuScreen(app), 'menu'); },
-  openSite(id) { this.go(siteScreen(app, id, () => this.go(hubScreen(app, 'projeler'), 'none')), 'none'); },
+  openSite(id) { const pr = this.store.state.projects.find((x) => x.id === id); if (pr) siteIntro(this, pr); this.go(siteScreen(app, id, () => this.go(hubScreen(app, 'projeler'), 'none')), 'none'); },
 };
 
 function applyMotion() {

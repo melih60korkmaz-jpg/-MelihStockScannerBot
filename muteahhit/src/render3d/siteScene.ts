@@ -2,13 +2,14 @@ import * as THREE from 'three';
 import type { Quality } from '../platform/settings';
 import { SiteBuilding, designOf, ramp, rng, type BuildingSpec } from './siteBuilding';
 import { Surroundings } from './siteSurroundings';
+import { newQuality, qualityStep } from './quality';
 import type { Region } from '../data/geo';
 import { ConcretePump, Dust, Excavator, SiteProps, TowerCrane, Weather, Workers, makeGlow, makeTruck } from './siteProps';
 
 export interface SiteSpec extends BuildingSpec { use: 'konut' | 'ticari' | 'sanayi'; name: string; roads: number; corner: boolean; region?: Region; density?: number }
 export interface SiteState { u: number; stalled: boolean; weather: 'acik' | 'yagmur' | 'kar'; workers: number; done: boolean; occupancy?: number }
-type Tier = Exclude<Quality, 'auto'>;
-const TIER = { low: { pr: 1, shadows: false, workers: 8, fps: 30, rain: false, dust: 0 }, mid: { pr: 1.5, shadows: false, workers: 16, fps: 60, rain: true, dust: 50 }, high: { pr: 2, shadows: true, workers: 24, fps: 60, rain: true, dust: 90 } };
+type Tier = Exclude<Quality, 'auto'>; // quality.ts ile aynı küme
+const TIER = { low: { pr: 1, shadows: false, workers: 8, fps: 30, rain: false, dust: 0, flood: 0 }, mid: { pr: 1.5, shadows: false, workers: 16, fps: 60, rain: true, dust: 50, flood: 1 }, high: { pr: 2, shadows: true, workers: 24, fps: 60, rain: true, dust: 90, flood: 2 } };
 export type CamPreset = 'kus' | 'yan' | 'on' | 'yakin' | 'ust';
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
@@ -18,7 +19,7 @@ export class SiteScene {
   private renderer: THREE.WebGLRenderer; private scene = new THREE.Scene(); private camera = new THREE.PerspectiveCamera(42, 1, 0.5, 2500);
   private sun = new THREE.DirectionalLight(0xffffff, 3); private hemi = new THREE.HemisphereLight(0x9bb8e0, 0x3a3228, 1);
   private sky: THREE.Mesh; private skyU: { top: { value: THREE.Color }; hor: { value: THREE.Color } };
-  private building!: SiteBuilding; private props!: SiteProps; private crane!: TowerCrane; private crane2: TowerCrane | null = null; private excavator = new Excavator(); private workers = new Workers(); private weather = new Weather(); private dust = new Dust(90); private pump = new ConcretePump(); private glows: THREE.Sprite[] = [];
+  private building!: SiteBuilding; private props!: SiteProps; private crane!: TowerCrane; private crane2: TowerCrane | null = null; private excavator = new Excavator(); private workers = new Workers(); private weather = new Weather(); private dust = new Dust(90); private pump = new ConcretePump(); private glows: THREE.Sprite[] = []; private flood = [new THREE.SpotLight(0xfff0d0, 0, 120, 0.85, 0.7, 1.2), new THREE.SpotLight(0xfff0d0, 0, 120, 0.85, 0.7, 1.2)];
   private trucks: { g: THREE.Group; kind: string; off: number; speed: number; drum?: THREE.Mesh }[] = []; private ground!: THREE.Mesh; private world = new THREE.Group(); private surround: Surroundings | null = null;
   private nightGlow = { value: 0 }; private covers: THREE.Mesh[] = []; private spec!: SiteSpec; private disposed = false; private moon = new THREE.DirectionalLight(0x7f9bd6, 0); private plotW = 40; private plotD = 30;
   private state: SiteState = { u: 1, stalled: false, weather: 'acik', workers: 3, done: false }; private u = 1; private time = 0; private tod = 0.6; private speed = 0; private reduced = false;
@@ -27,7 +28,7 @@ export class SiteScene {
   private ptrs = new Map<number, { x: number; y: number }>(); private pinch = 0; private lastTap = 0;
   private ac = new AbortController(); private on = (type: string, f: (e: any) => void, o: AddEventListenerOptions = {}) => this.canvas.addEventListener(type, f, { ...o, signal: this.ac.signal });
   contextLost = false; onContext?: (lost: boolean) => void;
-  private warm = 0; private fpsT = 0; private fpsN = 0; private checks = 0; onTier?: (t: Tier) => void;
+  private warm = 0; private q = newQuality('high'); private fpsT = 0; private fpsN = 0; private checks = 0; onTier?: (t: Tier) => void;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -40,10 +41,11 @@ export class SiteScene {
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(1200, 24, 14), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false, uniforms: { top: this.skyU.top, hor: this.skyU.hor },
       vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);} ',
       fragmentShader: 'varying vec3 vP; uniform vec3 top; uniform vec3 hor; void main(){ float h = clamp(vP.y,0.0,1.0); gl_FragColor = vec4(mix(hor, top, smoothstep(0.0,0.6,h)),1.0);} ' }));
+    for (const f of this.flood) { f.castShadow = false; this.scene.add(f, f.target); }
     this.moon.position.set(-60, 80, -40); this.scene.add(this.sky, this.hemi, this.sun, this.sun.target, this.moon, this.world, this.weather.rain, this.weather.snow);
     this.scene.fog = new THREE.Fog(0xcfe3f2, 140, 700);
     const sc = this.sun.shadow.camera; sc.left = -70; sc.right = 70; sc.top = 70; sc.bottom = -70; sc.near = 10; sc.far = 400; this.sun.shadow.mapSize.set(2048, 2048); this.sun.shadow.bias = -0.0005; this.sun.shadow.normalBias = 0.4;
-    const coarse = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600; this.tier = coarse ? 'mid' : 'high';
+    const coarse = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600; this.tier = coarse ? 'mid' : 'high'; this.q = newQuality(this.tier);
   }
 
   // ---------- Kurulum ----------
@@ -129,7 +131,16 @@ export class SiteScene {
     const T = TIER[this.tier]; if (now - this.last < 1000 / T.fps - 2) return;
     const dt = Math.min(0.1, (now - this.last) / 1000); this.last = now; this.update(dt); this.renderer.render(this.scene, this.camera); this.monitor(dt);
   };
-  private monitor(dt: number) { this.warm += dt; if (this.warm < 1.5 || this.tierSetting !== 'auto' || this.checks >= 3) return; this.fpsN++; this.fpsT += dt; if (this.fpsT >= 2) { const fps = this.fpsN / this.fpsT; this.fpsN = 0; this.fpsT = 0; this.checks++; if (fps < Math.min(40, TIER[this.tier].fps * 0.7)) { this.tier = this.tier === 'high' ? 'mid' : 'low'; this.applyTier(); this.onTier?.(this.tier); } } }
+  /**
+   * Otomatik kalite (yalnızca 'auto'): 2 sn'lik pencerelerle FPS ölçülür. Düşük FPS iki pencere üst üste → bir kademe düşer.
+   * Yüksek FPS 5 pencere (10 sn) sürerse ve tavan (cihazın başlangıç kademesi) altındaysak bir kademe yükselir; yükselince tekrar düşerse
+   * (2 başarısız deneme) yükseltme bırakılır → salınım olmaz.
+   */
+  private monitor(dt: number) {
+    this.warm += dt; if (this.warm < 1.5 || this.tierSetting !== 'auto') return; this.fpsN++; this.fpsT += dt; if (this.fpsT < 2) return;
+    const fps = this.fpsN / this.fpsT; this.fpsN = 0; this.fpsT = 0; this.q.tier = this.tier; const next = qualityStep(this.q, fps);
+    if (next) { this.tier = next; this.applyTier(); this.onTier?.(this.tier); }
+  }
 
   private update(dt: number) {
     const anim = !this.reduced, T = TIER[this.tier], st = this.state;
@@ -144,7 +155,7 @@ export class SiteScene {
     this.sun.position.set(Math.cos(ang) * 90, Math.max(8, sunY * 90), 40); this.sun.target.position.set(0, 0, 0);
     this.sun.color.setRGB(1, 0.85 - gold * 0.25, 0.7 - gold * 0.35 + (1 - gold) * 0.2); this.sun.intensity = (0.1 + 3.2 * day) * wd; this.hemi.intensity = (0.62 + 0.55 * day) * (w === 'acik' ? 1 : 0.9); this.moon.intensity = 1.1 * night * (w === 'acik' ? 1 : 0.7);
     const top = new THREE.Color('#0a1428').lerp(new THREE.Color(w === 'acik' ? '#4f8fd0' : '#7d8794'), day), hor = new THREE.Color('#1b2745').lerp(new THREE.Color(w === 'acik' ? '#cfe3f2' : '#a9b2ba'), day).lerp(new THREE.Color('#f2a35e'), gold * 0.7 * (w === 'acik' ? 1 : 0.3));
-    this.skyU.top.value.copy(top); this.skyU.hor.value.copy(hor); (this.scene.fog as THREE.Fog).color.copy(hor); (this.scene.fog as THREE.Fog).near = w === 'acik' ? 140 : 70; (this.scene.fog as THREE.Fog).far = w === 'acik' ? 700 : 380;
+    this.skyU.top.value.copy(top); this.skyU.hor.value.copy(hor); (this.scene.fog as THREE.Fog).color.copy(hor); { const mist = w === 'acik' ? Math.max(0, 1 - Math.abs(this.tod - 0.28) / 0.1) : 0; (this.scene.fog as THREE.Fog).near = (w === 'acik' ? 140 : 70) * (1 - 0.55 * mist); (this.scene.fog as THREE.Fog).far = (w === 'acik' ? 700 : 380) * (1 - 0.4 * mist); } // sabah sisi: gün doğumunda kısa süre
     this.renderer.toneMappingExposure = 1.1 - 0.2 * day;
     this.surround?.update(dt, this.time, night, w, anim);
     this.sky.position.copy(this.camera.position);
@@ -162,6 +173,9 @@ export class SiteScene {
       const tgt = this.pump.group.worldToLocal(new THREE.Vector3(0, topY + 2.6, 0).applyMatrix4(this.world.matrixWorld)); this.pump.update(pouring, tgt, Math.max(0.3, topY), this.time);
     }
     for (const g of this.glows) (g.material as THREE.SpriteMaterial).opacity = (T.dust > 0 ? 1 : 0) * clamp(night * 1.3 - 0.15, 0, 0.85) * (g.parent && g.parent.visible ? 1 : 0);
+    { // şantiye projektörleri: gece ve kalite izin verirse (orta: 1, yüksek: 2); fabrika gibi aydınlık aşamalarda kapalı
+      const fOn = u >= 1.5 && u < 17.9 && !st.stalled; this.flood.forEach((f, i) => { f.position.set((i ? -1 : 1) * (this.plotW / 2 + 4), 24, (i ? 1 : -1) * (this.plotD / 2 + 4)); f.target.position.set(0, 0, 0); f.intensity = i < T.flood && fOn ? night * 240 : 0; });
+    }
     this.excavator.group.visible = u >= 6 && u < 8.3; if (this.excavator.group.visible) this.excavator.animate(this.time, working && u < 7);
     // kamyonlar: aşamaya göre
     const L = this.plotW + 28, Dp = this.plotD + 28;
@@ -172,8 +186,8 @@ export class SiteScene {
     }
     // işçiler
     const wc = u < 1.5 ? 0 : Math.min(T.workers, Math.max(2, st.workers)); this.workers.setCount(st.done ? 0 : wc, hw * 1.6, hd * 1.6);
-    this.workers.update(dt, this.time, anim, hw * 1.6, hd * 1.6, Math.max(0, top2 - 1), !st.stalled && u >= 1.5 && u < 17.9);
-    this.weather.update(dt, T.rain && anim ? w : 'acik', T.rain && anim);
+    this.workers.update(dt, this.time, anim, hw * 1.6, hd * 1.6, Math.max(0, top2 - 1), !st.stalled && u >= 1.5 && u < 17.9, u, { x: this.pump.group.position.x, z: this.pump.group.position.z });
+    this.weather.update(dt, T.rain && anim ? w : 'acik', T.rain && anim, (w === 'yagmur' ? 1 : w === 'kar' ? 0.5 : 0) * (0.7 + 0.3 * Math.sin(this.time * 0.6)));
     this.dust.update(dt, anim && T.dust > 0 && !st.stalled && w === 'acik' && u >= 1.5 && u < 17.9, hw * 1.15, hd * 1.15);
     // kamera
     const g = this.goal, c = this.cam, k = 1 - Math.exp(-dt * 7);

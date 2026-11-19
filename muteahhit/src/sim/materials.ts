@@ -76,6 +76,7 @@ export function materialsMonthly(s: GameState, events: GameEvent[]): void {
   for (const m of MATERIALS) {
     const cur = s.matPrice[m.id] ?? 1; const shock = rand(s.rng, 'market') < 0.015 ? (rand(s.rng, 'market') < 0.5 ? 0.14 : -0.1) : 0;
     const next = clamp(cur * (1 + (1 - cur) * 0.12 + gauss(s.rng, 'market') * m.vol + shock), 0.7, 1.7); s.matPrice[m.id] = +next.toFixed(4);
+    { const hist = ((s.matHist ??= {})[m.id] ??= []); hist.push(+(next * (s.macro.materialIndex / 100)).toFixed(3)); if (hist.length > 36) hist.shift(); }
     if (shock > 0) { const text = `${m.label} fiyatı aniden yükseldi.`; s.news.unshift({ day: s.clock.day, text, tone: 'warn' }); if (s.news.length > 30) s.news.length = 30; events.push({ type: 'MACRO_NEWS', day: s.clock.day, data: { regime: s.macro.regime, text, tone: 'warn' } }); }
   }
 }

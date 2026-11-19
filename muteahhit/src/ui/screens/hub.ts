@@ -18,6 +18,8 @@ import { opsView } from './ops';
 import { landAssetValue, ownedParcels } from '../../sim/land';
 import { loansView, partnersView } from './bank';
 import { tendersView } from './tenders';
+import { marketView } from './market';
+import { deliveryScene, tenderWinScene } from '../cinema';
 import { levelCard, questsCard } from './progress';
 import { ACHIEVEMENTS, LEVEL_DEFS, QUESTS } from '../../data';
 import { heroBanner } from '../hero';
@@ -25,7 +27,8 @@ import { openHQ } from '../hq';
 import { openEventDecision } from './eventModal';
 import { STYLE_LABEL, aliveRivals } from '../../sim/rivals';
 import { eventDef } from '../../data';
-import { debtTotal } from '../../sim/loans';
+import { creditCapacity, debtTotal } from '../../sim/loans';
+import { C, EMOJI, ring } from '../art';
 import { investorLiability } from '../../sim/finance';
 import { contractAssets } from '../../sim/tenders';
 
@@ -80,6 +83,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   let shownCash: number | null = null, tween = 0;
   const setCash = (v: number) => {
     const el = ref.cash!; if (shownCash === null || app.settings.reduced || Math.abs(v - shownCash) < 100) { shownCash = v; el.textContent = formatMoney(v); return; }
+    if (shownCash < 0 && v >= 0) { app.audio.sfx('fanfare'); toast('🛡️ Nakit yeniden pozitif: kriz atlatıldı.', 5000); }
     const from = shownCash, t0 = performance.now(), up = v > from; cancelAnimationFrame(tween); shownCash = v; if (Math.abs(v - from) >= 50_000) flyDelta(ref.cashPill!, `${up ? '+' : '−'}${formatMoney(Math.abs(v - from))}`, up);
     ref.cashPill!.classList.remove('up', 'down'); ref.cashPill!.classList.add(up ? 'up' : 'down');
     const step = (now: number) => { const k = Math.min(1, (now - t0) / 550), e = 1 - Math.pow(1 - k, 3); el.textContent = formatMoney(Math.round(from + (v - from) * e)); if (k < 1) tween = requestAnimationFrame(step); else { el.textContent = formatMoney(v); setTimeout(() => ref.cashPill?.classList.remove('up', 'down'), 500); } };
@@ -148,6 +152,14 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       for (const r of last) t.append(h('tr', {}, h('td', {}, monthLabel(r.key)), h('td', { html: formatMoney(r.income) }), h('td', { html: formatMoney(r.expense) }), h('td', { html: formatMoney(r.tax) }), h('td', { html: signed(r.net) })));
       const tot = last.reduce((a, r) => ({ i: a.i + r.income, e: a.e + r.expense, t: a.t + r.tax, n: a.n + r.net }), { i: 0, e: 0, t: 0, n: 0 });
       t.append(h('tr', { class: 'tot' }, h('td', {}, 'Toplam'), h('td', { html: formatMoney(tot.i) }), h('td', { html: formatMoney(tot.e) }), h('td', { html: formatMoney(tot.t) }), h('td', { html: signed(tot.n) })));
+      { // Finansal sağlık göstergeleri (hepsi gerçek veriden): borç/limit, kârlılık, likidite, öz sermaye payı
+        const cap = creditCapacity(s), debt = debtTotal(s), inc = last.reduce((a, r) => a + r.income, 0), net = last.reduce((a, r) => a + r.net, 0), margin = inc > 0 ? net / inc : 0, rwm = runwayMonths(s), nw = netWorth(s), assets = nw + debt;
+        body.append(h('div', { class: 'card gauges' },
+          h('div', { class: 'gg' }, h('div', { html: ring(cap.total > 0 ? debt / cap.total : 0, debt / Math.max(1, cap.total) > 0.8 ? C.bad : debt / Math.max(1, cap.total) > 0.5 ? C.warn : C.ok, `%${Math.round((cap.total > 0 ? debt / cap.total : 0) * 100)}`, 'limit') }), h('small', {}, `${EMOJI.kredi} Borç ${formatMoney(debt)}`)),
+          h('div', { class: 'gg' }, h('div', { html: ring(Math.max(0, Math.min(1, 0.5 + margin)), margin >= 0 ? C.ok : C.bad, `%${Math.round(margin * 100)}`, 'marj') }), h('small', {}, '📊 Kârlılık (6 ay)')),
+          h('div', { class: 'gg' }, h('div', { html: ring(rwm === null ? 1 : rwm / 12, rwm === null || rwm >= 6 ? C.ok : rwm >= 3 ? C.warn : C.bad, rwm === null ? '∞' : rwm.toFixed(1), 'ay') }), h('small', {}, `${EMOJI.finans} Nakit yeterlilik`)),
+          h('div', { class: 'gg' }, h('div', { html: ring(assets > 0 ? Math.max(0, nw) / assets : 0, C.acc2, `%${Math.round((assets > 0 ? Math.max(0, nw) / assets : 0) * 100)}`, 'özkaynak') }), h('small', {}, `${EMOJI.sirket} Şirket değeri ${formatMoney(nw)}`))));
+      }
       body.append(h('div', { class: 'cols', style: 'margin-bottom:12px' }, h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Gelir ve gider (son 6 ay)'), pairBars(last.map((r) => ({ label: monthLabel(r.key), a: r.income, b: r.expense })))), h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Net varlık gelişimi'), lineChart(s.history.slice(-24).map((p) => ({ label: dayLabel(p.day), value: p.netWorth })), undefined, 150))),
         h('div', { class: 'card', style: 'overflow:auto' }, h('div', { class: 'lbl-s' }, 'Aylık gelir tablosu (son 6 ay)'), t), h('p', { class: 'mute', style: 'font-size:12px' }, `Vergi: çeyrek kârının %25'i. Devreden zarar: ${formatMoney(s.taxLossCarry)}. Sermaye, yatırım ve finansman hareketleri gelir tablosuna girmez.`));
     } else if (sub === 'nakit') {
@@ -171,23 +183,10 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
 
   // ---------------- Piyasa ----------------
-  const market = (): HTMLElement => {
-    const s = app.store.state, m = s.macro, H = s.macroHistory;
-    const mc = (label: string, val: string, key: 'policyRate' | 'inflation' | 'confidence' | 'materialIndex', color: string) =>
-      h('div', { class: 'card mc' }, h('div', { class: 'lbl-s' }, label), h('b', {}, val), h('div', { html: H.length >= 2 ? sparkline(H.slice(-24).map((p) => p[key]), color) : '<div class="mute" style="font-size:11px;margin-top:6px">Ay sonlarında birikir</div>' }));
-    return h('div', { style: 'display:flex;flex-direction:column;gap:12px' },
-      h('div', { class: 'card', style: 'display:flex;gap:12px;align-items:center;flex-wrap:wrap' }, h('span', { class: `regime ${m.regime}` }, REGIMES[m.regime].label), h('span', { style: 'flex:1;min-width:200px' }, REGIMES[m.regime].blurb), h('span', { class: 'mute', style: 'font-size:12px' }, `${Math.max(0, Math.round((s.clock.day - m.regimeSince) / 30))} aydır`)),
-      h('div', { class: 'mgrid' }, mc('Politika faizi (yıllık)', `%${m.policyRate.toFixed(1)}`, 'policyRate', '#C64252'), mc('Enflasyon (yıllık)', `%${m.inflation.toFixed(1)}`, 'inflation', '#B9B5B7'), mc('Piyasa güveni', m.confidence.toFixed(0), 'confidence', '#3FBF8A'), mc('Malzeme endeksi', m.materialIndex.toFixed(0), 'materialIndex', '#8E919B')),
-      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Rakip firmalar'),
-        ...(s.rivals.length ? s.rivals.slice().sort((a, b) => Number(a.failed) - Number(b.failed) || b.rep - a.rep).slice(0, 8).map((r) => h('div', { class: 'row', style: 'min-height:44px;flex-wrap:wrap;gap:6px' }, h('div', { class: 'lbl', style: 'min-width:150px' }, r.name, h('small', {}, `${STYLE_LABEL[r.style]} · merkez ${cityData(r.home)?.label ?? r.home}`)), r.failed ? h('span', { class: 'chip bad' }, 'İflas etti') : h('span', { class: 'chip' }, `İtibar ${r.rep}`), r.failed ? null : h('span', { class: 'chip' }, `${r.projects} proje`), r.failed ? null : h('span', { class: 'chip' }, `${r.wins} ihale`))) : [h('div', { class: 'empty' }, 'Henüz rakip yok.')]),
-        h('div', { class: 'mute', style: 'font-size:12px;margin-top:6px' }, `${aliveRivals(s).length} aktif firma arsa kapar, proje başlatır, ihalelere girer; kriz döneminde bazıları batar ve ucuz arsa çıkar.`)),
-      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Haber bandı'), ...(s.news.length ? s.news.slice(0, 12).map((n) => h('div', { class: 'news' }, h('small', {}, formatDate(n.day)), h('span', { class: `dot ${n.tone}` }), h('span', {}, n.text))) : [h('div', { class: 'empty' }, 'Henüz haber yok. Piyasa değişimleri burada duyurulur.')])));
-  };
-
   let lastViewKey = '', lastNW: number | null = null;
   const drawView = () => {
     const vkey = `${tab}:${tab === 'harita' ? mapKey() : ''}`, keep = vkey === lastViewKey ? view.scrollTop : 0; lastViewKey = vkey; view.innerHTML = '';
-    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'finans' ? finance() : market());
+    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'finans' ? finance() : marketView(app, drawView));
     view.scrollTop = keep;
   };
 
@@ -213,7 +212,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'SUPPLIER_DELAY') toast(`${e.data!.supplier}: teslimat ${e.data!.days} gün gecikecek.`, 4500);
       if (e.type === 'CONSTRUCTION_RESUMED') toast('Nakit sağlandı: inşaat devam ediyor.');
       if (e.type === 'SOIL_REVEALED') { app.audio.sfx((e.data!.extra as number) > 0 ? 'error' : 'confirm'); toast((e.data!.extra as number) === 0 ? 'Hafriyat: zemin beklendiği gibi çıktı.' : `Hafriyatta zemin ortaya çıktı: ${(e.data!.extra as number) > 0 ? 'ek maliyet +' : 'tasarruf '}${formatMoney(Math.abs(e.data!.extra as number))}`, 5000); }
-      if (e.type === 'PROJECT_COMPLETED') { app.audio.sfx('stamp'); toast('Bir proje tamamlandı! Projeler sekmesinden şantiyeyi açın.', 5000); }
+      if (e.type === 'PROJECT_COMPLETED') { const pr = app.store.state.projects.find((x) => x.id === e.data!.projectId); if (pr && !document.querySelector('.site')) deliveryScene(app, pr); toast('Bir proje tamamlandı! Projeler sekmesinden şantiyeyi açın.', 5000); }
       if (e.type === 'PROJECT_STARTED') toast('İnşaat başladı.');
       if (e.type === 'PROJECT_SOLD') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast(`Bina satıldı: ${formatMoney(e.data!.price as number)}`, 4500); }
       if (e.type === 'YEAR') toast(`Yeni yıl: personel maaşlarına %${((e.data!.raise as number) * 100).toFixed(0)} zam yapıldı.`, 4500);
@@ -223,13 +222,13 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'LOAN_ROLLED') toast('İnşaat kredisi vadesi doldu: ticari krediye devredildi.', 4500);
       if (e.type === 'HAKEDIS') app.audio.sfx('coin');
       if (e.type === 'TENDER_NEW' && !evs.some((x) => x.type === 'TENDER_NEW' && x !== e && evs.indexOf(x) < evs.indexOf(e))) toast(evs.filter((x) => x.type === 'TENDER_NEW').length > 1 ? 'Yeni ihaleler açıldı. İhale sekmesine bakın.' : 'Yeni ihale açıldı. İhale sekmesine bakın.', 3500);
-      if (e.type === 'TENDER_WON') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast('İhaleyi kazandınız! Avans yattı; projeyi Projeler sekmesinden başlatın.', 6000); }
+      if (e.type === 'TENDER_WON') { const tn = app.store.state.tenders.find((x) => x.id === e.data!.tenderId); if (tn) tenderWinScene(app, tn); toast('İhaleyi kazandınız! Avans yattı; projeyi Projeler sekmesinden başlatın.', 6000); }
       if (e.type === 'TENDER_LOST') { app.audio.sfx('error'); toast(e.data!.reason === 'elendi' ? 'İhaleden elendiniz: olağan dışı düşük teklif.' : `İhaleyi kaybettiniz. Kazanan: ${e.data!.winner}.`, 5000); }
       if (e.type === 'HAKEDIS') toast(`Hakediş tahsil edildi: ${formatMoney(e.data!.amount as number)}`, 3500);
       if (e.type === 'CONTRACT_DONE') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast(`İhale işi teslim edildi · kâr ${formatMoney(e.data!.profit as number)}${(e.data!.penalty as number) > 0 ? ` (gecikme cezası ${formatMoney(e.data!.penalty as number)})` : ''}`, 6000); }
       if (e.type === 'INVESTOR_PAID') toast(`Yatırımcıya ödeme yapıldı: ${formatMoney(e.data!.amount as number)}`, 4000);
       if (e.type === 'DIVIDEND') toast(`Ortaklara temettü: ${formatMoney(e.data!.amount as number)}`, 4000);
-      if (e.type === 'MONTH') app.audio.setMood(moodNow());
+      if (e.type === 'MONTH') { app.audio.setMood(moodNow()); const hs = app.store.state.history, a2 = hs.at(-2)?.netWorth, b2 = hs.at(-1)?.netWorth; if (a2 && b2 !== undefined && a2 > 0 && b2 < a2 * 0.85) { app.audio.sfx('alarm'); hud.classList.remove('lossflash'); void hud.offsetWidth; hud.classList.add('lossflash'); toast(`⚠️ Net varlık bu ay %${Math.round((1 - b2 / a2) * 100)} düştü.`, 5000); } }
       if (e.type === 'PROJECT_CREATED') { app.audio.sfx('stamp'); toast('Yeni proje dosyası açıldı.', 2600); const t = tabs.querySelector('.tab:nth-child(3)'); t?.classList.remove('ping'); void (t as HTMLElement | null)?.offsetWidth; t?.classList.add('ping'); }
       if (e.type === 'EVENT_DECISION') { app.audio.sfx('bell'); openEventDecision(app); }
       if (e.type === 'EVENT_RESOLVED') { const d = eventDef(e.data!.id as string); const ch = d?.ch[e.data!.choice as number]; toast(`${d?.t ?? 'Olay'}: ${ch?.l ?? ''}${e.data!.auto ? ' (süre doldu)' : ''}${e.data!.success === true ? ' — başarılı' : e.data!.success === false ? ' — olmadı' : ''}`, 4500); }

@@ -1,4 +1,6 @@
-import { ACHIEVEMENTS, LEVEL_DEFS, QUESTS, officeFor } from '../../data';
+import { ACHIEVEMENTS, LEVEL_DEFS, OFFICE_STEPS, QUESTS, officeFor } from '../../data';
+import { badge, buildingArt } from '../art';
+import { formatDate } from '../../core/calendar';
 import { levelChecks, metric, nextLevel, officeStepFor } from '../../sim/progress';
 import { h, press, toast } from '../dom';
 import { fmt, nf } from '../components';
@@ -37,8 +39,16 @@ export function questsCard(app: App): HTMLElement {
 
 export function openAchievements(app: App): void {
   const s = app.store.state, modal = h('div', { class: 'modal', role: 'dialog', 'aria-label': 'Başarımlar' }); const close = () => modal.remove(); modal.addEventListener('pointerdown', (e) => { if (e.target === modal) close(); });
-  const list = h('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;overflow:auto;max-height:70vh;padding:2px' });
-  for (const a of ACHIEVEMENTS) { const got = s.progress.ach[a.id] !== undefined; list.append(h('div', { class: 'card', style: `padding:10px;opacity:${got ? 1 : 0.55}` }, h('div', { style: 'display:flex;gap:6px;align-items:center' }, h('span', { style: `font-size:18px;filter:${got ? 'none' : 'grayscale(1)'}` }, got ? '🏆' : '🔒'), h('b', {}, a.t)), h('div', { class: 'mute', style: 'font-size:12px;margin-top:2px' }, a.x))); }
-  modal.append(h('div', { class: 'card', style: 'width:min(780px,96vw)' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px' }, h('h3', {}, `Başarımlar · ${Object.keys(s.progress.ach).length}/${ACHIEVEMENTS.length}`), h('button', { class: 'btn', onclick: close }, 'Kapat')), list));
-  document.body.append(modal);
+  let sec: 'rozet' | 'seviye' | 'koleksiyon' = 'rozet';
+  const body = h('div', {}), tabs = h('div', { class: 'seg', style: 'margin-bottom:8px' });
+  const tierOf = (a: (typeof ACHIEVEMENTS)[number]) => { const same = ACHIEVEMENTS.filter((x) => x.m === a.m).sort((x, y) => x.n - y.n), i = same.findIndex((x) => x.id === a.id); return same.length < 2 ? 2 : i === 0 ? 1 : i === same.length - 1 ? 3 : 2; };
+  const draw = () => {
+    tabs.innerHTML = ''; for (const [id, l] of [['rozet', '🏆 Rozetler'], ['seviye', '👑 Seviyeler'], ['koleksiyon', '🏗️ Koleksiyon']] as const) tabs.append(h('button', { class: sec === id ? 'on' : '', onclick: () => { press(app); sec = id; draw(); } }, l));
+    body.innerHTML = '';
+    if (sec === 'rozet') { const g = h('div', { class: 'badges' }); for (const a of ACHIEVEMENTS) { const got = s.progress.ach[a.id] !== undefined; g.append(h('div', { class: `bcard ${got ? 'got' : ''}`, title: a.x }, h('div', { class: 'bico', html: badge(a.m, tierOf(a), got, 52) }), h('b', {}, a.t), h('small', { class: 'mute' }, got ? `Açıldı · ${formatDate(s.progress.ach[a.id]!)}` : a.x))); } body.append(g); }
+    else if (sec === 'seviye') { const c = s.company!; body.append(h('div', { class: 'ladder' }, ...LEVEL_DEFS.map((l) => { const reached = c.level >= l.level, off = OFFICE_STEPS.find((o) => o.minLevel === l.level); return h('div', { class: `lstep ${reached ? 'got' : ''} ${c.level + 1 === l.level ? 'next' : ''}` }, h('b', {}, `${reached ? '✅' : '🔒'} ${l.level}. ${l.label}`), h('small', { class: 'mute' }, [l.need.completed ? `${l.need.completed} proje` : '', l.need.nw ? `${fmt(TL(l.need.nw))} net varlık` : '', l.need.rep ? `${l.need.rep} itibar` : '', l.need.cities ? `${l.need.cities} şehir` : ''].filter(Boolean).join(' · ') || 'Başlangıç'), off ? h('span', { class: 'chip good' }, `🏢 ${officeFor(off.office).label} açılır`) : null); }))); }
+    else { const done = s.projects.filter((p) => p.status === 'satildi' || p.status === 'tamamlandi'), wins = s.tenders.filter((t) => t.status === 'kazandi'); body.append(h('div', { class: 'lbl-s' }, `🏗️ Tamamlanan projeler (${done.length})`), h('div', { class: 'gallery' }, ...(done.length ? done.map((p) => h('div', { class: 'gitem' }, h('div', { class: 'gart', html: buildingArt(p.type, p.floors, 1, p.designSeed, p.quality) }), h('b', {}, p.name), h('small', { class: 'mute' }, p.status === 'satildi' ? `Kâr ${fmt(p.result?.profit ?? 0)}` : 'Teslim edildi'))) : [h('div', { class: 'empty' }, 'Henüz tamamlanan proje yok.')])), h('div', { class: 'lbl-s', style: 'margin-top:10px' }, `🤝 Kazanılan ihaleler (${wins.length})`), h('div', { class: 'gallery' }, ...(wins.length ? wins.map((t) => h('div', { class: 'gitem' }, h('div', { class: 'gart', html: buildingArt(t.type, Math.max(2, Math.round(t.area / 700) + 1), 1, t.id, t.quality) }), h('b', {}, t.title), h('small', { class: 'mute' }, fmt(t.bid?.price ?? 0)))) : [h('div', { class: 'empty' }, 'Henüz kazanılan ihale yok.')]))); }
+  };
+  modal.append(h('div', { class: 'card', style: 'width:min(820px,96vw);max-height:92vh;overflow:auto' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px' }, h('h3', {}, `🏆 Başarımlar · ${Object.keys(s.progress.ach).length}/${ACHIEVEMENTS.length}`), h('button', { class: 'btn', onclick: close }, 'Kapat')), tabs, body));
+  draw(); document.body.append(modal);
 }
