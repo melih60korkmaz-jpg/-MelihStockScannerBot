@@ -1,4 +1,5 @@
 import { gauss, rand, rand as rnd } from '../core/rng';
+import { settleProject } from './investors';
 import type { Money } from '../core/money';
 import type { GameEvent, GameState, Project, Receivable, SalesPolicy, Unit } from '../core/types';
 import { districtData } from '../data';
@@ -127,7 +128,7 @@ export function checkAllSold(s: GameState, p: Project, events: GameEvent[]): voi
   const profit = pol.contract - pol.commission - (p.result?.cost ?? 0) - land;
   p.status = 'satildi'; p.result = { ...p.result!, revenue: pol.contract, profit, soldDay: s.clock.day };
   s.parcels = s.parcels.filter((x) => x.id !== p.parcelId);
-  s.company!.stats.sold++; s.company!.stats.profit += profit;
+  s.company!.stats.sold++; s.company!.stats.profit += profit; settleProject(s, p, profit, events);
   events.push({ type: 'PROJECT_SOLD', day: s.clock.day, data: { projectId: p.id, price: pol.contract, profit } });
 }
 

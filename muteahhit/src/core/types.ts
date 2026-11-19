@@ -65,6 +65,7 @@ export interface Parcel {
   negoLockUntil: number;
   owner: 'market' | 'player';
   boughtDay?: number; costBasis?: Money;
+  clientLand?: boolean;                     // ihale sahası: işveren arsası, şirketin malı değil
   listed?: { askMult: number; day: number } // oyuncu satışa koyduysa
   projectId?: number;
 }
@@ -129,10 +130,10 @@ export interface TenderReq { rep: number; score: number; completed: number; staf
 export interface Tender {
   id: number; kind: string; title: string; city: string; client: 'kamu' | 'ozel'; type: string; quality: string; area: number; months: number;
   refCost: Money; trueCost: Money; req: TenderReq; bondPct: number; openDay: number; evalDay: number;
-  bid?: { price: Money; day: number }; rivals: { name: string; price: Money; tech: number; rep: number }[];
+  bid?: { price: Money; day: number; bond: Money }; rivals: { name: string; price: Money; tech: number; rep: number }[];
   status: 'acik' | 'kazandi' | 'kaybetti' | 'elendi' | 'iptal'; result?: { winner: string; scores: { name: string; score: number }[]; reason?: string };
 }
-export interface Contract { tenderId: number; price: Money; advance: Money; deadline: number; bond: Money; hakedisPaid?: Money }
+export interface Contract { tenderId: number; client: string; price: Money; advance: Money; deadline: number; bond: Money; bondReturned?: boolean; pending: { day: number; amount: Money }[]; doneShare: number }
 export interface Scheduled { day: number; type: 'survey'; data: { parcelId: number; kind: 'soil' | 'market' } }
 
 export interface GameState {

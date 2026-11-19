@@ -65,7 +65,7 @@ export function startConstruction(s: GameState, p: Project): GameEvent[] {
     priceBase: { mat: s.macro.materialIndex, cost: s.costIndex }, spent: 0, unpaid: 0, unpaidParts: { malzeme: 0, insaat: 0, makine: 0 },
     qualitySum: 0, qualityW: 0, stalled: null, stalledDays: 0, soilExtra: 0,
   };
-  s.weather[p.cityId] ??= 'acik'; p.status = 'insaat'; p.build = b; p.sales = defaultSales(); s.units.push(...generateUnits(s, p));
+  s.weather[p.cityId] ??= 'acik'; p.status = 'insaat'; p.build = b; p.sales = defaultSales(); if (!p.contract) s.units.push(...generateUnits(s, p));
   return [{ type: 'PROJECT_STARTED', day: s.clock.day, data: { projectId: p.id } }];
 }
 
@@ -106,7 +106,7 @@ function completeStage(s: GameState, p: Project, b: BuildState, crew: number, ev
     b.qualitySum += q * st.cost; b.qualityW += st.cost;
   }
   events.push({ type: 'STAGE_COMPLETED', day: s.clock.day, data: { projectId: p.id, stage: b.stage, id: st.id } });
-  b.stage++; b.progress = 0; b.stageStarted = false;
+  onStageDone(s, p, b.stage); b.stage++; b.progress = 0; b.stageStarted = false;
 }
 
 const SAFETY_MULT = { dusuk: 1.8, normal: 1, yuksek: 0.45 } as const;
@@ -183,6 +183,7 @@ function machineProbe(s: GameState, req: string[]): { cover: number; cost: Money
 }
 import { MACHINES } from '../data';
 import { ensureCash } from './loans';
+import { finishContract, onStageDone } from './tenders';
 const MACH = new Map(MACHINES.map((m) => [m.id, m]));
 
 function finishProject(s: GameState, p: Project, events: GameEvent[]): void {
@@ -194,6 +195,7 @@ function finishProject(s: GameState, p: Project, events: GameEvent[]): void {
   const rep = Math.round((q - 60) / 8) + (days <= planned * 1.05 ? 2 : days > planned * 1.3 ? -2 : 0);
   c.reputation = clamp(c.reputation + rep, 0, 100);
   events.push({ type: 'PROJECT_COMPLETED', day: s.clock.day, pause: true, data: { projectId: p.id, quality: p.result.qualityScore, days, planned, rep } });
+  if (p.contract) { finishContract(s, p, events); return; }
   deliverUnits(s, p, events); checkAllSold(s, p, events);
 }
 
