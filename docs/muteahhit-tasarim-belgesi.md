@@ -875,3 +875,13 @@ Kullanıcı kararı: bu fazda **temel düzen** kurulur, ince ayar ve hatalar son
 ## Revizyon v0.3 — Bordo–antrasit renk teması
 
 Petrol mavisi/altın/turkuaz arayüz kimliği kaldırıldı. Renkler `src/ui/theme.css` `:root` içinde merkezidir: zemin `#101113`, kart `#1D1E22`, ikincil yüzey `#27282D`, açık yüzey `#303137`, kenarlık `#38383F`, bordo `#A83246`, aktif `#C64252`, hover/pressed `#8F293B`, metin `#F2F0F0`/`#A5A1A3`/`#737277`. Durum renkleri ayrıdır (başarı `#3FBF8A`, uyarı `#E0A13A`, hata/kritik `#FF4D5A`, bilgi `#8E919B`). Eski `--gold/--gold2` ve `.btn.gold` adları uyumluluk için kalır ama bordoyu gösterir. Bordo yalnızca seçili/aktif sekme, ana işlem butonu, seçili şehir-ilçe, ilerleme çubukları ve kimlik öğelerinde kullanılır. Harita ilçeleri değere göre antrasit gri kademeleriyle boyanır, seçili il/ilçe bordodur. Oyun mantığı, kayıtlar ve yerleşim değişmedi.
+
+
+## Revizyon v0.4 — Görsel zenginleştirme
+
+- **Harita**: koyu antrasit zemin üzerinde renkli sıcaklık paleti (çivit → mor → gül → turuncu → sarı; düşük → yüksek). Seçili il/ilçe renginde kalır, çevresine bordo, yumuşak nabız atan çerçeve çizilir. İlçe seçilince/il açılırken görünüm akıcı yakınlaşır (`animateTo`); ilçe etiketleri çakışmaz. İl ve ilçe kartlarında **bölge siluet çizimi** gerçek veriden üretilir (yoğunluk → bina sayısı/yüksekliği, gelir → cephe rengi, ulaşım → metro hattı, düşük yoğunlukta ağaç).
+- **Şirket ana ekranı**: şehir manzarası şirket seviyesine (siluet yoğunluğu ve yüksekliği), aktif şantiye sayısına (vinçler) ve ilk projenin ilerlemesine (yapım halindeki bina) bağlıdır; gün evresi (şafak/gündüz/akşam/gece) cihazın yerel saatine göredir; bulutlar ve vinç salınımı yalnızca Şirket sekmesinde ve hareket azaltma kapalıyken çalışır.
+- **Olay pencereleri**: 9 kategori + özel olaylar için 72×48 SVG illüstrasyon (deprem, hava, iş kazası, faiz/kur, tedarik, ihale, personel, hukuk, güvenlik, fırsat, rakip, finans); giriş/çıkış animasyonu.
+- **Grafikler**: çizgi çizilerek, çubuklar büyüyerek gelir; yeni "Gelir ve gider" çift çubuk grafiği ve "Net varlık gelişimi" çizgisi (ikisi de defter/geçmiş verisi). İlerleme çubukları yumuşak dolar.
+- **Mikro animasyonlar**: kasa ve net varlık sayacı, para hareketinde +/− süzülen etiket, yeni proje geri bildirimi (damga sesi + sekme halkası), bildirim giriş/çıkışı, düğme bırakma yayı.
+- **3D şantiye**: beton pompası (beton aşamalarında bom binaya uzanır, uçtan beton akar), gece makine farları ve çalışma lambası, hologram taslak bordo. **Bellek**: şantiyeden her çıkışta eski sahne tamamen serbest bırakılır (dokular, malzemeler, dinleyiciler); önceden her giriş ~0,8 MB JS belleği sızdırıyordu, şimdi ~0,1 MB.
