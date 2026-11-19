@@ -109,8 +109,8 @@ html[data-motion=reduced] .intro .blk, html[data-motion=reduced] .intro .hook, h
 
 /* kayıtlar */
 .slot { display:flex; align-items:center; gap:12px; margin-bottom:10px; } .slot .t { font:700 20px var(--font-h); flex:1; } .slot .s { font-size:12px; color:var(--mute); }
-#toasts { position:fixed; left:50%; bottom:calc(76px + var(--sb)); transform:translateX(-50%); z-index:80; display:flex; flex-direction:column; gap:8px; align-items:center; width:min(560px,92vw); pointer-events:none; }
-.toast { position:static; background:var(--s3); border:1px solid var(--line); padding:10px 16px; border-radius:12px; animation:in .2s both; max-width:100%; font-size:13px; box-shadow:0 8px 24px #000a; }
+#toasts { position:fixed; right:calc(10px + var(--sr)); bottom:calc(70px + var(--sb)); z-index:80; display:flex; flex-direction:column; gap:6px; align-items:flex-end; width:min(330px,46vw); pointer-events:none; }
+.toast { position:static; background:var(--s3); border:1px solid var(--line); padding:7px 12px; border-radius:10px; animation:in .2s both; max-width:100%; font-size:12px; line-height:1.3; opacity:.96; box-shadow:0 8px 24px #000a; }
 
 /* ===== Şirket kabuğu: HUD + sekmeler (yatay öncelikli) ===== */
 .shell { display:flex; flex-direction:column; background:var(--bg); }
@@ -232,3 +232,4 @@ html[data-motion=reduced] .stages i.cur { animation:none; }
 .plist { max-height:calc(100vh - 330px); min-height:120px; overflow:auto; -webkit-overflow-scrolling:touch; } .prow { display:flex; gap:8px; align-items:center; padding:8px 4px; border-bottom:1px solid var(--line); cursor:pointer; min-height:46px; } .prow.sel { background:#f5b70018; } .prow:active { background:#ffffff10; }
 .prow .plate { width:28px; font:700 13px var(--font-h); color:var(--mute); } .prow .nm { flex:1; min-width:0; font-weight:600; } .prow .nm small { display:block; color:var(--mute); font-weight:400; font-size:11px; }
 @media (max-width:760px) { .tmap { grid-template-columns:1fr; } }
+body:has(.evtmodal) #toasts { display:none; }

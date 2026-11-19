@@ -21,8 +21,9 @@ export function press(ctx: UiCtx, sfx: Sfx = 'click', hk: 'light' | 'medium' | '
 export function toast(msg: string, ms = 2600) {
   let box = document.getElementById('toasts');
   if (!box) { box = h('div', { id: 'toasts', 'aria-live': 'polite' }); document.body.append(box); }
+  for (const old of Array.from(box.children)) if (old.textContent === msg) old.remove();
   const t = h('div', { class: 'toast', role: 'status' }, msg); box.append(t);
-  while (box.children.length > 3) box.firstElementChild!.remove();
+  while (box.children.length > 2) box.firstElementChild!.remove();
   setTimeout(() => t.remove(), ms);
 }
 

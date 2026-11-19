@@ -10,6 +10,7 @@ import { barChart, hbars, lineChart, sparkline } from '../charts';
 import { h, press, toast } from '../dom';
 import { emblemSvg } from '../emblem';
 import type { App } from '../app';
+import { cityData } from '../../data';
 import { openSettings } from './settings';
 import { mapView } from './map';
 import { projectsView } from './projects';
@@ -17,6 +18,9 @@ import { opsView } from './ops';
 import { landAssetValue, ownedParcels } from '../../sim/land';
 import { loansView, partnersView } from './bank';
 import { tendersView } from './tenders';
+import { openEventDecision } from './eventModal';
+import { STYLE_LABEL, aliveRivals } from '../../sim/rivals';
+import { eventDef } from '../../data';
 import { debtTotal } from '../../sim/loans';
 import { investorLiability } from '../../sim/finance';
 import { contractAssets } from '../../sim/tenders';
@@ -155,6 +159,9 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
     return h('div', { style: 'display:flex;flex-direction:column;gap:12px' },
       h('div', { class: 'card', style: 'display:flex;gap:12px;align-items:center;flex-wrap:wrap' }, h('span', { class: `regime ${m.regime}` }, REGIMES[m.regime].label), h('span', { style: 'flex:1;min-width:200px' }, REGIMES[m.regime].blurb), h('span', { class: 'mute', style: 'font-size:12px' }, `${Math.max(0, Math.round((s.clock.day - m.regimeSince) / 30))} aydır`)),
       h('div', { class: 'mgrid' }, mc('Politika faizi (yıllık)', `%${m.policyRate.toFixed(1)}`, 'policyRate', '#F5B700'), mc('Enflasyon (yıllık)', `%${m.inflation.toFixed(1)}`, 'inflation', '#FF7A1A'), mc('Piyasa güveni', m.confidence.toFixed(0), 'confidence', '#2ECC8F'), mc('Malzeme endeksi', m.materialIndex.toFixed(0), 'materialIndex', '#3E7BFA')),
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Rakip firmalar'),
+        ...(s.rivals.length ? s.rivals.slice().sort((a, b) => Number(a.failed) - Number(b.failed) || b.rep - a.rep).slice(0, 8).map((r) => h('div', { class: 'row', style: 'min-height:44px;flex-wrap:wrap;gap:6px' }, h('div', { class: 'lbl', style: 'min-width:150px' }, r.name, h('small', {}, `${STYLE_LABEL[r.style]} · merkez ${cityData(r.home)?.label ?? r.home}`)), r.failed ? h('span', { class: 'chip bad' }, 'İflas etti') : h('span', { class: 'chip' }, `İtibar ${r.rep}`), r.failed ? null : h('span', { class: 'chip' }, `${r.projects} proje`), r.failed ? null : h('span', { class: 'chip' }, `${r.wins} ihale`))) : [h('div', { class: 'empty' }, 'Henüz rakip yok.')]),
+        h('div', { class: 'mute', style: 'font-size:12px;margin-top:6px' }, `${aliveRivals(s).length} aktif firma arsa kapar, proje başlatır, ihalelere girer; kriz döneminde bazıları batar ve ucuz arsa çıkar.`)),
       h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Haber bandı'), ...(s.news.length ? s.news.slice(0, 12).map((n) => h('div', { class: 'news' }, h('small', {}, formatDate(n.day)), h('span', { class: `dot ${n.tone}` }), h('span', {}, n.text))) : [h('div', { class: 'empty' }, 'Henüz haber yok. Piyasa değişimleri burada duyurulur.')])));
   };
 
@@ -165,7 +172,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
 
   // Olaylar: gün akışı yalnızca HUD'u günceller; ay/komut olayları sekmeyi yeniler
-  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT']);
+  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED']);
   const unsub = app.store.subscribe((evs) => {
     if (!root.isConnected) { unsub(); return; }
     let redraw = false;
@@ -201,6 +208,8 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'CONTRACT_DONE') { app.audio.sfx('stamp'); toast(`İhale işi teslim edildi · kâr ${formatMoney(e.data!.profit as number)}${(e.data!.penalty as number) > 0 ? ` (gecikme cezası ${formatMoney(e.data!.penalty as number)})` : ''}`, 6000); }
       if (e.type === 'INVESTOR_PAID') toast(`Yatırımcıya ödeme yapıldı: ${formatMoney(e.data!.amount as number)}`, 4000);
       if (e.type === 'DIVIDEND') toast(`Ortaklara temettü: ${formatMoney(e.data!.amount as number)}`, 4000);
+      if (e.type === 'EVENT_DECISION') openEventDecision(app);
+      if (e.type === 'EVENT_RESOLVED') { const d = eventDef(e.data!.id as string); const ch = d?.ch[e.data!.choice as number]; toast(`${d?.t ?? 'Olay'}: ${ch?.l ?? ''}${e.data!.auto ? ' (süre doldu)' : ''}${e.data!.success === true ? ' — başarılı' : e.data!.success === false ? ' — olmadı' : ''}`, 4500); }
       if (e.type === 'BANKRUPT') { app.audio.sfx('error'); app.haptic('heavy'); showBankrupt(); }
       if (e.type === 'CASH_NEGATIVE') { app.audio.sfx('error'); toast('Kasa eksiye düştü! Oyun duraklatıldı.', 5000); }
     }
@@ -212,6 +221,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
     document.body.append(m);
   };
   if (app.store.state.company?.bankrupt) showBankrupt();
+  if (app.store.state.pending) setTimeout(() => openEventDecision(app), 0);
   buildHud(); drawHud(); drawTabs(); drawView();
   return root;
 }

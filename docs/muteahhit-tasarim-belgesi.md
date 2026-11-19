@@ -834,3 +834,10 @@ Kullanıcı kararı: bu fazda **temel düzen** kurulur, ince ayar ve hatalar son
 - **İhale** (`sim/tenders.ts`): şubesi olan illerde aylık 5 tür (okul, belediye, hastane, sanayi, büyük konut); şartlar itibar/not/tamamlanan proje/personel/makine. Puan: fiyat 40 + teknik 25 + itibar 15 + mali 10 + kapasite 10; yaklaşık maliyetin %80'i altı elenir (kazananın laneti); kamuda yaklaşık maliyet üstü geçersiz. Kazanınca avans %10, aşama başı hakediş (45 gün vadeli), gecikme cezası günde %0,1 (en çok %10), teminat iadesi. İşveren arsası net değere girmez.
 - **Net değer** artık: nakit + varlıklar − banka borcu − yatırımcı fonu + ihale (hakediş, teminat, kazanılmamış avans). Save v8 (migrasyon v7→v8).
 - **Ölçüm** (`npm run sim:bank`): orta seviye şirket yaklaşık maliyetin %88–96'sında teklifle ihalelerin %6–13'ünü ve %5–13 marjı yakalar; çok düşük teklif zarar ettirir.
+
+
+## Uygulama notları — Faz 9 (rakipler, olaylar, dinamik piyasa)
+
+- **Rakip firmalar** (`sim/rivals.ts`): 5 kalıcı firma (agresif/dengeli/temkinli), ev şehri, nakit, itibar, teknik güç. Aylık: oyuncunun şehirlerinde en değerli ilanlardan birini kapar (haber çıkar), proje başlatır (bölge arzı artar → satış şansı %15'e kadar düşer, fazla arzda konut endeksi hafif aşağı), teslim eder, ihalelere girer ve kazanır. Kriz/daralmada temkinliler geri çekilir; nakdi biten firma **iflas eder** ve ev şehrinde %18 indirimli 2 arsa piyasaya çıkar. Yeni girişimciler gelir. İhale rakipleri bu kalıcı firmalardır.
+- **Olay kataloğu** (`data/events.json`, 48 olay; `sim/events.ts`): mevzuat, piyasa, doğa, insan, hukuk, güvenlik, fırsat, rakip, finans. Ayda %55 olasılıkla koşullara uyan bir olay ağırlıklı seçilir (aynı olay 300 gün tekrarlanmaz). Oyun durur; 2–3 seçimli karar penceresi sabit etkileri ve riskli seçimin olasılığını gösterir; 20 gün cevap verilmezse varsayılan seçim uygulanır. Etkiler: kasa (firma büyüklüğüne ölçekli), itibar, kredi notu, moral, memnuniyet, konut/arsa/malzeme fiyatı, şantiye durması, personel ayrılması, faiz, makine, rakip.
+- **Dinamik piyasa**: ara sıra bir ilde gerçek talep dalgası (haber + endeks etkisi); rakip arzı ve olaylar endeksleri kaydırır. Save v9.
