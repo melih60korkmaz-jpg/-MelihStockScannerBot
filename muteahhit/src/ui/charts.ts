@@ -4,7 +4,7 @@ import { h } from './dom';
 const W = 600;
 const nice = (a: number, b: number) => { const pad = (b - a || Math.abs(a) || 1) * 0.12; return [a - pad, b + pad] as const; };
 
-export function sparkline(values: number[], color = '#F5B700', h2 = 34): string {
+export function sparkline(values: number[], color = '#C64252', h2 = 34): string {
   if (values.length < 2) return '';
   const min = Math.min(...values), max = Math.max(...values), span = max - min || 1;
   const pts = values.map((v, i) => `${(i / (values.length - 1)) * 100},${h2 - 3 - ((v - min) / span) * (h2 - 6)}`).join(' ');
@@ -30,7 +30,7 @@ function frame(pts: Pt[], fmt: (n: number) => string, build: (x: (i: number) => 
     const r = svg.getBoundingClientRect(); const px = ((e.clientX - r.left) / r.width) * W;
     let i = mode === 'bar' ? Math.floor(((px - L) / pw) * pts.length) : Math.round(((px - L) / pw) * (pts.length - 1));
     i = Math.max(0, Math.min(pts.length - 1, i)); const p = pts[i]!;
-    cur.innerHTML = `<line x1="${x(i)}" x2="${x(i)}" y1="${T}" y2="${T + ph}" stroke="#fff" stroke-opacity=".35"/>` + (mode === 'line' ? `<circle cx="${x(i)}" cy="${y(p.value)}" r="5" fill="#F5B700" stroke="#fff" stroke-width="2"/>` : '');
+    cur.innerHTML = `<line x1="${x(i)}" x2="${x(i)}" y1="${T}" y2="${T + ph}" stroke="#fff" stroke-opacity=".35"/>` + (mode === 'line' ? `<circle cx="${x(i)}" cy="${y(p.value)}" r="5" fill="#C64252" stroke="#fff" stroke-width="2"/>` : '');
     rd.innerHTML = `<b>${p.label}</b> · ${fmt(p.value)}`;
   };
   svg.addEventListener('pointerdown', pick); svg.addEventListener('pointermove', (e) => { if (e.buttons || e.pointerType === 'touch') pick(e); });
@@ -40,8 +40,8 @@ function frame(pts: Pt[], fmt: (n: number) => string, build: (x: (i: number) => 
 export function lineChart(pts: Pt[], fmt: (n: number) => string = (n) => formatMoney(n as Money), H = 170): HTMLElement {
   return frame(pts, fmt, (x, y, _lo, _hi, Hh) => {
     const d = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join('');
-    return `<defs><linearGradient id="lg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#F5B700" stop-opacity=".35"/><stop offset="1" stop-color="#F5B700" stop-opacity="0"/></linearGradient></defs>
-      <path d="${d}L${x(pts.length - 1)},${Hh - 20}L${x(0)},${Hh - 20}Z" fill="url(#lg)"/><path d="${d}" fill="none" stroke="#F5B700" stroke-width="2.5" stroke-linejoin="round"/>`;
+    return `<defs><linearGradient id="lg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#C64252" stop-opacity=".35"/><stop offset="1" stop-color="#C64252" stop-opacity="0"/></linearGradient></defs>
+      <path d="${d}L${x(pts.length - 1)},${Hh - 20}L${x(0)},${Hh - 20}Z" fill="url(#lg)"/><path d="${d}" fill="none" stroke="#C64252" stroke-width="2.5" stroke-linejoin="round"/>`;
   }, H, Infinity, -Infinity, 'line');
 }
 
@@ -51,7 +51,7 @@ export function barChart(pts: Pt[], fmt: (n: number) => string = (n) => formatMo
     const bw = Math.min(34, ((W - 64) / pts.length) * 0.66), z = y(0);
     return `<line class="gl" x1="56" x2="${W - 8}" y1="${z}" y2="${z}" stroke="#ffffff30"/>` + pts.map((p, i) => {
       const yy = y(p.value), top = Math.min(yy, z), hh = Math.max(1.5, Math.abs(yy - z));
-      return `<rect x="${x(i) - bw / 2}" y="${top}" width="${bw}" height="${hh}" rx="3" fill="${p.value >= 0 ? '#2ECC8F' : '#E5484D'}"/>`;
+      return `<rect x="${x(i) - bw / 2}" y="${top}" width="${bw}" height="${hh}" rx="3" fill="${p.value >= 0 ? '#3FBF8A' : '#FF4D5A'}"/>`;
     }).join('');
   }, H, 0, 0, 'bar');
 }

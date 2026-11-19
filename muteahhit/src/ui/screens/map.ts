@@ -12,7 +12,8 @@ const RANGE: Record<Metric, [number, number]> = { fiyat: [16000, 60000], gelir: 
 const mem = { mode: 'turkey' as 'turkey' | 'province', city: '', district: '', metric: 'fiyat' as Metric, q: '', vb: null as null | { x: number; y: number; w: number; h: number }, vbKey: '' };
 const TR_BOX = (() => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const p of PROVINCES) { x0 = Math.min(x0, p.bbox[0]); y0 = Math.min(y0, p.bbox[1]); x1 = Math.max(x1, p.bbox[2]); y1 = Math.max(y1, p.bbox[3]); } return { x: x0 - 80, y: y0 - 80, w: x1 - x0 + 160, h: y1 - y0 + 160 }; })();
 const norm = (s: string) => s.toLocaleLowerCase('tr').replace(/[ıİ]/g, 'i');
-const shade = (t: number) => { const k = Math.max(0, Math.min(1, t)); return { fill: k > 0.5 ? '#F5B700' : '#2f7fa8', op: (0.18 + Math.abs(k - 0.5) * 1.5).toFixed(2) }; };
+/** Değer → antrasit gri kademesi (düşük: koyu, yüksek: açık); seçili bölge CSS ile bordo vurgulanır. */
+const shade = (t: number) => { const k = Math.max(0, Math.min(1, t)), c = (a: number, b: number) => Math.round(a + (b - a) * k).toString(16).padStart(2, '0'); return { fill: `#${c(0x3a, 0x92)}${c(0x3b, 0x94)}${c(0x42, 0x9e)}`, op: '0.95' }; };
 
 /** Dokunma/kaydırma/yakınlaştırma: SVG viewBox'ını yönetir. Dokunuş ile sürükleme ayrılır (tıklama yalnızca sürüklenmediyse). */
 function panZoom(svg: SVGSVGElement, full: { x: number; y: number; w: number; h: number }, vb: { x: number; y: number; w: number; h: number }, onChange: (z: number) => void) {
@@ -54,8 +55,8 @@ function turkeyView(app: App, refresh: () => void, sel: Province): HTMLElement {
     labels += `<text class="lb2" x="${p.cx}" y="${p.cy}" font-size="${p.areaKm2 > 9000 ? 150 : p.areaKm2 > 3500 ? 120 : 90}" text-anchor="middle">${p.name}</text>`;
   }
   const st = PROVINCES.find((p) => p.id === c.startCity)!;
-  svg.innerHTML = `<rect x="${TR_BOX.x}" y="${TR_BOX.y}" width="${TR_BOX.w}" height="${TR_BOX.h}" fill="transparent"/>${paths}${labels}<circle cx="${st.cx}" cy="${st.cy}" r="60" fill="#F5B700" stroke="#000" stroke-width="12"/>`;
-  const wrap = h('div', { class: 'mapbox', style: 'position:relative' }, svg, h('div', { class: 'legend' }, h('span', {}, 'Düşük'), h('i', {}), h('span', {}, 'Yüksek'), h('span', { style: 'margin-left:10px' }, '● Başlangıç · altın çerçeve = açık il')));
+  svg.innerHTML = `<rect x="${TR_BOX.x}" y="${TR_BOX.y}" width="${TR_BOX.w}" height="${TR_BOX.h}" fill="transparent"/>${paths}${labels}<circle cx="${st.cx}" cy="${st.cy}" r="60" fill="#C64252" stroke="#F2F0F0" stroke-width="12"/>`;
+  const wrap = h('div', { class: 'mapbox', style: 'position:relative' }, svg, h('div', { class: 'legend' }, h('span', {}, 'Düşük'), h('i', {}), h('span', {}, 'Yüksek'), h('span', { style: 'margin-left:10px' }, '● Başlangıç · bordo çerçeve = açık il')));
   const vb = mem.vb && mem.vbKey === 'tr' ? mem.vb : { ...TR_BOX }; mem.vb = vb; mem.vbKey = 'tr';
   const pz = panZoom(svg, TR_BOX, vb, (z) => svg.setAttribute('data-z', z > 3.2 ? '3' : z > 1.8 ? '2' : '1'));
   svg.addEventListener('click', (e) => { if (pz.wasDrag()) return; const el = (e.target as Element).closest('[data-id]'); if (!el) return; press(app); mem.city = el.getAttribute('data-id')!; mem.district = ''; refresh(); });

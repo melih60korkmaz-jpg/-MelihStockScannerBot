@@ -22,17 +22,17 @@ export function blueprint(p: Parcel): HTMLElement {
   const x0 = 70 + (150 - pw) / 2, y0 = 40 + (130 - ph) / 2, cut = 6 + hash(p.id, 3) * 14;
   const pts = [[x0, y0], [x0 + pw - cut, y0], [x0 + pw, y0 + cut], [x0 + pw, y0 + ph], [x0, y0 + ph]].map((q) => q.join(',')).join(' ');
   const s = Math.sqrt(p.taks), ew = pw * s * 0.92, eh = ph * s * 0.92, ex = x0 + (pw - ew) / 2, ey = y0 + (ph - eh) / 2;
-  let roads = `<rect x="0" y="${y0 + ph + 8}" width="${W}" height="22" fill="#9aa3ab"/><line x1="0" x2="${W}" y1="${y0 + ph + 19}" y2="${y0 + ph + 19}" stroke="#fff" stroke-dasharray="8 6" stroke-width="1.4"/>`;
-  if (p.roads >= 2) roads += `<rect x="${x0 + pw + 8}" y="0" width="22" height="${H}" fill="#9aa3ab"/><line y1="0" y2="${H}" x1="${x0 + pw + 19}" x2="${x0 + pw + 19}" stroke="#fff" stroke-dasharray="8 6" stroke-width="1.4"/>`;
-  if (p.roads >= 3) roads += `<rect x="0" y="${y0 - 30}" width="${W}" height="22" fill="#9aa3ab"/><line x1="0" x2="${W}" y1="${y0 - 19}" y2="${y0 - 19}" stroke="#fff" stroke-dasharray="8 6" stroke-width="1.4"/>`;
-  let nb = ''; for (let i = 0; i < 5; i++) { const nx = 8 + hash(p.id, 10 + i) * 50, ny = 14 + i * 36 + hash(p.id, 20 + i) * 8; if (ny + 20 < y0 + ph + 6) nb += `<rect x="${nx}" y="${ny}" width="${22 + hash(p.id, 30 + i) * 22}" height="${18 + hash(p.id, 40 + i) * 10}" fill="#b8b2a3" stroke="#8d8672" stroke-width="0.8"/>`; }
-  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Vaziyet planı"><rect width="${W}" height="${H}" fill="#F4EFE6"/>${roads}${nb}
-    <polygon points="${pts}" fill="#fbf8f0" stroke="#2c2a25" stroke-width="1.6" stroke-dasharray="5 3"/>
-    <rect x="${ex}" y="${ey}" width="${ew}" height="${eh}" fill="#3E7BFA" fill-opacity=".22" stroke="#3E7BFA" stroke-width="1.6"/>
-    <text x="${ex + ew / 2}" y="${ey + eh / 2 + 3}" text-anchor="middle" font-size="9" font-weight="700" fill="#1d3f9a" font-family="Inter,sans-serif">Taban ${nf(p.area * p.taks)} m²</text>
-    <text x="${x0 + pw / 2}" y="${y0 - 5}" text-anchor="middle" font-size="9" fill="#2c2a25" font-family="Inter,sans-serif">${nf(p.area)} m² parsel${p.corner ? ' · köşe' : ''}</text>
-    <text x="${W - 40}" y="${H - 8}" font-size="8" fill="#5c5748" font-family="Inter,sans-serif">${p.roads} yol cephesi</text>
-    <g transform="translate(18 ${H - 34})"><path d="M0 -14 L7 4 L0 0 L-7 4 Z" fill="#2c2a25"/><text x="0" y="16" text-anchor="middle" font-size="8" font-weight="700" fill="#2c2a25">K</text></g></svg>`;
+  let roads = `<rect x="0" y="${y0 + ph + 8}" width="${W}" height="22" fill="#38383F"/><line x1="0" x2="${W}" y1="${y0 + ph + 19}" y2="${y0 + ph + 19}" stroke="#737277" stroke-dasharray="8 6" stroke-width="1.4"/>`;
+  if (p.roads >= 2) roads += `<rect x="${x0 + pw + 8}" y="0" width="22" height="${H}" fill="#38383F"/><line y1="0" y2="${H}" x1="${x0 + pw + 19}" x2="${x0 + pw + 19}" stroke="#737277" stroke-dasharray="8 6" stroke-width="1.4"/>`;
+  if (p.roads >= 3) roads += `<rect x="0" y="${y0 - 30}" width="${W}" height="22" fill="#38383F"/><line x1="0" x2="${W}" y1="${y0 - 19}" y2="${y0 - 19}" stroke="#737277" stroke-dasharray="8 6" stroke-width="1.4"/>`;
+  let nb = ''; for (let i = 0; i < 5; i++) { const nx = 8 + hash(p.id, 10 + i) * 50, ny = 14 + i * 36 + hash(p.id, 20 + i) * 8; if (ny + 20 < y0 + ph + 6) nb += `<rect x="${nx}" y="${ny}" width="${22 + hash(p.id, 30 + i) * 22}" height="${18 + hash(p.id, 40 + i) * 10}" fill="#2b2c32" stroke="#44454d" stroke-width="0.8"/>`; }
+  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Vaziyet planı"><rect width="${W}" height="${H}" fill="#1D1E22"/>${roads}${nb}
+    <polygon points="${pts}" fill="#27282D" stroke="#A5A1A3" stroke-width="1.6" stroke-dasharray="5 3"/>
+    <rect x="${ex}" y="${ey}" width="${ew}" height="${eh}" fill="#A83246" fill-opacity=".35" stroke="#C64252" stroke-width="1.6"/>
+    <text x="${ex + ew / 2}" y="${ey + eh / 2 + 3}" text-anchor="middle" font-size="9" font-weight="700" fill="#F2F0F0" font-family="Inter,sans-serif">Taban ${nf(p.area * p.taks)} m²</text>
+    <text x="${x0 + pw / 2}" y="${y0 - 5}" text-anchor="middle" font-size="9" fill="#A5A1A3" font-family="Inter,sans-serif">${nf(p.area)} m² parsel${p.corner ? ' · köşe' : ''}</text>
+    <text x="${W - 40}" y="${H - 8}" font-size="8" fill="#737277" font-family="Inter,sans-serif">${p.roads} yol cephesi</text>
+    <g transform="translate(18 ${H - 34})"><path d="M0 -14 L7 4 L0 0 L-7 4 Z" fill="#A5A1A3"/><text x="0" y="16" text-anchor="middle" font-size="8" font-weight="700" fill="#A5A1A3">K</text></g></svg>`;
   return h('div', { class: 'paper', html: svg });
 }
 
@@ -42,9 +42,9 @@ export function massing(p: Parcel, floors: number): HTMLElement {
   const cx = W / 2, cy = 150, c = 0.866, sn = 0.5, hh = fh * fl;
   const P = (x: number, y: number, z: number) => `${(cx + (x - y) * c).toFixed(1)},${(cy + (x + y) * sn - z).toFixed(1)}`;
   const top = [P(0, 0, hh), P(a, 0, hh), P(a, b, hh), P(0, b, hh)].join(' '), left = [P(0, b, 0), P(a, b, 0), P(a, b, hh), P(0, b, hh)].join(' '), right = [P(a, 0, 0), P(a, b, 0), P(a, b, hh), P(a, 0, hh)].join(' ');
-  let lines = ''; for (let i = 1; i < fl; i++) lines += `<polyline points="${P(0, b, i * fh)} ${P(a, b, i * fh)} ${P(a, 0, i * fh)}" fill="none" stroke="#0b1a22" stroke-opacity=".35" stroke-width=".8"/>`;
-  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Yapılaşma hacmi"><ellipse cx="${cx}" cy="${cy + 18}" rx="${a * 1.1}" ry="${a * 0.45}" fill="#ffffff10"/><polygon points="${left}" fill="#c99a0a"/><polygon points="${right}" fill="#e3ae10"/><polygon points="${top}" fill="#ffd35a"/>${lines}
-    <text x="12" y="16" font-size="10" fill="#8fa5b2" font-family="Inter,sans-serif">${fl} kat</text></svg>`;
+  let lines = ''; for (let i = 1; i < fl; i++) lines += `<polyline points="${P(0, b, i * fh)} ${P(a, b, i * fh)} ${P(a, 0, i * fh)}" fill="none" stroke="#101113" stroke-opacity=".45" stroke-width=".8"/>`;
+  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Yapılaşma hacmi"><ellipse cx="${cx}" cy="${cy + 18}" rx="${a * 1.1}" ry="${a * 0.45}" fill="#ffffff10"/><polygon points="${left}" fill="#8F293B"/><polygon points="${right}" fill="#A83246"/><polygon points="${top}" fill="#C64252"/>${lines}
+    <text x="12" y="16" font-size="10" fill="#A5A1A3" font-family="Inter,sans-serif">${fl} kat</text></svg>`;
   return h('div', { html: svg });
 }
 

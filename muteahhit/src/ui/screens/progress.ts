@@ -29,7 +29,7 @@ export function questsCard(app: App): HTMLElement {
   if (!open.length) card.append(h('div', { class: 'empty' }, 'Tüm görevler tamamlandı!'));
   for (const q of open) {
     const have = Math.min(q.n, metric(s, q.m)), pct = Math.round((have / q.n) * 100), rw = [q.r.cash ? fmt(TL(q.r.cash)) : '', q.r.rep ? `+${q.r.rep} itibar` : '', q.r.score ? `+${q.r.score} not` : ''].filter(Boolean).join(' · ');
-    card.append(h('div', { style: 'padding:6px 0;border-top:1px solid var(--line)' }, h('div', { style: 'display:flex;justify-content:space-between;gap:8px' }, h('b', {}, q.t), h('span', { class: 'mute', style: 'font-size:11px' }, rw)), h('div', { class: 'mute', style: 'font-size:12px' }, q.x), h('div', { class: 'meter', style: 'margin-top:4px' }, h('i', { style: `width:${pct}%;background:var(--ok)` }))));
+    card.append(h('div', { style: 'padding:6px 0;border-top:1px solid var(--line)' }, h('div', { style: 'display:flex;justify-content:space-between;gap:8px' }, h('b', {}, q.t), h('span', { class: 'mute', style: 'font-size:11px' }, rw)), h('div', { class: 'mute', style: 'font-size:12px' }, q.x), h('div', { class: 'meter', style: 'margin-top:4px' }, h('i', { style: `width:${pct}%;background:var(--accent2)` }))));
   }
   card.append(h('button', { class: 'btn', style: 'margin-top:8px;min-height:38px', onclick: () => { press(app); openAchievements(app); } }, `Başarımlar ${Object.keys(s.progress.ach).length}/${ACHIEVEMENTS.length}`));
   return card;

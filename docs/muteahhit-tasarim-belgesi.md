@@ -870,3 +870,8 @@ Kullanıcı kararı: bu fazda **temel düzen** kurulur, ince ayar ve hatalar son
 - **Denge değişiklikleri**: başlangıç sermayesi 5–6,5 M₺ → 10–14 M₺ (tipik arsa 6–8 M₺ olduğundan ilk proje mümkün değildi); arsa hedef marjı gelirin %10–17'si → %20–30'u; ekip yetersizken hız tabanı 0,25 → 0,55 (alt yüklenici işi yavaşlatmaz, maliyeti zaten öder); sınır sınırı: `CITIES` 3 → 8 başlangıç şehri (Bursa, Antalya, Kocaeli, Konya, Adana).
 - **Hata düzeltmeleri**: bildirim yığılması (Faz 9–10); ilçe etiketlerinin çakışması (büyükten başlayarak yerleştirme, çakışanlar yakınlaşınca görünür); başka şehirde başlayınca pazar ilanlarının üretilmesi.
 - **Bilinen sınırlar**: planlanan süre gerçekleşenden ~%30 kısa (hava, tedarik, ekip gecikmeleri; plan yalnızca öngörü); dağlar hâlâ piramit biçimli; menü sahnesi yeni yeşilliği içermiyor; tablolar çok dar ekranda sıkışık; sesin kulakla dengesi yapılmadı; gerçek iOS/Android denemesi (Capacitor) henüz yapılmadı.
+
+
+## Revizyon v0.3 — Bordo–antrasit renk teması
+
+Petrol mavisi/altın/turkuaz arayüz kimliği kaldırıldı. Renkler `src/ui/theme.css` `:root` içinde merkezidir: zemin `#101113`, kart `#1D1E22`, ikincil yüzey `#27282D`, açık yüzey `#303137`, kenarlık `#38383F`, bordo `#A83246`, aktif `#C64252`, hover/pressed `#8F293B`, metin `#F2F0F0`/`#A5A1A3`/`#737277`. Durum renkleri ayrıdır (başarı `#3FBF8A`, uyarı `#E0A13A`, hata/kritik `#FF4D5A`, bilgi `#8E919B`). Eski `--gold/--gold2` ve `.btn.gold` adları uyumluluk için kalır ama bordoyu gösterir. Bordo yalnızca seçili/aktif sekme, ana işlem butonu, seçili şehir-ilçe, ilerleme çubukları ve kimlik öğelerinde kullanılır. Harita ilçeleri değere göre antrasit gri kademeleriyle boyanır, seçili il/ilçe bordodur. Oyun mantığı, kayıtlar ve yerleşim değişmedi.
