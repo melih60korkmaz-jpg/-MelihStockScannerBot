@@ -38,7 +38,7 @@ export function crewCapacity(s: GameState, stageId: string, projectId?: number):
 export function crewRatio(s: GameState, p: Project, stageId: string): number { return crewCapacity(s, stageId, p.id) / Math.max(2, p.brut / 70); }
 export function crewFactor(s: GameState, p: Project, stageId: string): number {
   const r = crewRatio(s, p, stageId);
-  return r < 1 ? 0.25 + 0.75 * r : Math.min(1.3, 1 + (r - 1) * 0.3);
+  return r < 1 ? 0.55 + 0.45 * r : Math.min(1.3, 1 + (r - 1) * 0.3);
 }
 const hasRole = (s: GameState, role: string) => s.staff.some((x) => x.type === role);
 

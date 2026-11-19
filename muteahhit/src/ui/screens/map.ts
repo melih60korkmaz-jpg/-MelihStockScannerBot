@@ -100,7 +100,13 @@ function provinceView(app: App, refresh: () => void, prov: Province): HTMLElemen
   for (const d of city.districts) {
     const t = (val(d) - rl[0]!) / ((rl[1]! - rl[0]!) || 1), sh = shade(t);
     paths += `<path class="dv ${d.id === mem.district ? 'sel' : ''}" data-id="${d.id}" d="${d.path}" fill="${sh.fill}" fill-opacity="${sh.op}"><title>${d.label}</title></path>`;
-    labels += `<text class="${d.areaKm2 >= minArea ? '' : 'lb2'}" x="${d.cx}" y="${d.cy}" font-size="${lblSize}" text-anchor="middle">${d.label}</text>`;
+  }
+  // Etiket çakışması: büyük ilçeden başlayarak yerleştir; çakışan etiketler yalnızca yakınlaşınca görünür (lb2)
+  const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
+  for (const d of [...city.districts].sort((x, y) => y.areaKm2 - x.areaKm2)) {
+    const w = lblSize * 0.56 * d.label.length, box = { x0: d.cx - w / 2, x1: d.cx + w / 2, y0: d.cy - lblSize, y1: d.cy + lblSize * 0.25 };
+    const hit = placed.some((q) => box.x0 < q.x1 && box.x1 > q.x0 && box.y0 < q.y1 && box.y1 > q.y0), show = d.areaKm2 >= minArea && !hit; if (show) placed.push(box);
+    labels += `<text class="${show ? '' : 'lb2'}" x="${d.cx}" y="${d.cy}" font-size="${lblSize}" text-anchor="middle">${d.label}</text>`;
   }
   svg.innerHTML = `<rect x="${full.x}" y="${full.y}" width="${full.w}" height="${full.h}" fill="transparent"/>${paths}${labels}`;
   const key = `p:${prov.id}`, vb = mem.vb && mem.vbKey === key ? mem.vb : { ...full }; mem.vb = vb; mem.vbKey = key;

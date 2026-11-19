@@ -9,11 +9,12 @@ Tasarım belgesi: `../docs/muteahhit-tasarim-belgesi.md`
     npm run sim:build -- 300 orta          # inşaat dengesi (ekip: yok|kucuk|orta|buyuk)
     npm run sim:sales -- 12                # satış stratejileri raporu
     npm run sim:geo                        # 81 il ekonomik denge raporu
+    npm run sim:bot -- 30 10 usta         # bot oyuncu: çökme/denge taraması
     npm run sim:bank                       # ihale kazanma/marj ve kredi faizi raporu
     npm run dev     # geliştirme sunucusu
     npm run build   # dist/index.html (tek dosya)
 
-Durum: **Faz 1–11 + 81 il haritası** (çekirdek, açılış/menü/ayarlar/müzik, şirket ve makro ekonomi, finans, arsa pazarı, inşaat + 3D şantiye, malzeme/makine/personel temeli, daire satışı ve müşteri, banka/kredi/yatırımcı/ihale, rakipler, 48 olay, dinamik piyasa, ses/animasyon cilası, görev/başarım/seviye/ofis). Yalnızca yatay oyun. Sonraki: Faz 12 (kapsamlı test, denge, optimizasyon, hata düzeltme).
+Durum: **Faz 1–12 + 81 il haritası** (çekirdek, açılış/menü/ayarlar/müzik, şirket ve makro ekonomi, finans, arsa pazarı, inşaat + 3D şantiye, malzeme/makine/personel temeli, daire satışı ve müşteri, banka/kredi/yatırımcı/ihale, rakipler, 48 olay, dinamik piyasa, ses/animasyon cilası, görev/başarım/seviye/ofis). Yalnızca yatay oyun. Sonraki: mobil paketleme (Capacitor), kulakla ses dengesi, gerçek cihaz testi.
 
 ## Veri kaynakları ve atıf
 

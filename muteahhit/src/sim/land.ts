@@ -12,7 +12,7 @@ export function qualityFit(q: string, income: number): number {
   switch (q) { case 'luks': return 0.7 + 0.45 * i; case 'premium': return 0.85 + 0.25 * i; case 'standart': return 0.95 + 0.1 * i; default: return 1.1 - 0.2 * i; }
 }
 /** Rekabetçi arsa piyasası: geliştiricinin referans projede bırakacağı kâr (rekabet yüksekse daha dar). */
-export const targetMargin = (d: DistrictDef) => 0.17 - 0.07 * (d.competition / 100);
+export const targetMargin = (d: DistrictDef) => 0.3 - 0.1 * (d.competition / 100);
 export const TAPU_HARCI = 0.04;
 export const QUICK_SALE_DISCOUNT = 0.92;
 const SOIL_PRICE: Record<Soil, number> = { saglam: 1, kaya: 0.97, kil: 0.97, dolgu: 0.92, yeralti_suyu: 0.88, egimli: 0.9 };

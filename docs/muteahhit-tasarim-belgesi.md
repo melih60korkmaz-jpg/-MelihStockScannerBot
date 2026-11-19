@@ -859,3 +859,14 @@ Kullanıcı kararı: bu fazda **temel düzen** kurulur, ince ayar ve hatalar son
 - **Görevler**: 14 görevlik zincir (arsa → ekip → proje → teslim → satış → kredi → makine → ikinci şehir → ihale → kriz atlatma); ilk 3 açık görev ve ilerleme çubuğu Şirket sekmesinde; ödül nakit/itibar/not, gün ilerleyince verilir (komutla değil).
 - **Başarımlar**: 30 başarım (proje, satış, servet, şehir, ihale, kalite, itibar, kredi, ortaklık, olay, kriz, süre, seviye); ödülsüz, kalıcı, kilitli/açık listesi.
 - **Altyapı**: sayaçlar olaylardan türetilir (`track`); ölçütler tek `metric()` fonksiyonundan okunur; günlük kontrol 6 günde bir (performans). Save v10: eski kayıtlar sessizce işlenir (ödül/bildirim yok).
+
+
+## Uygulama notları — Faz 12 (test, denge, optimizasyon, hata düzeltme)
+
+- **Test**: 193 birim testi (çekirdek, kayıt/migrasyon v1→v10, ekonomi, arsa, inşaat, operasyon, satış, coğrafya, ayarlar, 3D bina, banka, ihale, rakip/olay, ses, ilerleme, uzun koşu). Uzun koşu testi 8 başlangıç şehrinde 4 yıl oynatır; kayıt gidiş-dönüşü, defter tutarlılığı ve sonluluk denetlenir. Performans bütçesi: 1 yıl simülasyon < 1,5 sn.
+- **Bot oyuncu** (`npm run sim:bot -- [tohum] [yıl] [tutucu|dengeli|agresif|usta]`): 30 tohum × 10–15 yıl, 4 strateji: **hiç çökme, NaN veya defter tutarsızlığı yok**. Bot çıkarımları:
+  - Proje başına kâr sağlıklı (mustakil/apartman %25–100 maliyet üstü getiri); sorun nakit yönetimi: nakit eksiye düşünce otomatik malzeme alımı durur, şantiyeler donar ve tek başına çıkış zorlaşır ("ölüm sarmalı"). Bu yüzden şantiye nakitsiz durunca Şirket ekranında çıkış yollarını (toplu satış, kredi, yatırımcı, arsa satışı) sayan uyarı eklendi.
+  - Basit bot stratejileriyle 8–10 yılda iflas oranı yüksek (usta stratejisi ~%80, bazı tohumlarda 58 M₺+ net varlık): oyun "gerçekçi" zorlukta bilinçli olarak affetmez; insan oyuncu pazarlık, ekip/nakit planı ve satış politikasıyla botu geçer. Rahat zorluk ve ilk 2 yıl korumalı başlangıç mevcut.
+- **Denge değişiklikleri**: başlangıç sermayesi 5–6,5 M₺ → 10–14 M₺ (tipik arsa 6–8 M₺ olduğundan ilk proje mümkün değildi); arsa hedef marjı gelirin %10–17'si → %20–30'u; ekip yetersizken hız tabanı 0,25 → 0,55 (alt yüklenici işi yavaşlatmaz, maliyeti zaten öder); sınır sınırı: `CITIES` 3 → 8 başlangıç şehri (Bursa, Antalya, Kocaeli, Konya, Adana).
+- **Hata düzeltmeleri**: bildirim yığılması (Faz 9–10); ilçe etiketlerinin çakışması (büyükten başlayarak yerleştirme, çakışanlar yakınlaşınca görünür); başka şehirde başlayınca pazar ilanlarının üretilmesi.
+- **Bilinen sınırlar**: planlanan süre gerçekleşenden ~%30 kısa (hava, tedarik, ekip gecikmeleri; plan yalnızca öngörü); dağlar hâlâ piramit biçimli; menü sahnesi yeni yeşilliği içermiyor; tablolar çok dar ekranda sıkışık; sesin kulakla dengesi yapılmadı; gerçek iOS/Android denemesi (Capacitor) henüz yapılmadı.

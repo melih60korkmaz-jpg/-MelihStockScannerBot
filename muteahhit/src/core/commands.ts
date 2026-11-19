@@ -61,7 +61,7 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     };
     post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
     for (const t of bg.staff) createStaff(s, t);
-    s.openCities = [p.startCity]; s.weather[p.startCity] ??= 'acik';
+    s.openCities = [p.startCity]; s.weather[p.startCity] ??= 'acik'; openCity(s, p.startCity);
     // Zorluk: ilk dengeli dönemin uzunluğu = krizsiz korumalı başlangıç
     s.macro.calmUntilDay = s.clock.day + DIFFICULTY_MACRO[s.meta.difficulty].calmMonths * 30;
     s.macro.regimeSince = s.clock.day; s.macro.regimeEnd = s.macro.calmUntilDay;
