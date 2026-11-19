@@ -3,10 +3,10 @@ import { LEVEL_DEFS } from '../data';
 import { emblemSvg } from './emblem';
 import { h } from './dom';
 
-type Phase = 'gece' | 'safak' | 'gunduz' | 'aksam';
+export type Phase = 'gece' | 'safak' | 'gunduz' | 'aksam';
 /** Gerçek yerel saate göre gökyüzü evresi (gün doğumu / gündüz / akşam / gece). */
 export const phaseNow = (d = new Date()): Phase => { const hr = d.getHours(); return hr < 5 || hr >= 21 ? 'gece' : hr < 8 ? 'safak' : hr < 17 ? 'gunduz' : 'aksam'; };
-const SKY: Record<Phase, [string, string, string]> = { gece: ['#0b0c10', '#1a1b24', '#2a2230'], safak: ['#2b2540', '#8a4a58', '#e0a070'], gunduz: ['#34507a', '#6f8fb5', '#c9d3dc'], aksam: ['#241d33', '#7a3a4f', '#e08a5a'] };
+export const SKY: Record<Phase, [string, string, string]> = { gece: ['#0b0c10', '#1a1b24', '#2a2230'], safak: ['#2b2540', '#8a4a58', '#e0a070'], gunduz: ['#34507a', '#6f8fb5', '#c9d3dc'], aksam: ['#241d33', '#7a3a4f', '#e08a5a'] };
 
 const hashStr = (s: string) => { let x = 2166136261; for (const c of s) x = Math.imul(x ^ c.charCodeAt(0), 16777619) >>> 0; return x; };
 function rng(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -49,5 +49,5 @@ export function heroBanner(s: GameState, now = new Date()): HTMLElement {
   svg += `<rect x="0" y="114" width="${W}" height="6" fill="#0d0e10"/></svg>`;
   const clouds = ph === 'gece' ? '' : `<i class="hcl c1"></i><i class="hcl c2"></i><i class="hcl c3"></i>`;
   const title = LEVEL_DEFS[lvl - 1]!.label;
-  return h('div', { class: `hero ph-${ph}`, html: `<div class="hsvg">${svg}</div>${clouds}<div class="hid"><span class="hem">${emblemSvg(c.emblem.shape, c.emblem.color, 44)}</span><div><b>${c.name.replace(/[<>&]/g, '')}</b><small>${title} · ${active.length ? `${active.length} şantiye aktif` : 'şantiye yok'}</small></div></div>` });
+  return h('div', { class: `hero ph-${ph}`, role: 'button', tabindex: '0', 'aria-label': 'Genel merkezi aç', html: `<div class="hsvg">${svg}</div>${clouds}<div class="hid"><span class="hem">${emblemSvg(c.emblem.shape, c.emblem.color, 44)}</span><div><b>${c.name.replace(/[<>&]/g, '')}</b><small>${title} · ${active.length ? `${active.length} şantiye aktif` : 'şantiye yok'}</small></div></div><span class="hgo">Genel Merkez ▸</span>` });
 }

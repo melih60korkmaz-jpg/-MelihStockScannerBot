@@ -17,6 +17,8 @@ const FIELD = new Set(['isci', 'usta', 'kalipci', 'demirci', 'elektrikci', 'tesi
 
 export const activeProjects = (s: GameState) => s.projects.filter((p) => p.status === 'insaat');
 
+/** Kalan tahmini gün (aşama süreleri toplamı). Şantiye ekranı ve proje kartları aynı hesabı kullanır. */
+export function remainingDays(p: Project): number { const b = p.build; if (!b) return 0; const d = stageDays(p); let r = (1 - b.progress) * d[b.stage]!; for (let k = b.stage + 1; k < 18; k++) r += d[k]!; return r; }
 export function stageDays(p: Project): number[] {
   const total = Math.max(60, p.expected.months * 30);
   return STAGES.map((st) => (total * st.time) / TOTAL_TIME);

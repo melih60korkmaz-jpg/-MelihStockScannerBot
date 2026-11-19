@@ -2,7 +2,7 @@ import { dateOf, formatDate } from '../../core/calendar';
 import { formatMoney } from '../../core/money';
 import type { Speed } from '../../core/store';
 import { BUILDING_TYPES, STAGES, buildingType, quality } from '../../data';
-import { crewFactor, stageDays } from '../../sim/construction';
+import { crewFactor, remainingDays } from '../../sim/construction';
 import { currentRevenue } from '../../sim/projects';
 import { SiteScene, type CamPreset, type SiteState } from '../../render3d/siteScene';
 import { h, press, toast } from '../dom';
@@ -78,7 +78,6 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
     drawSheet(p);
   };
 
-  const remainingDays = (p: Project) => { const b = p.build!, d = stageDays(p); let r = (1 - b.progress) * d[b.stage]!; for (let k = b.stage + 1; k < 18; k++) r += d[k]!; return r; };
   const drawSheet = (p: Project) => {
     const s = app.store.state, b = p.build; sheet.innerHTML = '';
     const overall = p.status === 'insaat' && b ? (STAGES.slice(1, b.stage).reduce((a, x) => a + x.cost, 0) + STAGES[b.stage]!.cost * b.progress) / 100 : p.status === 'taslak' ? 0 : 1;

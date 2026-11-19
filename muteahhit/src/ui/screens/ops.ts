@@ -6,9 +6,12 @@ import { machineValue } from '../../sim/machines';
 import { h, press, toast } from '../dom';
 import { fmt, nf, pct } from '../components';
 import type { App } from '../app';
+import { EMOJI, machineArt, portrait } from '../art';
 
 type Sub = 'ekip' | 'malzeme' | 'makine' | 'politika';
 const mem = { sub: 'ekip' as Sub };
+const fresh = new Set<number>(); // yeni işe alınan: kartı kısa süre vurgulanır
+const hashId = (s: string) => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 const FIELD = new Set(['isci', 'usta', 'kalipci', 'demirci', 'elektrikci', 'tesisatci', 'santiye_sefi']);
 const QUAL = { '-1': 'C', '0': 'B', '1': 'A' } as Record<string, string>;
 
@@ -25,19 +28,25 @@ function team(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, c = s.company!, cap = officeFor(c.office).capacity, payroll = s.staff.reduce((a, x) => a + x.salary, 0);
   const projects = s.projects.filter((p) => p.status === 'insaat' || p.status === 'taslak');
   const avgMorale = s.staff.length ? Math.round(s.staff.reduce((a, x) => a + x.morale, 0) / s.staff.length) : 0;
-  const list = h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px' }, h('div', { class: 'lbl-s', style: 'margin:0' }, `Çalışanlar ${s.staff.length}/${cap}`), h('span', { class: 'mute', style: 'font-size:12px' }, `Aylık maaş ${fmt(payroll)} · ortalama moral ${avgMorale}`)),
+  const list = h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px' }, h('div', { class: 'lbl-s', style: 'margin:0' }, `${EMOJI.personel} Çalışanlar ${s.staff.length}/${cap}`), h('span', { class: 'mute', style: 'font-size:12px' }, `Aylık maaş ${fmt(payroll)} · ortalama moral ${avgMorale}`)),
     ...(s.staff.length ? s.staff.map((p) => {
-      const sel = h('select', { class: 'input', style: 'min-height:38px;font-size:13px;max-width:150px', 'aria-label': `${p.name} ataması`, onchange: () => { const v = (sel as HTMLSelectElement).value; const r = app.store.run('AssignStaff', { staffId: p.id, projectId: v === '' ? null : Number(v) }); if (!r.ok) toast(r.error); } },
+      const sel = h('select', { class: 'input', style: 'min-height:36px;font-size:12px;max-width:140px', 'aria-label': `${p.name} ataması`, onchange: () => { const v = (sel as HTMLSelectElement).value; const r = app.store.run('AssignStaff', { staffId: p.id, projectId: v === '' ? null : Number(v) }); if (!r.ok) toast(r.error); } },
         h('option', { value: '' }, 'Ortak havuz'), ...projects.map((pr) => h('option', { value: String(pr.id), ...(p.project === pr.id ? { selected: true } : {}) }, pr.name))) as HTMLSelectElement;
-      const isField = FIELD.has(p.type);
-      return h('div', { class: 'row', style: 'min-height:52px;padding:6px 0;flex-wrap:wrap' }, h('div', { class: 'lbl', style: 'min-width:130px' }, p.name, h('small', {}, `${STAFF_TYPES.find((t) => t.id === p.type)?.label} · deneyim ${p.experience}`)),
-        h('span', { class: `chip ${p.morale >= 65 ? 'good' : p.morale >= 40 ? 'warn' : 'bad'}` }, 'Moral ', h('b', {}, String(p.morale))), isField ? sel : h('span', { class: 'chip' }, 'Ofis'), h('span', { class: 'num', style: 'font-size:13px' }, `${fmt(p.salary)}/ay`),
-        h('button', { class: 'btn danger', style: 'min-height:38px', onclick: () => { if (!confirm(`${p.name} işten çıkarılsın mı?`)) return; const r = app.store.run('FireStaff', { staffId: p.id }); if (r.ok) app.audio.sfx('click'); } }, 'Çıkar'));
+      const isField = FIELD.has(p.type), eff = (0.8 + 0.4 * (p.experience / 100)) * (0.85 + 0.3 * (p.morale / 100)), tone = p.morale >= 65 ? 'good' : p.morale >= 40 ? 'warn' : 'bad';
+      const card: HTMLElement = h('div', { class: `staffcard ${fresh.has(p.id) ? 'fresh' : ''}` },
+        h('div', { class: `portrait ${tone}`, html: portrait(p.type, p.id, p.morale) }),
+        h('div', { class: 'sbody' }, h('div', { style: 'display:flex;justify-content:space-between;gap:6px;align-items:baseline' }, h('b', {}, p.name), h('span', { class: 'num mute', style: 'font-size:12px' }, `${fmt(p.salary)}/ay`)),
+          h('small', { class: 'mute' }, `${STAFF_TYPES.find((x) => x.id === p.type)?.label} · deneyim ${p.experience}`),
+          h('div', { class: 'mini2' }, h('span', {}, 'Verim'), h('div', { class: 'meter' }, h('i', { style: `width:${Math.min(100, Math.round(eff * 80))}%;background:var(--accent2)` })), h('b', {}, `%${Math.round(eff * 100)}`)),
+          h('div', { class: 'mini2' }, h('span', {}, 'Moral'), h('div', { class: 'meter' }, h('i', { style: `width:${p.morale}%;background:var(--${tone === 'good' ? 'ok' : tone === 'warn' ? 'warn' : 'bad'})` })), h('b', {}, String(p.morale))),
+          h('div', { style: 'display:flex;gap:8px;align-items:center;margin-top:4px' }, isField ? sel : h('span', { class: 'chip' }, '🏢 Ofis'),
+            h('button', { class: 'btn danger', style: 'min-height:34px;margin-left:auto;font-size:13px', onclick: () => { if (!confirm(`${p.name} işten çıkarılsın mı?`)) return; card.classList.add('leaving'); setTimeout(() => { const r = app.store.run('FireStaff', { staffId: p.id }); if (r.ok) app.audio.sfx('click'); }, app.settings.reduced ? 0 : 230); } }, 'Çıkar'))));
+      return card;
     }) : [h('div', { class: 'empty' }, 'Henüz çalışan yok.')]),
     h('div', { class: 'hint' }, 'Atanmamış (havuz) saha çalışanları aktif projeler arasında bölünür. Bir projeye atarsanız yalnızca orada çalışır. Moral düşükse verim düşer; iş kazaları ve nakit sıkıntısı moralı kırar.'));
   const hire = h('div', { class: 'hire' });
-  for (const t of STAFF_TYPES) hire.append(h('div', { class: 'card' }, h('h3', {}, t.label), h('small', {}, `~${fmt(TL(t.baseSalaryTL * 1.075))} – ${fmt(TL(t.baseSalaryTL * 1.3))} /ay`),
-    h('button', { class: 'btn gold', style: 'min-height:40px', disabled: s.staff.length >= cap, onclick: () => { const r = app.store.run('HireStaff', { type: t.id }); if (r.ok) { press(app, 'confirm'); toast(`${t.label} işe alındı.`); } else { app.audio.sfx('error'); toast(r.error); } } }, s.staff.length >= cap ? 'Ofis dolu' : 'İşe al')));
+  for (const t of STAFF_TYPES) hire.append(h('div', { class: 'card hirecard' }, h('div', { class: 'portrait sm', html: portrait(t.id, hashId(t.id), 75) }), h('h3', {}, t.label), h('small', {}, `~${fmt(TL(t.baseSalaryTL * 1.075))} – ${fmt(TL(t.baseSalaryTL * 1.3))} /ay`),
+    h('button', { class: 'btn gold', style: 'min-height:40px', disabled: s.staff.length >= cap, onclick: () => { const r = app.store.run('HireStaff', { type: t.id }); if (r.ok) { fresh.clear(); fresh.add(app.store.state.staff.at(-1)!.id); setTimeout(() => fresh.clear(), 1500); press(app, 'confirm'); toast(`${t.label} işe alındı.`); } else { app.audio.sfx('error'); toast(r.error); } } }, s.staff.length >= cap ? 'Ofis dolu' : 'İşe al')));
   const nextOffice = OFFICES[c.level];
   return h('div', { class: 'cols' }, list, h('div', { class: 'col' }, h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `Ofis: ${officeFor(c.office).label}`), h('div', { class: 'mute', style: 'font-size:12px' }, `Kapasite ${cap} kişi · kira ${fmt(TL(officeFor(c.office).monthlyRentTL))}/ay (enflasyonla artar).${nextOffice ? ` Sonraki: ${nextOffice.label} (${nextOffice.capacity} kişi) — şirket seviyesi yükselince.` : ''}`)), hire));
 }
@@ -82,14 +91,19 @@ function materials(app: App, refresh: () => void): HTMLElement {
 
 function machines(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state; void refresh;
-  const owned = h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `Makine parkınız (${s.machines.length})`));
+  const owned = h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `${EMOJI.makine} Makine parkınız (${s.machines.length})`));
   if (!s.machines.length) owned.append(h('div', { class: 'empty' }, 'Henüz makineniz yok. Gerekli makineler şantiyede otomatik kiralanır (günlük kira); sahip olursanız yalnızca yakıt ödersiniz.'));
-  for (const m of s.machines) { const d = machine(m.type)!, broken = m.brokenUntil > s.clock.day; owned.append(h('div', { class: 'row', style: 'min-height:48px;padding:4px 0;flex-wrap:wrap' }, h('div', { class: 'lbl' }, d.label, h('small', {}, `${Math.round((s.clock.day - m.boughtDay) / 30)} aylık · ${m.uses} gün kullanıldı`)),
-    h('span', { class: `chip ${broken ? 'bad' : 'good'}` }, broken ? `Arızalı (${formatDate(m.brokenUntil)})` : 'Çalışıyor'), h('span', { class: 'num', style: 'font-size:13px' }, fmt(machineValue(s, m))),
-    h('button', { class: 'btn danger', style: 'min-height:36px', onclick: () => { if (!confirm(`${d.label} satılsın mı? (değerinin %90'ı)`)) return; const r = app.store.run('SellMachine', { machineId: m.id }); if (r.ok) { app.audio.sfx('confirm'); toast('Makine satıldı.'); } } }, 'Sat'))); }
+  for (const m of s.machines) {
+    const d = machine(m.type)!, broken = m.brokenUntil > s.clock.day, val = machineValue(s, m), cond = Math.max(0, Math.min(1, val / m.price)), months = Math.round((s.clock.day - m.boughtDay) / 30), inUse = m.usedDay === s.clock.day;
+    owned.append(h('div', { class: 'mcard' }, h('div', { class: 'mart', html: machineArt(m.type, broken ? 'broken' : inUse ? 'ok' : 'idle') }),
+      h('div', { style: 'flex:1;min-width:0' }, h('div', { style: 'display:flex;gap:6px;align-items:center;flex-wrap:wrap' }, h('b', {}, d.label), h('span', { class: `chip ${broken ? 'bad' : inUse ? 'good' : ''}` }, broken ? `⚠️ Arızalı · ${formatDate(m.brokenUntil)}` : inUse ? 'Çalışıyor' : 'Beklemede')),
+        h('div', { class: 'gauge2' }, h('span', {}, 'Durum'), h('div', { class: 'meter' }, h('i', { style: `width:${Math.round(cond * 100)}%;background:var(--${cond > 0.55 ? 'ok' : cond > 0.35 ? 'warn' : 'bad'})` })), h('b', {}, `%${Math.round(cond * 100)}`)),
+        h('div', { class: 'mute', style: 'font-size:11px;margin-top:2px' }, `${months} aylık · ${m.uses} gün kullanım · yakıt ${fmt(TL(d.fuelTL))}/gün · bakım ${fmt(TL(d.maintTL))}/ay · değer ${fmt(val)}`)),
+      h('button', { class: 'btn danger', style: 'min-height:36px', onclick: () => { if (!confirm(`${d.label} satılsın mı? (değerinin %90'ı)`)) return; const r = app.store.run('SellMachine', { machineId: m.id }); if (r.ok) { app.audio.sfx('confirm'); toast(`${d.label} satıldı.`); } } }, 'Sat')));
+  }
   const cat = h('div', { class: 'hire' });
   for (const d of MACHINES) { const used = STAGES.filter((st) => st.machines?.includes(d.id)).map((st) => st.label);
-    cat.append(h('div', { class: 'card' }, h('h3', {}, d.label), h('small', {}, d.blurb), h('small', {}, `Kira ${fmt(TL(d.rentTL))}/gün · yakıt ${fmt(TL(d.fuelTL))}/gün · bakım ${fmt(TL(d.maintTL))}/ay`), h('small', {}, `Kullanıldığı aşamalar: ${used.join(', ') || '—'}`),
+    cat.append(h('div', { class: 'card mcat' }, h('div', { class: 'mart', html: machineArt(d.id) }), h('h3', { style: 'margin-top:8px' }, d.label), h('small', {}, d.blurb), h('small', {}, `Kira ${fmt(TL(d.rentTL))}/gün · yakıt ${fmt(TL(d.fuelTL))}/gün · bakım ${fmt(TL(d.maintTL))}/ay`), h('small', {}, `Kullanıldığı aşamalar: ${used.join(', ') || '—'}`),
       h('button', { class: 'btn', style: 'min-height:40px', disabled: s.company!.cash < Math.round(TL(d.priceTL) * 0.2), title: '%20 peşinat, kalan 36 ay Özel Banka kredisi', onclick: () => { const r = app.store.run('BuyMachine', { type: d.id, financed: true, bank: 'ozel' }); if (r.ok) { press(app, 'confirm'); toast(`${d.label} kredili alındı (%20 peşin).`); } else { app.audio.sfx('error'); toast(r.error); } } }, 'Kredili al'),
       h('button', { class: 'btn gold', style: 'min-height:40px', disabled: s.company!.cash < TL(d.priceTL), onclick: () => { const r = app.store.run('BuyMachine', { type: d.id }); if (r.ok) { press(app, 'confirm'); toast(`${d.label} satın alındı.`); } else { app.audio.sfx('error'); toast(r.error); } } }, `Satın al · ${fmt(TL(d.priceTL))}`))); }
   return h('div', { class: 'col' }, owned, h('div', { class: 'lbl-s' }, 'Makine kataloğu'), cat, h('div', { class: 'hint' }, 'Sahip olunan makine yılda %12 değer kaybeder (en çok %75), aylık bakım ister ve kullanıldıkça arızalanabilir. Sık kullanılan makineler için sahip olmak kiradan ucuza gelir; seyrek kullanılanlar için kiralamak daha iyidir.'));
