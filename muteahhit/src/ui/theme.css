@@ -268,3 +268,16 @@ body:has(.evtmodal) #toasts { display:none; }
   .tab { font-size:0; gap:0; } .tab svg { width:22px; height:22px; } .tab.on { font-size:11px; gap:5px; }
   .speeds button { min-width:30px; padding:5px 3px; }
 }
+
+/* ===== Şirket manzarası (hero) ===== */
+.hero { position:relative; height:clamp(78px,26vh,128px); border-radius:var(--r); overflow:hidden; border:1px solid var(--line); background:#16171A; isolation:isolate; }
+.hero .hsvg, .hero svg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+.hero::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,rgba(16,17,19,.78),rgba(16,17,19,.15) 55%,transparent); pointer-events:none; }
+.hid { position:absolute; left:12px; bottom:10px; z-index:2; display:flex; align-items:center; gap:10px; } .hid b { font:700 22px/1.05 var(--font-h); display:block; letter-spacing:.02em; text-shadow:0 1px 8px #000a; } .hid small { color:var(--text); opacity:.85; font-size:12px; text-shadow:0 1px 6px #000a; }
+.hem { display:inline-flex; filter:drop-shadow(0 2px 6px #0008); }
+.hcl { position:absolute; z-index:1; top:12%; width:90px; height:20px; border-radius:20px; background:#ffffff; opacity:.16; filter:blur(5px); animation:cdrift 70s linear infinite; }
+.hcl.c2 { top:30%; width:130px; height:24px; opacity:.12; animation-duration:100s; animation-delay:-40s; } .hcl.c3 { top:6%; width:70px; opacity:.1; animation-duration:85s; animation-delay:-70s; }
+@keyframes cdrift { from { transform:translateX(-160px); } to { transform:translateX(calc(100vw + 60px)); } }
+.hcrane { animation:csway 9s ease-in-out infinite; } @keyframes csway { 0%,100% { transform:rotate(-2.5deg); } 50% { transform:rotate(2.5deg); } }
+.hblink { animation:pulse 1.4s ease-in-out infinite; }
+html[data-motion=reduced] .hcl, html[data-motion=reduced] .hcrane, html[data-motion=reduced] .hblink { animation:none; }

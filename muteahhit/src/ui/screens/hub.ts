@@ -20,6 +20,7 @@ import { loansView, partnersView } from './bank';
 import { tendersView } from './tenders';
 import { levelCard, questsCard } from './progress';
 import { ACHIEVEMENTS, LEVEL_DEFS, QUESTS } from '../../data';
+import { heroBanner } from '../hero';
 import { openEventDecision } from './eventModal';
 import { STYLE_LABEL, aliveRivals } from '../../sim/rivals';
 import { eventDef } from '../../data';
@@ -125,7 +126,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('div', { class: 'lbl-s', style: 'margin:0' }, 'Piyasa nabzı'), h('span', { class: `regime ${m.regime}` }, REGIMES[m.regime].label)),
         h('div', { class: 'kpis', style: 'margin-top:8px' },
           h('div', { class: 'kpi', html: `<small>Faiz</small><b>%${m.policyRate.toFixed(1)}</b>` }), h('div', { class: 'kpi', html: `<small>Enflasyon</small><b>%${m.inflation.toFixed(1)}</b>` }), h('div', { class: 'kpi', html: `<small>Güven</small><b>${m.confidence.toFixed(0)}</b>` }))));
-    return h('div', { class: 'cols' }, left, right);
+    return h('div', {}, heroBanner(s), h('div', { class: 'cols', style: 'margin-top:12px' }, left, right));
   };
 
   // ---------------- Finans ----------------
