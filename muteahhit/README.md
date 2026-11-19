@@ -9,10 +9,11 @@ Tasarım belgesi: `../docs/muteahhit-tasarim-belgesi.md`
     npm run sim:build -- 300 orta          # inşaat dengesi (ekip: yok|kucuk|orta|buyuk)
     npm run sim:sales -- 12                # satış stratejileri raporu
     npm run sim:geo                        # 81 il ekonomik denge raporu
+    npm run sim:bank                       # ihale kazanma/marj ve kredi faizi raporu
     npm run dev     # geliştirme sunucusu
     npm run build   # dist/index.html (tek dosya)
 
-Durum: **Faz 1–7 + 81 il haritası** (çekirdek, açılış/menü/ayarlar/müzik, şirket ve makro ekonomi, finans, arsa pazarı, inşaat + 3D şantiye, malzeme/makine/personel temeli, daire satışı ve müşteri). Yalnızca yatay oyun. Sonraki: Faz 8 (banka, kredi, ihaleler).
+Durum: **Faz 1–8 + 81 il haritası** (çekirdek, açılış/menü/ayarlar/müzik, şirket ve makro ekonomi, finans, arsa pazarı, inşaat + 3D şantiye, malzeme/makine/personel temeli, daire satışı ve müşteri, banka/kredi/yatırımcı/ihale). Yalnızca yatay oyun. Sonraki: Faz 9 (rakip firmalar, olay kataloğu, dinamik piyasa).
 
 ## Veri kaynakları ve atıf
 

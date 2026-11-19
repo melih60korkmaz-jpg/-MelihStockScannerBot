@@ -83,6 +83,8 @@ export function alerts(s: GameState, fmt: (m: Money) => string, fmtDate: (d: num
   if (c.cash < 0) out.push({ tone: 'bad', text: `Kasa eksiye düştü (${fmt(c.cash)}). Gider azaltın, varlık satın ya da finansman bulun.` });
   else if (rw !== null && rw < 3) out.push({ tone: 'bad', text: `Nakit yeterlilik ${rw.toFixed(1)} ay. Acil önlem gerekli.` });
   else if (rw !== null && rw < 6) out.push({ tone: 'warn', text: `Nakit yeterlilik ${rw.toFixed(1)} ay; gelir kaynağı gerekli.` });
+  for (const l of s.loans) { if (l.kind !== 'insaat' && l.nextDue - s.clock.day <= 10 && l.nextDue >= s.clock.day) out.push({ tone: c.cash < l.payment ? 'bad' : 'info', text: `Kredi taksiti ${fmtDate(l.nextDue)} tarihinde: ${fmt(l.payment || l.balance)}.` }); if (l.missed) out.push({ tone: 'bad', text: `Kredi taksiti kaçırıldı (${l.missed}/3). Haciz riski!` }); }
+  for (const t of s.tenders) if (t.status === 'acik' && !t.bid && t.evalDay - s.clock.day <= 10) out.push({ tone: 'info', text: `İhale sonuçlanıyor: ${t.title}` });
   const m = s.macro;
   if (m.regime === 'kriz') out.push({ tone: 'bad', text: 'Ekonomik kriz sürüyor: nakdinizi koruyun, riskli yatırımdan kaçının.' });
   else if (m.regime === 'daralma') out.push({ tone: 'warn', text: 'Piyasa daralıyor: satışlar ve kredi koşulları zorlaşabilir.' });

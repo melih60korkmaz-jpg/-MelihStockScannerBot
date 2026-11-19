@@ -13,7 +13,8 @@
     "sim:land": "tsx src/headless/landStats.ts",
     "sim:build": "tsx src/headless/buildStats.ts",
     "sim:sales": "tsx src/headless/salesStats.ts",
-    "sim:geo": "tsx src/headless/geoStats.ts"
+    "sim:geo": "tsx src/headless/geoStats.ts",
+    "sim:bank": "tsx src/headless/bankStats.ts"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

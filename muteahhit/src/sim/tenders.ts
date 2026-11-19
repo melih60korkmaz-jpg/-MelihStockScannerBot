@@ -26,13 +26,13 @@ const mkParcel = (s: GameState, cityId: string, k: Kind, scale: number): Parcel 
 export function generateTender(s: GameState, cityId: string): Tender | null {
   const k = pick(s.rng, 'misc', KINDS), scale = 0.85 + rand(s.rng, 'misc') * 0.5; const pc = mkParcel(s, cityId, k, scale);
   const plan = planProject(s, pc, k.type, k.quality, 0); if (!plan.ok) return null;
-  const trueCost = plan.cost.total - plan.cost.designFee; const ref = Math.round(trueCost * 1.15), day = s.clock.day;
+  const trueCost = plan.cost.total - plan.cost.designFee; const ref = Math.round(trueCost * 1.2), day = s.clock.day;
   const name = pick(s.rng, 'misc', k.names), prov = cityData(cityId)!.label;
   const rivals: Tender['rivals'] = []; const nr = randInt(s.rng, 'misc', 3, 4), pool = [...RIVALS];
-  for (let i = 0; i < nr; i++) { const n = pool.splice(randInt(s.rng, 'misc', 0, pool.length - 1), 1)[0]!; rivals.push({ name: n, price: Math.round(ref * (0.84 + rand(s.rng, 'misc') * 0.14)), tech: randInt(s.rng, 'misc', 40, 88), rep: randInt(s.rng, 'misc', 20, 85) }); }
+  for (let i = 0; i < nr; i++) { const n = pool.splice(randInt(s.rng, 'misc', 0, pool.length - 1), 1)[0]!; rivals.push({ name: n, price: Math.round(ref * (0.86 + rand(s.rng, 'misc') * 0.14)), tech: randInt(s.rng, 'misc', 40, 88), rep: randInt(s.rng, 'misc', 20, 85) }); }
   return {
     id: s.nextId++, kind: k.id, title: `${prov} ${name} ${k.label}`, city: cityId, client: k.client, type: k.type, quality: k.quality, area: pc.area, months: Math.round((plan.months.min + plan.months.max) / 2),
-    refCost: ref, trueCost, req: { ...k.req, rep: Math.round(k.req.rep * (0.9 + plan.cost.total / TL(400_000_000))) }, bondPct: k.bondPct, openDay: day, evalDay: day + EVAL_DAYS, rivals, status: 'acik',
+    refCost: ref, trueCost, req: { ...k.req, rep: Math.min(80, Math.round(k.req.rep * (0.9 + plan.cost.total / TL(400_000_000)))) }, bondPct: k.bondPct, openDay: day, evalDay: day + EVAL_DAYS, rivals, status: 'acik',
   };
 }
 

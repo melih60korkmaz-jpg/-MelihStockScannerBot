@@ -15,6 +15,11 @@ import { mapView } from './map';
 import { projectsView } from './projects';
 import { opsView } from './ops';
 import { landAssetValue, ownedParcels } from '../../sim/land';
+import { loansView, partnersView } from './bank';
+import { tendersView } from './tenders';
+import { debtTotal } from '../../sim/loans';
+import { investorLiability } from '../../sim/finance';
+import { contractAssets } from '../../sim/tenders';
 
 const LEVELS = ['Şahıs Müteahhit', 'Küçük Firma', 'Yerel Firma', 'Bölge Firması', 'Şehir Markası', 'Çok Şehirli Firma', 'Ulusal Firma', 'Holding'];
 const ICON = {
@@ -26,10 +31,11 @@ const ICON = {
   build: '<svg viewBox="0 0 24 24"><path d="M5 21V8l7-4 7 4v13"/><path d="M9 21v-4h6v4M9 11h2M13 11h2M9 14h2M13 14h2"/></svg>',
   gear: '<svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M4 12h3M11 12h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/><circle cx="9" cy="12" r="0.01"/></svg>',
   pause: '<svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M8 5v14M16 5v14" stroke-width="3.2"/></svg>',
+  doc: '<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>',
   menu: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
 };
-type Tab = 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'finans' | 'piyasa';
-const TABS: [Tab, string, keyof typeof ICON][] = [['sirket', 'Şirket', 'home'], ['harita', 'Harita', 'pin'], ['projeler', 'Projeler', 'build'], ['operasyon', 'Operasyon', 'team'], ['finans', 'Finans', 'chart'], ['piyasa', 'Piyasa', 'globe']];
+type Tab = 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'finans' | 'piyasa';
+const TABS: [Tab, string, keyof typeof ICON][] = [['sirket', 'Şirket', 'home'], ['harita', 'Harita', 'pin'], ['projeler', 'Projeler', 'build'], ['operasyon', 'Operasyon', 'team'], ['ihale', 'İhale', 'doc'], ['finans', 'Finans', 'chart'], ['piyasa', 'Piyasa', 'globe']];
 
 const monthLabel = (key: string) => { const [y, m] = key.split('-'); return `${['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][Number(m) - 1]} ${y!.slice(2)}`; };
 const dayLabel = (d: number) => { const x = dateOf(d); return monthLabel(`${x.year}-${String(x.month).padStart(2, '0')}`); };
@@ -109,10 +115,12 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   const finance = (): HTMLElement => {
     const s = app.store.state, rows = monthlyRows(s);
     const seg = h('div', { class: 'seg', role: 'group', style: 'margin-bottom:10px;align-self:flex-start' });
-    for (const [id, label] of [['ozet', 'Gelir-Gider'], ['nakit', 'Nakit akışı'], ['gider', 'Gider dağılımı'], ['bilanco', 'Bilanço']] as const)
+    for (const [id, label] of [['ozet', 'Gelir-Gider'], ['nakit', 'Nakit akışı'], ['gider', 'Gider dağılımı'], ['bilanco', 'Bilanço'], ['krediler', 'Krediler'], ['ortaklar', 'Ortaklar']] as const)
       seg.append(h('button', { class: sub === id ? 'on' : '', 'aria-pressed': String(sub === id), onclick: () => { press(app); sub = id; drawView(); } }, label));
     const body = h('div', {});
-    if (sub === 'ozet') {
+    if (sub === 'krediler') body.append(loansView(app, drawView));
+    else if (sub === 'ortaklar') body.append(partnersView(app, drawView));
+    else if (sub === 'ozet') {
       const last = rows.slice(-6);
       const t = h('table', { class: 'tbl' }, h('tr', {}, ...['Ay', 'Gelir', 'Gider', 'Vergi', 'Net'].map((x) => h('th', {}, x))));
       for (const r of last) t.append(h('tr', {}, h('td', {}, monthLabel(r.key)), h('td', { html: formatMoney(r.income) }), h('td', { html: formatMoney(r.expense) }), h('td', { html: formatMoney(r.tax) }), h('td', { html: signed(r.net) })));
@@ -132,8 +140,8 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
     } else {
       const cash = s.company!.cash;
       const t = h('table', { class: 'tbl' }, h('tr', {}, h('th', {}, 'Kalem'), h('th', {}, 'Tutar')),
-        h('tr', {}, h('td', {}, 'Nakit (kasa)'), h('td', { html: formatMoney(cash) })), h('tr', {}, h('td', {}, `Arsalar (piyasa değeri, ${ownedParcels(s).length} adet)`), h('td', { html: formatMoney(landAssetValue(s)) })), h('tr', {}, h('td', {}, 'Projeler (inşaat maliyeti / biten bina)'), h('td', { html: formatMoney(projectAssetValue(s)) })), h('tr', {}, h('td', {}, `Makineler (${s.machines.length} adet)`), h('td', { html: formatMoney(machineAssetValue(s)) })), h('tr', {}, h('td', {}, 'Malzeme stoğu'), h('td', { html: formatMoney(stockValue(s)) })), h('tr', {}, h('td', {}, 'Alacaklar (taksit, teslim bakiyesi)'), h('td', { html: formatMoney(receivablesTotal(s)) })), h('tr', {}, h('td', {}, 'Alınan avanslar (ön satış, yükümlülük)'), h('td', { html: formatMoney(-advancesTotal(s)) })), h('tr', { class: 'tot' }, h('td', {}, 'Toplam varlık'), h('td', { html: formatMoney(netWorth(s)) })),
-        h('tr', {}, h('td', {}, 'Banka borçları'), h('td', {}, formatMoney(0))), h('tr', { class: 'tot' }, h('td', {}, 'Özkaynak (net varlık)'), h('td', { html: signed(netWorth(s)) })));
+        h('tr', {}, h('td', {}, 'Nakit (kasa)'), h('td', { html: formatMoney(cash) })), h('tr', {}, h('td', {}, `Arsalar (piyasa değeri, ${ownedParcels(s).length} adet)`), h('td', { html: formatMoney(landAssetValue(s)) })), h('tr', {}, h('td', {}, 'Projeler (inşaat maliyeti / biten bina)'), h('td', { html: formatMoney(projectAssetValue(s)) })), h('tr', {}, h('td', {}, `Makineler (${s.machines.length} adet)`), h('td', { html: formatMoney(machineAssetValue(s)) })), h('tr', {}, h('td', {}, 'Malzeme stoğu'), h('td', { html: formatMoney(stockValue(s)) })), h('tr', {}, h('td', {}, 'Alacaklar (taksit, teslim bakiyesi)'), h('td', { html: formatMoney(receivablesTotal(s)) })), h('tr', {}, h('td', {}, 'Alınan avanslar (ön satış, yükümlülük)'), h('td', { html: formatMoney(-advancesTotal(s)) })), h('tr', { class: 'tot' }, h('td', {}, 'Toplam varlık'), h('td', { html: formatMoney(netWorth(s) + debtTotal(s) + investorLiability(s)) })),
+        h('tr', {}, h('td', {}, `Banka borçları (${s.loans.length} kredi)`), h('td', { html: formatMoney(-debtTotal(s)) })), h('tr', {}, h('td', {}, 'Yatırımcı fonları (proje sonunda iade)'), h('td', { html: formatMoney(-investorLiability(s)) })), h('tr', {}, h('td', {}, 'İhale: hakediş, teminat, kazanılmamış avans'), h('td', { html: formatMoney(contractAssets(s)) })), h('tr', { class: 'tot' }, h('td', {}, 'Özkaynak (net varlık)'), h('td', { html: signed(netWorth(s)) })));
       body.append(h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Bilanço özeti'), t), h('p', { class: 'mute', style: 'font-size:12px' }, 'Arsalar güncel piyasa değeriyle gösterilir. Devam eden projeler, makine ve krediler ilgili sistemler eklendikçe bu tabloya girer. Kasa her zaman defter toplamına eşittir.'));
     }
     return h('div', { style: 'display:flex;flex-direction:column' }, seg, body);
@@ -152,12 +160,12 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
 
   const drawView = () => {
     const keep = view.scrollTop; view.innerHTML = '';
-    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'finans' ? finance() : market());
+    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'finans' ? finance() : market());
     view.scrollTop = keep;
   };
 
   // Olaylar: gün akışı yalnızca HUD'u günceller; ay/komut olayları sekmeyi yeniler
-  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED']);
+  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT']);
   const unsub = app.store.subscribe((evs) => {
     if (!root.isConnected) { unsub(); return; }
     let redraw = false;
@@ -182,10 +190,28 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'PROJECT_STARTED') toast('İnşaat başladı.');
       if (e.type === 'PROJECT_SOLD') { app.audio.sfx('confirm'); toast(`Bina satıldı: ${formatMoney(e.data!.price as number)}`, 4500); }
       if (e.type === 'YEAR') toast(`Yeni yıl: personel maaşlarına %${((e.data!.raise as number) * 100).toFixed(0)} zam yapıldı.`, 4500);
+      if (e.type === 'LOAN_MISSED') { app.audio.sfx('error'); toast(`Kredi taksiti ödenemedi (${e.data!.missed}/3)! Kredi notu düştü. 3 kaçırmada haciz başlar.`, 6000); }
+      if (e.type === 'SEIZURE') { app.audio.sfx('error'); app.haptic('heavy'); toast(`Haciz: varlıklarınız zorla satıldı (${formatMoney(e.data!.raised as number)}).`, 6000); }
+      if (e.type === 'LOAN_DRAWN') toast(`İnşaat kredisinden ${formatMoney(e.data!.amount as number)} kullanıldı.`, 3000);
+      if (e.type === 'LOAN_ROLLED') toast('İnşaat kredisi vadesi doldu: ticari krediye devredildi.', 4500);
+      if (e.type === 'TENDER_NEW' && !evs.some((x) => x.type === 'TENDER_NEW' && x !== e && evs.indexOf(x) < evs.indexOf(e))) toast(evs.filter((x) => x.type === 'TENDER_NEW').length > 1 ? 'Yeni ihaleler açıldı. İhale sekmesine bakın.' : 'Yeni ihale açıldı. İhale sekmesine bakın.', 3500);
+      if (e.type === 'TENDER_WON') { app.audio.sfx('stamp'); toast('İhaleyi kazandınız! Avans yattı; projeyi Projeler sekmesinden başlatın.', 6000); }
+      if (e.type === 'TENDER_LOST') { app.audio.sfx('error'); toast(e.data!.reason === 'elendi' ? 'İhaleden elendiniz: olağan dışı düşük teklif.' : `İhaleyi kaybettiniz. Kazanan: ${e.data!.winner}.`, 5000); }
+      if (e.type === 'HAKEDIS') toast(`Hakediş tahsil edildi: ${formatMoney(e.data!.amount as number)}`, 3500);
+      if (e.type === 'CONTRACT_DONE') { app.audio.sfx('stamp'); toast(`İhale işi teslim edildi · kâr ${formatMoney(e.data!.profit as number)}${(e.data!.penalty as number) > 0 ? ` (gecikme cezası ${formatMoney(e.data!.penalty as number)})` : ''}`, 6000); }
+      if (e.type === 'INVESTOR_PAID') toast(`Yatırımcıya ödeme yapıldı: ${formatMoney(e.data!.amount as number)}`, 4000);
+      if (e.type === 'DIVIDEND') toast(`Ortaklara temettü: ${formatMoney(e.data!.amount as number)}`, 4000);
+      if (e.type === 'BANKRUPT') { app.audio.sfx('error'); app.haptic('heavy'); showBankrupt(); }
       if (e.type === 'CASH_NEGATIVE') { app.audio.sfx('error'); toast('Kasa eksiye düştü! Oyun duraklatıldı.', 5000); }
     }
     drawHud(); if (redraw) drawView();
   });
+  const showBankrupt = () => {
+    if (document.querySelector('.bankrupt')) return; const s = app.store.state;
+    const m = h('div', { class: 'modal bankrupt', role: 'alertdialog', 'aria-label': 'İflas' }, h('div', { class: 'card', style: 'width:min(460px,95vw);text-align:center' }, h('h2', { style: 'color:var(--bad,#ff6b6b)' }, 'İflas'), h('p', {}, `${s.company!.name} borçlarını ödeyemedi ve tüm varlıkları tükendi. Şirket kapandı.`), h('p', { class: 'mute' }, `Dayanma süresi: ${Math.round(s.clock.day / 30)} ay · Tamamlanan proje: ${s.company!.stats.completed}`), h('div', { style: 'display:flex;gap:8px;justify-content:center' }, h('button', { class: 'btn gold', onclick: () => { m.remove(); app.menu(); } }, 'Ana menü'))));
+    document.body.append(m);
+  };
+  if (app.store.state.company?.bankrupt) showBankrupt();
   buildHud(); drawHud(); drawTabs(); drawView();
   return root;
 }
