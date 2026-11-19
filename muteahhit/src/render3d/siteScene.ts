@@ -3,7 +3,7 @@ import type { Quality } from '../platform/settings';
 import { SiteBuilding, designOf, ramp, rng, type BuildingSpec } from './siteBuilding';
 import { Surroundings } from './siteSurroundings';
 import type { Region } from '../data/geo';
-import { Dust, Excavator, SiteProps, TowerCrane, Weather, Workers, makeTruck } from './siteProps';
+import { ConcretePump, Dust, Excavator, SiteProps, TowerCrane, Weather, Workers, makeGlow, makeTruck } from './siteProps';
 
 export interface SiteSpec extends BuildingSpec { use: 'konut' | 'ticari' | 'sanayi'; name: string; roads: number; corner: boolean; region?: Region; density?: number }
 export interface SiteState { u: number; stalled: boolean; weather: 'acik' | 'yagmur' | 'kar'; workers: number; done: boolean; occupancy?: number }
@@ -18,13 +18,14 @@ export class SiteScene {
   private renderer: THREE.WebGLRenderer; private scene = new THREE.Scene(); private camera = new THREE.PerspectiveCamera(42, 1, 0.5, 2500);
   private sun = new THREE.DirectionalLight(0xffffff, 3); private hemi = new THREE.HemisphereLight(0x9bb8e0, 0x3a3228, 1);
   private sky: THREE.Mesh; private skyU: { top: { value: THREE.Color }; hor: { value: THREE.Color } };
-  private building!: SiteBuilding; private props!: SiteProps; private crane!: TowerCrane; private crane2: TowerCrane | null = null; private excavator = new Excavator(); private workers = new Workers(); private weather = new Weather(); private dust = new Dust(90);
+  private building!: SiteBuilding; private props!: SiteProps; private crane!: TowerCrane; private crane2: TowerCrane | null = null; private excavator = new Excavator(); private workers = new Workers(); private weather = new Weather(); private dust = new Dust(90); private pump = new ConcretePump(); private glows: THREE.Sprite[] = [];
   private trucks: { g: THREE.Group; kind: string; off: number; speed: number; drum?: THREE.Mesh }[] = []; private ground!: THREE.Mesh; private world = new THREE.Group(); private surround: Surroundings | null = null;
   private nightGlow = { value: 0 }; private covers: THREE.Mesh[] = []; private spec!: SiteSpec; private disposed = false; private moon = new THREE.DirectionalLight(0x7f9bd6, 0); private plotW = 40; private plotD = 30;
   private state: SiteState = { u: 1, stalled: false, weather: 'acik', workers: 3, done: false }; private u = 1; private time = 0; private tod = 0.6; private speed = 0; private reduced = false;
   private tierSetting: Quality = 'auto'; private tier: Tier = 'mid'; private raf = 0; private running = false; private last = 0;
   private cam = { yaw: 0.7, pitch: 0.55, dist: 80, tx: 0, ty: 12, tz: 0 }; private goal = { ...this.cam }; private idle = 0; private R = 40; private orbitAuto = false;
   private ptrs = new Map<number, { x: number; y: number }>(); private pinch = 0; private lastTap = 0;
+  private ac = new AbortController(); private on = (type: string, f: (e: any) => void, o: AddEventListenerOptions = {}) => this.canvas.addEventListener(type, f, { ...o, signal: this.ac.signal });
   contextLost = false; onContext?: (lost: boolean) => void;
   private warm = 0; private fpsT = 0; private fpsN = 0; private checks = 0; onTier?: (t: Tier) => void;
 
@@ -32,8 +33,8 @@ export class SiteScene {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     canvas.style.touchAction = 'none';
-    canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); if (this.disposed) return; this.contextLost = true; this.onContext?.(true); this.stop(); });
-    canvas.addEventListener('webglcontextrestored', () => { this.contextLost = false; this.onContext?.(false); this.start(); });
+    this.on('webglcontextlost', (e) => { e.preventDefault(); if (this.disposed) return; this.contextLost = true; this.onContext?.(true); this.stop(); });
+    this.on('webglcontextrestored', () => { this.contextLost = false; this.onContext?.(false); this.start(); });
     this.bindControls();
     this.skyU = { top: { value: new THREE.Color('#4f8fd0') }, hor: { value: new THREE.Color('#cfe3f2') } };
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(1200, 24, 14), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false, uniforms: { top: this.skyU.top, hor: this.skyU.hor },
@@ -57,7 +58,11 @@ export class SiteScene {
     this.crane2 = this.building.blocks.length > 1 ? new TowerCrane(reach * 0.8, 2) : null; if (this.crane2) { this.crane2.group.position.set(-(ext.w / 2 + 3.5), 0, ext.d / 2 + 3.5); this.world.add(this.crane2.group); }
     this.excavator.group.position.set(ext.w / 2 + 6, 0, ext.d / 4); this.world.add(this.excavator.group, this.workers.mesh, this.workers.heads);
     const kinds: ['dump' | 'mixer' | 'lorry', string][] = [['dump', '#d9d4c8'], ['dump', '#f08a24'], ['mixer', '#e8e8e4'], ['mixer', '#e8e8e4'], ['lorry', '#2f7f9f']];
-    kinds.forEach(([k, c], i) => { const t = makeTruck(k, c); this.world.add(t.group); this.trucks.push({ g: t.group, kind: k, off: i / kinds.length, speed: 0.016 + (i % 2) * 0.004, ...(t.drum ? { drum: t.drum } : {}) }); });
+    this.glows = [];
+    kinds.forEach(([k, c], i) => { const t = makeTruck(k, c); this.world.add(t.group); this.trucks.push({ g: t.group, kind: k, off: i / kinds.length, speed: 0.016 + (i % 2) * 0.004, ...(t.drum ? { drum: t.drum } : {}) });
+      for (const x of [-0.8, 0.8]) { const g = makeGlow('#ffe9b0', 5); g.position.set(x, 1.1, 5.2); t.group.add(g); this.glows.push(g); } });
+    { const g = makeGlow('#ffe9b0', 9); g.position.set(-3, 3.2, 0); this.excavator.group.add(g); this.glows.push(g); }
+    this.world.add(this.pump.group); { const ext2 = this.building.extent; this.pump.group.position.set(-(ext2.w / 2 + 9), 0, ext2.d / 2 + 2); this.pump.group.rotation.y = Math.PI / 2; }
     this.buildGround(); this.R = Math.max(ext.w, ext.d, this.building.topH * 0.85, 22);
     this.preset('kus', true); this.setState(this.state, true); this.applyTier();
   }
@@ -93,22 +98,29 @@ export class SiteScene {
   resize() { const w = Math.max(1, innerWidth), h = Math.max(1, innerHeight); this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, TIER[this.tier].pr)); this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
   start() { if (this.running || this.contextLost) return; this.running = true; this.last = performance.now(); this.raf = requestAnimationFrame(this.frame); }
   stop() { this.running = false; cancelAnimationFrame(this.raf); }
-  dispose() { this.disposed = true; this.stop(); this.scene.traverse((o) => { const m = o as THREE.Mesh; m.geometry?.dispose?.(); }); this.renderer.dispose(); this.renderer.forceContextLoss(); }
+  /** Tüm GPU/CPU kaynaklarını bırakır: geometri, malzeme, dokular, örnekli ağlar; sahne boşaltılır, referanslar kopar. */
+  dispose() {
+    this.disposed = true; this.stop(); this.ac.abort(); const seen = new Set<unknown>();
+    const killMat = (m: THREE.Material) => { if (seen.has(m)) return; seen.add(m); for (const v of Object.values(m)) if (v && (v as THREE.Texture).isTexture) (v as THREE.Texture).dispose(); m.dispose(); }; // paylaşılan (modül düzeyi) dokular da bırakılır: three yeniden yükler; bırakılmazsa eski GL bağlamına tutunur
+    this.scene.traverse((o) => { const m = o as THREE.Mesh; if (m.geometry && !seen.has(m.geometry)) { seen.add(m.geometry); m.geometry.dispose(); } const mat = m.material as THREE.Material | THREE.Material[] | undefined; if (mat) (Array.isArray(mat) ? mat : [mat]).forEach(killMat); (o as THREE.InstancedMesh).isInstancedMesh && (o as THREE.InstancedMesh).dispose(); });
+    this.scene.clear(); this.world.clear(); this.trucks = []; this.glows = []; this.covers = []; this.surround = null;
+    this.renderer.dispose(); this.renderer.forceContextLoss();
+  }
   private applyTier() { const T = TIER[this.tier]; this.surround?.setTier(this.tier); this.renderer.shadowMap.enabled = T.shadows; this.sun.castShadow = T.shadows; this.scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m) m.needsUpdate = true; }); this.resize(); }
 
   private bindControls() {
     const c = this.canvas;
-    c.addEventListener('pointerdown', (e) => { c.setPointerCapture(e.pointerId); this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); this.idle = 0; this.orbitAuto = false; if (this.ptrs.size === 2) { const [a, b] = [...this.ptrs.values()]; this.pinch = Math.hypot(a!.x - b!.x, a!.y - b!.y); }
+    this.on('pointerdown', (e) => { c.setPointerCapture(e.pointerId); this.ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); this.idle = 0; this.orbitAuto = false; if (this.ptrs.size === 2) { const [a, b] = [...this.ptrs.values()]; this.pinch = Math.hypot(a!.x - b!.x, a!.y - b!.y); }
       const now = performance.now(); if (this.ptrs.size === 1 && now - this.lastTap < 280) this.preset('kus'); this.lastTap = now; });
-    c.addEventListener('pointermove', (e) => {
+    this.on('pointermove', (e) => {
       const p = this.ptrs.get(e.pointerId); if (!p) return; this.idle = 0; const dx = e.clientX - p.x, dy = e.clientY - p.y;
       if (this.ptrs.size === 1) { this.goal.yaw -= dx * 0.006; this.goal.pitch = clamp(this.goal.pitch + dy * 0.005, 0.05, 1.45); }
       else if (this.ptrs.size === 2) { const o = [...this.ptrs.entries()].find(([id]) => id !== e.pointerId)![1]; const d0 = Math.hypot(p.x - o.x, p.y - o.y), d1 = Math.hypot(e.clientX - o.x, e.clientY - o.y); if (d0 > 0) this.goal.dist = clamp(this.goal.dist * (d0 / d1), this.R * 0.6, this.R * 6);
         const k = this.goal.dist * 0.0016, sy = Math.sin(this.goal.yaw), cy = Math.cos(this.goal.yaw); this.goal.tx = clamp(this.goal.tx - (dx * cy) * k * 0.5, -this.R, this.R); this.goal.tz = clamp(this.goal.tz + (dx * sy) * k * 0.5, -this.R, this.R); this.goal.ty = clamp(this.goal.ty + dy * k * 0.5, 0, this.R * 2); }
       p.x = e.clientX; p.y = e.clientY; });
     const up = (e: PointerEvent) => { this.ptrs.delete(e.pointerId); };
-    c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
-    c.addEventListener('wheel', (e) => { e.preventDefault(); this.goal.dist = clamp(this.goal.dist * Math.exp(e.deltaY * 0.001), this.R * 0.6, this.R * 6); this.idle = 0; }, { passive: false });
+    this.on('pointerup', up); this.on('pointercancel', up);
+    this.on('wheel', (e) => { e.preventDefault(); this.goal.dist = clamp(this.goal.dist * Math.exp(e.deltaY * 0.001), this.R * 0.6, this.R * 6); this.idle = 0; }, { passive: false });
   }
 
   // ---------- Döngü ----------
@@ -145,6 +157,11 @@ export class SiteScene {
     const craneH = ramp(u, 16, 16.8) > 0 ? lerp(Math.max(14, top2 + 8), 10, ramp(u, 16, 16.8)) : Math.max(14, top2 + 8);
     this.crane.group.visible = craneOn; if (craneOn) { this.crane.setHeight(craneH); this.crane.animate(this.time, working, dt); }
     if (this.crane2) { this.crane2.group.visible = craneOn; if (craneOn) { this.crane2.setHeight(craneH - 2); this.crane2.animate(this.time, working, dt); } }
+    { // beton pompası: beton aşamalarında (temel → katlar) çalışırken bom binaya uzanır
+      const pouring = u >= 7.4 && u < 10.4 && !st.stalled && anim, topY = Math.max(2, top2);
+      const tgt = this.pump.group.worldToLocal(new THREE.Vector3(0, topY + 2.6, 0).applyMatrix4(this.world.matrixWorld)); this.pump.update(pouring, tgt, Math.max(0.3, topY), this.time);
+    }
+    for (const g of this.glows) (g.material as THREE.SpriteMaterial).opacity = (T.dust > 0 ? 1 : 0) * clamp(night * 1.3 - 0.15, 0, 0.85) * (g.parent && g.parent.visible ? 1 : 0);
     this.excavator.group.visible = u >= 6 && u < 8.3; if (this.excavator.group.visible) this.excavator.animate(this.time, working && u < 7);
     // kamyonlar: aşamaya göre
     const L = this.plotW + 28, Dp = this.plotD + 28;

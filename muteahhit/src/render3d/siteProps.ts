@@ -155,14 +155,15 @@ export class Workers {
 
 /** Yağmur (çizgiler) ve kar (noktalar). */
 /** Şantiye tozu: çalışırken zeminden yükselen soluk toz bulutçukları (toplamsal karışım → sönerken kaybolur). */
+let DUST_TEX: THREE.Texture | null = null; // örnekler arası paylaşılan toz dokusu (her şantiye açılışında yeniden üretilmez)
 export class Dust {
   points: THREE.Points; private N: number; private pos: Float32Array; private col: Float32Array; private life: Float32Array; private vx: Float32Array; private vz: Float32Array;
   constructor(n: number) {
     this.N = n; this.pos = new Float32Array(n * 3); this.col = new Float32Array(n * 3); this.life = new Float32Array(n); this.vx = new Float32Array(n); this.vz = new Float32Array(n);
     for (let i = 0; i < n; i++) this.life[i] = Math.random();
     const g = new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(this.pos, 3)).setAttribute('color', new THREE.BufferAttribute(this.col, 3));
-    let map: THREE.Texture | null = null;
-    try { const cv = document.createElement('canvas'); cv.width = cv.height = 32; const c2 = cv.getContext('2d')!; const gr = c2.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, '#fff'); gr.addColorStop(1, '#0000'); c2.fillStyle = gr; c2.fillRect(0, 0, 32, 32); map = new THREE.CanvasTexture(cv); } catch { /* düz nokta */ }
+    let map: THREE.Texture | null = DUST_TEX;
+    if (!map) try { const cv = document.createElement('canvas'); cv.width = cv.height = 32; const c2 = cv.getContext('2d')!; const gr = c2.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, '#fff'); gr.addColorStop(1, '#0000'); c2.fillStyle = gr; c2.fillRect(0, 0, 32, 32); map = DUST_TEX = new THREE.CanvasTexture(cv); map.userData.shared = true; } catch { /* düz nokta */ }
     this.points = new THREE.Points(g, new THREE.PointsMaterial({ size: 3.2, ...(map ? { map } : {}), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.55 }));
     this.points.frustumCulled = false; this.points.visible = false;
   }
@@ -197,5 +198,35 @@ export class Weather {
     this.rain.visible = on && kind === 'yagmur'; this.snow.visible = on && kind === 'kar';
     if (this.rain.visible) { for (let i = 0; i < this.N; i++) { let y = this.pos[i * 6 + 1]! - dt * 38; if (y < 0) y += 60; this.pos[i * 6 + 1] = y; this.pos[i * 6 + 4] = y - 2.2; } (this.rain.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true; }
     if (this.snow.visible) { for (let i = 0; i < this.N; i++) { let y = this.spos[i * 3 + 1]! - dt * 3.2; if (y < 0) y += 60; this.spos[i * 3 + 1] = y; this.spos[i * 3] = this.spos[i * 3]! + Math.sin(y + i) * dt * 0.6; } (this.snow.geometry.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true; }
+  }
+}
+
+
+/** Yumuşak ışık hâlesi (toplamsal): gece makine farları ve çalışma lambaları. Tek paylaşılan doku. */
+let GLOW_TEX: THREE.Texture | null = null;
+export function makeGlow(color: string, size: number): THREE.Sprite {
+  if (!GLOW_TEX) { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const c = cv.getContext('2d')!, g = c.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, '#fff'); g.addColorStop(0.35, '#ffffff66'); g.addColorStop(1, '#0000'); c.fillStyle = g; c.fillRect(0, 0, 64, 64); GLOW_TEX = new THREE.CanvasTexture(cv); GLOW_TEX.userData.shared = true; }
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW_TEX, color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 }));
+  s.scale.set(size, size, 1); return s;
+}
+
+/** Beton pompası: sabit pompa kamyonu + eklemli bom; bomun ucundan beton akar (yalnızca beton aşamalarında ve çalışırken). */
+export class ConcretePump {
+  group = new THREE.Group(); private seg1: THREE.Mesh; private seg2: THREE.Mesh; private stream: THREE.Mesh; private splash: THREE.Mesh; private base = new THREE.Vector3(); private pos = new THREE.Vector3();
+  constructor() {
+    const t = makeTruck('lorry', '#6b6e78'); this.group.add(t.group);
+    const orange = std('#C64252', { roughness: 0.55 });
+    this.seg1 = mesh(BOX, orange, 0, 0, 0, 0.5, 1, 0.5); this.seg2 = mesh(BOX, orange, 0, 0, 0, 0.4, 1, 0.4);
+    this.stream = mesh(new THREE.CylinderGeometry(0.22, 0.34, 1, 8), std('#9a9ea8', { roughness: 0.4 }), 0, 0, 0, 1, 1, 1, false); this.splash = mesh(new THREE.CylinderGeometry(1.1, 1.4, 0.18, 10), std('#8c909a', { roughness: 0.5 }), 0, 0, 0, 1, 1, 1, false);
+    this.group.add(this.seg1, this.seg2, this.stream, this.splash); this.base.set(0, 3.6, 0.5);
+  }
+  private seg(m: THREE.Mesh, a: THREE.Vector3, b: THREE.Vector3) { const d = new THREE.Vector3().subVectors(b, a), len = d.length(); m.position.copy(a).addScaledVector(d, 0.5); m.scale.y = len; m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); }
+  /** `target`: bomun ucunun (bu grubun yerel uzayında) hedefi; `top`: dökülen döşemenin yüksekliği. */
+  update(on: boolean, target: THREE.Vector3, top: number, t: number) {
+    this.group.visible = on; if (!on) return;
+    const elbow = new THREE.Vector3((this.base.x + target.x) * 0.5, Math.max(this.base.y, target.y) + 3.2, (this.base.z + target.z) * 0.5), end = this.pos.copy(target);
+    this.seg(this.seg1, this.base, elbow); this.seg(this.seg2, elbow, end);
+    const drop = Math.max(0.5, end.y - top), flick = 0.92 + 0.08 * Math.sin(t * 22);
+    this.stream.scale.set(1, drop, 1); this.stream.position.set(end.x, end.y - drop / 2, end.z); (this.stream.scale as THREE.Vector3).x = flick; this.splash.position.set(end.x, top + 0.1, end.z); this.splash.scale.setScalar(0.8 + 0.25 * Math.sin(t * 3));
   }
 }

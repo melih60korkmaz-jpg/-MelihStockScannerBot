@@ -50,7 +50,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
   const cams = h('div', { class: 'cams' }, ...CAMS.map(([id, l]) => h('button', { class: 'btn glass', 'aria-label': `Kamera: ${l}`, onclick: () => { press(app); scene?.preset(id); } }, l)));
   root.append(top, h('div', { class: 'ov', style: 'top:calc(var(--st) + 58px);display:flex;justify-content:center' }, stagesEl), banner, cams, sheet);
 
-  const leave = () => { unsub(); app.audio.ambient({ on: false, working: false, weather: 'acik' }); scene?.dispose(); app.site = null; backTo(); };
+  const leave = () => { unsub(); unsubSet(); app.audio.ambient({ on: false, working: false, weather: 'acik' }); scene?.dispose(); app.site = null; backTo(); };
 
   // ---- Çizimler ----
   const draw = () => {

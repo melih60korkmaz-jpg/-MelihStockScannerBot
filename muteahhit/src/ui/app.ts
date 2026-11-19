@@ -28,8 +28,9 @@ export class Router {
     const old = this.cur; this.cur = el;
     el.classList.add('screen', 'in'); this.root.append(el);
     if (old) {
-      if (this.reduced()) old.remove();
-      else { old.classList.remove('in'); old.classList.add('out'); setTimeout(() => old.remove(), 190); }
+      const drop = () => { old.dispatchEvent(new Event('unmount')); old.remove(); }; // 'unmount': ekran aboneliklerini bırakır (bellek sızıntısı önlenir)
+      if (this.reduced()) drop();
+      else { old.classList.remove('in'); old.classList.add('out'); setTimeout(drop, 190); }
     }
   }
 }

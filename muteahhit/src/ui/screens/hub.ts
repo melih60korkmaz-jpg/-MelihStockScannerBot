@@ -246,6 +246,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
   if (app.store.state.company?.bankrupt) showBankrupt();
   if (app.store.state.pending) setTimeout(() => openEventDecision(app), 0);
+  root.addEventListener('unmount', () => { unsub(); cancelAnimationFrame(tween); });
   buildHud(); drawHud(); drawTabs(); drawView(); app.audio.setMood(moodNow());
   return root;
 }
