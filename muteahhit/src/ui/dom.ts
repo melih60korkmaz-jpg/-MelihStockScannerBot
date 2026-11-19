@@ -24,7 +24,7 @@ export function toast(msg: string, ms = 2600) {
   for (const old of Array.from(box.children)) if (old.textContent === msg) old.remove();
   const t = h('div', { class: 'toast', role: 'status' }, msg); box.append(t);
   while (box.children.length > 2) box.firstElementChild!.remove();
-  setTimeout(() => t.remove(), ms);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 200); }, ms);
 }
 
 /** Kutlama: renkli parçacık yağmuru (hareket azaltma açıksa yalnızca kısa bir parıltı). */
@@ -36,3 +36,15 @@ export function celebrate(reduced: boolean) {
 }
 
 export const fmtInt = (n: number) => new Intl.NumberFormat('tr-TR').format(Math.round(n));
+
+/** Sayı animasyonu: from → to (easeOutCubic). Hareket azaltma açıksa doğrudan son değer. */
+export function countTo(el: HTMLElement, from: number, to: number, fmt: (n: number) => string, ms = 650) {
+  if (document.documentElement.dataset.motion === 'reduced' || from === to) { el.textContent = fmt(to); return; }
+  const t0 = performance.now(); const step = (now: number) => { const k = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(Math.round(from + (to - from) * e)); if (k < 1 && el.isConnected) requestAnimationFrame(step); else el.textContent = fmt(to); };
+  requestAnimationFrame(step);
+}
+/** Para hareketinde göstergeden süzülen +/− etiketi. */
+export function flyDelta(host: HTMLElement, text: string, up: boolean) {
+  if (document.documentElement.dataset.motion === 'reduced') return;
+  const s = h('span', { class: `fly ${up ? 'up' : 'down'}` }, text); host.append(s); setTimeout(() => s.remove(), 1100);
+}

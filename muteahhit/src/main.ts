@@ -18,6 +18,7 @@ import { menuScreen } from './ui/screens/menu';
 import { hubScreen } from './ui/screens/hub';
 import { siteScreen } from './ui/screens/site';
 import { playIntro, tapGate } from './ui/screens/intro';
+import { openEventDecision } from './ui/screens/eventModal';
 
 const settings = new SettingsStore();
 const audio = new AudioEngine(settings);
@@ -96,3 +97,4 @@ addEventListener('orientationchange', () => setTimeout(() => scene?.resize(), 20
 
 (window as any).__app = app; // test/hata ayıklama
 (window as any).__music = music;
+(window as any).__openEvent = () => openEventDecision(app); // hata ayıklama: bekleyen olay penceresini aç

@@ -281,3 +281,27 @@ body:has(.evtmodal) #toasts { display:none; }
 .hcrane { animation:csway 9s ease-in-out infinite; } @keyframes csway { 0%,100% { transform:rotate(-2.5deg); } 50% { transform:rotate(2.5deg); } }
 .hblink { animation:pulse 1.4s ease-in-out infinite; }
 html[data-motion=reduced] .hcl, html[data-motion=reduced] .hcrane, html[data-motion=reduced] .hblink { animation:none; }
+
+/* ===== Olay penceresi: illüstrasyon + giriş/çıkış ===== */
+.evhead { display:flex; gap:12px; align-items:center; } .evart { flex:none; line-height:0; border-radius:8px; overflow:hidden; border:1px solid var(--line); }
+.evtmodal .card { animation:evin .32s cubic-bezier(.2,.9,.25,1.1) both; } @keyframes evin { from { opacity:0; transform:translateY(18px) scale(.96); } to { opacity:1; transform:none; } }
+.evtmodal.leaving { animation:evout .2s ease-in both; } .evtmodal.leaving .card { animation:evcard .2s ease-in both; }
+@keyframes evout { to { opacity:0; } } @keyframes evcard { to { opacity:0; transform:translateY(10px) scale(.97); } }
+html[data-motion=reduced] .evtmodal .card, html[data-motion=reduced] .evtmodal.leaving, html[data-motion=reduced] .evtmodal.leaving .card { animation:none; }
+
+/* ===== Grafik ve ilerleme animasyonları ===== */
+.chart .ln { stroke-dasharray:1; stroke-dashoffset:1; animation:drawln .9s cubic-bezier(.3,.7,.2,1) forwards; } .chart .ar { animation:fadein .9s .25s ease-out both; }
+@keyframes drawln { to { stroke-dashoffset:0; } } @keyframes fadein { from { opacity:0; } to { opacity:1; } }
+.chart .br { transform-box:fill-box; animation:growbar .6s cubic-bezier(.2,.8,.2,1) both; animation-delay:calc(var(--i,0) * 35ms); } @keyframes growbar { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+.meter i, .hb .bar i, .stat .bar i, .site .sheet2 .prog i { transform-origin:left center; animation:fillin .75s cubic-bezier(.2,.8,.2,1) both; } @keyframes fillin { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+.lgd { display:inline-flex; align-items:center; gap:5px; margin-right:12px; } .lgd i { width:10px; height:10px; border-radius:3px; display:inline-block; }
+html[data-motion=reduced] .chart .ln, html[data-motion=reduced] .chart .ar, html[data-motion=reduced] .chart .br, html[data-motion=reduced] .meter i, html[data-motion=reduced] .hb .bar i, html[data-motion=reduced] .stat .bar i { animation:none; stroke-dashoffset:0; }
+
+/* ===== Mikro animasyonlar ===== */
+.btn { transition:transform .2s cubic-bezier(.3,1.6,.5,1), filter .15s, box-shadow .15s; } .btn:active { transition-duration:.06s; }
+.card.opt, .pcard, .prow, .topt { transition:transform .18s cubic-bezier(.3,1.4,.5,1), border-color .15s, background .15s; } .pcard:active, .topt:active { transform:scale(.985); }
+.toast.out { animation:toastout .2s ease-in both; } @keyframes toastout { to { opacity:0; transform:translateX(18px); } }
+.toast { animation:toastin .28s cubic-bezier(.2,.9,.3,1.2) both; } @keyframes toastin { from { opacity:0; transform:translateX(22px) scale(.97); } to { opacity:.96; transform:none; } }
+.pill.cash { position:relative; overflow:visible; } .fly { position:absolute; left:50%; top:100%; transform:translateX(-50%); font:700 15px var(--font-h); white-space:nowrap; pointer-events:none; z-index:5; text-shadow:0 2px 8px #000c; animation:flyup 1.1s ease-out both; } .fly.up { color:var(--ok); } .fly.down { color:var(--bad); } @keyframes flyup { from { opacity:0; transform:translate(-50%,-4px); } 15% { opacity:1; } to { opacity:0; transform:translate(-50%,26px); } }
+.tab.ping { animation:tabping .9s ease-out; } @keyframes tabping { 0% { box-shadow:0 0 0 0 #C6425299; } 100% { box-shadow:0 0 0 14px #C6425200; } }
+html[data-motion=reduced] .toast, html[data-motion=reduced] .toast.out, html[data-motion=reduced] .tab.ping, html[data-motion=reduced] .fly { animation:none; }

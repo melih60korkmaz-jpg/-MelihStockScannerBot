@@ -6,8 +6,8 @@ import { REGIMES } from '../../sim/macro';
 import { alerts, monthlyRows, netWorth, projectAssetValue, projectedMonthlyCost, runwayMonths, stockValue } from '../../sim/finance';
 import { machineAssetValue } from '../../sim/machines';
 import { advancesTotal, receivablesTotal } from '../../sim/sales';
-import { barChart, hbars, lineChart, sparkline } from '../charts';
-import { celebrate, h, press, toast } from '../dom';
+import { barChart, hbars, lineChart, pairBars, sparkline } from '../charts';
+import { celebrate, countTo, flyDelta, h, press, toast } from '../dom';
 import { emblemSvg } from '../emblem';
 import type { App } from '../app';
 import { cityData } from '../../data';
@@ -79,7 +79,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   let shownCash: number | null = null, tween = 0;
   const setCash = (v: number) => {
     const el = ref.cash!; if (shownCash === null || app.settings.reduced || Math.abs(v - shownCash) < 100) { shownCash = v; el.textContent = formatMoney(v); return; }
-    const from = shownCash, t0 = performance.now(), up = v > from; cancelAnimationFrame(tween); shownCash = v;
+    const from = shownCash, t0 = performance.now(), up = v > from; cancelAnimationFrame(tween); shownCash = v; if (Math.abs(v - from) >= 50_000) flyDelta(ref.cashPill!, `${up ? '+' : '−'}${formatMoney(Math.abs(v - from))}`, up);
     ref.cashPill!.classList.remove('up', 'down'); ref.cashPill!.classList.add(up ? 'up' : 'down');
     const step = (now: number) => { const k = Math.min(1, (now - t0) / 550), e = 1 - Math.pow(1 - k, 3); el.textContent = formatMoney(Math.round(from + (v - from) * e)); if (k < 1) tween = requestAnimationFrame(step); else { el.textContent = formatMoney(v); setTimeout(() => ref.cashPill?.classList.remove('up', 'down'), 500); } };
     tween = requestAnimationFrame(step);
@@ -108,11 +108,13 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
     const pct = rw === null ? 100 : Math.min(100, (rw / 12) * 100);
     const col = rw === null || rw >= 6 ? 'var(--ok)' : rw >= 3 ? 'var(--warn)' : 'var(--bad)';
     const m = s.macro;
+    const nwBig = h('div', { class: `big ${netWorth(s) < 0 ? 'neg' : ''}` }, formatMoney(lastNW ?? netWorth(s)));
+    { const to = netWorth(s), from = lastNW ?? to; lastNW = to; setTimeout(() => countTo(nwBig, from, to, (n) => formatMoney(n)), 60); }
     const left = h('div', { class: 'col' },
       h('div', { class: 'card' },
         h('div', { class: 'lbl-s' }, 'Net varlık'),
         h('div', { style: 'display:flex;gap:12px;align-items:flex-end;justify-content:space-between' },
-          h('div', {}, h('div', { class: `big ${netWorth(s) < 0 ? 'neg' : ''}` }, formatMoney(netWorth(s))), h('div', { class: 'mute', style: 'font-size:12px', html: (delta === null ? 'İlk ay sonunda karşılaştırma başlar' : `Geçen aya göre ${signed(delta)}`) + (landAssetValue(s) > 0 ? ` · Nakit ${formatMoney(c.cash)} · Arsalar ${formatMoney(landAssetValue(s))}` : '') })),
+          h('div', {}, nwBig, h('div', { class: 'mute', style: 'font-size:12px', html: (delta === null ? 'İlk ay sonunda karşılaştırma başlar' : `Geçen aya göre ${signed(delta)}`) + (landAssetValue(s) > 0 ? ` · Nakit ${formatMoney(c.cash)} · Arsalar ${formatMoney(landAssetValue(s))}` : '') })),
           h('div', { style: 'width:42%;min-width:110px', html: sparkline(hist.map((p) => p.netWorth), '#C64252', 44) })),
         h('div', { class: 'lbl-s', style: 'margin-top:12px' }, `Nakit yeterlilik · ${rw === null ? 'sınırsız (gelir giderleri karşılıyor)' : rw.toFixed(1) + ' ay'}`),
         h('div', { class: 'meter', role: 'img', 'aria-label': 'Nakit yeterlilik' }, h('i', { style: `width:${pct}%;background:${col}` }))),
@@ -144,7 +146,8 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       for (const r of last) t.append(h('tr', {}, h('td', {}, monthLabel(r.key)), h('td', { html: formatMoney(r.income) }), h('td', { html: formatMoney(r.expense) }), h('td', { html: formatMoney(r.tax) }), h('td', { html: signed(r.net) })));
       const tot = last.reduce((a, r) => ({ i: a.i + r.income, e: a.e + r.expense, t: a.t + r.tax, n: a.n + r.net }), { i: 0, e: 0, t: 0, n: 0 });
       t.append(h('tr', { class: 'tot' }, h('td', {}, 'Toplam'), h('td', { html: formatMoney(tot.i) }), h('td', { html: formatMoney(tot.e) }), h('td', { html: formatMoney(tot.t) }), h('td', { html: signed(tot.n) })));
-      body.append(h('div', { class: 'card', style: 'overflow:auto' }, h('div', { class: 'lbl-s' }, 'Aylık gelir tablosu (son 6 ay)'), t), h('p', { class: 'mute', style: 'font-size:12px' }, `Vergi: çeyrek kârının %25'i. Devreden zarar: ${formatMoney(s.taxLossCarry)}. Sermaye, yatırım ve finansman hareketleri gelir tablosuna girmez.`));
+      body.append(h('div', { class: 'cols', style: 'margin-bottom:12px' }, h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Gelir ve gider (son 6 ay)'), pairBars(last.map((r) => ({ label: monthLabel(r.key), a: r.income, b: r.expense })))), h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Net varlık gelişimi'), lineChart(s.history.slice(-24).map((p) => ({ label: dayLabel(p.day), value: p.netWorth })), undefined, 150))),
+        h('div', { class: 'card', style: 'overflow:auto' }, h('div', { class: 'lbl-s' }, 'Aylık gelir tablosu (son 6 ay)'), t), h('p', { class: 'mute', style: 'font-size:12px' }, `Vergi: çeyrek kârının %25'i. Devreden zarar: ${formatMoney(s.taxLossCarry)}. Sermaye, yatırım ve finansman hareketleri gelir tablosuna girmez.`));
     } else if (sub === 'nakit') {
       const net = rows.map((r) => ({ label: monthLabel(r.key), value: r.operating + r.investing + r.financing }));
       body.append(h('div', { class: 'cols' },
@@ -179,7 +182,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Haber bandı'), ...(s.news.length ? s.news.slice(0, 12).map((n) => h('div', { class: 'news' }, h('small', {}, formatDate(n.day)), h('span', { class: `dot ${n.tone}` }), h('span', {}, n.text))) : [h('div', { class: 'empty' }, 'Henüz haber yok. Piyasa değişimleri burada duyurulur.')])));
   };
 
-  let lastViewKey = '';
+  let lastViewKey = '', lastNW: number | null = null;
   const drawView = () => {
     const vkey = `${tab}:${tab === 'harita' ? mapKey() : ''}`, keep = vkey === lastViewKey ? view.scrollTop : 0; lastViewKey = vkey; view.innerHTML = '';
     view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'finans' ? finance() : market());
@@ -225,6 +228,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'INVESTOR_PAID') toast(`Yatırımcıya ödeme yapıldı: ${formatMoney(e.data!.amount as number)}`, 4000);
       if (e.type === 'DIVIDEND') toast(`Ortaklara temettü: ${formatMoney(e.data!.amount as number)}`, 4000);
       if (e.type === 'MONTH') app.audio.setMood(moodNow());
+      if (e.type === 'PROJECT_CREATED') { app.audio.sfx('stamp'); toast('Yeni proje dosyası açıldı.', 2600); const t = tabs.querySelector('.tab:nth-child(3)'); t?.classList.remove('ping'); void (t as HTMLElement | null)?.offsetWidth; t?.classList.add('ping'); }
       if (e.type === 'EVENT_DECISION') { app.audio.sfx('bell'); openEventDecision(app); }
       if (e.type === 'EVENT_RESOLVED') { const d = eventDef(e.data!.id as string); const ch = d?.ch[e.data!.choice as number]; toast(`${d?.t ?? 'Olay'}: ${ch?.l ?? ''}${e.data!.auto ? ' (süre doldu)' : ''}${e.data!.success === true ? ' — başarılı' : e.data!.success === false ? ' — olmadı' : ''}`, 4500); }
       if (e.type === 'QUEST_DONE') { app.audio.sfx('confirm'); toast(`Görev tamam: ${QUESTS.find((q) => q.id === e.data!.id)?.t ?? ''}`, 4000); }

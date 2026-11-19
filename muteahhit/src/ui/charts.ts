@@ -41,7 +41,7 @@ export function lineChart(pts: Pt[], fmt: (n: number) => string = (n) => formatM
   return frame(pts, fmt, (x, y, _lo, _hi, Hh) => {
     const d = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join('');
     return `<defs><linearGradient id="lg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#C64252" stop-opacity=".35"/><stop offset="1" stop-color="#C64252" stop-opacity="0"/></linearGradient></defs>
-      <path d="${d}L${x(pts.length - 1)},${Hh - 20}L${x(0)},${Hh - 20}Z" fill="url(#lg)"/><path d="${d}" fill="none" stroke="#C64252" stroke-width="2.5" stroke-linejoin="round"/>`;
+      <path class="ar" d="${d}L${x(pts.length - 1)},${Hh - 20}L${x(0)},${Hh - 20}Z" fill="url(#lg)"/><path class="ln" pathLength="1" d="${d}" fill="none" stroke="#C64252" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
   }, H, Infinity, -Infinity, 'line');
 }
 
@@ -51,7 +51,7 @@ export function barChart(pts: Pt[], fmt: (n: number) => string = (n) => formatMo
     const bw = Math.min(34, ((W - 64) / pts.length) * 0.66), z = y(0);
     return `<line class="gl" x1="56" x2="${W - 8}" y1="${z}" y2="${z}" stroke="#ffffff30"/>` + pts.map((p, i) => {
       const yy = y(p.value), top = Math.min(yy, z), hh = Math.max(1.5, Math.abs(yy - z));
-      return `<rect x="${x(i) - bw / 2}" y="${top}" width="${bw}" height="${hh}" rx="3" fill="${p.value >= 0 ? '#3FBF8A' : '#FF4D5A'}"/>`;
+      return `<rect class="br" style="--i:${i};transform-origin:center ${p.value >= 0 ? 'bottom' : 'top'}" x="${x(i) - bw / 2}" y="${top}" width="${bw}" height="${hh}" rx="3" fill="${p.value >= 0 ? '#3FBF8A' : '#FF4D5A'}"/>`;
     }).join('');
   }, H, 0, 0, 'bar');
 }
@@ -62,4 +62,17 @@ export function hbars(items: { label: string; value: number }[], fmt: (n: number
   if (!items.length) w.append(h('div', { class: 'empty' }, 'Henüz gider kaydı yok.'));
   for (const it of items) w.append(h('div', { class: 'hb' }, h('span', {}, it.label), h('div', { class: 'bar' }, h('i', { style: `width:${Math.max(2, (it.value / max) * 100)}%` })), h('span', {}, fmt(it.value))));
   return w;
+}
+
+/** Gelir–gider karşılaştırması: aynı ayın iki çubuğu (gelir bordo, gider gri). Veriler defterden gelir. */
+export function pairBars(pts: { label: string; a: number; b: number }[], fmt: (n: number) => string = (n) => formatMoney(n as Money), H = 150): HTMLElement {
+  const wrap = h('div', { class: 'chart' });
+  if (!pts.length) { wrap.append(h('div', { class: 'empty' }, 'Henüz aylık veri yok.')); return wrap; }
+  const max = Math.max(1, ...pts.flatMap((p) => [p.a, p.b])), L = 56, R = 8, T = 8, B = 20, pw = W - L - R, ph = H - T - B, gw = pw / pts.length, bw = Math.min(22, gw * 0.34), y = (v: number) => T + ph - (v / max) * ph;
+  const grid = [0, 0.5, 1].map((f) => `<line class="gl" x1="${L}" x2="${W - R}" y1="${y(max * f)}" y2="${y(max * f)}"/><text class="ax" x="${L - 6}" y="${y(max * f) + 3}" text-anchor="end">${fmt(max * f)}</text>`).join('');
+  const bars = pts.map((p, i) => { const cx = L + gw * (i + 0.5); return `<rect class="br" style="--i:${i * 2};transform-origin:center bottom" x="${cx - bw - 1}" y="${y(p.a)}" width="${bw}" height="${Math.max(1.5, T + ph - y(p.a))}" rx="3" fill="#C64252"/><rect class="br" style="--i:${i * 2 + 1};transform-origin:center bottom" x="${cx + 1}" y="${y(p.b)}" width="${bw}" height="${Math.max(1.5, T + ph - y(p.b))}" rx="3" fill="#737277"/><text class="ax" x="${cx}" y="${H - 5}" text-anchor="middle">${p.label}</text>`; }).join('');
+  const rd = h('div', { class: 'rd' }, h('span', { class: 'lgd' }, h('i', { style: 'background:#C64252' }), 'Gelir'), h('span', { class: 'lgd' }, h('i', { style: 'background:#737277' }), 'Gider'));
+  const svg = h('div', { html: `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Aylık gelir ve gider">${grid}${bars}</svg>` }).firstElementChild!;
+  svg.addEventListener('pointerdown', (ev) => { const e = ev as PointerEvent; const r = (svg as SVGSVGElement).getBoundingClientRect(), i = Math.max(0, Math.min(pts.length - 1, Math.floor((((e.clientX - r.left) / r.width) * W - L) / gw))), p = pts[i]!; rd.innerHTML = `<b>${p.label}</b> · Gelir ${fmt(p.a)} · Gider ${fmt(p.b)} · Net ${fmt(p.a - p.b)}`; });
+  wrap.append(svg, rd); return wrap;
 }
