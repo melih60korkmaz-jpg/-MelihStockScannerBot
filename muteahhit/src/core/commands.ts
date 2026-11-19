@@ -5,7 +5,8 @@ import { post } from '../sim/ledger';
 import { createStaff } from '../sim/staff';
 import { DIFFICULTY_MACRO } from '../sim/macro';
 import { SURVEY_DAYS, TAPU_HARCI, QUICK_SALE_DISCOUNT, askPrice, fairValue, reservePrice, surveyCost } from '../sim/land';
-import { currentRevenue, newDesignSeed, planProject, projectName } from '../sim/projects';
+import { newDesignSeed, planProject, projectName } from '../sim/projects';
+import { bulkSellRemaining, unitsOf } from '../sim/sales';
 import { startConstruction, settle, activeProjects } from '../sim/construction';
 import { placeOrder, unitPrice } from '../sim/materials';
 import { machineValue, SELL_FACTOR } from '../sim/machines';
@@ -50,7 +51,7 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     s.company = {
       name: p.name.trim(), founderBackground: p.founderBackground, startCity: p.startCity,
       emblem: p.emblem ?? { shape: 0, color: 0 },
-      level: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0, stats: { completed: 0, sold: 0, profit: 0 }, safety: 'normal', procurement: { auto: true, supplier: 'yerel' }, lastAccidentDay: -999,
+      level: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0, stats: { completed: 0, sold: 0, profit: 0 }, safety: 'normal', procurement: { auto: true, supplier: 'yerel' }, lastAccidentDay: -999, satisfaction: 60,
     };
     post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
     for (const t of bg.staff) createStaff(s, t);
@@ -233,22 +234,26 @@ const setPolicy: CommandDef<SetPolicyParams> = {
 
 export const BULK_DISCOUNT = 0.92;
 const sellProjectBulk: CommandDef<ProjectRef> = {
-  validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr) return 'Proje bulunamadı.'; if (pr.status !== 'tamamlandi') return 'Yalnızca tamamlanmış projeler satılabilir.'; return null; },
+  validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr) return 'Proje bulunamadı.'; if (pr.status !== 'tamamlandi') return 'Yalnızca tamamlanmış projeler satılabilir.'; if (!unitsOf(s, pr.id).some((u) => u.status !== 'satildi')) return 'Satılacak daire kalmadı.'; return null; },
   apply(s, p) {
-    const pr = s.projects.find((x) => x.id === p.projectId)!; const parcel = s.parcels.find((x) => x.id === pr.parcelId)!;
-    settle(s, pr);
-    const price = Math.round(currentRevenue(s, pr) * BULK_DISCOUNT), comm = Math.round(price * 0.01);
-    post(s, 'satis', price, { projectId: pr.id, memo: `${pr.name} toplu satış` }); post(s, 'komisyon', -comm, { projectId: pr.id, memo: 'Toplu satış komisyonu' });
-    const cost = (pr.result?.cost ?? 0) + (parcel.costBasis ?? 0), profit = price - comm - cost;
-    pr.status = 'satildi'; pr.result = { ...pr.result!, revenue: price, profit, soldDay: s.clock.day };
-    s.parcels = s.parcels.filter((x) => x.id !== parcel.id);
-    s.company!.stats.sold++; s.company!.stats.profit += profit;
-    return [ev(s, 'PROJECT_SOLD', { projectId: pr.id, price, profit })];
+    const pr = s.projects.find((x) => x.id === p.projectId)!; settle(s, pr);
+    const evs: GameEvent[] = []; const total = bulkSellRemaining(s, pr, evs);
+    return [ev(s, 'BULK_SOLD', { projectId: pr.id, price: total }), ...evs];
   },
+};
+export interface SalesPolicyParams { projectId: number; priceMult?: number; agent?: boolean; installments?: boolean; presale?: boolean }
+const setSalesPolicy: CommandDef<SalesPolicyParams> = {
+  validate(s, p) {
+    const pr = s.projects.find((x) => x.id === p.projectId); if (!pr || !pr.sales) return 'Satış politikası için inşaat başlamış bir proje gerekir.';
+    if (pr.status === 'satildi') return 'Proje satıldı.';
+    if (p.priceMult !== undefined && !(p.priceMult >= 0.8 && p.priceMult <= 1.25)) return 'Fiyat çarpanı %80–%125 arasında olmalı.';
+    return null;
+  },
+  apply(s, p) { const pol = s.projects.find((x) => x.id === p.projectId)!.sales!; if (p.priceMult !== undefined) pol.priceMult = +p.priceMult.toFixed(3); if (p.agent !== undefined) pol.agent = p.agent; if (p.installments !== undefined) pol.installments = p.installments; if (p.presale !== undefined) pol.presale = p.presale; return [ev(s, 'SALES_POLICY', { projectId: p.projectId })]; },
 };
 
 export const COMMANDS = {
-  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
+  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,
   CreateCompany: createCompany,
   HireStaff: hireStaff,

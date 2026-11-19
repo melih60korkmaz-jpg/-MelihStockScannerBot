@@ -11,7 +11,8 @@ import { MACHINES, MATERIALS } from '../../data';
 import { incomingQty, stageNeeds, stockQty } from '../../sim/materials';
 import { crewCapacity } from '../../sim/construction';
 import type { App } from '../app';
-import { BULK_DISCOUNT } from '../../core/commands';
+import { openSales } from './sales';
+import { unitsOf } from '../../sim/sales';
 import type { Project } from '../../core/types';
 
 const CAMS: [CamPreset, string][] = [['kus', 'Kuş'], ['yan', 'Yan'], ['on', 'Ön'], ['yakin', 'Yakın'], ['ust', 'Üst']];
@@ -35,7 +36,8 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
     const s = app.store.state, b = p.build;
     const u = p.status === 'taslak' ? 3 : p.status === 'insaat' && b ? b.stage + b.progress : 18;
     const field = s.staff.filter((x) => FIELD.has(x.type)).length;
-    return { u, stalled: !!b?.stalled, weather: s.weather[p.cityId] ?? 'acik', workers: Math.max(3, field + 2), done: false };
+    const us = unitsOf(s, p.id), occ = us.length ? us.filter((x) => x.status === 'satildi').length / us.length : 0;
+    return { u, stalled: !!b?.stalled, weather: s.weather[p.cityId] ?? 'acik', workers: Math.max(3, field + 2), done: false, occupancy: occ };
   };
 
   // ---- Üst çubuk ----
@@ -120,10 +122,10 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
   };
 
   const saleBox = (p: Project) => {
-    const s = app.store.state, price = Math.round(currentRevenue(s, p) * BULK_DISCOUNT);
-    return h('div', { style: 'margin-top:10px;display:flex;gap:8px;flex-wrap:wrap' },
-      h('button', { class: 'btn gold lg', style: 'flex:1', onclick: () => { if (!confirm(`Tüm bina yatırımcıya ${formatMoney(price)} bedelle satılsın mı? (piyasa değerinin %92'si)`)) return; const r = app.store.run('SellProjectBulk', { projectId: p.id }); if (r.ok) { press(app, 'confirm', 'medium'); toast('Bina satıldı.'); leave(); } else { app.audio.sfx('error'); toast(r.error); } } }, `Toplu sat · ${fmt(price)}`),
-      h('span', { class: 'mute', style: 'font-size:12px;flex-basis:100%' }, 'Daire daire satış (daha yüksek fiyat, daha uzun süre) sonraki sürümde.'));
+    const us = unitsOf(app.store.state, p.id), sold = us.filter((u) => u.status === 'satildi').length;
+    return h('div', { style: 'margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center' },
+      h('button', { class: 'btn gold lg', style: 'flex:1', onclick: () => { press(app); openSales(app, p.id, draw); } }, `Satış merkezi · ${sold}/${us.length} daire satıldı`),
+      h('span', { class: 'mute', style: 'font-size:12px;flex-basis:100%' }, 'Fiyat, emlakçı, taksit ve toplu satış seçeneklerini Satış merkezinden yönetin.'));
   };
 
   const showReport = (p: Project) => {
@@ -134,7 +136,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
       h('div', { class: 'lbl-s' }, 'Proje tamamlandı'), h('h2', { style: 'font-size:30px;margin-bottom:6px' }, p.name),
       h('div', { class: 'stars', 'aria-label': `${stars} yıldız`, html: '★'.repeat(stars) + `<span class="off">${'★'.repeat(5 - stars)}</span>` }),
       kv([['Kalite puanı', String(r.qualityScore)], ['Süre', `${r.days} gün (plan ${r.plannedDays})${late ? ' · gecikme' : ' · zamanında'}`], ['Toplam maliyet', fmt(r.cost)], ['Bütçe', fmt(p.budget.total)], ['Tahmini satış değeri', fmt(currentRevenue(app.store.state, p))], ['İtibar', `${app.store.state.company!.reputation}`]]),
-      h('div', { style: 'display:flex;gap:8px;margin-top:12px' }, h('button', { class: 'btn block', onclick: () => { press(app); el.remove(); scene?.setAutoOrbit(false); sheetOpen = true; tab = 'genel'; draw(); } }, 'Binayı incele'), h('button', { class: 'btn gold block', onclick: () => { press(app); el.remove(); scene?.setAutoOrbit(false); sheetOpen = true; draw(); } }, 'Satış seçenekleri'))));
+      h('div', { style: 'display:flex;gap:8px;margin-top:12px' }, h('button', { class: 'btn block', onclick: () => { press(app); el.remove(); scene?.setAutoOrbit(false); sheetOpen = true; tab = 'genel'; draw(); } }, 'Binayı incele'), h('button', { class: 'btn gold block', onclick: () => { press(app); el.remove(); scene?.setAutoOrbit(false); openSales(app, p.id, draw); } }, 'Satış merkezi'))));
     root.append(el);
   };
 

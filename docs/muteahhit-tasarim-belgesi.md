@@ -806,3 +806,13 @@ Kullanıcı kararı: bu fazda **temel düzen** kurulur, ince ayar ve hatalar son
 - **Personel**: atama (proje ya da ortak havuz), **moral** (güvenlik politikası, kaza, nakit sıkıntısıyla değişir; verimi ±%15 etkiler). **İş güvenliği** politikası (düşük/normal/yüksek): sigorta maliyeti ↔ kaza olasılığı ↔ moral. **Kaza**: şantiye 3–9 gün durur, tazminat, moral ve itibar düşer.
 - **Arayüz**: Operasyon sekmesi (Ekip, Malzeme, Makine, Politika); şantiye panelinde "Kaynaklar" sekmesi; durum bandı (nakit/malzeme/kaza).
 - **Bilinen eksikler (sonraya)**: tedarikçiler malzemeye göre ayrışmıyor; makine kapasitesi tek proje/gün; tedarikçi ilişki puanı, vade, toplu alım indirimi yok; kaza türleri tek; ekip UI'ı sıkışık; **ekipsiz inşaat çok pahalı** (kira süresi uzar) → ilk proje için kolaylaştırma gerekebilir; denge ayarı Faz 12.
+
+
+## Uygulama notları — Faz 7 (satış ve müşteri)
+
+- **Daireler**: inşaat başlayınca projeden üretilir (tohumdan deterministik; toplam alan = satılabilir alan): kat, oda (1+1…5+1), m², manzara, cephe, kat/manzara/cephe çarpanları (ortalama 1).
+- **Fiyat**: adil değer (bölge fiyatı × tip × kalite × bölge uyumu × konut endeksi × bina kalite puanı) × daire çarpanı × **politika çarpanı** (%80–%125). Günlük satış olasılığı: baz × talep (güven, reel faiz) × fiyat esnekliği `exp(−6·(çarpan−1))` × marka (itibar+memnuniyet) × satış danışmanı × emlakçı (+%30) × bölge rekabeti × tip hızı.
+- **Ödeme yolları**: peşin (%4 iskonto), taksit (+%6, %25 peşin, 12 aylık alacak; %97 tahsil, 3 kaçırmada temerrüt → daire stoğa döner), kapora (%5, 14 gün; %75 satışa döner, aksi halde yarısı iade), **ön satış** (betonarmeden sonra, %10 indirim, %40 peşin, bakiye tesliminde; gecikme tazminatı), emlakçı (%2,5), **toplu satış** (kalan daireler adil değerin %92'si).
+- **Teslim**: müşteri memnuniyeti (kalite, gecikme, fiyat/değer) → şirket memnuniyeti ve itibar. **Garanti**: 24 ay boyunca düşük kalitede daha sık ve pahalı talepler. Satılmamış dairelerin aylık gideri.
+- **Muhasebe**: alacaklar varlık, ön satış avansları yükümlülük (satıştan sahte kâr doğmaz); tüm daireler satılınca proje kapanır, kâr kesinleşir.
+- **Ölçüm** (`npm run sim:sales`): fiyatı artırmak kârı artırır ama satışı yavaşlatır; emlakçı ve taksit satışı hızlandırır. **Not**: faiz/kredi (Faz 8) gelmeden yüksek fiyat stratejisi aşırı avantajlı kalıyor; ön satışın değeri nakit kısıtı geldikçe ortaya çıkacak.

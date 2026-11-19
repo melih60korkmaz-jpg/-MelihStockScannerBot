@@ -4,7 +4,7 @@ import type { GameState } from '../core/types';
 import { MATERIALS, STAGES, ledgerCat, officeFor } from '../data';
 const MAT_BASE = new Map(MATERIALS.map((m) => [m.id, TL(m.priceTL)]));
 import { landAssetValue } from './land';
-import { currentRevenue } from './projects';
+import { advancesTotal, receivablesTotal, unsoldValue } from './sales';
 import { machineAssetValue, machineMonthlyMaint } from './machines';
 
 /** Her ay yapılan sabit giderler. Hem motor (ödeme) hem arayüz (beklenen gider) bunu kullanır → tek doğru. */
@@ -53,9 +53,9 @@ export function monthlyRows(s: GameState): MonthRow[] {
 
 /** Net varlık = nakit + varlıklar − borçlar. (Arsa/proje/kredi sistemleri geldikçe genişler.) */
 /** Net varlık = nakit + arsalar (piyasa) + inşaat halindeki projelerin ödenen maliyeti + biten/satılmamış binaların tahmini değeri (%90). */
-export const projectAssetValue = (s: GameState): Money => s.projects.reduce((a, p) => a + (p.status === 'insaat' ? p.build!.spent + (p.build!.matCost ?? 0) : p.status === 'tamamlandi' ? Math.round(currentRevenue(s, p) * 0.9) : 0), 0);
+export const projectAssetValue = (s: GameState): Money => s.projects.reduce((a, p) => a + (p.status === 'insaat' ? p.build!.spent + (p.build!.matCost ?? 0) : 0), 0) + unsoldValue(s);
 export const stockValue = (s: GameState): Money => Object.entries(s.stock).reduce((a, [id, it]) => a + Math.round(it.qty * (MAT_BASE.get(id) ?? 0) * (s.macro.materialIndex / 100) * (s.matPrice[id] ?? 1)), 0);
-export const netWorth = (s: GameState): Money => (s.company ? s.company.cash + landAssetValue(s) + projectAssetValue(s) + machineAssetValue(s) + stockValue(s) : 0);
+export const netWorth = (s: GameState): Money => (s.company ? s.company.cash + landAssetValue(s) + projectAssetValue(s) + machineAssetValue(s) + stockValue(s) + receivablesTotal(s) - advancesTotal(s) : 0);
 
 /**
  * Nakit yeterlilik süresi (ay): kasa / aylık net yanma. Yanma = beklenen sabit gider − son 3 tam ayın ort. geliri.
@@ -85,7 +85,7 @@ export function alerts(s: GameState, fmt: (m: Money) => string, fmtDate: (d: num
   for (const pr of s.projects) {
     if (pr.status === 'insaat' && pr.build?.stalled) out.push({ tone: 'bad', text: `${pr.name}: nakit yok, inşaat durdu!` });
     else if (pr.status === 'insaat' && pr.build) out.push({ tone: 'info', text: `${pr.name}: ${STAGES[pr.build.stage]?.label ?? ''} (%${Math.round(pr.build.progress * 100)})` });
-    if (pr.status === 'tamamlandi') out.push({ tone: 'ok', text: `${pr.name} teslim edildi: satış seçeneklerini değerlendirin.` });
+    if (pr.status === 'tamamlandi') { const left = s.units.filter((u) => u.projectId === pr.id && u.status !== 'satildi').length; out.push({ tone: left ? 'ok' : 'info', text: `${pr.name}: ${left} daire satışta.` }); }
   }
   const idle = s.parcels.filter((p) => p.owner === 'player' && p.projectId === undefined && !p.listed);
   if (idle.length) out.push({ tone: 'info', text: idle.length === 1 ? `Boş arsanız var (${idle[0]!.hood}): proje başlatın ya da satışa koyun.` : `${idle.length} boş arsanız var: proje başlatın ya da satışa koyun.` });

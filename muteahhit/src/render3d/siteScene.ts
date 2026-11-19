@@ -5,7 +5,7 @@ import { applyWindows } from './windowShader';
 import { Excavator, SiteProps, TowerCrane, Weather, Workers, makeTruck } from './siteProps';
 
 export interface SiteSpec extends BuildingSpec { use: 'konut' | 'ticari' | 'sanayi'; name: string; roads: number; corner: boolean }
-export interface SiteState { u: number; stalled: boolean; weather: 'acik' | 'yagmur' | 'kar'; workers: number; done: boolean }
+export interface SiteState { u: number; stalled: boolean; weather: 'acik' | 'yagmur' | 'kar'; workers: number; done: boolean; occupancy?: number }
 type Tier = Exclude<Quality, 'auto'>;
 const TIER = { low: { pr: 1, shadows: false, workers: 8, fps: 30, rain: false }, mid: { pr: 1.5, shadows: false, workers: 16, fps: 60, rain: true }, high: { pr: 2, shadows: true, workers: 24, fps: 60, rain: true } };
 export type CamPreset = 'kus' | 'yan' | 'on' | 'yakin' | 'ust';
@@ -146,7 +146,7 @@ export class SiteScene {
     (this.ground.material as THREE.MeshStandardMaterial).color.set(w === 'kar' ? '#e8edf2' : w === 'yagmur' ? '#6a665c' : '#8f8a7d');
     this.sky.position.copy(this.camera.position);
     // bina
-    this.building.update(u, this.time, night); this.nightGlow.value = night * 0.95; for (const c of this.covers) c.visible = !(u > 6.01 && u < 8.0);
+    this.building.update(u, this.time, night, st.occupancy ?? 0); this.nightGlow.value = night * 0.95; for (const c of this.covers) c.visible = !(u > 6.01 && u < 8.0);
     this.props.setStage(u); this.props.setLandscape(ramp(u, 16, 17)); for (const l of this.props.lamps) l.visible = night > 0.25;
     const hw = this.building.extent.w / 2, hd = this.building.extent.d / 2, top2 = this.building.builtTop(u);
     // vinç(ler): yükseklik bina ile yükselir; sökülürken iner

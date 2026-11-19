@@ -136,7 +136,7 @@ class Block {
   get hole() { return { x: this.x, z: this.z, w: this.w + 5, d: this.d + 5 }; }
   get topY() { return this.topH; }
 
-  update(u: number, time: number, night: number, design: ReturnType<typeof designOf>) {
+  update(u: number, time: number, night: number, design: ReturnType<typeof designOf>, occ = 0) {
     const F = this.F, fh = this.fh, w = this.w, d = this.d;
     const dig = ramp(u, 6, 7), back = ramp(u, 7.6, 8.0), depth = 4.5 * dig * (1 - back);
     // çukur
@@ -166,7 +166,7 @@ class Block {
     // hologram
     const holo = ramp(u, 2, 3) * (1 - ramp(u, 8, 9.2)); this.holo.visible = this.holoFill.visible = holo > 0.01; if (this.holo.visible) { const pulse = 0.65 + 0.2 * Math.sin(time * 2); (this.holo.material as THREE.LineBasicMaterial).opacity = holo * pulse; (this.holoFill.material as THREE.MeshBasicMaterial).opacity = holo * 0.09; }
     // gece pencere ışığı: iç işler başladıkça artar
-    const interior = ramp(u, 14.5, 16.5); this.glassLit.emissiveIntensity = (0.12 + night * 2.2) * interior; void design;
+    const interior = ramp(u, 14.5, 16.5); this.glassLit.emissiveIntensity = (0.12 + night * 2.2) * interior * (0.3 + 0.7 * occ); void design;
   }
 }
 
@@ -190,7 +190,7 @@ export class SiteBuilding {
   }
   get topH() { return this.F * this.fh; }
   get extent() { const b = this.blocks[0]!; return { w: this.blocks.length * b.w + (this.blocks.length - 1) * 9, d: b.d }; }
-  update(u: number, time: number, night: number) { for (const b of this.blocks) b.update(u, time, night, this.design); }
+  update(u: number, time: number, night: number, occ = 0) { for (const b of this.blocks) b.update(u, time, night, this.design, occ); }
   /** Şu an yapının en üst noktası (vinç yüksekliği ve işçi konumu için). */
   builtTop(u: number) { const f = ramp(u, 8, 9) * 1 + ramp(u, 9, 10) * (this.F - 1); return Math.max(0, f) * this.fh; }
 }

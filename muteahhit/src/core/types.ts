@@ -34,6 +34,7 @@ export interface Company {
   safety: 'dusuk' | 'normal' | 'yuksek';
   procurement: { auto: boolean; supplier: string };
   lastAccidentDay: number;
+  satisfaction: number;        // müşteri memnuniyeti (kayan ortalama, 0–100)
   cash: Money;          // ÖNBELLEK: her zaman ledgerBase + Σledger
 }
 
@@ -96,6 +97,7 @@ export interface Project {
   id: number; parcelId: number; hood: string; name: string; type: string; quality: string; designSeed: number;
   status: 'taslak' | 'insaat' | 'tamamlandi' | 'satildi';
   build?: BuildState;
+  sales?: SalesPolicy;
   result?: { qualityScore: number; cost: Money; days: number; plannedDays: number; revenue?: Money; profit?: Money; soldDay?: number };
   createdDay: number; cityId: string;
   floors: number; emsal: number; brut: number; satilabilir: number;
@@ -105,6 +107,15 @@ export interface Project {
 }
 export interface Order { id: number; material: string; qty: number; unitPrice: Money; supplier: string; placedDay: number; arriveDay: number; delayed: boolean; quality: number }
 export interface Machine { id: number; type: string; boughtDay: number; price: Money; brokenUntil: number; uses: number; usedDay?: number }
+export interface Unit {
+  id: number; projectId: number; area: number; rooms: string; floor: number; view: number; facing: 'K' | 'G' | 'D' | 'B'; mult: number;
+  status: 'bos' | 'kapora' | 'satildi';
+  price?: Money; payment?: 'pesin' | 'taksit' | 'onsatis'; soldDay?: number;
+  kaporaUntil?: number; kaporaAmt?: Money;
+  delivered?: boolean; sat?: number; warrantyUntil?: number;
+}
+export interface Receivable { id: number; unitId: number; projectId: number; amount: Money; dueDay: number; kind: 'taksit' | 'teslim'; missed: number }
+export interface SalesPolicy { priceMult: number; agent: boolean; installments: boolean; presale: boolean; contract: Money; commission: Money; sold: number }
 export interface Scheduled { day: number; type: 'survey'; data: { parcelId: number; kind: 'soil' | 'market' } }
 
 export interface GameState {
@@ -134,6 +145,8 @@ export interface GameState {
   orders: Order[];
   matPrice: Record<string, number>;
   machines: Machine[];
+  units: Unit[];
+  receivables: Receivable[];
 }
 
 export interface GameEvent {

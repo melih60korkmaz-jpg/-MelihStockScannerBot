@@ -70,6 +70,11 @@
   "kind": "gider"
  },
  {
+  "id": "garanti",
+  "label": "Garanti ve tazminat",
+  "kind": "gider"
+ },
+ {
   "id": "faiz",
   "label": "Faiz gideri",
   "kind": "gider"

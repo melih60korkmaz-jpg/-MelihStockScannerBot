@@ -2,6 +2,7 @@ import { SAVE_VERSION } from '../core/state';
 import type { GameState } from '../core/types';
 import { crc32 } from './crc32';
 import { initMarket } from '../sim/land';
+import { defaultSales, generateUnits } from '../sim/sales';
 import { MATERIALS } from '../data';
 import { STREAMS } from '../core/rng';
 
@@ -44,6 +45,12 @@ export const MIGRATIONS: Record<number, (s: any) => any> = {
     if (s.company) { s.company.safety = 'normal'; s.company.procurement = { auto: true, supplier: 'yerel' }; s.company.lastAccidentDay = -999; }
     s.meta.version = 5; return s;
   },
+  // v5 → v6 (Faz 7): daireler, alacaklar, müşteri memnuniyeti; mevcut inşaat/biten projelere satış politikası + daireler
+  5: (s) => {
+    s.units = []; s.receivables = []; if (s.company) s.company.satisfaction = 60;
+    for (const p of s.projects) if (p.status === 'insaat' || p.status === 'tamamlandi') { p.sales = defaultSales(); s.units.push(...generateUnits(s, p)); }
+    s.meta.version = 6; return s;
+  },
 };
 
 export function pack(state: GameState, now = Date.now()): string {
@@ -68,6 +75,7 @@ export function validateState(s: any): string | null {
   if (!s.macro || typeof s.macro.policyRate !== 'number' || typeof s.macro.inflation !== 'number' || !s.macro.regime) return 'makro eksik';
   if (!Array.isArray(s.macroHistory) || !Array.isArray(s.news) || !Array.isArray(s.history)) return 'geçmiş eksik';
   if (!s.weather) return 'hava durumu eksik';
+  if (!Array.isArray(s.units) || !Array.isArray(s.receivables)) return 'daire/alacak verisi eksik';
   if (!s.stock || !Array.isArray(s.orders) || !Array.isArray(s.machines) || !s.matPrice) return 'kaynak verisi eksik';
   if (!Array.isArray(s.parcels) || !Array.isArray(s.projects) || !Array.isArray(s.scheduled) || !s.cityMarket) return 'arsa/proje verisi eksik';
   if (typeof s.costIndex !== 'number' || !Number.isInteger(s.taxLossCarry)) return 'maliyet endeksi bozuk';

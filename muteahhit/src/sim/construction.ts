@@ -6,6 +6,7 @@ import { SOIL_COST, STAGES } from '../data';
 import { post } from './ledger';
 import { autoBuy, stageNeeds, stockQty } from './materials';
 import { useMachines } from './machines';
+import { checkAllSold, defaultSales, deliverUnits, generateUnits } from './sales';
 
 const TOTAL_TIME = STAGES.reduce((a, s) => a + s.time, 0);
 const SPLIT = { malzeme: 0.55, insaat: 0.35, makine: 0.1 } as const;
@@ -63,7 +64,7 @@ export function startConstruction(s: GameState, p: Project): GameEvent[] {
     priceBase: { mat: s.macro.materialIndex, cost: s.costIndex }, spent: 0, unpaid: 0, unpaidParts: { malzeme: 0, insaat: 0, makine: 0 },
     qualitySum: 0, qualityW: 0, stalled: null, stalledDays: 0, soilExtra: 0,
   };
-  p.status = 'insaat'; p.build = b;
+  p.status = 'insaat'; p.build = b; p.sales = defaultSales(); s.units.push(...generateUnits(s, p));
   return [{ type: 'PROJECT_STARTED', day: s.clock.day, data: { projectId: p.id } }];
 }
 
@@ -191,6 +192,7 @@ function finishProject(s: GameState, p: Project, events: GameEvent[]): void {
   const rep = Math.round((q - 60) / 8) + (days <= planned * 1.05 ? 2 : days > planned * 1.3 ? -2 : 0);
   c.reputation = clamp(c.reputation + rep, 0, 100);
   events.push({ type: 'PROJECT_COMPLETED', day: s.clock.day, pause: true, data: { projectId: p.id, quality: p.result.qualityScore, days, planned, rep } });
+  deliverUnits(s, p, events); checkAllSold(s, p, events);
 }
 
 export function constructionDaily(s: GameState, events: GameEvent[], monday: boolean): void {

@@ -122,7 +122,7 @@ describe('teslim sonrası: toplu satış, net varlık, kayıt', () => {
   });
   it('v3 kaydı v4\'e taşınır', () => {
     const { s } = setup(); const old: any = JSON.parse(JSON.stringify(s)); old.meta.version = 3; delete old.weather; delete old.company.stats; for (const pr of old.projects) delete pr.hood;
-    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(5); expect(r.state.company!.stats.completed).toBe(0); expect(r.state.projects[0]!.hood).toBe('Test Mahallesi'); advanceDays(r.state, 60); }
+    const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.meta.version).toBe(6); expect(r.state.company!.stats.completed).toBe(0); expect(r.state.projects[0]!.hood).toBe('Test Mahallesi'); advanceDays(r.state, 60); }
   });
   it('aynı tohum aynı inşaat', () => {
     const run = () => { const { s, project: p } = setup({ seed: 12 }); dispatch(s, 'StartConstruction', { projectId: p.id }); advanceDays(s, 500); return JSON.stringify([s.projects, s.company, s.weather]); };
