@@ -1,0 +1,15 @@
+[
+  { "id": "isci",           "label": "İnşaat İşçisi",       "baseSalaryTL": 28000 },
+  { "id": "usta",           "label": "Usta",                "baseSalaryTL": 42000 },
+  { "id": "kalipci",        "label": "Kalıpçı",             "baseSalaryTL": 38000 },
+  { "id": "demirci",        "label": "Demirci",             "baseSalaryTL": 38000 },
+  { "id": "elektrikci",     "label": "Elektrikçi",          "baseSalaryTL": 40000 },
+  { "id": "tesisatci",      "label": "Tesisatçı",           "baseSalaryTL": 40000 },
+  { "id": "mimar",          "label": "Mimar",               "baseSalaryTL": 65000 },
+  { "id": "muhendis",       "label": "Mühendis",            "baseSalaryTL": 70000 },
+  { "id": "santiye_sefi",   "label": "Şantiye Şefi",        "baseSalaryTL": 80000 },
+  { "id": "proje_yoneticisi","label": "Proje Yöneticisi",   "baseSalaryTL": 90000 },
+  { "id": "muhasebeci",     "label": "Muhasebeci",          "baseSalaryTL": 55000 },
+  { "id": "satis_danismani","label": "Satış Danışmanı",     "baseSalaryTL": 45000 },
+  { "id": "satin_alma",     "label": "Satın Alma Sorumlusu","baseSalaryTL": 50000 }
+]

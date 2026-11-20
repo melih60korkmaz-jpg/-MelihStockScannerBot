@@ -1,0 +1,147 @@
+[
+ {
+  "id": "sermaye",
+  "label": "Sermaye",
+  "kind": "sermaye"
+ },
+ {
+  "id": "satis",
+  "label": "Konut/dükkân satışı",
+  "kind": "gelir"
+ },
+ {
+  "id": "hakedis",
+  "label": "Hakediş (ihale)",
+  "kind": "gelir"
+ },
+ {
+  "id": "kira_geliri",
+  "label": "Kira geliri",
+  "kind": "gelir"
+ },
+ {
+  "id": "maas",
+  "label": "Personel maaşları",
+  "kind": "gider"
+ },
+ {
+  "id": "sigorta",
+  "label": "Sigorta ve güvence",
+  "kind": "gider"
+ },
+ {
+  "id": "kira",
+  "label": "Ofis kirası",
+  "kind": "gider"
+ },
+ {
+  "id": "ofis",
+  "label": "Ofis giderleri",
+  "kind": "gider"
+ },
+ {
+  "id": "sube",
+  "label": "Şube açılışı",
+  "kind": "gider"
+ },
+ {
+  "id": "malzeme",
+  "label": "Malzeme",
+  "kind": "gider"
+ },
+ {
+  "id": "tasarim",
+  "label": "Proje ve mimari",
+  "kind": "gider"
+ },
+ {
+  "id": "etut",
+  "label": "Etüt ve araştırma",
+  "kind": "gider"
+ },
+ {
+  "id": "insaat",
+  "label": "İnşaat işçilik/şantiye",
+  "kind": "gider"
+ },
+ {
+  "id": "makine",
+  "label": "Makine bakım/yakıt",
+  "kind": "gider"
+ },
+ {
+  "id": "komisyon",
+  "label": "Satış komisyonu",
+  "kind": "gider"
+ },
+ {
+  "id": "garanti",
+  "label": "Garanti ve tazminat",
+  "kind": "gider"
+ },
+ {
+  "id": "faiz",
+  "label": "Faiz gideri",
+  "kind": "gider"
+ },
+ {
+  "id": "vergi",
+  "label": "Vergiler",
+  "kind": "vergi"
+ },
+ {
+  "id": "arsa",
+  "label": "Arsa alım/satım",
+  "kind": "yatirim"
+ },
+ {
+  "id": "makine_alim",
+  "label": "Makine alım/satım",
+  "kind": "yatirim"
+ },
+ {
+  "id": "kredi_cekim",
+  "label": "Kredi çekimi",
+  "kind": "finansman"
+ },
+ {
+  "id": "kredi_odeme",
+  "label": "Kredi anapara ödemesi",
+  "kind": "finansman"
+ },
+ {
+  "id": "ortak",
+  "label": "Ortak/yatırımcı katkısı",
+  "kind": "finansman"
+ },
+ {
+  "id": "ortak_odeme",
+  "label": "Ortak ödemesi",
+  "kind": "finansman"
+ },
+ {
+  "id": "temettu",
+  "label": "Temettü",
+  "kind": "finansman"
+ },
+ {
+  "id": "teminat",
+  "label": "İhale teminatı",
+  "kind": "finansman"
+ },
+ {
+  "id": "kredi_harc",
+  "label": "Kredi masrafı",
+  "kind": "gider"
+ },
+ {
+  "id": "olay_gider",
+  "label": "Olay ve beklenmedik gider",
+  "kind": "gider"
+ },
+ {
+  "id": "olay_gelir",
+  "label": "Olay geliri",
+  "kind": "gelir"
+ }
+]

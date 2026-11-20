@@ -1,0 +1,210 @@
+{
+ "types": [
+  {
+   "id": "mustakil",
+   "label": "Müstakil Ev",
+   "use": "konut",
+   "zoning": [
+    "konut",
+    "karma"
+   ],
+   "costM2": 13000,
+   "monthsMin": 4,
+   "monthsMax": 7,
+   "floorsCap": 2,
+   "minArea": 120,
+   "minFloors": 1,
+   "saleMult": 1.04,
+   "blurb": "Küçük ölçek, hızlı ve düşük riskli. İlk proje için ideal."
+  },
+  {
+   "id": "apartman",
+   "label": "Apartman",
+   "use": "konut",
+   "zoning": [
+    "konut",
+    "karma"
+   ],
+   "costM2": 14000,
+   "monthsMin": 8,
+   "monthsMax": 14,
+   "floorsCap": 8,
+   "minArea": 250,
+   "minFloors": 3,
+   "saleMult": 1.0,
+   "blurb": "Ana gelir kalemi: çok daireli, dengeli risk."
+  },
+  {
+   "id": "site",
+   "label": "Site",
+   "use": "konut",
+   "zoning": [
+    "konut",
+    "karma"
+   ],
+   "costM2": 15500,
+   "monthsMin": 18,
+   "monthsMax": 30,
+   "floorsCap": 10,
+   "minArea": 1500,
+   "minFloors": 3,
+   "saleMult": 1.14,
+   "blurb": "Çok bloklu sosyal yaşam; ön satışla finanse edilir."
+  },
+  {
+   "id": "villa",
+   "label": "Villa",
+   "use": "konut",
+   "zoning": [
+    "konut",
+    "karma"
+   ],
+   "costM2": 30000,
+   "monthsMin": 7,
+   "monthsMax": 12,
+   "floorsCap": 3,
+   "minArea": 400,
+   "minFloors": 1,
+   "saleMult": 1.75,
+   "blurb": "Az sayıda, yüksek marjlı satış; alıcı bulmak zaman alır."
+  },
+  {
+   "id": "rezidans",
+   "label": "Rezidans",
+   "use": "konut",
+   "zoning": [
+    "konut",
+    "karma",
+    "ticaret"
+   ],
+   "costM2": 22000,
+   "monthsMin": 20,
+   "monthsMax": 36,
+   "floorsCap": 40,
+   "minArea": 800,
+   "minFloors": 8,
+   "saleMult": 1.42,
+   "blurb": "Kule; ağır vinç ve uzun süre gerektirir."
+  },
+  {
+   "id": "luks",
+   "label": "Lüks Konut",
+   "use": "konut",
+   "zoning": [
+    "konut",
+    "karma"
+   ],
+   "costM2": 28000,
+   "monthsMin": 18,
+   "monthsMax": 30,
+   "floorsCap": 14,
+   "minArea": 700,
+   "minFloors": 4,
+   "saleMult": 1.6,
+   "blurb": "Kalite ve itibar şart; gelir düzeyi yüksek bölge ister."
+  },
+  {
+   "id": "ofis",
+   "label": "Ofis Binası",
+   "use": "ticari",
+   "zoning": [
+    "ticaret",
+    "karma"
+   ],
+   "costM2": 20000,
+   "monthsMin": 14,
+   "monthsMax": 26,
+   "floorsCap": 20,
+   "minArea": 400,
+   "minFloors": 3,
+   "saleMult": 1.45,
+   "blurb": "Ticari talebe bağlı; satış veya kiralama."
+  },
+  {
+   "id": "is_merkezi",
+   "label": "İş Merkezi",
+   "use": "ticari",
+   "zoning": [
+    "ticaret"
+   ],
+   "costM2": 24000,
+   "monthsMin": 24,
+   "monthsMax": 40,
+   "floorsCap": 30,
+   "minArea": 1000,
+   "minFloors": 6,
+   "saleMult": 1.75,
+   "blurb": "Büyük ticari proje; ticari potansiyel yüksek bölge ister."
+  },
+  {
+   "id": "fabrika",
+   "label": "Fabrika",
+   "use": "sanayi",
+   "zoning": [
+    "sanayi"
+   ],
+   "costM2": 9000,
+   "monthsMin": 10,
+   "monthsMax": 20,
+   "floorsCap": 2,
+   "minArea": 1500,
+   "minFloors": 1,
+   "saleMult": 1.0,
+   "blurb": "Sanayi parseli; düşük birim fiyat, geniş alan."
+  },
+  {
+   "id": "depo",
+   "label": "Depo",
+   "use": "sanayi",
+   "zoning": [
+    "sanayi"
+   ],
+   "costM2": 6500,
+   "monthsMin": 6,
+   "monthsMax": 12,
+   "floorsCap": 1,
+   "minArea": 800,
+   "minFloors": 1,
+   "saleMult": 0.72,
+   "blurb": "Hızlı ve ucuz; düşük marj."
+  }
+ ],
+ "qualities": [
+  {
+   "id": "ekonomik",
+   "label": "Ekonomik",
+   "costMult": 0.85,
+   "saleMult": 0.88,
+   "blurb": "Düşük maliyet; alıcı memnuniyeti ve fiyat düşük."
+  },
+  {
+   "id": "standart",
+   "label": "Standart",
+   "costMult": 1.0,
+   "saleMult": 1.0,
+   "blurb": "Dengeli seçim."
+  },
+  {
+   "id": "premium",
+   "label": "Premium",
+   "costMult": 1.25,
+   "saleMult": 1.18,
+   "blurb": "Daha iyi malzeme ve işçilik; orta-üst gelirli bölgede karşılığını verir."
+  },
+  {
+   "id": "luks",
+   "label": "Lüks",
+   "costMult": 1.6,
+   "saleMult": 1.45,
+   "blurb": "Yalnızca yüksek gelirli bölgede maliyetini çıkarır."
+  }
+ ],
+ "soilCost": {
+  "saglam": 1.0,
+  "kaya": 1.15,
+  "kil": 1.1,
+  "dolgu": 1.25,
+  "yeralti_suyu": 1.4,
+  "egimli": 1.2
+ }
+}

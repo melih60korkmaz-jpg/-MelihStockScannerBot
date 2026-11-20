@@ -1,0 +1,27 @@
+{
+  "materials": [
+    { "id": "demir",       "label": "İnşaat demiri",   "unit": "ton",   "priceTL": 28000, "vol": 0.035 },
+    { "id": "beton",       "label": "Hazır beton",     "unit": "m³",    "priceTL": 3200,  "vol": 0.03 },
+    { "id": "cimento",     "label": "Çimento",         "unit": "ton",   "priceTL": 4200,  "vol": 0.025 },
+    { "id": "tugla",       "label": "Tuğla",           "unit": "bin ad.","priceTL": 9000, "vol": 0.02 },
+    { "id": "gazbeton",    "label": "Gazbeton",        "unit": "m³",    "priceTL": 3400,  "vol": 0.02 },
+    { "id": "kum",         "label": "Kum",             "unit": "m³",    "priceTL": 450,   "vol": 0.02 },
+    { "id": "cakil",       "label": "Çakıl",           "unit": "m³",    "priceTL": 520,   "vol": 0.02 },
+    { "id": "cam",         "label": "Cam",             "unit": "m²",    "priceTL": 1800,  "vol": 0.03 },
+    { "id": "aluminyum",   "label": "Alüminyum",       "unit": "kg",    "priceTL": 190,   "vol": 0.04 },
+    { "id": "seramik",     "label": "Seramik",         "unit": "m²",    "priceTL": 650,   "vol": 0.02 },
+    { "id": "parke",       "label": "Parke",           "unit": "m²",    "priceTL": 900,   "vol": 0.02 },
+    { "id": "boya",        "label": "Boya",            "unit": "litre", "priceTL": 220,   "vol": 0.025 },
+    { "id": "yalitim",     "label": "Yalıtım malzemesi","unit": "m²",   "priceTL": 320,   "vol": 0.025 },
+    { "id": "kablo",       "label": "Elektrik kablosu","unit": "m",     "priceTL": 40,    "vol": 0.035 },
+    { "id": "boru",        "label": "Tesisat borusu",  "unit": "m",     "priceTL": 85,    "vol": 0.03 },
+    { "id": "kapi_pencere","label": "Kapı ve pencere", "unit": "adet",  "priceTL": 12000, "vol": 0.025 },
+    { "id": "cati",        "label": "Çatı malzemesi",  "unit": "m²",    "priceTL": 1400,  "vol": 0.025 }
+  ],
+  "suppliers": [
+    { "id": "yerel",   "label": "Yerel Toptancı",  "price": 1.0,  "lead": 3, "reliability": 0.90, "quality": 0, "blurb": "Dengeli fiyat, hızlı teslimat." },
+    { "id": "ucuz",    "label": "Ucuz Tedarik",    "price": 0.88, "lead": 5, "reliability": 0.74, "quality": -1, "blurb": "Düşük fiyat; kalite ve zamanlama riski." },
+    { "id": "premium", "label": "Premium A.Ş.",    "price": 1.12, "lead": 2, "reliability": 0.97, "quality": 1, "blurb": "Pahalı ama güvenilir ve yüksek kaliteli." },
+    { "id": "fabrika", "label": "Fabrika Direkt",  "price": 0.95, "lead": 9, "reliability": 0.93, "quality": 0, "blurb": "İyi fiyat, uzun tedarik süresi." }
+  ]
+}

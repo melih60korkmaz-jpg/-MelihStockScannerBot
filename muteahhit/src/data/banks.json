@@ -1,0 +1,6 @@
+[
+  { "id": "devlet",  "label": "Devlet Bankası",   "margin": 2.0,  "minScore": 450, "fee": 0.005, "products": ["ticari", "insaat", "makine"], "blurb": "Düşük faiz; yüksek kredi notu ve itibar ister." },
+  { "id": "ozel",    "label": "Özel Banka",       "margin": 4.0,  "minScore": 350, "fee": 0.010, "products": ["ticari", "insaat", "makine", "kisa"], "blurb": "Dengeli faiz ve kabul şartları." },
+  { "id": "katilim", "label": "Katılım Bankası",  "margin": 5.0,  "minScore": 300, "fee": 0.010, "products": ["ticari", "makine"], "blurb": "Esnek şartlar; biraz daha pahalı." },
+  { "id": "hizli",   "label": "Hızlı Finansman",  "margin": 12.0, "minScore": 100, "fee": 0.020, "products": ["kisa", "ticari"], "blurb": "Çok pahalı ama düşük notla da kredi verir; son çare." }
+]

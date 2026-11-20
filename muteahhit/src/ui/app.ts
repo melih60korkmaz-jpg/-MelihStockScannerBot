@@ -1,0 +1,38 @@
+import type { AudioEngine } from '../audio/engine';
+import { Store } from '../core/store';
+import type { MenuScene, Mood } from '../render3d/menuScene';
+import type { SiteScene } from '../render3d/siteScene';
+import type { SettingsStore } from '../platform/settings';
+import type { SaveManager } from '../save/manager';
+import type { UiCtx } from './dom';
+
+/** Ekranların ortak bağlamı. */
+export interface App extends UiCtx {
+  settings: SettingsStore;
+  saves: SaveManager;
+  scene: MenuScene | null;
+  site: SiteScene | null;
+  store: Store;
+  persistent: boolean;
+  go(screen: HTMLElement, mood?: Mood | 'none'): void;
+  setStore(s: Store): void;
+  menu(): void;
+  openSite(projectId: number): void;
+  /** Şirket kabuğundaki sekmeyi (ve alt sekmeyi) açar; kabuk yoksa tanımsızdır. */
+  openTab?: (tab: 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'finans' | 'piyasa', sub?: string) => void;
+}
+
+/** Basit ekran yöneticisi: eski ekran söner, yenisi girer (hareket azaltma açıksa anında). */
+export class Router {
+  private cur: HTMLElement | null = null;
+  constructor(private root: HTMLElement, private reduced: () => boolean) {}
+  show(el: HTMLElement) {
+    const old = this.cur; this.cur = el;
+    el.classList.add('screen', 'in'); this.root.append(el);
+    if (old) {
+      const drop = () => { old.dispatchEvent(new Event('unmount')); old.remove(); }; // 'unmount': ekran aboneliklerini bırakır (bellek sızıntısı önlenir)
+      if (this.reduced()) drop();
+      else { old.classList.remove('in'); old.classList.add('out'); setTimeout(drop, 190); }
+    }
+  }
+}
