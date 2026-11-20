@@ -8,6 +8,18 @@ export type Phase = 'gece' | 'safak' | 'gunduz' | 'aksam';
 export const phaseNow = (d = new Date()): Phase => { const hr = d.getHours(); return hr < 5 || hr >= 21 ? 'gece' : hr < 8 ? 'safak' : hr < 17 ? 'gunduz' : 'aksam'; };
 export const SKY: Record<Phase, [string, string, string]> = { gece: ['#0b0c10', '#1a1b24', '#2a2230'], safak: ['#2b2540', '#8a4a58', '#e0a070'], gunduz: ['#34507a', '#6f8fb5', '#c9d3dc'], aksam: ['#241d33', '#7a3a4f', '#e08a5a'] };
 
+/** Gün saatine (0–24, ondalıklı) göre yumuşak gökyüzü: gece → gün doğumu → gündüz → gün batımı → gece. Güneş/ay yayı için `sun` (0..1) ve `up` döner. */
+const lerpHex = (a: string, b: string, k: number) => { const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16)), pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16)); return '#' + pa.map((v, i) => Math.round(v + (pb[i]! - v) * k).toString(16).padStart(2, '0')).join(''); };
+const KEYS: [number, Phase][] = [[0, 'gece'], [4.5, 'gece'], [6.5, 'safak'], [9, 'gunduz'], [16.5, 'gunduz'], [18.5, 'aksam'], [21, 'gece'], [24, 'gece']];
+export function skyAt(hour: number): { sky: [string, string, string]; night: number; sun: number; isDay: boolean } {
+  let i = 0; while (i < KEYS.length - 2 && hour >= KEYS[i + 1]![0]) i++; const [h0, p0] = KEYS[i]!, [h1, p1] = KEYS[i + 1]!, k = Math.max(0, Math.min(1, (hour - h0) / (h1 - h0 || 1)));
+  const sky = [0, 1, 2].map((j) => lerpHex(SKY[p0][j]!, SKY[p1][j]!, k)) as [string, string, string];
+  const isDay = hour >= 6 && hour < 19.5, night = hour < 5.5 || hour >= 20.5 ? 1 : hour < 6.5 ? 1 - (hour - 5.5) : hour >= 19.5 ? hour - 19.5 : 0;
+  const sun = isDay ? (hour - 6) / 13.5 : hour >= 19.5 ? (hour - 19.5) / 10.5 : (hour + 4.5) / 10.5;
+  return { sky, night: Math.max(0, Math.min(1, night)), sun: Math.max(0, Math.min(1, sun)), isDay };
+}
+export const hourOf = (d = new Date()) => d.getHours() + d.getMinutes() / 60;
+
 const hashStr = (s: string) => { let x = 2166136261; for (const c of s) x = Math.imul(x ^ c.charCodeAt(0), 16777619) >>> 0; return x; };
 function rng(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 

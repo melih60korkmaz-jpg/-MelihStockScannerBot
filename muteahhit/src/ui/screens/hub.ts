@@ -24,6 +24,7 @@ import { levelCard, questsCard } from './progress';
 import { ACHIEVEMENTS, LEVEL_DEFS, QUESTS } from '../../data';
 import { heroBanner } from '../hero';
 import { openHQ } from '../hq';
+import { BIG_PROFIT, achievementCard, crisisBanner, levelUpScene, successCard } from '../moments';
 import { openEventDecision } from './eventModal';
 import { STYLE_LABEL, aliveRivals } from '../../sim/rivals';
 import { eventDef } from '../../data';
@@ -214,7 +215,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'SOIL_REVEALED') { app.audio.sfx((e.data!.extra as number) > 0 ? 'error' : 'confirm'); toast((e.data!.extra as number) === 0 ? 'Hafriyat: zemin beklendiği gibi çıktı.' : `Hafriyatta zemin ortaya çıktı: ${(e.data!.extra as number) > 0 ? 'ek maliyet +' : 'tasarruf '}${formatMoney(Math.abs(e.data!.extra as number))}`, 5000); }
       if (e.type === 'PROJECT_COMPLETED') { const pr = app.store.state.projects.find((x) => x.id === e.data!.projectId); if (pr && !document.querySelector('.site')) deliveryScene(app, pr); toast('Bir proje tamamlandı! Projeler sekmesinden şantiyeyi açın.', 5000); }
       if (e.type === 'PROJECT_STARTED') toast('İnşaat başladı.');
-      if (e.type === 'PROJECT_SOLD') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast(`Bina satıldı: ${formatMoney(e.data!.price as number)}`, 4500); }
+      if (e.type === 'PROJECT_SOLD') { if ((e.data!.profit as number) >= BIG_PROFIT) successCard(app, e.data!.price as number, e.data!.profit as number); else { app.audio.sfx('coin'); toast(`Bina satıldı: ${formatMoney(e.data!.price as number)}`, 4500); } }
       if (e.type === 'YEAR') toast(`Yeni yıl: personel maaşlarına %${((e.data!.raise as number) * 100).toFixed(0)} zam yapıldı.`, 4500);
       if (e.type === 'LOAN_MISSED') { app.audio.sfx('error'); toast(`Kredi taksiti ödenemedi (${e.data!.missed}/3)! Kredi notu düştü. 3 kaçırmada haciz başlar.`, 6000); }
       if (e.type === 'SEIZURE') { app.audio.sfx('alarm'); app.haptic('heavy'); toast(`Haciz: varlıklarınız zorla satıldı (${formatMoney(e.data!.raised as number)}).`, 6000); }
@@ -228,14 +229,14 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'CONTRACT_DONE') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast(`İhale işi teslim edildi · kâr ${formatMoney(e.data!.profit as number)}${(e.data!.penalty as number) > 0 ? ` (gecikme cezası ${formatMoney(e.data!.penalty as number)})` : ''}`, 6000); }
       if (e.type === 'INVESTOR_PAID') toast(`Yatırımcıya ödeme yapıldı: ${formatMoney(e.data!.amount as number)}`, 4000);
       if (e.type === 'DIVIDEND') toast(`Ortaklara temettü: ${formatMoney(e.data!.amount as number)}`, 4000);
-      if (e.type === 'MONTH') { app.audio.setMood(moodNow()); const hs = app.store.state.history, a2 = hs.at(-2)?.netWorth, b2 = hs.at(-1)?.netWorth; if (a2 && b2 !== undefined && a2 > 0 && b2 < a2 * 0.85) { app.audio.sfx('alarm'); hud.classList.remove('lossflash'); void hud.offsetWidth; hud.classList.add('lossflash'); toast(`⚠️ Net varlık bu ay %${Math.round((1 - b2 / a2) * 100)} düştü.`, 5000); } }
+      if (e.type === 'MONTH') { app.audio.setMood(moodNow()); const hs = app.store.state.history, a2 = hs.at(-2)?.netWorth, b2 = hs.at(-1)?.netWorth; if (a2 && b2 !== undefined && a2 > 0 && b2 < a2 * 0.85) { hud.classList.remove('lossflash'); void hud.offsetWidth; hud.classList.add('lossflash'); crisisBanner(app, a2 - b2, Math.round((1 - b2 / a2) * 100)); } }
       if (e.type === 'PROJECT_CREATED') { app.audio.sfx('stamp'); toast('Yeni proje dosyası açıldı.', 2600); const t = tabs.querySelector('.tab:nth-child(3)'); t?.classList.remove('ping'); void (t as HTMLElement | null)?.offsetWidth; t?.classList.add('ping'); }
       if (e.type === 'EVENT_DECISION') { app.audio.sfx('bell'); openEventDecision(app); }
       if (e.type === 'EVENT_RESOLVED') { const d = eventDef(e.data!.id as string); const ch = d?.ch[e.data!.choice as number]; toast(`${d?.t ?? 'Olay'}: ${ch?.l ?? ''}${e.data!.auto ? ' (süre doldu)' : ''}${e.data!.success === true ? ' — başarılı' : e.data!.success === false ? ' — olmadı' : ''}`, 4500); }
       if (e.type === 'OFFICE_UPGRADED' && !document.querySelector('.hq')) { app.audio.sfx('fanfare'); openHQ(app); }
       if (e.type === 'QUEST_DONE') { app.audio.sfx('confirm'); toast(`Görev tamam: ${QUESTS.find((q) => q.id === e.data!.id)?.t ?? ''}`, 4000); }
-      if (e.type === 'ACHIEVEMENT') { app.audio.sfx('fanfare'); toast(`🏆 Başarım: ${ACHIEVEMENTS.find((a) => a.id === e.data!.id)?.t ?? ''}`, 4500); }
-      if (e.type === 'LEVEL_UP') { app.audio.sfx('fanfare'); app.haptic('heavy'); celebrate(app.settings.reduced); toast(`Seviye atladınız: ${e.data!.label}!`, 6000); }
+      if (e.type === 'ACHIEVEMENT') achievementCard(app, e.data!.id as string);
+      if (e.type === 'LEVEL_UP') { app.audio.sfx('fanfare'); app.haptic('heavy'); levelUpScene(app, e.data!.level as number, e.data!.label as string); }
       if (e.type === 'BANKRUPT') { app.audio.sfx('alarm'); app.haptic('heavy'); showBankrupt(); }
       if (e.type === 'CASH_NEGATIVE') { app.audio.sfx('error'); toast('Kasa eksiye düştü! Oyun duraklatıldı.', 5000); }
     }

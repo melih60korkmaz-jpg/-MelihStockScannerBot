@@ -1,4 +1,4 @@
-import type { Quality, Motion } from '../../platform/settings';
+import type { Quality, Motion, Fx } from '../../platform/settings';
 import { hapticsSupported } from '../../platform/haptics';
 import { h, press, type UiCtx } from '../dom';
 import type { SettingsStore } from '../../platform/settings';
@@ -50,6 +50,7 @@ export function openSettings(ctx: UiCtx & { settings: SettingsStore; activeTier?
         hapticsSupported() ? undefined : 'Bu tarayıcı titreşimi desteklemiyor (iPhone Safari dahil). Yerel uygulamada çalışacak.'),
       h('div', { class: 'sec' }, 'Görünüm'),
       row('Animasyonlar', seg<Motion>([['full', 'Tam'], ['reduced', 'Azaltılmış']], () => S.value.motion, (v) => S.set('motion', v)), 'Azaltılmışta kamera hareketi ve geçişler durur.'),
+      row('Animasyon yoğunluğu', seg<Fx>([['full', 'Canlı'], ['calm', 'Sakin']], () => S.value.fx, (v) => S.set('fx', v)), 'Sakin: konfeti ve büyük kutlama sahneleri kapanır, bildirimler sade kalır.'),
       row('Grafik kalitesi', seg<Quality>([['auto', 'Otomatik'], ['low', 'Düşük'], ['mid', 'Orta'], ['high', 'Yüksek']], () => S.value.quality, (v) => S.set('quality', v)),
         S.value.quality === 'auto' && ctx.activeTier ? `Şu an: ${({ low: 'Düşük', mid: 'Orta', high: 'Yüksek' } as Record<string, string>)[ctx.activeTier()] ?? ''}` : undefined),
       h('p', { class: 'mute', style: 'font-size:12px;margin-top:14px' }, 'Tercihleriniz bu cihazda otomatik saklanır.'),

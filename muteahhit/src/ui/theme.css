@@ -363,3 +363,21 @@ html[data-motion=reduced] .cine, html[data-motion=reduced] .cinebox, html[data-m
 .startfab { position:absolute; left:50%; bottom:calc(var(--sb) + 74px); transform:translateX(-50%); z-index:5; pointer-events:auto; min-width:230px; animation:fabpulse 2s ease-in-out infinite; } @keyframes fabpulse { 0%,100% { box-shadow:0 4px 18px #0008, 0 0 0 0 #C6425288; } 50% { box-shadow:0 4px 18px #0008, 0 0 0 10px #C6425200; } } html[data-motion=reduced] .startfab { animation:none; }
 .qstart { border-color:var(--accent-bd); display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:10px; background:linear-gradient(180deg,#2a1b21,#1D1E22); } .qstart .qt { flex:1; min-width:200px; } .qstart .qt b { font:700 18px var(--font-h); } .qstart .qt small { display:block; color:var(--mute); font-size:12px; margin-top:2px; }
 @media (max-height:420px) { .site .cams { gap:4px; bottom:calc(var(--sb) + 58px); } .site .cams button { width:40px; height:36px; min-height:0; font-size:10px; } .startfab { bottom:calc(var(--sb) + 66px); min-height:44px; } }
+.hqroom { transition:fill .6s ease; } .hqroom.lt-on { filter:brightness(1.35) saturate(1.2); } .shelf { display:flex; gap:6px; flex-wrap:wrap; } .shelfitem { font-size:20px; animation:cardin .4s ease-out both; }
+
+/* ===== An kartları (başarım / başarı / kriz), seviye sahnesi ===== */
+#moments { position:fixed; right:10px; top:calc(64px + env(safe-area-inset-top)); z-index:60; display:flex; flex-direction:column; gap:8px; max-width:min(340px,70vw); pointer-events:none; }
+.momcard { pointer-events:none; display:flex; gap:10px; align-items:center; background:var(--card,#1D1E22); border:1px solid #38383F; border-left:3px solid var(--accent2,#C64252); border-radius:12px; padding:9px 11px; box-shadow:0 8px 22px #0009; animation:momin .32s cubic-bezier(.2,.9,.3,1.2) both; }
+.momcard.out { animation:momout .2s ease-in both; } .momcard.good { border-left-color:#3FBF8A; } .momcard.bad { border-left-color:#FF4D5A; pointer-events:auto; }
+.momcard .mombody { min-width:0; display:flex; flex-direction:column; gap:1px; font-size:13px; } .momcard .mute { font-size:12px; }
+.momico { flex:none; display:flex; width:52px; justify-content:center; } .momico.big { font-size:30px; width:38px; } .momcard.ach .momico svg { animation:badgepop .6s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes momin { from { opacity:0; transform:translateY(-10px) scale(.96) } to { opacity:1; transform:none } } @keyframes momout { to { opacity:0; transform:translateY(-10px) } }
+@keyframes badgepop { 0% { transform:scale(.3) rotate(-25deg); opacity:0 } 70% { transform:scale(1.12) rotate(4deg); opacity:1 } 100% { transform:none } }
+.modal.lvlup .lvlcard { text-align:center; width:min(380px,86vw); max-width:none; white-space:normal; overflow-wrap:anywhere; padding:16px; animation:momin .4s ease-out both; } .lvlnum { font:700 64px/1 'Barlow Condensed',sans-serif; color:var(--accent2,#C64252); } .lvlcard h2 { font-size:26px; margin-bottom:8px; }
+.lvlsec { text-align:left; margin:8px 0; font-size:13px; display:flex; flex-direction:column; gap:2px; }
+:root[data-fx="calm"] .momcard, :root[data-fx="calm"] .momcard .momico svg, :root[data-fx="calm"] .lvlcard, :root[data-motion="reduced"] .momcard, :root[data-motion="reduced"] .momcard .momico svg, :root[data-motion="reduced"] .lvlcard { animation-duration:.01s; }
+/* mikro etkileşimler: yalnızca gerçek hover'lı cihazlarda kart yükselmesi; aktif sekme vurgusu */
+@media (hover:hover) { .pj:hover, .gitem:hover, .mcard:hover, .staffcard:hover, .bcard:hover { transform:translateY(-2px); box-shadow:0 8px 18px #0007; } }
+.pj, .gitem, .mcard, .staffcard, .bcard { transition:transform .15s ease, box-shadow .15s ease; }
+.tab.on svg, .tab.on span { animation:tabpop .28s ease-out; } @keyframes tabpop { 0% { transform:scale(.8) } 60% { transform:scale(1.15) } 100% { transform:none } }
+:root[data-motion="reduced"] .tab.on svg, :root[data-motion="reduced"] .tab.on span, :root[data-motion="reduced"] .pj, :root[data-motion="reduced"] .gitem { animation:none; transition:none; }

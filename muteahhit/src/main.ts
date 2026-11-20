@@ -57,10 +57,10 @@ function watchStore() { app.store.subscribe((evs) => { if (!app.store.state.comp
 watchStore();
 
 function applyMotion() {
-  document.documentElement.dataset.motion = settings.value.motion;
+  document.documentElement.dataset.motion = settings.value.motion; document.documentElement.dataset.fx = settings.value.fx;
   scene?.setReduced(settings.reduced);
 }
-settings.subscribe((_, k) => { if (k === 'motion') applyMotion(); if (k === 'quality') scene?.setQuality(settings.value.quality); });
+settings.subscribe((_, k) => { if (k === 'motion' || k === 'fx') applyMotion(); if (k === 'quality') scene?.setQuality(settings.value.quality); });
 applyMotion(); scene?.setQuality(settings.value.quality);
 
 // Zaman döngüsü (oyun içi gün akışı)

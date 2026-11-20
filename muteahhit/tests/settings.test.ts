@@ -13,6 +13,7 @@ describe('ayarlar', () => {
   it('bozuk / yabancı veriyi güvenli değerlere çevirir', () => {
     const st = mem(); st.setItem('muteahhit.settings.v1', '{{{bozuk');
     expect(new SettingsStore(st).value).toEqual(defaults());
+    expect(sanitize({ fx: 'calm' }).fx).toBe('calm'); expect(sanitize({ fx: 'xx' }).fx).toBe('full');
     const s = sanitize({ musicVol: 7, sfxVol: -2, quality: 'ultra', motion: 3, musicOn: 'evet' });
     expect(s.musicVol).toBe(1); expect(s.sfxVol).toBe(0); expect(s.quality).toBe('auto'); expect(typeof s.musicOn).toBe('boolean');
   });

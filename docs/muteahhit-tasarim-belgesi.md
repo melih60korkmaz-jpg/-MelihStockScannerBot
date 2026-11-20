@@ -923,3 +923,10 @@ Petrol mavisi/altın/turkuaz arayüz kimliği kaldırıldı. Renkler `src/ui/the
 - **Otomatik kayıt**: bir işlem/olaydan 6 sn sonra (gün akışı hariç), her ay ve uygulamadan çıkarken; 3 dönen slot.
 - **Depo kademeleri**: IndexedDB → localStorage → bellek; bir kademe hata verir ya da 2 sn cevap vermezse (gömülü görüntüleyicide IndexedDB takılabilir) sonrakine düşülür.
 - Sınır: yalnızca oyun durumu kaydedilir; açık sekme/şantiye ekranı değil (her zaman şirket ekranı açılır).
+
+### Revizyon v1.0 — Genel merkez ve canlı arayüz
+- `hq.ts`: `hqRooms(office)` ile seviye başına oda planı (1: açık ofis+küçük toplantı; 2: lobi, yönetici, proje vitrini; 3: büyük toplantı salonu, başarı rafı, panoramik cam; 4: lüks yönetim katı, logo, helipad). Vitrin ve raf gerçek proje/başarım sayısından beslenir.
+- `hero.ts`: `skyAt(saat)` ile yumuşak gün/gece geçişi, güneş/ay yayı; ofis ışıkları akşam katlar sırayla yanar.
+- `moments.ts`: orta yoğunlukta başarım kartı, büyük yoğunlukta seviye sahnesi / büyük kâr kartı (≥5 M₺), kriz şeridi (kayıp tutarı + Finans yönlendirmesi).
+- Ayar: `fx` (Canlı/Sakin) — Sakin modda konfeti kapanır; hareket azaltma ayrıca saygı görür.
+- Yeni başarımlar: Yeni Şehir, İlk Büyük Kâr; a_lvl8 "Sektör Lideri".
