@@ -85,3 +85,12 @@ export function ring(frac: number, color: string, center: string, sub = '', size
   const f = Math.max(0, Math.min(1, frac)), R = 28, L = 2 * Math.PI * R;
   return `<svg viewBox="0 0 76 76" width="${size}" height="${size}" role="img" aria-label="${sub}"><circle cx="38" cy="38" r="${R}" fill="none" stroke="#27282D" stroke-width="7"/><circle class="ringfg" cx="38" cy="38" r="${R}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${(L * f).toFixed(1)} ${L.toFixed(1)}" transform="rotate(-90 38 38)"/><text x="38" y="${sub ? 38 : 43}" text-anchor="middle" font-size="13" font-weight="700" fill="${C.text}" font-family="Barlow Condensed,sans-serif">${center}</text>${sub ? `<text x="38" y="50" text-anchor="middle" font-size="8" fill="${C.mute}">${sub}</text>` : ''}</svg>`;
 }
+
+/** Boş durum illüstrasyonu: mavi kopya (blueprint) ızgarası üstünde vinç ve bina çizgisi ('proje') ya da arsa parseli ('arsa'). */
+export function emptyArt(kind: 'proje' | 'arsa', size = 96): string {
+  const grid = Array.from({ length: 6 }, (_, i) => `<path d="M${i * 20} 0V80M0 ${i * 16}H100" stroke="${C.line}" stroke-width=".5"/>`).join('');
+  const body = kind === 'proje'
+    ? `<rect x="46" y="34" width="26" height="40" fill="none" stroke="${C.acc2}" stroke-width="1.2" stroke-dasharray="3 2"/>${[0, 1, 2, 3].map((i) => `<path d="M46 ${44 + i * 8}H72" stroke="${C.line}" stroke-width=".8"/>`).join('')}<path d="M24 74V14H70" stroke="${C.acc}" stroke-width="2" fill="none"/><path d="M24 22L48 14" stroke="${C.acc}" stroke-width="1"/><g class="emcrane"><path d="M62 14V30" stroke="${C.mute}" stroke-width=".8"/><rect x="58" y="30" width="8" height="5" fill="${C.mute}"/></g>`
+    : `<path d="M22 60L40 30L78 36L84 62Z" fill="${C.acc}" fill-opacity=".12" stroke="${C.acc2}" stroke-width="1.2" stroke-dasharray="3 2"/><circle cx="22" cy="60" r="2.2" fill="${C.acc2}"/><circle cx="40" cy="30" r="2.2" fill="${C.acc2}"/><circle cx="78" cy="36" r="2.2" fill="${C.acc2}"/><circle cx="84" cy="62" r="2.2" fill="${C.acc2}"/><path d="M50 48l8 -8 8 8" stroke="${C.mute}" fill="none"/>`;
+  return `<svg viewBox="0 0 100 80" width="${size}" height="${Math.round(size * 0.8)}" role="img" aria-hidden="true">${grid}${body}</svg>`;
+}

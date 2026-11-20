@@ -270,7 +270,7 @@ body:has(.evtmodal) #toasts { display:none; }
 }
 
 /* ===== Şirket manzarası (hero) ===== */
-.hero { position:relative; height:clamp(78px,26vh,128px); border-radius:var(--r); overflow:hidden; border:1px solid var(--line); background:#16171A; isolation:isolate; }
+.hero { position:relative; height:clamp(96px,34vh,168px); border-radius:var(--r); overflow:hidden; border:1px solid var(--line); background:#16171A; isolation:isolate; }
 .hero .hsvg, .hero svg { position:absolute; inset:0; width:100%; height:100%; display:block; }
 .hero::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,rgba(16,17,19,.78),rgba(16,17,19,.15) 55%,transparent); pointer-events:none; }
 .hid { position:absolute; left:12px; bottom:10px; z-index:2; display:flex; align-items:center; gap:10px; } .hid b { font:700 22px/1.05 var(--font-h); display:block; letter-spacing:.02em; text-shadow:0 1px 8px #000a; } .hid small { color:var(--text); opacity:.85; font-size:12px; text-shadow:0 1px 6px #000a; }
@@ -381,3 +381,12 @@ html[data-motion=reduced] .cine, html[data-motion=reduced] .cinebox, html[data-m
 .pj, .gitem, .mcard, .staffcard, .bcard { transition:transform .15s ease, box-shadow .15s ease; }
 .tab.on svg, .tab.on span { animation:tabpop .28s ease-out; } @keyframes tabpop { 0% { transform:scale(.8) } 60% { transform:scale(1.15) } 100% { transform:none } }
 :root[data-motion="reduced"] .tab.on svg, :root[data-motion="reduced"] .tab.on span, :root[data-motion="reduced"] .pj, :root[data-motion="reduced"] .gitem { animation:none; transition:none; }
+
+/* hero: paralaks, kuşlar, yıldız ışıltısı (hareket azaltmada durur) */
+.hpar1 { animation:hdrift 38s ease-in-out infinite alternate; } .hpar2 { animation:hdrift 26s ease-in-out infinite alternate-reverse; } @keyframes hdrift { from { transform:translateX(-10px) } to { transform:translateX(10px) } }
+.hbird { animation:hfly linear infinite; transform:translateX(-30px); } @keyframes hfly { from { transform:translateX(-30px) } to { transform:translateX(1230px) } }
+.hstar { animation:htw 3.2s ease-in-out infinite; } @keyframes htw { 50% { opacity:.15 } }
+:root[data-motion="reduced"] .hpar1, :root[data-motion="reduced"] .hpar2, :root[data-motion="reduced"] .hbird, :root[data-motion="reduced"] .hstar, :root[data-fx="calm"] .hbird { animation:none; }
+.emptyfx { display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; padding:14px; } .emptyfx .mute { font-size:13px; max-width:34ch; }
+.emcrane { transform-origin:62px 14px; animation:emsw 4s ease-in-out infinite alternate; } @keyframes emsw { from { transform:rotate(-4deg) } to { transform:rotate(4deg) } }
+:root[data-motion="reduced"] .emcrane { animation:none; }

@@ -5,7 +5,7 @@ import { h, press, toast, askConfirm } from '../dom';
 import { colored, fmt, nf, ZONING_LABEL } from '../components';
 import type { App } from '../app';
 import { startConstructionUI } from '../startFlow';
-import { buildingArt, EMOJI } from '../art';
+import { buildingArt, emptyArt, EMOJI } from '../art';
 import { remainingDays } from '../../sim/construction';
 import { formatDate } from '../../core/calendar';
 import { openParcel } from './parcel';
@@ -17,7 +17,7 @@ import { unitsOf } from '../../sim/sales';
 export function projectsView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, parcels = ownedParcels(s);
   const projs = h('div', {}); const lots = h('div', {});
-  if (!s.projects.length) projs.append(h('div', { class: 'card empty' }, 'Henüz projeniz yok. Arsa dosyasından "Proje başlat" ile ilk projenizi oluşturun.'));
+  if (!s.projects.length) projs.append(h('div', { class: 'card emptyfx' }, h('div', { html: emptyArt('proje') }), h('b', {}, 'Henüz projeniz yok'), h('span', { class: 'mute' }, 'Arsa dosyasından "Proje başlat" ile ilk projenizi oluşturun.'), h('button', { class: 'btn gold', onclick: () => app.openTab?.('harita') }, 'Haritaya git')));
   const STATUS: Record<string, [string, string]> = { taslak: ['Taslak', 'warn'], insaat: ['İnşaat', 'good'], tamamlandi: ['Teslim edildi', 'good'], satildi: ['Satıldı', ''] };
   for (const pr of s.projects) {
     const p = s.parcels.find((x) => x.id === pr.parcelId), t = buildingType(pr.type)!, q = quality(pr.quality)!, b = pr.build;
@@ -40,7 +40,7 @@ export function projectsView(app: App, refresh: () => void): HTMLElement {
         p && !pr.contract && pr.status !== 'satildi' ? h('button', { class: 'btn', onclick: () => { press(app); openParcel(app, p.id, refresh); } }, 'Arsa dosyası') : null,
         pr.status === 'taslak' && !pr.contract ? h('button', { class: 'btn danger', onclick: () => { askConfirm('Proje iptal edilsin mi? Ödenen tasarım bedeli geri gelmez.').then(async (ok) => { if (!ok) return; const r = app.store.run('CancelProject', { projectId: pr.id }); if (r.ok) { app.audio.sfx('click'); toast('Proje iptal edildi.'); } else toast(r.error);  });} }, 'Projeyi iptal et') : null))));
   }
-  if (!parcels.length) lots.append(h('div', { class: 'card empty' }, 'Henüz arsanız yok. Harita sekmesinden bir bölge seçip arsa inceleyin.'));
+  if (!parcels.length) lots.append(h('div', { class: 'card emptyfx' }, h('div', { html: emptyArt('arsa') }), h('b', {}, 'Henüz arsanız yok'), h('span', { class: 'mute' }, 'Harita sekmesinden bir bölge seçip arsa inceleyin.'), h('button', { class: 'btn', onclick: () => app.openTab?.('harita') }, 'Arsa bul')));
   for (const p of parcels) {
     lots.append(h('div', { class: 'card pcard mine', role: 'button', tabindex: 0, onclick: () => { press(app); openParcel(app, p.id, refresh); } },
       h('div', { style: 'min-width:0' }, h('div', { class: 't' }, p.hood), h('div', { class: 's' }, `${cityData(p.city)?.label} · ${nf(p.area)} m² · ${ZONING_LABEL[p.zoning]} · maliyet ${fmt(p.costBasis ?? 0)}`),

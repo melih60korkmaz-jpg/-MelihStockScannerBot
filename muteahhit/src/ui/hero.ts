@@ -29,12 +29,13 @@ function rng(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b7
  * Hafif bulutlar CSS ile (hareket azaltma açıksa durur). Yalnızca Şirket sekmesi açıkken kurulur.
  */
 export function heroBanner(s: GameState, now = new Date()): HTMLElement {
-  const c = s.company!, lvl = c.level, W = 1200, H = 120, ph = phaseNow(now), night = ph === 'gece', [t0, t1, t2] = SKY[ph];
+  const c = s.company!, lvl = c.level, W = 1200, H = 120, ph = phaseNow(now), sk = skyAt(hourOf(now)), night = sk.night > 0.5, [t0, t1, t2] = sk.sky;
   const active = s.projects.filter((p) => p.status === 'insaat'), r = rng(hashStr(c.name) ^ (lvl * 977));
-  const lit = night ? 0.8 : ph === 'aksam' || ph === 'safak' ? 0.35 : 0.08, wallFar = night ? '#15161c' : '#3b3f55', wallMid = night ? '#1d1e25' : '#4a4d63', wallNear = night ? '#26272e' : '#2e3038';
+  const lit = 0.08 + sk.night * 0.72, wallFar = night ? '#15161c' : '#3b3f55', wallMid = night ? '#1d1e25' : '#4a4d63', wallNear = night ? '#26272e' : '#2e3038';
   let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Şirket şehir manzarası"><defs><linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${t0}"/><stop offset=".6" stop-color="${t1}"/><stop offset="1" stop-color="${t2}"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#hsky)"/>`;
-  if (night) { for (let i = 0; i < 55; i++) svg += `<circle cx="${(r() * W).toFixed(0)}" cy="${(r() * 60).toFixed(0)}" r="${(0.4 + r() * 0.8).toFixed(1)}" fill="#F2F0F0" opacity="${(0.3 + r() * 0.5).toFixed(2)}"/>`; svg += `<circle cx="${W * 0.82}" cy="24" r="9" fill="#e9e4dc"/><circle cx="${W * 0.82 + 4}" cy="22" r="8" fill="${t0}"/>`; }
-  else { const sx = ph === 'safak' ? W * 0.18 : ph === 'aksam' ? W * 0.84 : W * 0.7, sy = ph === 'gunduz' ? 24 : 70; svg += `<circle cx="${sx}" cy="${sy}" r="${ph === 'gunduz' ? 11 : 16}" fill="${ph === 'gunduz' ? '#fff3c9' : '#ffd9a0'}" opacity=".95"/>`; }
+  if (sk.night > 0.3) for (let i = 0; i < 55; i++) svg += `<circle cx="${(r() * W).toFixed(0)}" cy="${(r() * 60).toFixed(0)}" r="${(0.4 + r() * 0.8).toFixed(1)}" fill="#F2F0F0" opacity="${(sk.night * (0.3 + r() * 0.5)).toFixed(2)}" class="${i % 7 === 0 ? 'hstar' : ''}"/>`;
+  { const sx = 60 + sk.sun * (W - 120), sy = 96 - Math.sin(sk.sun * Math.PI) * 76, low = sk.sun < 0.15 || sk.sun > 0.85;
+    svg += sk.isDay ? `<defs><radialGradient id="hglow"><stop offset="0" stop-color="${low ? '#ff9a55' : '#fff3c9'}" stop-opacity=".55"/><stop offset="1" stop-color="#fff3c9" stop-opacity="0"/></radialGradient></defs><circle cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" r="46" fill="url(#hglow)"/><circle cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" r="${low ? 14 : 10}" fill="${low ? '#ffb070' : '#fff3c9'}"/>` : `<circle cx="${sx.toFixed(0)}" cy="${(sy - 10).toFixed(0)}" r="9" fill="#e9e4dc"/><circle cx="${(sx + 4).toFixed(0)}" cy="${(sy - 12).toFixed(0)}" r="8" fill="${t0}"/>`; }
   // katmanlı silüet: uzak / orta / yakın. Seviye yükseldikçe daha yoğun ve yüksek.
   const layer = (n: number, hMin: number, hMax: number, base: number, fill: string, windows: boolean) => {
     let out = ''; const bw = W / n;
@@ -47,7 +48,10 @@ export function heroBanner(s: GameState, now = new Date()): HTMLElement {
     return out;
   };
   const dens = 12 + lvl * 4;
-  svg += layer(dens + 4, 14, 52, 96, wallFar, false) + layer(dens + 1, 16, 70, 104, wallMid, true) + layer(Math.max(4, dens - 2), 12, 46 + lvl * 4, 114, wallNear, true);
+  svg += `<g class="hpar1">${layer(dens + 4, 14, 52, 96, wallFar, false)}</g><g class="hpar2">${layer(dens + 1, 16, 70, 104, wallMid, true)}</g>${layer(Math.max(4, dens - 2), 12, 46 + lvl * 4, 114, wallNear, true)}`;
+  // şirket genel merkezi: ofis seviyesine göre yükselir, logo bandı geceleri parlar
+  { const off = c.office, bh = 26 + off * 16, bx = W - 130, bw = 40 + off * 6; svg += `<rect x="${bx}" y="${114 - bh}" width="${bw}" height="${bh}" fill="#23242a" stroke="#5b5d66" stroke-width=".8"/><rect x="${bx}" y="${114 - bh}" width="${bw}" height="4" fill="#C64252"/>`; for (let f = 0; f < off * 3 + 2; f++) svg += `<rect x="${bx + 4}" y="${114 - bh + 9 + f * 10}" width="${bw - 8}" height="4" fill="#ffd9a0" opacity="${(0.12 + sk.night * 0.7).toFixed(2)}"/>`; if (off >= 4) svg += `<rect x="${bx + bw / 2 - 0.7}" y="${114 - bh - 16}" width="1.4" height="16" fill="#8E919B"/><circle cx="${bx + bw / 2}" cy="${114 - bh - 16}" r="2" fill="#ff4d5a" class="hblink"/>`; }
+  if (sk.isDay) for (let i = 0; i < 4; i++) svg += `<path class="hbird" style="animation-delay:${-i * 3}s;animation-duration:${16 + i * 3}s" d="M0 ${20 + i * 9} q3 -4 6 0 q3 -4 6 0" fill="none" stroke="#2a2b31" stroke-width="1"/>`;
   // yapım halindeki bina + vinçler: aktif proje sayısı kadar (en çok 3)
   const cranes = Math.min(3, active.length);
   for (let i = 0; i < cranes; i++) {
@@ -58,8 +62,8 @@ export function heroBanner(s: GameState, now = new Date()): HTMLElement {
     svg += `<g class="hcrane" style="transform-origin:${cx}px ${ct}px"><rect x="${cx - 1.2}" y="${ct}" width="2.4" height="${114 - ct}" fill="#C64252"/><line x1="${cx - 40}" x2="${cx + 26}" y1="${ct}" y2="${ct}" stroke="#C64252" stroke-width="2"/><line x1="${cx - 36}" x2="${cx - 36}" y1="${ct}" y2="${ct + 18}" stroke="#A5A1A3" stroke-width=".7"/><rect x="${cx - 40}" y="${ct + 18}" width="8" height="5" fill="#A5A1A3"/></g>`;
     if (night) svg += `<circle cx="${cx}" cy="${ct - 2}" r="1.6" fill="#ff4d5a" class="hblink"/>`;
   }
-  svg += `<rect x="0" y="114" width="${W}" height="6" fill="#0d0e10"/></svg>`;
-  const clouds = ph === 'gece' ? '' : `<i class="hcl c1"></i><i class="hcl c2"></i><i class="hcl c3"></i>`;
+  svg += `<rect x="0" y="100" width="${W}" height="14" fill="${t2}" opacity=".22"/><rect x="0" y="114" width="${W}" height="6" fill="#0d0e10"/></svg>`;
+  const clouds = sk.night > 0.7 ? '' : `<i class="hcl c1"></i><i class="hcl c2"></i><i class="hcl c3"></i>`;
   const title = LEVEL_DEFS[lvl - 1]!.label;
   return h('div', { class: `hero ph-${ph}`, role: 'button', tabindex: '0', 'aria-label': 'Genel merkezi aç', html: `<div class="hsvg">${svg}</div>${clouds}<div class="hid"><span class="hem">${emblemSvg(c.emblem.shape, c.emblem.color, 44)}</span><div><b>${c.name.replace(/[<>&]/g, '')}</b><small>${title} · ${active.length ? `${active.length} şantiye aktif` : 'şantiye yok'}</small></div></div><span class="hgo">Genel Merkez ▸</span>` });
 }
