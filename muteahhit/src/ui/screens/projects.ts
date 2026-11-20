@@ -32,7 +32,7 @@ export function projectsView(app: App, refresh: () => void): HTMLElement {
       pr.contract ? h('div', { class: 'mute', style: 'font-size:12px;margin-top:6px' }, `İhale işi · ${pr.contract.client} · teslim ${pr.contract.deadline - app.store.state.clock.day} gün kaldı`) : null,
       pr.sales && !pr.contract && pr.status !== 'taslak' ? h('div', { class: 'mute', style: 'font-size:12px;margin-top:6px' }, `Satış: ${unitsOf(s, pr.id).filter((u) => u.status === 'satildi').length}/${unitsOf(s, pr.id).length} daire · sözleşme ${fmt(pr.sales.contract)}${pr.sales.presale ? ' · ön satış açık' : ''}`) : null,
       pr.status === 'insaat' && b ? h('div', { class: 'pjfacts' }, h('span', {}, '📅 Tahmini bitiş ', h('b', {}, formatDate(app.store.state.clock.day + Math.round(eta ?? 0)))), h('span', {}, '💸 Gerçekleşen ', h('b', {}, fmt(spent))), h('span', {}, '🧾 Kalan bütçe ', h('b', { class: left <= 0 ? 'neg' : '' }, fmt(left)))) : null,
-      pr.status === 'insaat' || pr.status === 'tamamlandi' ? h('div', { style: 'margin-top:8px' }, h('div', { class: 'meter' }, h('i', { style: `width:${Math.round(prog * 100)}%;background:var(--gold)` })), h('div', { class: 'mute', style: 'font-size:12px' }, stage ? `${stage.label} · bütçe ilerlemesi ${Math.round(prog * 100)}%` : `Kalite puanı ${pr.result?.qualityScore ?? '-'}`)) : null,
+      pr.status === 'insaat' || pr.status === 'tamamlandi' ? h('div', { style: 'margin-top:8px' }, pr.status === 'insaat' && b ? stageStrip(b.stage, b.progress) : h('div', { class: 'meter' }, h('i', { style: `width:${Math.round(prog * 100)}%;background:var(--gold)` })), h('div', { class: 'mute', style: 'font-size:12px' }, stage ? `${stage.label} · bütçe ilerlemesi ${Math.round(prog * 100)}%` : `Kalite puanı ${pr.result?.qualityScore ?? '-'}`)) : null,
       h('div', { style: 'display:flex;gap:8px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap' },
         pr.sales && !pr.contract && (pr.status === 'insaat' || pr.status === 'tamamlandi') ? h('button', { class: pr.status === 'tamamlandi' ? 'btn gold' : 'btn', onclick: () => { press(app); openSales(app, pr.id, refresh); } }, 'Satış merkezi') : null,
         pr.status === 'taslak' ? h('button', { class: 'btn gold', onclick: () => { press(app); startConstructionUI(app, pr.id, () => app.openSite(pr.id)); } }, '🏗️ İnşaatı başlat') : null,
@@ -49,4 +49,11 @@ export function projectsView(app: App, refresh: () => void): HTMLElement {
       p.projectId === undefined ? h('button', { class: 'btn gold', style: 'min-height:40px', onclick: (e: Event) => { e.stopPropagation(); press(app); openProjectWizard(app, p.id, refresh); } }, 'Proje başlat') : null));
   }
   return h('div', { class: 'cols' }, h('div', { class: 'col' }, h('div', { class: 'lbl-s' }, `${EMOJI.insaat} Projeler`), projs), h('div', { class: 'col' }, h('div', { class: 'lbl-s' }, `${EMOJI.harita} Arsalarım`), lots));
+}
+
+/** 18 aşamalı inşaat şeridi: biten aşamalar dolu, süren aşama kısmen dolu ve nabız atar, kalanlar sönük. Gerçek `build.stage/progress`. */
+function stageStrip(stage: number, progress: number): HTMLElement {
+  const strip = h('div', { class: 'sstrip', role: 'img', 'aria-label': `Aşama ${stage}/${STAGES.length - 1}` });
+  STAGES.forEach((st, i) => { if (i === 0) return; const done = i < stage, cur = i === stage; strip.append(h('i', { class: done ? 'on' : cur ? 'cur' : '', title: st.label, style: cur ? `--p:${Math.round(progress * 100)}%` : '' })); });
+  return strip;
 }

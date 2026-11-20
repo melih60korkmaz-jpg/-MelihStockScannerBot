@@ -390,3 +390,13 @@ html[data-motion=reduced] .cine, html[data-motion=reduced] .cinebox, html[data-m
 .emptyfx { display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; padding:14px; } .emptyfx .mute { font-size:13px; max-width:34ch; }
 .emcrane { transform-origin:62px 14px; animation:emsw 4s ease-in-out infinite alternate; } @keyframes emsw { from { transform:rotate(-4deg) } to { transform:rotate(4deg) } }
 :root[data-motion="reduced"] .emcrane { animation:none; }
+/* rehber: sıradaki görevin sekmesinde nabız atan nokta */
+.tab.coach { position:relative; } .tab.coach::after { content:''; position:absolute; top:9px; right:10px; width:8px; height:8px; border-radius:50%; background:var(--accent2,#C64252); animation:coachpulse 1.6s ease-out infinite; }
+@keyframes coachpulse { 0% { box-shadow:0 0 0 0 #C6425299 } 100% { box-shadow:0 0 0 9px #C6425200 } }
+:root[data-motion="reduced"] .tab.coach::after, :root[data-fx="calm"] .tab.coach::after { animation:none; }
+/* proje aşama şeridi + tamamlanan proje görünümü */
+.sstrip { display:flex; gap:2px; height:8px; } .sstrip i { flex:1; border-radius:2px; background:#2c2d33; } .sstrip i.on { background:var(--gold,#E0A13A); } .sstrip i.cur { background:linear-gradient(90deg,var(--gold,#E0A13A) var(--p,0%),#2c2d33 var(--p,0%)); animation:stpulse 1.6s ease-in-out infinite; }
+@keyframes stpulse { 50% { filter:brightness(1.35) } } :root[data-motion="reduced"] .sstrip i.cur { animation:none; }
+.pj.st-satildi { border-color:#3FBF8A66; background:linear-gradient(180deg,#3FBF8A10,transparent 60%),var(--card,#1D1E22); } .pj.st-tamamlandi { border-color:#E0A13A55; }
+.mcrow { display:flex; align-items:baseline; gap:8px; } .dlt { font:600 12px var(--font); padding:1px 6px; border-radius:99px; } .dlt.good { color:#3FBF8A; background:#3FBF8A1f; } .dlt.bad { color:#FF4D5A; background:#FF4D5A1f; }
+.mc { transition:border-color .3s; }

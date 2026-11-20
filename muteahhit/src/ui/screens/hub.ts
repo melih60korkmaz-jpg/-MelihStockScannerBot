@@ -20,10 +20,11 @@ import { loansView, partnersView } from './bank';
 import { tendersView } from './tenders';
 import { marketView } from './market';
 import { deliveryScene, tenderWinScene } from '../cinema';
-import { levelCard, questsCard } from './progress';
+import { levelCard, nextQuest, questsCard } from './progress';
 import { ACHIEVEMENTS, LEVEL_DEFS, QUESTS } from '../../data';
 import { heroBanner } from '../hero';
 import { openHQ } from '../hq';
+import { saveView } from '../../platform/lastView';
 import { BIG_PROFIT, achievementCard, crisisBanner, levelUpScene, successCard } from '../moments';
 import { openEventDecision } from './eventModal';
 import { STYLE_LABEL, aliveRivals } from '../../sim/rivals';
@@ -99,7 +100,8 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
   const drawTabs = () => {
     tabs.innerHTML = '';
-    for (const [id, label, ic] of TABS) tabs.append(h('button', { class: `tab ${tab === id ? 'on' : ''}`, 'aria-current': tab === id ? 'page' : null, onclick: () => { if (tab === id) return; press(app); tab = id; drawTabs(); drawView(); } }, h('span', { html: ICON[ic], style: 'display:flex' }), label));
+    const coach = nextQuest(app.store.state)?.tab;
+    for (const [id, label, ic] of TABS) tabs.append(h('button', { class: `tab ${tab === id ? 'on' : ''}${coach === id && tab !== id ? ' coach' : ''}`, 'aria-current': tab === id ? 'page' : null, onclick: () => { if (tab === id) return; press(app); tab = id; saveView({ company: app.store.state.company!.name, tab }); drawTabs(); drawView(); } }, h('span', { html: ICON[ic], style: 'display:flex' }), label));
   };
 
   // ---------------- Şirket ----------------
@@ -235,7 +237,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'EVENT_DECISION') { app.audio.sfx('bell'); openEventDecision(app); }
       if (e.type === 'EVENT_RESOLVED') { const d = eventDef(e.data!.id as string); const ch = d?.ch[e.data!.choice as number]; toast(`${d?.t ?? 'Olay'}: ${ch?.l ?? ''}${e.data!.auto ? ' (süre doldu)' : ''}${e.data!.success === true ? ' — başarılı' : e.data!.success === false ? ' — olmadı' : ''}`, 4500); }
       if (e.type === 'OFFICE_UPGRADED' && !document.querySelector('.hq')) { app.audio.sfx('fanfare'); openHQ(app); }
-      if (e.type === 'QUEST_DONE') { app.audio.sfx('confirm'); toast(`Görev tamam: ${QUESTS.find((q) => q.id === e.data!.id)?.t ?? ''}`, 4000); }
+      if (e.type === 'QUEST_DONE') { drawTabs(); app.audio.sfx('confirm'); toast(`Görev tamam: ${QUESTS.find((q) => q.id === e.data!.id)?.t ?? ''}`, 4000); }
       if (e.type === 'ACHIEVEMENT') achievementCard(app, e.data!.id as string);
       if (e.type === 'LEVEL_UP') { app.audio.sfx('fanfare'); app.haptic('heavy'); levelUpScene(app, e.data!.level as number, e.data!.label as string); }
       if (e.type === 'BANKRUPT') { app.audio.sfx('alarm'); app.haptic('heavy'); showBankrupt(); }
@@ -250,7 +252,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
   if (app.store.state.company?.bankrupt) showBankrupt();
   if (app.store.state.pending) setTimeout(() => openEventDecision(app), 0);
-  app.openTab = (t, sb) => { tab = t; if (sb) sub = sb; drawTabs(); drawView(); };
+  app.openTab = (t, sb) => { tab = t; saveView({ company: app.store.state.company!.name, tab }); if (sb) sub = sb; drawTabs(); drawView(); };
   root.addEventListener('unmount', () => { unsub(); cancelAnimationFrame(tween); if (app.openTab) delete app.openTab; });
   buildHud(); drawHud(); drawTabs(); drawView(); app.audio.setMood(moodNow());
   return root;

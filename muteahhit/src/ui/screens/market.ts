@@ -13,8 +13,13 @@ const newsEmoji = (text: string, tone: string) => /faiz|merkez bankas/i.test(tex
 /** Piyasa: makro halkalar + sparkline'lar, konut göstergeleri (il bazlı), malzeme fiyat geçmişi, rakip karşılaştırması, haber kartları. Tümü oyun durumundan. */
 export function marketView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, m = s.macro, H = s.macroHistory, c = s.company!;
+  // Önceki ay sonuna göre gerçek değişim: faiz/enflasyon/malzeme artışı kötü (maliyet), güven artışı iyi
+  const delta = (key: 'policyRate' | 'inflation' | 'confidence' | 'materialIndex') => {
+    const prev = H.length >= 2 ? H[H.length - 2]![key] : null, cur = m[key]; if (prev === null || Math.abs(cur - prev) < 0.05) return h('span', {});
+    const up = cur > prev, good = key === 'confidence' ? up : !up; return h('span', { class: `dlt ${good ? 'good' : 'bad'}` }, `${up ? '▲' : '▼'} ${Math.abs(cur - prev).toFixed(key === 'materialIndex' || key === 'confidence' ? 0 : 1)}`);
+  };
   const mc = (label: string, val: string, key: 'policyRate' | 'inflation' | 'confidence' | 'materialIndex', color: string) =>
-    h('div', { class: 'card mc' }, h('div', { class: 'lbl-s' }, label), h('b', {}, val), h('div', { html: H.length >= 2 ? sparkline(H.slice(-24).map((p) => p[key]), color) : '<div class="mute" style="font-size:11px;margin-top:6px">Ay sonlarında birikir</div>' }));
+    h('div', { class: 'card mc' }, h('div', { class: 'lbl-s' }, label), h('div', { class: 'mcrow' }, h('b', {}, val), delta(key)), h('div', { html: H.length >= 2 ? sparkline(H.slice(-24).map((p) => p[key]), color) : '<div class="mute" style="font-size:11px;margin-top:6px">Ay sonlarında birikir</div>' }));
   const regime = h('div', { class: 'card mkt-hero' },
     h('div', { style: 'flex:1;min-width:190px' }, h('div', { style: 'display:flex;gap:8px;align-items:center;margin-bottom:6px' }, h('span', { class: `regime ${m.regime}` }, REGIMES[m.regime].label), h('span', { class: 'mute', style: 'font-size:12px' }, `${Math.max(0, Math.round((s.clock.day - m.regimeSince) / 30))} aydır`)), h('span', {}, REGIMES[m.regime].blurb)),
     h('div', { class: 'rings' }, h('div', { html: ring(m.policyRate / 60, C.acc2, `%${m.policyRate.toFixed(1)}`, 'faiz') }), h('div', { html: ring(m.inflation / 80, C.warn, `%${m.inflation.toFixed(1)}`, 'enflasyon') }), h('div', { html: ring(m.confidence / 100, m.confidence >= 55 ? C.ok : m.confidence >= 40 ? C.warn : C.bad, m.confidence.toFixed(0), 'güven') })));

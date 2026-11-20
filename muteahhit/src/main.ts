@@ -16,6 +16,7 @@ import { FallbackKV, SaveManager } from './save/manager';
 import { Router, type App } from './ui/app';
 import { menuScreen } from './ui/screens/menu';
 import { hubScreen } from './ui/screens/hub';
+import { loadView, saveView } from './platform/lastView';
 import { siteScreen } from './ui/screens/site';
 import { playIntro, tapGate } from './ui/screens/intro';
 import { openEventDecision } from './ui/screens/eventModal';
@@ -47,7 +48,7 @@ const app: App = {
   },
   setStore(s) { this.store = s; watchStore(); },
   menu() { this.go(menuScreen(app), 'menu'); },
-  openSite(id) { const pr = this.store.state.projects.find((x) => x.id === id); if (pr) siteIntro(this, pr); this.go(siteScreen(app, id, () => this.go(hubScreen(app, 'projeler'), 'none')), 'none'); },
+  openSite(id) { saveView({ company: this.store.state.company!.name, tab: 'projeler', site: id }); const pr = this.store.state.projects.find((x) => x.id === id); if (pr) siteIntro(this, pr); this.go(siteScreen(app, id, () => { saveView({ company: this.store.state.company!.name, tab: 'projeler' }); this.go(hubScreen(app, 'projeler'), 'none'); }), 'none'); },
 };
 
 // Otomatik kayıt: bir işlem/olay sonrası 6 sn içinde (gün akışı hariç), her ay ve uygulamadan çıkarken (aşağıda).
@@ -103,7 +104,7 @@ addEventListener('orientationchange', () => setTimeout(() => scene?.resize(), 20
     if (settings.value.autoResume) {
       try {
         const r = await Promise.race([saves.loadLatestValid(), new Promise<null>((res) => setTimeout(() => res(null), 4500))]);
-        if (r && r.state.company && !r.state.company.bankrupt) { app.setStore(new Store(r.state)); app.go(hubScreen(app), 'none'); import('./ui/dom').then((d) => d.toast(`▶ Kaldığınız yerden devam: ${r.state.company!.name}`, 3500)); return; }
+        if (r && r.state.company && !r.state.company.bankrupt) { app.setStore(new Store(r.state)); { const lv = loadView(r.state.company.name); app.go(hubScreen(app, (lv?.tab as any) ?? 'sirket'), 'none'); if (lv?.site && app.store.state.projects.some((x) => x.id === lv.site && x.status === 'insaat')) setTimeout(() => app.openSite(lv.site!), 400); } import('./ui/dom').then((d) => d.toast(`▶ Kaldığınız yerden devam: ${r.state.company!.name}`, 3500)); return; }
       } catch { /* kayıt okunamadı: menü */ }
     }
     app.menu();

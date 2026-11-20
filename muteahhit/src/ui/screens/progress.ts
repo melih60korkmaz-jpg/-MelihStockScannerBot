@@ -5,6 +5,7 @@ import { levelChecks, metric, nextLevel, officeStepFor } from '../../sim/progres
 import { h, press, toast } from '../dom';
 import { fmt, nf } from '../components';
 import type { App } from '../app';
+import type { GameState } from '../../core/types';
 import { TL } from '../../core/money';
 
 const fmtVal = (label: string, v: number) => (label.includes('₺') ? nf(v / 1e6, 1) + ' M' : nf(v));
@@ -25,13 +26,19 @@ export function levelCard(app: App, refresh: () => void): HTMLElement {
 }
 
 /** Görev kartı: sıradaki 3 görev ve ilerleme; başarım penceresi. */
+/** İlk görevler için rehber: sıradaki açık görevin yapılacağı sekme. Yeni oyuncuyu "önce ne yapayım?" sorusundan kurtarır. */
+const COACH: Record<string, string> = { q_arsa: 'harita', q_ekip: 'operasyon', q_proje: 'projeler', q_teslim: 'projeler', q_satis: 'projeler', q_kapat: 'projeler', q_kredi: 'finans', q_makine: 'operasyon', q_sube: 'harita', q_ihale: 'ihale' };
+export function nextQuest(s: GameState): { id: string; tab: string } | null {
+  const q = QUESTS.find((x) => s.progress.quests[x.id] === undefined && COACH[x.id]); return q ? { id: q.id, tab: COACH[q.id]! } : null;
+}
 export function questsCard(app: App): HTMLElement {
   const s = app.store.state, open = QUESTS.filter((q) => s.progress.quests[q.id] === undefined).slice(0, 3), doneN = Object.keys(s.progress.quests).length;
   const card = h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('div', { class: 'lbl-s', style: 'margin:0' }, 'Görevler'), h('span', { class: 'mute', style: 'font-size:12px' }, `${doneN}/${QUESTS.length} tamam`)));
   if (!open.length) card.append(h('div', { class: 'empty' }, 'Tüm görevler tamamlandı!'));
   for (const q of open) {
     const have = Math.min(q.n, metric(s, q.m)), pct = Math.round((have / q.n) * 100), rw = [q.r.cash ? fmt(TL(q.r.cash)) : '', q.r.rep ? `+${q.r.rep} itibar` : '', q.r.score ? `+${q.r.score} not` : ''].filter(Boolean).join(' · ');
-    card.append(h('div', { style: 'padding:6px 0;border-top:1px solid var(--line)' }, h('div', { style: 'display:flex;justify-content:space-between;gap:8px' }, h('b', {}, q.t), h('span', { class: 'mute', style: 'font-size:11px' }, rw)), h('div', { class: 'mute', style: 'font-size:12px' }, q.x), h('div', { class: 'meter', style: 'margin-top:4px' }, h('i', { style: `width:${pct}%;background:var(--accent2)` }))));
+    const go = nextQuest(s)?.id === q.id ? h('button', { class: 'btn gold coachgo', style: 'margin-top:6px;min-height:34px;font-size:13px', onclick: () => { press(app); app.openTab?.(COACH[q.id] as any); } }, 'Şimdi yap ▸') : null;
+    card.append(h('div', { style: 'padding:6px 0;border-top:1px solid var(--line)' }, h('div', { style: 'display:flex;justify-content:space-between;gap:8px' }, h('b', {}, q.t), h('span', { class: 'mute', style: 'font-size:11px' }, rw)), h('div', { class: 'mute', style: 'font-size:12px' }, q.x), h('div', { class: 'meter', style: 'margin-top:4px' }, h('i', { style: `width:${pct}%;background:var(--accent2)` })), ...(go ? [go] : [])));
   }
   card.append(h('button', { class: 'btn', style: 'margin-top:8px;min-height:38px', onclick: () => { press(app); openAchievements(app); } }, `Başarımlar ${Object.keys(s.progress.ach).length}/${ACHIEVEMENTS.length}`));
   return card;

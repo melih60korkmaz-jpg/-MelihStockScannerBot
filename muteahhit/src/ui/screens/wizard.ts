@@ -2,7 +2,7 @@ import { EMBLEM_COLORS, EMBLEM_SHAPES } from '../../core/commands';
 import { TL, formatMoney, mul } from '../../core/money';
 import { newGameState } from '../../core/state';
 import { Store } from '../../core/store';
-import { BACKGROUNDS, CITIES, DIFFICULTIES, background, difficulty, staffType } from '../../data';
+import { BACKGROUNDS, CITIES, DIFFICULTIES, background, difficulty, machine, staffType } from '../../data';
 import { h, press } from '../dom';
 import { emblemSvg } from '../emblem';
 import type { App } from '../app';
@@ -34,7 +34,7 @@ export function newGameScreen(app: App): HTMLElement {
       for (const b of BACKGROUNDS) g.append(h('div', { class: `card opt ${st.bg === b.id ? 'sel' : ''}`, role: 'button', tabindex: 0, onclick: choose('bg', b.id) },
         h('h3', {}, b.label), h('p', {}, b.story),
         h('div', { class: 'chips' }, h('span', { class: 'chip' }, 'Sermaye ', h('b', {}, formatMoney(TL(b.startCashTL)))), h('span', { class: 'chip' }, 'İtibar ', h('b', {}, String(b.reputation))), h('span', { class: 'chip' }, 'Kredi notu ', h('b', {}, String(b.creditScore))),
-          ...b.staff.map((t) => h('span', { class: 'chip' }, h('b', {}, staffType(t)!.label))))));
+          ...b.staff.map((t) => h('span', { class: 'chip' }, h('b', {}, staffType(t)!.label))), ...(b.machines ?? []).map((t) => h('span', { class: 'chip good' }, '🎁 ', h('b', {}, machine(t)!.label))))));
       body.append(g);
     } else if (st.step === 2) {
       const g = h('div', { class: 'grid g3' });
@@ -53,7 +53,7 @@ export function newGameScreen(app: App): HTMLElement {
       if (st.step === 0 && st.name.trim().length < 2) { err.textContent = 'Şirket adı en az 2 karakter olmalı.'; app.audio.sfx('error'); return; }
       if (st.step < 3) { press(app); st.step++; render(); return; }
       const store = new Store(newGameState((Date.now() ^ (Math.random() * 1e9)) >>> 0));
-      const r = store.run('CreateCompany', { name: st.name, founderBackground: st.bg, startCity: st.city, difficulty: st.diff, emblem: { shape: st.shape, color: st.color } });
+      const r = store.run('CreateCompany', { name: st.name, founderBackground: st.bg, startCity: st.city, starterGear: true, difficulty: st.diff, emblem: { shape: st.shape, color: st.color } });
       if (!r.ok) { err.textContent = r.error; app.audio.sfx('error'); return; }
       press(app, 'stamp', 'heavy'); app.setStore(store);
       void app.saves.autosave(store.state).catch(() => {});

@@ -38,7 +38,7 @@ const data = validate();
 export const STAFF_TYPES = data.staffTypes;
 export const OFFICES = data.offices;
 export const NAMES = data.names;
-export interface BackgroundDef { id: string; label: string; story: string; startCashTL: number; reputation: number; creditScore: number; staff: string[] }
+export interface BackgroundDef { id: string; label: string; story: string; startCashTL: number; reputation: number; creditScore: number; staff: string[]; machines?: string[] }
 export interface DifficultyDef { id: string; label: string; desc: string; capitalMult: number }
 export interface CityDef { id: string; label: string; blurb: string }
 export const BACKGROUNDS = backgroundsRaw as BackgroundDef[];

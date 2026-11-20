@@ -52,3 +52,11 @@ describe('seviye ve ofis', () => {
     const cash = old.company.cash; const r = unpack(pack(old)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.company!.office).toBe(1); expect(r.state.progress.ach.a_ilk).toBeDefined(); expect(r.state.company!.cash).toBe(cash); expect(r.state.company!.level).toBeGreaterThanOrEqual(2); advanceDays(r.state, 30); }
   });
 });
+
+describe('başlangıç ekipmanı', () => {
+  it('geçmişe bağlı ekipman verilir, nakit hareketi yaratmaz ve defter dengede kalır', () => {
+    const s = newGameState(9); dispatch(s, 'CreateCompany', { name: 'Kalfa Yapı', founderBackground: 'eski_kalfa', startCity: 'ankara', starterGear: true });
+    expect(s.machines.map((m) => m.type).sort()).toEqual(['iskele', 'kamyon']);
+    expect(checkInvariant(s)).toBe(true);
+  });
+});

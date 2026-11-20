@@ -29,7 +29,7 @@ export interface CommandDef<P> {
 export interface Emblem { shape: number; color: number }
 export const EMBLEM_SHAPES = 12;
 export const EMBLEM_COLORS = 6;
-export interface CreateCompanyParams { name: string; founderBackground: string; startCity: string; difficulty?: string; emblem?: Emblem }
+export interface CreateCompanyParams { name: string; founderBackground: string; startCity: string; difficulty?: string; emblem?: Emblem; starterGear?: boolean }
 export interface HireStaffParams { type: string }
 export interface FireStaffParams { staffId: number }
 
@@ -61,6 +61,8 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     };
     post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
     for (const t of bg.staff) createStaff(s, t);
+    // Başlangıç ekipmanı: geçmişe bağlı küçük bir hediye (nakit hareketi yok; varlık olarak değerlenir)
+    for (const mt of p.starterGear ? bg.machines ?? [] : []) { const m = machine(mt); if (m) s.machines.push({ id: s.nextId++, type: mt, boughtDay: s.clock.day, price: TL(m.priceTL), brokenUntil: 0, uses: 0 }); }
     s.openCities = [p.startCity]; s.weather[p.startCity] ??= 'acik'; openCity(s, p.startCity);
     // Zorluk: ilk dengeli dönemin uzunluğu = krizsiz korumalı başlangıç
     s.macro.calmUntilDay = s.clock.day + DIFFICULTY_MACRO[s.meta.difficulty].calmMonths * 30;
