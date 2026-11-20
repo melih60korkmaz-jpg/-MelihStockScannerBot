@@ -4,6 +4,7 @@ import { COMMISSION } from '../../sim/projects';
 import { h, press, toast } from '../dom';
 import { colored, fmt, nf, ZONING_LABEL } from '../components';
 import type { App } from '../app';
+import { startConstructionUI } from '../startFlow';
 import { buildingArt, EMOJI } from '../art';
 import { remainingDays } from '../../sim/construction';
 import { formatDate } from '../../core/calendar';
@@ -34,7 +35,8 @@ export function projectsView(app: App, refresh: () => void): HTMLElement {
       pr.status === 'insaat' || pr.status === 'tamamlandi' ? h('div', { style: 'margin-top:8px' }, h('div', { class: 'meter' }, h('i', { style: `width:${Math.round(prog * 100)}%;background:var(--gold)` })), h('div', { class: 'mute', style: 'font-size:12px' }, stage ? `${stage.label} · bütçe ilerlemesi ${Math.round(prog * 100)}%` : `Kalite puanı ${pr.result?.qualityScore ?? '-'}`)) : null,
       h('div', { style: 'display:flex;gap:8px;margin-top:10px;justify-content:flex-end;flex-wrap:wrap' },
         pr.sales && !pr.contract && (pr.status === 'insaat' || pr.status === 'tamamlandi') ? h('button', { class: pr.status === 'tamamlandi' ? 'btn gold' : 'btn', onclick: () => { press(app); openSales(app, pr.id, refresh); } }, 'Satış merkezi') : null,
-        pr.status !== 'satildi' ? h('button', { class: pr.status === 'taslak' || pr.status === 'insaat' ? 'btn gold' : 'btn', onclick: () => { press(app); app.openSite(pr.id); } }, pr.status === 'taslak' ? 'Şantiye ve inşaat' : pr.status === 'insaat' ? 'Şantiyeyi aç' : 'Binayı aç') : null,
+        pr.status === 'taslak' ? h('button', { class: 'btn gold', onclick: () => { press(app); startConstructionUI(app, pr.id, () => app.openSite(pr.id)); } }, '🏗️ İnşaatı başlat') : null,
+        pr.status !== 'satildi' ? h('button', { class: pr.status === 'taslak' || pr.status === 'insaat' ? 'btn gold' : 'btn', onclick: () => { press(app); app.openSite(pr.id); } }, pr.status === 'taslak' ? 'Şantiyeyi gör' : pr.status === 'insaat' ? 'Şantiyeyi aç' : 'Binayı aç') : null,
         p && !pr.contract && pr.status !== 'satildi' ? h('button', { class: 'btn', onclick: () => { press(app); openParcel(app, p.id, refresh); } }, 'Arsa dosyası') : null,
         pr.status === 'taslak' && !pr.contract ? h('button', { class: 'btn danger', onclick: () => { if (!confirm('Proje iptal edilsin mi? Ödenen tasarım bedeli geri gelmez.')) return; const r = app.store.run('CancelProject', { projectId: pr.id }); if (r.ok) { app.audio.sfx('click'); toast('Proje iptal edildi.'); } else toast(r.error); } }, 'Projeyi iptal et') : null))));
   }

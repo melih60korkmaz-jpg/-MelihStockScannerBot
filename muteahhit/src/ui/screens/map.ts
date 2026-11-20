@@ -7,6 +7,7 @@ import { fmt, fmtM2, nf, pct, skylineSvg, statBar, ZONING_LABEL } from '../compo
 import type { App } from '../app';
 import { openParcel } from './parcel';
 import { openProjectWizard } from './projectWizard';
+import { quickPick, quickStartRun, quickText, startConstructionUI } from '../startFlow';
 
 type Metric = 'fiyat' | 'gelir' | 'rekabet' | 'gelisim';
 const METRICS: [Metric, string][] = [['fiyat', 'Satış fiyatı'], ['gelir', 'Gelir'], ['rekabet', 'Rekabet'], ['gelisim', 'Gelişim']];
@@ -49,7 +50,22 @@ export const mapKey = () => `${mem.mode}:${mem.mode === 'province' ? mem.city : 
 export function mapView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, c = s.company!; if (!mem.city) { mem.city = c.startCity; }
   const prov = PROVINCES.find((p) => p.id === mem.city)!;
-  return mem.mode === 'province' ? provinceView(app, refresh, prov) : turkeyView(app, refresh, prov);
+  const view = mem.mode === 'province' ? provinceView(app, refresh, prov) : turkeyView(app, refresh, prov);
+  const card = quickStartCard(app, refresh); if (card) view.insertBefore(card, view.firstChild);
+  return view;
+}
+
+/** Haritanın en üstündeki tek dokunuşluk yol: taslak proje varsa "İnşaatı başlat", yoksa uygun arsa + proje önerisiyle "Satın al ve başlat". */
+function quickStartCard(app: App, refresh: () => void): HTMLElement | null {
+  const s = app.store.state;
+  if (s.projects.some((p) => p.status === 'insaat')) return null;
+  const draft = s.projects.find((p) => p.status === 'taslak' && !p.contract);
+  if (draft) return h('div', { class: 'card qstart' }, h('div', { class: 'qt' }, h('b', {}, `🏗️ ${draft.name} hazır`), h('small', {}, `Proje oluşturuldu; inşaat henüz başlamadı. Bütçe ${fmt(draft.budget.total)}.`)), h('button', { class: 'btn gold lg', onclick: () => { press(app); startConstructionUI(app, draft.id, () => app.openSite(draft.id)); } }, 'İnşaatı başlat'));
+  const idle = ownedParcels(s).find((p) => p.projectId === undefined);
+  if (idle) return h('div', { class: 'card qstart' }, h('div', { class: 'qt' }, h('b', {}, `📐 ${idle.hood} arsanız boşta`), h('small', {}, 'Bir sonraki adım: yapı tipini seçip projeyi başlatın.')), h('button', { class: 'btn gold lg', onclick: () => { press(app); openProjectWizard(app, idle.id, refresh); } }, 'Proje başlat'));
+  const q = quickPick(s);
+  if (!q) return h('div', { class: 'card qstart' }, h('div', { class: 'qt' }, h('b', {}, '🏁 Hızlı başlangıç'), h('small', {}, 'Nakitinizle alınabilecek uygun arsa bulunamadı. Finans › Krediler\'den kredi alabilir ya da başka bir ilde şube açabilirsiniz.')));
+  return h('div', { class: 'card qstart' }, h('div', { class: 'qt' }, h('b', {}, '🏁 Hızlı başlangıç önerisi'), h('small', {}, quickText(q))), h('button', { class: 'btn gold lg', onclick: () => { press(app); quickStartRun(app, q); refresh(); } }, 'Satın al ve başlat'));
 }
 
 // ---------------- Türkiye ----------------
@@ -144,7 +160,7 @@ function provinceView(app: App, refresh: () => void, prov: Province): HTMLElemen
       h('div', { style: 'margin-top:4px;display:flex;gap:5px;flex-wrap:wrap' }, !isMine ? (canAfford(p) ? h('span', { class: 'chip good' }, 'Alabilirsiniz') : h('span', { class: 'chip bad' }, 'Nakit yetersiz')) : null, h('span', { class: 'chip' }, 'Gelişim ', h('b', {}, growthLabel(p).label + (growthLabel(p).sure ? '' : '?'))), p.soilKnown ? h('span', { class: 'chip' }, 'Zemin etüdü ✓') : null, p.corner ? h('span', { class: 'chip' }, 'Köşe') : null, isMine && p.projectId !== undefined ? h('span', { class: 'chip good' }, 'Projeli') : null)),
     h('div', { class: 'pr' }, isMine ? 'Sizin' : fmt(askPrice(s, p)), h('small', {}, isMine ? 'dosyayı aç' : fmtM2(askPrice(s, p) / p.area))),
     isMine && p.projectId === undefined ? h('button', { class: 'btn gold', style: 'min-height:40px', onclick: (e: Event) => { e.stopPropagation(); press(app); openProjectWizard(app, p.id, refresh); } }, 'Proje başlat') : null,
-    isMine && p.projectId !== undefined ? h('button', { class: 'btn', style: 'min-height:40px', onclick: (e: Event) => { e.stopPropagation(); press(app); const pr = s.projects.find((x) => x.id === p.projectId); if (pr) app.openSite(pr.id); } }, 'Şantiye') : null);
+    isMine && p.projectId !== undefined ? h('button', { class: s.projects.find((x) => x.id === p.projectId)?.status === 'taslak' ? 'btn gold' : 'btn', style: 'min-height:40px', onclick: (e: Event) => { e.stopPropagation(); press(app); const pr = s.projects.find((x) => x.id === p.projectId); if (!pr) return; if (pr.status === 'taslak') startConstructionUI(app, pr.id, () => app.openSite(pr.id)); else app.openSite(pr.id); } }, s.projects.find((x) => x.id === p.projectId)?.status === 'taslak' ? '🏗️ İnşaatı başlat' : 'Şantiye') : null);
   const cost = TL(branchCost(prov.id));
   // Öneri: bu ilçede nakitle alınabilen ilanlar arasında en yüksek tahmini marjlı (arsa + yapı tipi) kombinasyon
   let suggestion: HTMLElement | null = null;

@@ -11,6 +11,7 @@ import { MACHINES, MATERIALS, cityData, districtData } from '../../data';
 import { incomingQty, stageNeeds, stockQty } from '../../sim/materials';
 import { crewCapacity } from '../../sim/construction';
 import type { App } from '../app';
+import { startConstructionUI } from '../startFlow';
 import { openSales } from './sales';
 import { unitsOf } from '../../sim/sales';
 import type { Project } from '../../core/types';
@@ -53,8 +54,11 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
   const leave = () => { unsub(); unsubSet(); app.audio.ambient({ on: false, working: false, weather: 'acik' }); scene?.dispose(); app.site = null; backTo(); };
 
   // ---- Çizimler ----
+  // Büyük, görünür "İnşaatı başlat" düğmesi (yalnızca taslak projede): şantiye panelinde aramaya gerek kalmaz
+  const fab = h('button', { class: 'startfab btn gold lg', onclick: () => { startConstructionUI(app, projectId); } }, '🏗️ İnşaatı başlat'); root.append(fab);
   const draw = () => {
     const s = app.store.state, p = proj(); if (!p) { leave(); return; }
+    fab.style.display = p.status === 'taslak' ? '' : 'none';
     const b = p.build, st = b ? STAGES[Math.min(b.stage, 17)]! : null;
     cashB.textContent = formatMoney(s.company!.cash); dateB.textContent = formatDate(s.clock.day);
     for (const sb of speedBtns) { const on = Number(sb.dataset.v) === app.store.speed; sb.classList.toggle('on', on); sb.setAttribute('aria-pressed', String(on)); }
@@ -98,7 +102,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
       }
       if (p.status === 'tamamlandi' && p.result) rows.push(['Kalite puanı', String(p.result.qualityScore)], ['Süre', `${p.result.days} gün (plan ${p.result.plannedDays})`]);
       body.append(kv(rows));
-      if (p.status === 'taslak') body.append(h('button', { class: 'btn gold block lg', style: 'margin-top:10px', onclick: () => { const r = app.store.run('StartConstruction', { projectId: p.id }); if (r.ok) { press(app, 'stamp', 'heavy'); toast('İnşaat başladı.'); app.store.setSpeed(1); } else toast(r.error); } }, 'İnşaatı başlat'));
+      if (p.status === 'taslak') body.append(h('button', { class: 'btn gold block lg', style: 'margin-top:10px', onclick: () => { startConstructionUI(app, p.id); } }, 'İnşaatı başlat'));
       if (p.status === 'tamamlandi') body.append(saleBox(p));
     } else if (tab === 'asamalar') {
       STAGES.forEach((sg, i) => { if (i === 0) return; const done = p.status === 'tamamlandi' || p.status === 'satildi' || (b && i < b.stage), cur = b && p.status === 'insaat' && i === b.stage;

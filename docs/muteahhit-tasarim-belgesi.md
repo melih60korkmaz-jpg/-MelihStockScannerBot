@@ -903,3 +903,9 @@ Petrol mavisi/altın/turkuaz arayüz kimliği kaldırıldı. Renkler `src/ui/the
 - **Sinematik sahneler** (`ui/cinema.ts`): proje teslimi, ihale kazanma, şantiye tanıtımı; ayrıca büyük kayıp (aylık net varlık >%15 düşüş) uyarısı ve "nakit yeniden pozitif" bildirimi.
 - **3D**: beton pompası, makine farları, **şantiye projektörleri** (orta: 1, yüksek: 2), aşamaya göre işçi görevleri (kazıda çukurda, betonda pompa çevresinde, cephede bina dibinde/iskelede, peyzajda dış alanda), sabah sisi, rüzgârla eğilen yağmur ve savrulan kar, yağmurda ıslak (koyu ve yansımalı) zemin; zemin malzemesi artık her karede değil yalnızca hava değişince yeniden derlenir.
 - **Kalite**: otomatik kalite politikası saf fonksiyon (`render3d/quality.ts`): 2 düşük FPS penceresi → düşer; 10 sn iyi FPS → tavana kadar yükselir; 2 başarısız yükselmeden sonra yükseltme bırakılır.
+
+
+## Revizyon v0.7 — Kolay başlangıç
+
+- **Haritanın en üstünde tek dokunuşluk kart** (`startFlow.ts`): proje yoksa gerçek plan hesabıyla en yüksek marjlı alınabilir arsa+yapı önerisi ve **"Satın al ve başlat"** (arsa → proje → inşaat → şantiye, onay özetiyle); boş arsa varsa "Proje başlat"; taslak proje varsa "İnşaatı başlat".
+- **İnşaatı başlat her yerde görünür**: şantiye ekranında büyük nabız atan düğme, proje kartında, haritadaki arsa kartında. Nakit düşük/ekip az ise onay öncesi uyarılır.
