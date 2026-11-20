@@ -6,7 +6,7 @@ import { REGIMES } from '../../sim/macro';
 import { alerts, monthlyRows, netWorth, projectAssetValue, projectedMonthlyCost, runwayMonths, stockValue } from '../../sim/finance';
 import { machineAssetValue } from '../../sim/machines';
 import { advancesTotal, receivablesTotal } from '../../sim/sales';
-import { barChart, hbars, lineChart, pairBars, sparkline } from '../charts';
+import { barChart, donut, hbars, lineChart, pairBars, sparkline } from '../charts';
 import { celebrate, countTo, flyDelta, h, press, toast } from '../dom';
 import { emblemSvg } from '../emblem';
 import type { App } from '../app';
@@ -155,12 +155,22 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       for (const r of last) t.append(h('tr', {}, h('td', {}, monthLabel(r.key)), h('td', { html: formatMoney(r.income) }), h('td', { html: formatMoney(r.expense) }), h('td', { html: formatMoney(r.tax) }), h('td', { html: signed(r.net) })));
       const tot = last.reduce((a, r) => ({ i: a.i + r.income, e: a.e + r.expense, t: a.t + r.tax, n: a.n + r.net }), { i: 0, e: 0, t: 0, n: 0 });
       t.append(h('tr', { class: 'tot' }, h('td', {}, 'Toplam'), h('td', { html: formatMoney(tot.i) }), h('td', { html: formatMoney(tot.e) }), h('td', { html: formatMoney(tot.t) }), h('td', { html: signed(tot.n) })));
+      { // Üst özet kartları: kasa / net varlık / son ay net / borç — önceki aya göre gerçek değişim rozetiyle
+        const hs = s.history, cur = s.company!.cash, prevCash = hs.length >= 2 ? hs.at(-2)!.cash : null, nwNow = netWorth(s), prevNW = hs.length >= 2 ? hs.at(-2)!.netWorth : null, lastRow = rows.at(-1), debtNow = debtTotal(s);
+        const chip = (d: number | null, goodUp: boolean) => d === null || d === 0 ? '' : `<span class="dlt ${(d > 0) === goodUp ? 'good' : 'bad'}">${d > 0 ? '▲' : '▼'} ${formatMoney(Math.abs(d))}</span>`;
+        const card = (ico: string, label: string, val: string, d: number | null, goodUp: boolean, series: number[], tone: string) => h('div', { class: `card fk ${tone}` }, h('div', { class: 'lbl-s' }, `${ico} ${label}`), h('b', { class: 'fkv', html: val }), h('div', { html: chip(d, goodUp) || '<span class="mute" style="font-size:12px">Karşılaştırma ay sonunda</span>' }), h('div', { html: series.length >= 2 ? sparkline(series, tone === 'bad' ? '#FF4D5A' : tone === 'good' ? '#3FBF8A' : '#C64252', 26) : '' }));
+        body.append(h('div', { class: 'fkgrid' },
+          card(EMOJI.finans, 'Kasa', formatMoney(cur), prevCash === null ? null : cur - prevCash, true, hs.slice(-12).map((p) => p.cash), cur < 0 ? 'bad' : 'neutral'),
+          card(EMOJI.sirket, 'Net varlık', formatMoney(nwNow), prevNW === null ? null : nwNow - prevNW, true, hs.slice(-12).map((p) => p.netWorth), nwNow < 0 ? 'bad' : 'neutral'),
+          card('📈', 'Son ay net', lastRow ? signed(lastRow.net) : '—', lastRow && rows.length >= 2 ? lastRow.net - rows.at(-2)!.net : null, true, rows.slice(-8).map((r) => r.net), lastRow ? (lastRow.net >= 0 ? 'good' : 'bad') : 'neutral'),
+          card(EMOJI.kredi, 'Toplam borç', formatMoney(debtNow), null, false, [], debtNow > 0 ? 'neutral' : 'good')));
+      }
       { // Finansal sağlık göstergeleri (hepsi gerçek veriden): borç/limit, kârlılık, likidite, öz sermaye payı
         const cap = creditCapacity(s), debt = debtTotal(s), inc = last.reduce((a, r) => a + r.income, 0), net = last.reduce((a, r) => a + r.net, 0), margin = inc > 0 ? net / inc : 0, rwm = runwayMonths(s), nw = netWorth(s), assets = nw + debt;
         body.append(h('div', { class: 'card gauges' },
-          h('div', { class: 'gg' }, h('div', { html: ring(cap.total > 0 ? debt / cap.total : 0, debt / Math.max(1, cap.total) > 0.8 ? C.bad : debt / Math.max(1, cap.total) > 0.5 ? C.warn : C.ok, `%${Math.round((cap.total > 0 ? debt / cap.total : 0) * 100)}`, 'limit') }), h('small', {}, `${EMOJI.kredi} Borç ${formatMoney(debt)}`)),
-          h('div', { class: 'gg' }, h('div', { html: ring(Math.max(0, Math.min(1, 0.5 + margin)), margin >= 0 ? C.ok : C.bad, `%${Math.round(margin * 100)}`, 'marj') }), h('small', {}, '📊 Kârlılık (6 ay)')),
-          h('div', { class: 'gg' }, h('div', { html: ring(rwm === null ? 1 : rwm / 12, rwm === null || rwm >= 6 ? C.ok : rwm >= 3 ? C.warn : C.bad, rwm === null ? '∞' : rwm.toFixed(1), 'ay') }), h('small', {}, `${EMOJI.finans} Nakit yeterlilik`)),
+          h('div', { class: 'gg' }, h('div', { html: ring(cap.total > 0 ? debt / cap.total : 0, debt / Math.max(1, cap.total) > 0.8 ? C.bad : debt / Math.max(1, cap.total) > 0.5 ? C.warn : C.ok, `%${Math.round((cap.total > 0 ? debt / cap.total : 0) * 100)}`, 'limit') }), h('small', {}, `${EMOJI.kredi} Borç ${formatMoney(debt)}`), h('span', { class: `gst ${debt / Math.max(1, cap.total) > 0.8 ? 'bad' : debt / Math.max(1, cap.total) > 0.5 ? 'warn' : 'ok'}` }, debt / Math.max(1, cap.total) > 0.8 ? 'Riskli' : debt / Math.max(1, cap.total) > 0.5 ? 'Dikkat' : 'Sağlıklı')),
+          h('div', { class: 'gg' }, h('div', { html: ring(Math.max(0, Math.min(1, 0.5 + margin)), margin >= 0 ? C.ok : C.bad, `%${Math.round(margin * 100)}`, 'marj') }), h('small', {}, '📊 Kârlılık (6 ay)'), h('span', { class: `gst ${margin >= 0.1 ? 'ok' : margin >= 0 ? 'warn' : 'bad'}` }, margin >= 0.1 ? 'Sağlıklı' : margin >= 0 ? 'Dikkat' : 'Zarar')),
+          h('div', { class: 'gg' }, h('div', { html: ring(rwm === null ? 1 : rwm / 12, rwm === null || rwm >= 6 ? C.ok : rwm >= 3 ? C.warn : C.bad, rwm === null ? '∞' : rwm.toFixed(1), 'ay') }), h('small', {}, `${EMOJI.finans} Nakit yeterlilik`), h('span', { class: `gst ${rwm === null || rwm >= 6 ? 'ok' : rwm >= 3 ? 'warn' : 'bad'}` }, rwm === null || rwm >= 6 ? 'Sağlıklı' : rwm >= 3 ? 'Dikkat' : 'Riskli')),
           h('div', { class: 'gg' }, h('div', { html: ring(assets > 0 ? Math.max(0, nw) / assets : 0, C.acc2, `%${Math.round((assets > 0 ? Math.max(0, nw) / assets : 0) * 100)}`, 'özkaynak') }), h('small', {}, `${EMOJI.sirket} Şirket değeri ${formatMoney(nw)}`))));
       }
       body.append(h('div', { class: 'cols', style: 'margin-bottom:12px' }, h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Gelir ve gider (son 6 ay)'), pairBars(last.map((r) => ({ label: monthLabel(r.key), a: r.income, b: r.expense })))), h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Net varlık gelişimi'), lineChart(s.history.slice(-24).map((p) => ({ label: dayLabel(p.day), value: p.netWorth })), undefined, 150))),
@@ -174,7 +184,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       const tot: Record<string, number> = {};
       for (const r of rows.slice(-12)) for (const [k, v] of Object.entries(r.byCat)) { const kind = ledgerCat(k)?.kind; if (kind === 'gider' || kind === 'vergi') tot[k] = (tot[k] ?? 0) - v; }
       const items = Object.entries(tot).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: ledgerCat(k)?.label ?? k, value: v }));
-      body.append(h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Son 12 ay gider dağılımı'), hbars(items)));
+      body.append(h('div', { class: 'cols' }, h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, '🧾 Son 12 ay gider dağılımı'), donut(items)), h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Kalem kalem'), hbars(items))));
     } else {
       const cash = s.company!.cash;
       const t = h('table', { class: 'tbl' }, h('tr', {}, h('th', {}, 'Kalem'), h('th', {}, 'Tutar')),

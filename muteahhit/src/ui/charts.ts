@@ -76,3 +76,14 @@ export function pairBars(pts: { label: string; a: number; b: number }[], fmt: (n
   svg.addEventListener('pointerdown', (ev) => { const e = ev as PointerEvent; const r = (svg as SVGSVGElement).getBoundingClientRect(), i = Math.max(0, Math.min(pts.length - 1, Math.floor((((e.clientX - r.left) / r.width) * W - L) / gw))), p = pts[i]!; rd.innerHTML = `<b>${p.label}</b> · Gelir ${fmt(p.a)} · Gider ${fmt(p.b)} · Net ${fmt(p.a - p.b)}`; });
   wrap.append(svg, rd); return wrap;
 }
+
+const DONUT_COLORS = ['#C64252', '#E0A13A', '#8E919B', '#3FBF8A', '#A83246', '#5B8DEF', '#737277'];
+/** Halka grafik + yüzdeli açıklama. Dilimler gerçek tutarlardan; küçük kalemler "Diğer"de toplanır (en çok 6 dilim). */
+export function donut(items: { label: string; value: number }[], fmt: (n: number) => string = (n) => formatMoney(n as Money)): HTMLElement {
+  const sorted = items.filter((i) => i.value > 0).sort((a, b) => b.value - a.value), top = sorted.slice(0, 6), rest = sorted.slice(6).reduce((a, i) => a + i.value, 0), parts = rest > 0 ? [...top, { label: 'Diğer', value: rest }] : top, total = parts.reduce((a, i) => a + i.value, 0) || 1;
+  const R = 15.9155; let off = 0, segs = '';
+  parts.forEach((p, i) => { const f = (p.value / total) * 100; segs += `<circle r="${R}" cx="21" cy="21" fill="none" stroke="${DONUT_COLORS[i % DONUT_COLORS.length]}" stroke-width="6" stroke-dasharray="${f.toFixed(2)} ${(100 - f).toFixed(2)}" stroke-dashoffset="${(25 - off).toFixed(2)}" class="dseg" style="animation-delay:${i * 70}ms"/>`; off += f; });
+  const wrap = document.createElement('div'); wrap.className = 'donutw';
+  wrap.innerHTML = `<svg viewBox="0 0 42 42" class="donut" role="img" aria-label="Dağılım"><circle r="${R}" cx="21" cy="21" fill="none" stroke="#27282D" stroke-width="6"/>${segs}<text x="21" y="22.5" text-anchor="middle" font-size="5" font-weight="700" fill="#F2F0F0">${fmt(total)}</text></svg><ul class="dleg">${parts.map((p, i) => `<li><i style="background:${DONUT_COLORS[i % DONUT_COLORS.length]}"></i><span>${p.label}</span><b>%${Math.round((p.value / total) * 100)}</b></li>`).join('')}</ul>`;
+  return wrap;
+}
