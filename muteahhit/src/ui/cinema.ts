@@ -22,7 +22,7 @@ export function deliveryScene(app: App, p: Project): void {
 }
 export function tenderWinScene(app: App, t: Tender): void {
   app.audio.sfx('fanfare'); celebrate(app.settings.reduced);
-  scene(app, 'tender', [h('div', { class: 'cart wide' }, h('img', { src: TENDER_ART, alt: '', decoding: 'async' })), h('div', { class: 'cemoji' }, '🤝'), h('div', { class: 'ctitle' }, 'İHALE KAZANILDI'), h('h2', {}, t.title), h('div', { class: 'cfacts' }, h('span', {}, `💰 Sözleşme ${formatMoney(t.bid?.price ?? 0)}`), h('span', {}, `💸 %10 avans yattı`), h('span', {}, `📅 ${t.months} ay`))], 4000);
+  scene(app, 'tender', [...(TENDER_ART ? [h('div', { class: 'cart wide' }, h('img', { src: TENDER_ART, alt: '', decoding: 'async' }))] : []), h('div', { class: 'cemoji' }, '🤝'), h('div', { class: 'ctitle' }, 'İHALE KAZANILDI'), h('h2', {}, t.title), h('div', { class: 'cfacts' }, h('span', {}, `💰 Sözleşme ${formatMoney(t.bid?.price ?? 0)}`), h('span', {}, `💸 %10 avans yattı`), h('span', {}, `📅 ${t.months} ay`))], 4000);
 }
 /** Şantiye tanıtımı: proje adı ve binanın silueti kısaca belirir; 3D sahne arkada yüklenir. */
 export function siteIntro(app: App, p: Project): void {

@@ -68,6 +68,6 @@ export function successCard(app: App, price: number, profit: number): void {
 /** Kriz: net varlıkta ani düşüş. Abartısız; kayıp tutarı + yönlendirme (Finans sekmesi). */
 export function crisisBanner(app: App, loss: number, pct: number): void {
   app.audio.sfx('alarm');
-  const b = h('div', { class: 'momcard bad' }, h('div', { class: 'momico thumb' }, h('img', { src: CRISIS_ART, alt: '', decoding: 'async' })), h('div', { class: 'mombody' }, h('small', { class: 'lbl-s' }, 'Dikkat'), h('b', {}, `Net varlık bu ay %${pct} düştü (−${formatMoney(loss)})`), h('div', { class: 'mute' }, 'Gider ve borçlarınızı Finans sekmesinden inceleyin.')), h('button', { class: 'btn', onclick: () => { app.openTab?.('finans'); b.dispatchEvent(new Event('pointerdown')); } }, 'Finans'));
+  const b = h('div', { class: 'momcard bad' }, (CRISIS_ART ? h('div', { class: 'momico thumb' }, h('img', { src: CRISIS_ART, alt: '', decoding: 'async' })) : h('div', { class: 'momico big' }, '⚠️')), h('div', { class: 'mombody' }, h('small', { class: 'lbl-s' }, 'Dikkat'), h('b', {}, `Net varlık bu ay %${pct} düştü (−${formatMoney(loss)})`), h('div', { class: 'mute' }, 'Gider ve borçlarınızı Finans sekmesinden inceleyin.')), h('button', { class: 'btn', onclick: () => { app.openTab?.('finans'); b.dispatchEvent(new Event('pointerdown')); } }, 'Finans'));
   put(b, 8000);
 }
