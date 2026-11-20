@@ -400,3 +400,7 @@ html[data-motion=reduced] .cine, html[data-motion=reduced] .cinebox, html[data-m
 .pj.st-satildi { border-color:#3FBF8A66; background:linear-gradient(180deg,#3FBF8A10,transparent 60%),var(--card,#1D1E22); } .pj.st-tamamlandi { border-color:#E0A13A55; }
 .mcrow { display:flex; align-items:baseline; gap:8px; } .dlt { font:600 12px var(--font); padding:1px 6px; border-radius:99px; } .dlt.good { color:#3FBF8A; background:#3FBF8A1f; } .dlt.bad { color:#FF4D5A; background:#FF4D5A1f; }
 .mc { transition:border-color .3s; }
+/* yapay zekâ sahne resimleri */
+.hqscene { position:relative; } .hqpaint { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; animation:cardin .35s ease-out both; }
+.hqview { position:absolute; left:8px; bottom:8px; z-index:2; background:#101113cc; } .hqview button { min-height:30px; font-size:12px; padding:0 12px; }
+.cart.wide { width:min(420px,62vw); } .cart img { width:100%; display:block; } .momico.thumb { width:64px; height:44px; border-radius:8px; overflow:hidden; } .momico.thumb img { width:100%; height:100%; object-fit:cover; }

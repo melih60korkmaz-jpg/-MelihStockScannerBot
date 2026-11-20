@@ -7,6 +7,7 @@ import { buildingArt, C, EMOJI } from './art';
 import { emblemSvg } from './emblem';
 import { hourOf, skyAt } from './hero';
 import { h, press, toast, celebrate } from './dom';
+import { hqArt } from './artwork';
 import type { App } from './app';
 
 export type RoomKind = 'lobi' | 'acik' | 'toplanti-s' | 'toplanti-b' | 'yonetici' | 'proje' | 'basari' | 'luks' | 'logo';
@@ -75,12 +76,13 @@ function animateLights(scene: HTMLElement, reduced: boolean) {
 export function openHQ(app: App, onClose?: () => void): void {
   const modal = h('div', { class: 'modal hq', role: 'dialog', 'aria-label': 'Genel merkez' }), card = h('div', { class: 'card hqcard' }); modal.append(card);
   const close = () => { modal.classList.add('leaving'); setTimeout(() => { modal.remove(); onClose?.(); }, app.settings.reduced ? 0 : 200); }; modal.addEventListener('pointerdown', (e) => { if (e.target === modal) close(); });
-  let rising = false;
+  let rising = false, view: 'kesit' | 'manzara' = 'kesit';
   const render = () => {
     const s = app.store.state, c = s.company!, o = officeFor(c.office), st = officeStepFor(s), done = s.projects.filter((p) => p.status === 'satildi' || p.status === 'tamamlandi');
     const wins = s.tenders.filter((t) => t.status === 'kazandi'), got = ACHIEVEMENTS.filter((a) => s.progress.ach[a.id] !== undefined);
     card.innerHTML = '';
-    const scene = h('div', { class: 'hqscene', html: hqSvg(s, new Date(), rising) }); const wasRising = rising; rising = false;
+    const scene = h('div', { class: 'hqscene' }); if (view === 'manzara') scene.append(h('img', { class: 'hqpaint', src: hqArt(c.office), alt: `${o.label} manzara resmi`, decoding: 'async' })); else scene.innerHTML = hqSvg(s, new Date(), rising);
+    scene.append(h('div', { class: 'seg hqview' }, h('button', { class: view === 'kesit' ? 'on' : '', onclick: () => { view = 'kesit'; render(); } }, 'Kesit'), h('button', { class: view === 'manzara' ? 'on' : '', onclick: () => { view = 'manzara'; render(); } }, 'Manzara'))); const wasRising = rising; rising = false;
     const info = h('div', { class: 'hqinfo' },
       h('div', { style: 'display:flex;gap:10px;align-items:center' }, h('span', { html: emblemSvg(c.emblem.shape, c.emblem.color, 42) }), h('div', { style: 'min-width:0' }, h('h2', { style: 'font-size:24px;line-height:1' }, c.name), h('small', { class: 'mute' }, `${EMOJI.sirket} ${o.label} · seviye ${c.level}`))), h('button', { class: 'btn', style: 'margin-left:auto', onclick: close }, 'Kapat'),
       h('div', { class: 'kpis', style: 'margin:8px 0' }, h('div', { class: 'kpi', html: `<small>Kapasite</small><b>${s.staff.length}/${o.capacity}</b>` }), h('div', { class: 'kpi', html: `<small>Aylık kira</small><b>${formatMoney(TL(o.monthlyRentTL))}</b>` }), h('div', { class: 'kpi', html: `<small>Tamamlanan</small><b>${c.stats.completed}</b>` })),
@@ -88,7 +90,7 @@ export function openHQ(app: App, onClose?: () => void): void {
       h('div', { class: 'lbl-s', style: 'margin-top:10px' }, `🏗️ Proje galerisi (${done.length}) · 🤝 Kazanılan ihale (${wins.length}) · 🏆 Başarım (${got.length})`),
       h('div', { class: 'gallery' }, ...(done.length ? done.slice().reverse().map((p) => h('div', { class: 'gitem' }, h('div', { class: 'gart', html: buildingArt(p.type, p.floors, 1, p.designSeed, p.quality) }), h('b', {}, p.name), h('small', { class: 'mute' }, p.status === 'satildi' ? `Kâr ${formatMoney(p.result?.profit ?? 0)} · ${formatDate(p.result?.soldDay ?? 0)}` : 'Teslim edildi'))) : [h('div', { class: 'empty' }, 'Tamamlanan projeleriniz burada sergilenir.')])),
       ...(c.office >= 3 && got.length ? [h('div', { class: 'lbl-s', style: 'margin-top:8px' }, '🏆 Başarı rafı'), h('div', { class: 'shelf' }, ...got.slice(-8).map((a) => h('span', { class: 'shelfitem', title: `${a.t}: ${a.x}` }, '🏆')))] : []));
-    card.append(scene, info); animateLights(scene, app.settings.reduced || wasRising === false ? app.settings.reduced : app.settings.reduced);
+    card.append(scene, info); if (view === 'kesit') animateLights(scene, app.settings.reduced); void wasRising;
   };
   const unsub = app.store.subscribe((evs) => { if (!modal.isConnected) { unsub(); return; } if (evs.some((e) => ['PROJECT_COMPLETED', 'PROJECT_SOLD', 'OFFICE_UPGRADED', 'STAFF_HIRED', 'STAFF_FIRED', 'MONTH', 'ACHIEVEMENT', 'TENDER_WON'].includes(e.type))) render(); });
   modal.addEventListener('unmount', unsub); render(); document.body.append(modal); press(app, 'whoosh');
