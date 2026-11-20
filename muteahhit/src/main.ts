@@ -45,10 +45,16 @@ const app: App = {
     router.show(screen);
     if (mood !== 'none') scene?.setMood(mood as Mood);
   },
-  setStore(s) { this.store = s; },
+  setStore(s) { this.store = s; watchStore(); },
   menu() { this.go(menuScreen(app), 'menu'); },
   openSite(id) { const pr = this.store.state.projects.find((x) => x.id === id); if (pr) siteIntro(this, pr); this.go(siteScreen(app, id, () => this.go(hubScreen(app, 'projeler'), 'none')), 'none'); },
 };
+
+// Otomatik kayıt: bir işlem/olay sonrası 6 sn içinde (gün akışı hariç), her ay ve uygulamadan çıkarken (aşağıda).
+let saveTimer = 0;
+const flushSave = () => { saveTimer = 0; const st = app.store.state; if (st.company && !st.company.bankrupt) void saves.autosave(st).catch(() => {}); };
+function watchStore() { app.store.subscribe((evs) => { if (!app.store.state.company) return; if (evs.some((e) => e.type !== 'DAY' && e.type !== 'WEEK') && !saveTimer) saveTimer = window.setTimeout(flushSave, 6000); }); }
+watchStore();
 
 function applyMotion() {
   document.documentElement.dataset.motion = settings.value.motion;
@@ -90,10 +96,21 @@ addEventListener('orientationchange', () => setTimeout(() => scene?.resize(), 20
   // ses yüzünden açılış takılmasın diye en çok 700 ms beklenir, ses arkada açılmaya devam eder.
   await Promise.race([audio.unlock().catch(() => {}), new Promise<void>((r) => setTimeout(r, 700))]);
   // Güvenlik ağı: açılış animasyonu herhangi bir nedenle bitmezse 7 sn sonra menü zorla açılır.
-  let shown = false; const show = () => { if (!shown) { shown = true; document.querySelector('.intro')?.remove(); app.menu(); } };
-  const wd = setTimeout(show, 7000);
+  let shown = false;
+  /** Açılış: ayar açıksa son geçerli kayıttan doğrudan oyuna devam; yoksa menü. Depo takılırsa 4,5 sn sonra menüye düşer. */
+  const show = async () => {
+    if (shown) return; shown = true; document.querySelector('.intro')?.remove();
+    if (settings.value.autoResume) {
+      try {
+        const r = await Promise.race([saves.loadLatestValid(), new Promise<null>((res) => setTimeout(() => res(null), 4500))]);
+        if (r && r.state.company && !r.state.company.bankrupt) { app.setStore(new Store(r.state)); app.go(hubScreen(app), 'none'); import('./ui/dom').then((d) => d.toast(`▶ Kaldığınız yerden devam: ${r.state.company!.name}`, 3500)); return; }
+      } catch { /* kayıt okunamadı: menü */ }
+    }
+    app.menu();
+  };
+  const wd = setTimeout(() => void show(), 9000);
   try { await playIntro(app); } catch (e) { console.warn('açılış animasyonu atlandı', e); }
-  clearTimeout(wd); show();
+  clearTimeout(wd); await show();
 })();
 
 (window as any).__app = app; // test/hata ayıklama

@@ -42,15 +42,31 @@ export class IdbKV implements KV {
  * IndexedDB açılamazsa (gizli mod, engelleme, kota) sessizce belleğe düşer: oyun çalışmaya devam eder,
  * ama kayıtlar kalıcı olmaz (`persistent` false olur ve arayüz bunu gösterir).
  */
+/** localStorage tabanlı depo (IndexedDB yoksa/takılıyorsa ikinci kademe). Kota dolarsa hata fırlatır → bellek kademesine düşülür. */
+export class LocalKV implements KV {
+  constructor(private ls: Pick<Storage, 'getItem' | 'setItem' | 'removeItem' | 'key' | 'length'> = localStorage, private prefix = 'muteahhit.kv.') { void this.ls.getItem(this.prefix + '_probe'); }
+  async get(k: string) { return this.ls.getItem(this.prefix + k) ?? undefined; }
+  async set(k: string, v: string) { this.ls.setItem(this.prefix + k, v); }
+  async delete(k: string) { this.ls.removeItem(this.prefix + k); }
+  async keys() { const out: string[] = []; for (let i = 0; i < this.ls.length; i++) { const k = this.ls.key(i); if (k && k.startsWith(this.prefix)) out.push(k.slice(this.prefix.length)); } return out; }
+}
+
+const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> => new Promise((res, rej) => { const t = setTimeout(() => rej(new Error('zaman aşımı')), ms); p.then((v) => { clearTimeout(t); res(v); }, (e) => { clearTimeout(t); rej(e); }); });
+
+/**
+ * Kalıcı depo kademeleri: IndexedDB → localStorage → bellek. Bir kademe hata verir ya da 2 sn içinde cevap vermezse
+ * (gömülü görüntüleyicilerde IndexedDB takılabilir) bir sonrakine düşülür; oyun çalışmaya devam eder.
+ * `persistent`: bellek dışında bir kademe çalışıyor mu (arayüz bunu gösterir).
+ */
 export class FallbackKV implements KV {
   persistent = true;
-  private mem = new MemoryKV();
-  private primary: KV | null = null;
-  constructor(make: () => KV = () => new IdbKV()) {
-    try { this.primary = make(); } catch { this.persistent = false; }
+  private tiers: KV[] = []; private mem = new MemoryKV();
+  constructor(make: () => KV = () => new IdbKV(), makeLocal: (() => KV) | null = () => new LocalKV(), private timeoutMs = 2000) {
+    for (const mk of [make, makeLocal]) { if (!mk) continue; try { this.tiers.push(mk()); } catch { /* bu kademe yok */ } }
+    if (!this.tiers.length) this.persistent = false;
   }
   private async run<T>(f: (k: KV) => Promise<T>): Promise<T> {
-    if (this.primary) { try { return await f(this.primary); } catch { this.primary = null; this.persistent = false; } }
+    while (this.tiers.length) { try { return await withTimeout(f(this.tiers[0]!), this.timeoutMs); } catch { this.tiers.shift(); if (!this.tiers.length) this.persistent = false; } }
     return f(this.mem);
   }
   get(k: string) { return this.run((s) => s.get(k)); }

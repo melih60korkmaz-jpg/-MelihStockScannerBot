@@ -75,3 +75,17 @@ describe('depolama yedeği', () => {
     expect((await m.load('manual1')).ok).toBe(true);
   });
 });
+
+import { LocalKV } from '../src/save/manager';
+describe('depo kademeleri (IndexedDB → localStorage → bellek)', () => {
+  const fakeLs = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); }, removeItem: (k: string) => { m.delete(k); }, key: (i: number) => [...m.keys()][i] ?? null, get length() { return m.size; } }; };
+  it('takılan birincil depo zaman aşımıyla localStorage kademesine düşer; veri kalıcı kalır', async () => {
+    const hang: any = { get: () => new Promise(() => {}), set: () => new Promise(() => {}), delete: () => new Promise(() => {}), keys: () => new Promise(() => {}) }; const ls = fakeLs();
+    const kv = new FallbackKV(() => hang, () => new LocalKV(ls), 30); await kv.set('a', '1'); expect(await kv.get('a')).toBe('1'); expect(kv.persistent).toBe(true);
+    const kv2 = new FallbackKV(() => hang, () => new LocalKV(ls), 30); expect(await kv2.get('a')).toBe('1'); expect(await kv2.keys()).toEqual(['a']);
+  });
+  it('localStorage da yoksa/kota doluysa belleğe düşer, çökmez; persistent false', async () => {
+    const full: any = { getItem: () => null, setItem: () => { throw new Error('kota'); }, removeItem: () => {}, key: () => null, length: 0 };
+    const kv = new FallbackKV(() => { throw new Error('idb yok'); }, () => new LocalKV(full), 30); await kv.set('x', 'y'); expect(await kv.get('x')).toBe('y'); expect(kv.persistent).toBe(false);
+  });
+});

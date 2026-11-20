@@ -6,6 +6,7 @@ export interface Settings {
   musicOn: boolean; musicVol: number;   // 0–1
   sfxOn: boolean; sfxVol: number;
   haptics: boolean;
+  autoResume: boolean;                  // açılışta son kayıttan otomatik devam
   motion: Motion;
   quality: Quality;
 }
@@ -17,7 +18,7 @@ const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d);
 export function defaults(): Settings {
   let reduced = false;
   try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { /* yok say */ }
-  return { musicOn: true, musicVol: 0.7, sfxOn: true, sfxVol: 0.8, haptics: true, motion: reduced ? 'reduced' : 'full', quality: 'auto' };
+  return { musicOn: true, musicVol: 0.7, sfxOn: true, sfxVol: 0.8, haptics: true, autoResume: true, motion: reduced ? 'reduced' : 'full', quality: 'auto' };
 }
 
 /** Bozuk/eksik/yabancı veriyi güvenli değerlere çevirir. */
@@ -26,7 +27,7 @@ export function sanitize(raw: unknown, base: Settings = defaults()): Settings {
   return {
     musicOn: bool(r.musicOn, base.musicOn), musicVol: clamp01(r.musicVol, base.musicVol),
     sfxOn: bool(r.sfxOn, base.sfxOn), sfxVol: clamp01(r.sfxVol, base.sfxVol),
-    haptics: bool(r.haptics, base.haptics),
+    haptics: bool(r.haptics, base.haptics), autoResume: bool(r.autoResume, base.autoResume),
     motion: r.motion === 'full' || r.motion === 'reduced' ? r.motion : base.motion,
     quality: r.quality === 'auto' || r.quality === 'low' || r.quality === 'mid' || r.quality === 'high' ? r.quality : base.quality,
   };

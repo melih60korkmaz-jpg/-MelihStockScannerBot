@@ -43,6 +43,8 @@ export function openSettings(ctx: UiCtx & { settings: SettingsStore; activeTier?
       row('Müzik seviyesi', mv),
       row('Ses efektleri', toggle(() => S.value.sfxOn, (v) => S.set('sfxOn', v))),
       row('Efekt seviyesi', sv),
+      h('div', { class: 'sec' }, 'Oyun'),
+      row('Kaldığım yerden devam', toggle(() => S.value.autoResume, (v) => S.set('autoResume', v)), 'Açılışta son kayıtla doğrudan oyuna girer. Kayıt otomatik alınır (işlem yapıldıktan birkaç saniye sonra, her ay ve uygulamadan çıkarken).'),
       h('div', { class: 'sec' }, 'Dokunma'),
       row('Titreşim', toggle(() => S.value.haptics && hapticsSupported(), (v) => S.set('haptics', v), !hapticsSupported()),
         hapticsSupported() ? undefined : 'Bu tarayıcı titreşimi desteklemiyor (iPhone Safari dahil). Yerel uygulamada çalışacak.'),

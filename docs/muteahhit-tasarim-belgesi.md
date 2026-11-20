@@ -915,3 +915,11 @@ Petrol mavisi/altın/turkuaz arayüz kimliği kaldırıldı. Renkler `src/ui/the
 
 - **`confirm()` kaldırıldı**: iOS dosya önizlemesi gibi gömülü görüntüleyicilerde tarayıcı iletişim kutuları sessizce engellenir ve düğmeler "çalışmıyor" gibi görünür. Tüm onaylar uygulama içi `askConfirm` penceresiyle yapılır (inşaat başlatma, hızlı başlangıç, şube açma, işten çıkarma, kredi, proje iptali, kayıt silme).
 - Şantiye ekranında kamera düğmeleri kısa ekranda üst çubukla çakışmıyor.
+
+
+## Revizyon v0.9 — Kaldığı yerden devam
+
+- **Otomatik devam** (Ayarlar › Oyun › "Kaldığım yerden devam", varsayılan açık): açılışta son geçerli kayıt varsa menü atlanır, oyun doğrudan şirket ekranında paused açılır; kayıt yoksa/okunamazsa menü.
+- **Otomatik kayıt**: bir işlem/olaydan 6 sn sonra (gün akışı hariç), her ay ve uygulamadan çıkarken; 3 dönen slot.
+- **Depo kademeleri**: IndexedDB → localStorage → bellek; bir kademe hata verir ya da 2 sn cevap vermezse (gömülü görüntüleyicide IndexedDB takılabilir) sonrakine düşülür.
+- Sınır: yalnızca oyun durumu kaydedilir; açık sekme/şantiye ekranı değil (her zaman şirket ekranı açılır).
