@@ -2,7 +2,7 @@ import { formatMoney } from '../../core/money';
 import { BUILDING_TYPES, QUALITIES, buildingType, cityData, districtData, STAGE_SHARES, SOIL_COST } from '../../data';
 import { SURVEY_DAYS, askPrice, fairValue, growthLabel, reservePrice, surveyCost, valueBand, QUICK_SALE_DISCOUNT, TAPU_HARCI } from '../../sim/land';
 import { buildable, planProject } from '../../sim/projects';
-import { h, press, toast } from '../dom';
+import { askConfirm, h, press, toast } from '../dom';
 import { ZONING_LABEL, SOIL_LABEL, blueprint, fmt, fmtM2, kv, massing, nf, pct, planTable, statBar } from '../components';
 import type { App } from '../app';
 import { openProjectWizard } from './projectWizard';
@@ -127,7 +127,7 @@ export function openParcel(app: App, parcelId: number, onChange?: () => void): v
       else {
         act.append(h('button', { class: 'btn gold lg', onclick: () => { press(app); openProjectWizard(app, p.id, () => { render(); onChange?.(); }); } }, 'Proje başlat'));
         const fair = fairValue(s, p);
-        act.append(h('button', { class: 'btn', onclick: () => { if (!confirm(`Hızlı satış: ${formatMoney(Math.round(fair * QUICK_SALE_DISCOUNT))} (piyasa değerinin %92'si). Onaylıyor musunuz?`)) return; const r = app.store.run('SellLandQuick', { parcelId: p.id }); if (r.ok) { press(app, 'confirm'); toast('Arsa satıldı.'); close(); } else toast(r.error); } }, `Hızlı sat · ${fmt(Math.round(fair * QUICK_SALE_DISCOUNT))}`));
+        act.append(h('button', { class: 'btn', onclick: async () => { if (!(await askConfirm(`Hızlı satış: ${formatMoney(Math.round(fair * QUICK_SALE_DISCOUNT))} (piyasa değerinin %92'si). Onaylıyor musunuz?`))) return; const r = app.store.run('SellLandQuick', { parcelId: p.id }); if (r.ok) { press(app, 'confirm'); toast('Arsa satıldı.'); close(); } else toast(r.error); } }, `Hızlı sat · ${fmt(Math.round(fair * QUICK_SALE_DISCOUNT))}`));
         if (p.listed) act.append(h('span', { class: 'chip warn' }, `Satışta: ${fmt(Math.round(fair * p.listed.askMult))}`), h('button', { class: 'btn', onclick: () => { app.store.run('UnlistLand', { parcelId: p.id }); press(app); render(); } }, 'Satıştan çek'));
         else {
           const out = h('b', {}, fmt(Math.round(fair * st.listMult / 100)));

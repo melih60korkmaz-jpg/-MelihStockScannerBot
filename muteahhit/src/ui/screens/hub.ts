@@ -197,6 +197,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
     if (!root.isConnected) { unsub(); return; }
     let redraw = false;
     for (const e of evs) {
+      if (e.pause && !['EVENT_DECISION', 'LEVEL_UP', 'BANKRUPT', 'CASH_NEGATIVE', 'TENDER_WON', 'PROJECT_COMPLETED', 'CONTRACT_DONE'].includes(e.type)) toast('⏸ Oyun duraklatıldı — önemli bir gelişme var. Devam için hız düğmesine dokunun.', 3500);
       if (REDRAW.has(e.type)) redraw = true;
       if (e.type === 'MONTH') void app.saves.autosave(app.store.state).catch(() => {});
       if (e.type === 'MACRO_NEWS') { const d = e.data as { text: string; tone: string }; app.audio.sfx(d.tone === 'bad' ? 'error' : 'confirm'); toast(d.text, 5000); }

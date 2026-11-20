@@ -1,7 +1,7 @@
 import { formatDate } from '../../core/calendar';
 import { BULK } from '../../sim/sales';
 import { fairPerM2, listPrice, saleChance, unitFair, unitsOf, receivablesTotal, PRESALE_DISCOUNT, AGENT_FEE } from '../../sim/sales';
-import { h, press, toast } from '../dom';
+import { askConfirm, h, press, toast } from '../dom';
 import { colored, fmt, fmtM2, nf, pct } from '../components';
 import type { App } from '../app';
 
@@ -43,7 +43,7 @@ export function openSales(app: App, projectId: number, onClose?: () => void): vo
         tog('Ön satış', `İnşaat sürerken (betonarmeden sonra) %${Math.round((1 - PRESALE_DISCOUNT) * 100)} indirimle, %40 peşin`, 'presale', p.status === 'insaat' && (!p.build || p.build.stage < 8) ? 'Betonarme aşamasından itibaren açılır' : p.status === 'tamamlandi' ? 'Bina bitti; ön satış gerekmiyor' : '')),
       h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Piyasa görünümü'),
         h('div', { class: 'kv' }, ...[['Satışa açık', open ? 'Evet' : 'Hayır (bina bitince ya da ön satışla)'], ['Talep', `${demandLabel} (piyasa ${ch.demand.toFixed(2)} · marka ${ch.brand.toFixed(2)})`], ['Tahmini satış hızı', Number.isFinite(avgDays) && open ? `daire başına ~${Math.round(avgDays)} gün` : '—'], ['m² adil fiyat', fmtM2(perM2)], ['Müşteri memnuniyeti', String(s.company!.satisfaction)], ['Satılmamış', `${left} daire`]].flatMap(([a, b]) => [h('span', {}, a!), h('span', {}, b!)])),
-        p.status === 'tamamlandi' && left > 0 ? h('button', { class: 'btn block', style: 'margin-top:10px', onclick: () => { const tot = us.filter((u) => u.status !== 'satildi').reduce((a, u) => a + Math.round(unitFair(u, perM2) * BULK), 0); if (!confirm(`Kalan ${left} daire yatırımcıya ${fmt(tot)} bedelle satılsın mı? (adil değerin %92'si)`)) return; const r = app.store.run('SellProjectBulk', { projectId }); if (r.ok) { press(app, 'confirm', 'medium'); toast('Kalan daireler toplu satıldı.'); } else toast(r.error); } }, `Kalanları toplu sat (%92)`) : null)));
+        p.status === 'tamamlandi' && left > 0 ? h('button', { class: 'btn block', style: 'margin-top:10px', onclick: async () => { const tot = us.filter((u) => u.status !== 'satildi').reduce((a, u) => a + Math.round(unitFair(u, perM2) * BULK), 0); if (!(await askConfirm(`Kalan ${left} daire yatırımcıya ${fmt(tot)} bedelle satılsın mı? (adil değerin %92'si)`))) return; const r = app.store.run('SellProjectBulk', { projectId }); if (r.ok) { press(app, 'confirm', 'medium'); toast('Kalan daireler toplu satıldı.'); } else toast(r.error); } }, `Kalanları toplu sat (%92)`) : null)));
     // daire tablosu
     const t = h('table', { class: 'tbl' }, h('tr', {}, ...['Kat', 'Oda', 'm²', 'Manzara', 'Cephe', 'Liste fiyatı', 'Durum'].map((x) => h('th', {}, x))));
     for (const u of us) {

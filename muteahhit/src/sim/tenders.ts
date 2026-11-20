@@ -84,10 +84,10 @@ export function evaluateTender(s: GameState, t: Tender, events: GameEvent[]): vo
   entries.sort((a, b) => b.score - a.score); const top = entries[0]; const out = { scores: entries.map((e) => ({ name: e.name, score: e.score })) };
   if (t.bid.price < min) {
     t.status = 'elendi'; t.result = { winner: top?.name ?? '—', ...out, reason: 'Olağan dışı düşük teklif: elendiniz.' }; post(s, 'teminat', t.bid.bond, { memo: 'Teminat iadesi' });
-    events.push({ type: 'TENDER_LOST', day, pause: true, data: { tenderId: t.id, reason: 'elendi' } }); return;
+    events.push({ type: 'TENDER_LOST', day, data: { tenderId: t.id, reason: 'elendi' } }); return;
   }
   if (top?.me) { t.status = 'kazandi'; t.result = { winner: c.name, ...out }; winTender(s, t, events); }
-  else { const rv = s.rivals.find((r) => r.name === top!.name); if (rv) { rv.wins++; rv.projects++; rv.last = 'ihale'; } t.status = 'kaybetti'; t.result = { winner: top!.name, ...out }; post(s, 'teminat', t.bid.bond, { memo: 'Teminat iadesi' }); c.reputation = clamp(c.reputation, 0, 100); events.push({ type: 'TENDER_LOST', day, pause: true, data: { tenderId: t.id, winner: top!.name } }); }
+  else { const rv = s.rivals.find((r) => r.name === top!.name); if (rv) { rv.wins++; rv.projects++; rv.last = 'ihale'; } t.status = 'kaybetti'; t.result = { winner: top!.name, ...out }; post(s, 'teminat', t.bid.bond, { memo: 'Teminat iadesi' }); c.reputation = clamp(c.reputation, 0, 100); events.push({ type: 'TENDER_LOST', day, data: { tenderId: t.id, winner: top!.name } }); }
 }
 
 /** Kazanılan ihale: işveren arsası + sözleşmeli proje; %10 avans; aşama bazlı hakediş (45 gün vadeli). */
