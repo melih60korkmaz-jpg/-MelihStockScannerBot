@@ -1,7 +1,7 @@
 import { formatDate } from '../../core/calendar';
 import { formatMoney } from '../../core/money';
 import { MANUAL_SLOTS } from '../../save/manager';
-import { h, press, toast } from '../dom';
+import { h, press, toast, askConfirm } from '../dom';
 import type { App } from '../app';
 import { hubScreen } from './hub';
 import { Store } from '../../core/store';
@@ -26,7 +26,7 @@ export function savesScreen(app: App): HTMLElement {
           if (!r.ok) { toast(`Yüklenemedi: ${r.detail}`); app.audio.sfx('error'); return; }
           app.setStore(new Store(r.state)); app.go(hubScreen(app), 'none');
         } }, 'Yükle'),
-        h('button', { class: 'btn danger', 'aria-label': 'Sil', onclick: async () => { if (!confirm(`${bad ? 'Bozuk kayıt' : s.company} silinsin mi?`)) return; await app.saves.remove(s.slot); app.audio.sfx('click'); void draw(); } }, 'Sil')));
+        h('button', { class: 'btn danger', 'aria-label': 'Sil', onclick: async () => { askConfirm(`${bad ? 'Bozuk kayıt' : s.company} silinsin mi?`).then(async (ok) => { if (!ok) return; await app.saves.remove(s.slot); app.audio.sfx('click'); void draw();  });} }, 'Sil')));
     }
     body.append(h('p', { class: 'mute', style: 'font-size:12px' }, `3 otomatik ve ${MANUAL_SLOTS} manuel slot bulunur.`));
   };

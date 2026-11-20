@@ -48,3 +48,18 @@ export function flyDelta(host: HTMLElement, text: string, up: boolean) {
   if (document.documentElement.dataset.motion === 'reduced') return;
   const s = h('span', { class: `fly ${up ? 'up' : 'down'}` }, text); host.append(s); setTimeout(() => s.remove(), 1100);
 }
+
+/**
+ * Uygulama içi onay penceresi. Tarayıcı `confirm()` iletişim kutuları gömülü görüntüleyicilerde (iOS dosya önizlemesi, sandbox iframe)
+ * sessizce engellenir ve "düğme çalışmıyor" gibi görünür; bu yüzden hiçbir yerde `confirm()` kullanılmaz.
+ */
+export function askConfirm(text: string, yes = 'Onayla', no = 'Vazgeç'): Promise<boolean> {
+  return new Promise((resolve) => {
+    const [title, ...rest] = text.split('\n'); const body = rest.join('\n').trim();
+    const m = h('div', { class: 'modal askc', role: 'alertdialog', style: 'z-index:140' });
+    const done = (v: boolean) => { m.remove(); resolve(v); };
+    m.append(h('div', { class: 'card', style: 'width:min(460px,94vw);max-height:90vh;overflow:auto' }, h('h3', { style: 'font-size:22px;margin-bottom:6px' }, title), body ? h('p', { style: 'margin:0 0 12px;white-space:pre-line;font-size:14px;color:var(--mute)' }, body) : null,
+      h('div', { style: 'display:flex;gap:10px;justify-content:flex-end' }, h('button', { class: 'btn', onclick: () => done(false) }, no), h('button', { class: 'btn gold', onclick: () => done(true) }, yes))));
+    m.addEventListener('pointerdown', (e) => { if (e.target === m) done(false); }); document.body.append(m);
+  });
+}

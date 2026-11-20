@@ -1,7 +1,7 @@
 import { STAGES, buildingType, cityData, quality } from '../../data';
 import { fairValue, ownedParcels } from '../../sim/land';
 import { COMMISSION } from '../../sim/projects';
-import { h, press, toast } from '../dom';
+import { h, press, toast, askConfirm } from '../dom';
 import { colored, fmt, nf, ZONING_LABEL } from '../components';
 import type { App } from '../app';
 import { startConstructionUI } from '../startFlow';
@@ -38,7 +38,7 @@ export function projectsView(app: App, refresh: () => void): HTMLElement {
         pr.status === 'taslak' ? h('button', { class: 'btn gold', onclick: () => { press(app); startConstructionUI(app, pr.id, () => app.openSite(pr.id)); } }, '🏗️ İnşaatı başlat') : null,
         pr.status !== 'satildi' ? h('button', { class: pr.status === 'taslak' || pr.status === 'insaat' ? 'btn gold' : 'btn', onclick: () => { press(app); app.openSite(pr.id); } }, pr.status === 'taslak' ? 'Şantiyeyi gör' : pr.status === 'insaat' ? 'Şantiyeyi aç' : 'Binayı aç') : null,
         p && !pr.contract && pr.status !== 'satildi' ? h('button', { class: 'btn', onclick: () => { press(app); openParcel(app, p.id, refresh); } }, 'Arsa dosyası') : null,
-        pr.status === 'taslak' && !pr.contract ? h('button', { class: 'btn danger', onclick: () => { if (!confirm('Proje iptal edilsin mi? Ödenen tasarım bedeli geri gelmez.')) return; const r = app.store.run('CancelProject', { projectId: pr.id }); if (r.ok) { app.audio.sfx('click'); toast('Proje iptal edildi.'); } else toast(r.error); } }, 'Projeyi iptal et') : null))));
+        pr.status === 'taslak' && !pr.contract ? h('button', { class: 'btn danger', onclick: () => { askConfirm('Proje iptal edilsin mi? Ödenen tasarım bedeli geri gelmez.').then(async (ok) => { if (!ok) return; const r = app.store.run('CancelProject', { projectId: pr.id }); if (r.ok) { app.audio.sfx('click'); toast('Proje iptal edildi.'); } else toast(r.error);  });} }, 'Projeyi iptal et') : null))));
   }
   if (!parcels.length) lots.append(h('div', { class: 'card empty' }, 'Henüz arsanız yok. Harita sekmesinden bir bölge seçip arsa inceleyin.'));
   for (const p of parcels) {

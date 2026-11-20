@@ -3,7 +3,7 @@ import { TL, type Money } from '../../core/money';
 import { BANKS, bank } from '../../data';
 import { creditCapacity, debtTotal, quoteLoan, rateFor, type LoanKind } from '../../sim/loans';
 import { MAX_EQUITY_SOLD, equityQuote, investmentOf, quoteInvestor } from '../../sim/investors';
-import { h, press, toast } from '../dom';
+import { h, press, toast, askConfirm } from '../dom';
 import { fmt, pct } from '../components';
 import type { App } from '../app';
 
@@ -25,8 +25,8 @@ export function loansView(app: App, refresh: () => void): HTMLElement {
       h('div', { class: 'lbl', style: 'min-width:170px' }, `${KIND_LABEL[l.kind]} · ${b.label}`, h('small', {}, `Faiz %${l.rate.toFixed(1)}/yıl · ${l.kind === 'insaat' ? `limit ${fmt(l.limit ?? 0)}${pr ? ' · ' + pr.name : ''}` : `kalan ${l.remaining} ay · sonraki ödeme ${formatDate(l.nextDue)}`}`)),
       l.missed ? h('span', { class: 'chip bad' }, `${l.missed} taksit kaçırıldı`) : null,
       h('div', { class: 'num', style: 'min-width:110px;text-align:right' }, fmt(l.balance), h('small', { class: 'mute', style: 'display:block' }, l.payment > 0 ? `${fmt(l.payment)}/ay` : 'faiz/ay')),
-      h('button', { class: 'btn', style: 'min-height:38px', disabled: l.balance <= 0 || c.cash <= 0, onclick: () => { press(app); const amt = Math.min(l.balance, c.cash); if (!confirm(`${fmt(amt)} erken ödensin mi?`)) return; const r = app.store.run('RepayLoan', { loanId: l.id, amount: amt }); if (r.ok) { toast('Erken ödeme yapıldı.'); refresh(); } else toast(r.error); } }, 'Erken öde'),
-      l.missed || l.kind === 'kisa' ? h('button', { class: 'btn', style: 'min-height:38px', onclick: () => { press(app); if (!confirm('Vade uzatılsın mı? Faiz +4 puan, %3 masraf.')) return; const r = app.store.run('RestructureLoan', { loanId: l.id }); if (r.ok) { toast('Kredi yeniden yapılandırıldı.'); refresh(); } else toast(r.error); } }, 'Yapılandır') : null));
+      h('button', { class: 'btn', style: 'min-height:38px', disabled: l.balance <= 0 || c.cash <= 0, onclick: () => { press(app); const amt = Math.min(l.balance, c.cash); askConfirm(`${fmt(amt)} erken ödensin mi?`).then(async (ok) => { if (!ok) return; const r = app.store.run('RepayLoan', { loanId: l.id, amount: amt }); if (r.ok) { toast('Erken ödeme yapıldı.'); refresh(); } else toast(r.error);  });} }, 'Erken öde'),
+      l.missed || l.kind === 'kisa' ? h('button', { class: 'btn', style: 'min-height:38px', onclick: () => { press(app); askConfirm('Vade uzatılsın mı? Faiz +4 puan, %3 masraf.').then(async (ok) => { if (!ok) return; const r = app.store.run('RestructureLoan', { loanId: l.id }); if (r.ok) { toast('Kredi yeniden yapılandırıldı.'); refresh(); } else toast(r.error);  });} }, 'Yapılandır') : null));
   }
   const nw = h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Yeni kredi'), h('div', { class: 'mute', style: 'font-size:12px;margin-bottom:8px' }, 'Faiz = politika faizi + banka marjı + not primi + ürün primi. Notunuz yükseldikçe ucuzlar.'),
     ...(['ticari', 'insaat', 'kisa'] as LoanKind[]).map((k) => {
@@ -80,7 +80,7 @@ export function partnersView(app: App, refresh: () => void): HTMLElement {
   }
   const sold = 100 - c.ownership; let pc = 10; const eq = h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Şirket payı'), h('div', { class: 'kpis' }, h('div', { class: 'kpi', html: `<small>Sizdeki pay</small><b>%${c.ownership}</b>` }), h('div', { class: 'kpi', html: `<small>Satılan pay</small><b>%${sold}</b>` }), h('div', { class: 'kpi', html: `<small>Üst sınır</small><b>%${MAX_EQUITY_SOLD}</b>` })),
     h('div', { class: 'mute', style: 'font-size:12px;margin:8px 0' }, 'Net değer üzerinden değerlenir; itibarınız yüksekse daha iyi fiyat alırsınız. Satılan pay oranında her proje kârından ortaklara temettü ödenir. Pay geri alınamaz.'));
-  const lab2 = h('b', {}, ''), info2 = h('div', { class: 'mute', style: 'font-size:13px;min-height:20px' }, ''); const go2 = h('button', { class: 'btn gold', onclick: () => { if (!confirm(`Şirketin %${pc}'i satılsın mı? Geri alınamaz.`)) return; const r = app.store.run('SellEquity', { pct: pc }); if (r.ok) { app.audio.sfx('confirm'); toast('Pay satışı tamamlandı.'); refresh(); } else { app.audio.sfx('error'); toast(r.error); } } }, 'Pay sat') as HTMLButtonElement;
+  const lab2 = h('b', {}, ''), info2 = h('div', { class: 'mute', style: 'font-size:13px;min-height:20px' }, ''); const go2 = h('button', { class: 'btn gold', onclick: () => { askConfirm(`Şirketin %${pc}'i satılsın mı? Geri alınamaz.`).then(async (ok) => { if (!ok) return; const r = app.store.run('SellEquity', { pct: pc }); if (r.ok) { app.audio.sfx('confirm'); toast('Pay satışı tamamlandı.'); refresh(); } else { app.audio.sfx('error'); toast(r.error); }  });} }, 'Pay sat') as HTMLButtonElement;
   const rng2 = h('input', { type: 'range', min: 5, max: 40, step: 5, value: pc, style: 'flex:1', 'aria-label': 'Pay oranı', oninput: () => { pc = Number((rng2 as HTMLInputElement).value); upd2(); } });
   const upd2 = () => { const q = equityQuote(s, pc); lab2.textContent = `%${pc}`; info2.textContent = q.ok ? `Alacağınız: ${fmt(q.price as Money)}` : (q.error ?? ''); go2.disabled = !q.ok; };
   eq.append(h('div', { style: 'display:flex;gap:10px;align-items:center' }, lab2, rng2, go2), info2); upd2();

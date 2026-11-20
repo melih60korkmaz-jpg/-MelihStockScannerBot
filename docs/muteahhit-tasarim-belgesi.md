@@ -909,3 +909,9 @@ Petrol mavisi/altın/turkuaz arayüz kimliği kaldırıldı. Renkler `src/ui/the
 
 - **Haritanın en üstünde tek dokunuşluk kart** (`startFlow.ts`): proje yoksa gerçek plan hesabıyla en yüksek marjlı alınabilir arsa+yapı önerisi ve **"Satın al ve başlat"** (arsa → proje → inşaat → şantiye, onay özetiyle); boş arsa varsa "Proje başlat"; taslak proje varsa "İnşaatı başlat".
 - **İnşaatı başlat her yerde görünür**: şantiye ekranında büyük nabız atan düğme, proje kartında, haritadaki arsa kartında. Nakit düşük/ekip az ise onay öncesi uyarılır.
+
+
+## Revizyon v0.8 — Gömülü görüntüleyici uyumu
+
+- **`confirm()` kaldırıldı**: iOS dosya önizlemesi gibi gömülü görüntüleyicilerde tarayıcı iletişim kutuları sessizce engellenir ve düğmeler "çalışmıyor" gibi görünür. Tüm onaylar uygulama içi `askConfirm` penceresiyle yapılır (inşaat başlatma, hızlı başlangıç, şube açma, işten çıkarma, kredi, proje iptali, kayıt silme).
+- Şantiye ekranında kamera düğmeleri kısa ekranda üst çubukla çakışmıyor.

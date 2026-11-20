@@ -3,7 +3,7 @@ import { TL } from '../../core/money';
 import { MACHINES, MATERIALS, OFFICES, STAFF_TYPES, STAGES, SUPPLIERS, machine, officeFor, supplier } from '../../data';
 import { incomingQty, leadDays, stockQty, unitPrice } from '../../sim/materials';
 import { machineValue } from '../../sim/machines';
-import { h, press, toast } from '../dom';
+import { h, press, toast, askConfirm } from '../dom';
 import { fmt, nf, pct } from '../components';
 import type { App } from '../app';
 import { EMOJI, machineArt, portrait } from '../art';
@@ -40,7 +40,7 @@ function team(app: App, refresh: () => void): HTMLElement {
           h('div', { class: 'mini2' }, h('span', {}, 'Verim'), h('div', { class: 'meter' }, h('i', { style: `width:${Math.min(100, Math.round(eff * 80))}%;background:var(--accent2)` })), h('b', {}, `%${Math.round(eff * 100)}`)),
           h('div', { class: 'mini2' }, h('span', {}, 'Moral'), h('div', { class: 'meter' }, h('i', { style: `width:${p.morale}%;background:var(--${tone === 'good' ? 'ok' : tone === 'warn' ? 'warn' : 'bad'})` })), h('b', {}, String(p.morale))),
           h('div', { style: 'display:flex;gap:8px;align-items:center;margin-top:4px' }, isField ? sel : h('span', { class: 'chip' }, '🏢 Ofis'),
-            h('button', { class: 'btn danger', style: 'min-height:34px;margin-left:auto;font-size:13px', onclick: () => { if (!confirm(`${p.name} işten çıkarılsın mı?`)) return; card.classList.add('leaving'); setTimeout(() => { const r = app.store.run('FireStaff', { staffId: p.id }); if (r.ok) app.audio.sfx('click'); }, app.settings.reduced ? 0 : 230); } }, 'Çıkar'))));
+            h('button', { class: 'btn danger', style: 'min-height:34px;margin-left:auto;font-size:13px', onclick: () => { askConfirm(`${p.name} işten çıkarılsın mı?`).then(async (ok) => { if (!ok) return; card.classList.add('leaving'); setTimeout(() => { const r = app.store.run('FireStaff', { staffId: p.id }); if (r.ok) app.audio.sfx('click'); }, app.settings.reduced ? 0 : 230);  });} }, 'Çıkar'))));
       return card;
     }) : [h('div', { class: 'empty' }, 'Henüz çalışan yok.')]),
     h('div', { class: 'hint' }, 'Atanmamış (havuz) saha çalışanları aktif projeler arasında bölünür. Bir projeye atarsanız yalnızca orada çalışır. Moral düşükse verim düşer; iş kazaları ve nakit sıkıntısı moralı kırar.'));
@@ -99,7 +99,7 @@ function machines(app: App, refresh: () => void): HTMLElement {
       h('div', { style: 'flex:1;min-width:0' }, h('div', { style: 'display:flex;gap:6px;align-items:center;flex-wrap:wrap' }, h('b', {}, d.label), h('span', { class: `chip ${broken ? 'bad' : inUse ? 'good' : ''}` }, broken ? `⚠️ Arızalı · ${formatDate(m.brokenUntil)}` : inUse ? 'Çalışıyor' : 'Beklemede')),
         h('div', { class: 'gauge2' }, h('span', {}, 'Durum'), h('div', { class: 'meter' }, h('i', { style: `width:${Math.round(cond * 100)}%;background:var(--${cond > 0.55 ? 'ok' : cond > 0.35 ? 'warn' : 'bad'})` })), h('b', {}, `%${Math.round(cond * 100)}`)),
         h('div', { class: 'mute', style: 'font-size:11px;margin-top:2px' }, `${months} aylık · ${m.uses} gün kullanım · yakıt ${fmt(TL(d.fuelTL))}/gün · bakım ${fmt(TL(d.maintTL))}/ay · değer ${fmt(val)}`)),
-      h('button', { class: 'btn danger', style: 'min-height:36px', onclick: () => { if (!confirm(`${d.label} satılsın mı? (değerinin %90'ı)`)) return; const r = app.store.run('SellMachine', { machineId: m.id }); if (r.ok) { app.audio.sfx('confirm'); toast(`${d.label} satıldı.`); } } }, 'Sat')));
+      h('button', { class: 'btn danger', style: 'min-height:36px', onclick: () => { askConfirm(`${d.label} satılsın mı? (değerinin %90'ı)`).then(async (ok) => { if (!ok) return; const r = app.store.run('SellMachine', { machineId: m.id }); if (r.ok) { app.audio.sfx('confirm'); toast(`${d.label} satıldı.`); }  });} }, 'Sat')));
   }
   const cat = h('div', { class: 'hire' });
   for (const d of MACHINES) { const used = STAGES.filter((st) => st.machines?.includes(d.id)).map((st) => st.label);
