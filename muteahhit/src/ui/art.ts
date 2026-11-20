@@ -101,5 +101,6 @@ export function emptyArt(kind: 'proje' | 'arsa', size = 96): string {
 export function buildingPhoto(type: string, floors: number, progress: number, seed: number, quality: string): string {
   const svgHtml = buildingArt(type, floors, progress, seed, quality), img = BUILDING_IMG[type]; if (!img) return svgHtml;
   const p = Math.max(0, Math.min(1, progress));
-  return `<div class="bphoto">${p < 1 ? `<div class="bsvg">${svgHtml}</div>` : ''}<img src="${img}" alt="" loading="lazy" decoding="async" style="clip-path:inset(${((1 - p) * 100).toFixed(1)}% 0 0 0)"></div>`;
+  // alt katman: sönük/gri resim (bina henüz "yapılmadı"), üst katman: renkli resim ilerleme oranında aşağıdan açılır
+  return `<div class="bphoto">${p < 1 ? `<img class="bdim" src="${img}" alt="" loading="lazy" decoding="async">` : ''}<img src="${img}" alt="" loading="lazy" decoding="async" style="clip-path:inset(${((1 - p) * 100).toFixed(1)}% 0 0 0)"></div>`;
 }
