@@ -3,6 +3,7 @@ import { TL } from '../../core/money';
 import { TAPU_HARCI, askPrice, canTrade, growthLabel, marketParcels, ownedParcels } from '../../sim/land';
 import { h, press, toast, askConfirm } from '../dom';
 import { planProject } from '../../sim/projects';
+import { CITY_ART } from '../artwork';
 import { fmt, fmtM2, nf, pct, skylineSvg, statBar, ZONING_LABEL } from '../components';
 import type { App } from '../app';
 import { openParcel } from './parcel';
@@ -105,7 +106,7 @@ function turkeyView(app: App, refresh: () => void, sel: Province): HTMLElement {
   fill();
   const stt = provinceStats(sel.id), open = s.openCities.includes(sel.id), cost = TL(branchCost(sel.id));
   const card = h('div', { class: 'card', style: 'margin-bottom:8px' },
-    h('div', { html: skylineSvg(sel.id, cityData(sel.id)!.districts.reduce((a, x) => a + x.density, 0) / cityData(sel.id)!.districts.length, stt.income, cityData(sel.id)!.districts.reduce((a, x) => a + x.transit, 0) / cityData(sel.id)!.districts.length), style: 'margin:-4px -4px 8px;border-radius:10px;overflow:hidden' }),
+    h('div', { html: CITY_ART[sel.id] ? `<img class="cityimg" src="${CITY_ART[sel.id]}" alt="" decoding="async">` : skylineSvg(sel.id, cityData(sel.id)!.districts.reduce((a, x) => a + x.density, 0) / cityData(sel.id)!.districts.length, stt.income, cityData(sel.id)!.districts.reduce((a, x) => a + x.transit, 0) / cityData(sel.id)!.districts.length), style: 'margin:-4px -4px 8px;border-radius:10px;overflow:hidden' }),
     h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:8px' }, h('h3', { style: 'font-size:24px' }, `${sel.name}`), h('span', { class: 'mute', style: 'font-size:12px' }, `${sel.plate} · ${sel.region}`)),
     statBar('Gelir düzeyi', stt.income), statBar('Rekabet', stt.competition), h('div', { class: 'kv', style: 'margin-top:6px' }, h('span', {}, 'Konut fiyatı (ort.)'), h('span', {}, fmtM2(Math.round(stt.saleBase * hiOf(sel.id) * 100))), h('span', {}, 'İlçe sayısı'), h('span', {}, String(stt.districts)), h('span', {}, 'Şube durumu'), h('span', {}, open ? (sel.id === c.startCity ? 'Başlangıç şehri' : 'Açık') : 'Kilitli')),
     h('div', { style: 'display:flex;gap:8px;margin-top:10px;flex-wrap:wrap' },

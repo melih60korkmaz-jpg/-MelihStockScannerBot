@@ -3,7 +3,7 @@ import { ACHIEVEMENTS, officeFor } from '../data';
 import { officeStepFor } from '../sim/progress';
 import { formatDate } from '../core/calendar';
 import type { GameState } from '../core/types';
-import { buildingArt, C, EMOJI } from './art';
+import { buildingPhoto, C, EMOJI } from './art';
 import { emblemSvg } from './emblem';
 import { hourOf, skyAt } from './hero';
 import { h, press, toast, celebrate } from './dom';
@@ -88,7 +88,7 @@ export function openHQ(app: App, onClose?: () => void): void {
       h('div', { class: 'kpis', style: 'margin:8px 0' }, h('div', { class: 'kpi', html: `<small>Kapasite</small><b>${s.staff.length}/${o.capacity}</b>` }), h('div', { class: 'kpi', html: `<small>Aylık kira</small><b>${formatMoney(TL(o.monthlyRentTL))}</b>` }), h('div', { class: 'kpi', html: `<small>Tamamlanan</small><b>${c.stats.completed}</b>` })),
       st ? h('div', { class: 'card', style: 'padding:10px' }, h('b', {}, `Sonraki merkez: ${officeFor(st.office).label}`), h('div', { class: 'mute', style: 'font-size:12px;margin:2px 0 8px' }, `${officeFor(st.office).capacity} kişi · seviye ${st.minLevel} gerekir · taşınma ${formatMoney(TL(st.costTL))}`), h('button', { class: 'btn gold', disabled: c.level < st.minLevel || c.cash < TL(st.costTL), onclick: () => { const r = app.store.run('UpgradeOffice', {}); if (r.ok) { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast('Yeni genel merkeze taşındınız!'); rising = true; render(); } else { app.audio.sfx('error'); toast(r.error); } } }, c.level < st.minLevel ? `Seviye ${st.minLevel} gerekli` : 'Merkezi yükselt')) : h('div', { class: 'chip good' }, 'En üst merkez seviyesindesiniz'),
       h('div', { class: 'lbl-s', style: 'margin-top:10px' }, `🏗️ Proje galerisi (${done.length}) · 🤝 Kazanılan ihale (${wins.length}) · 🏆 Başarım (${got.length})`),
-      h('div', { class: 'gallery' }, ...(done.length ? done.slice().reverse().map((p) => h('div', { class: 'gitem' }, h('div', { class: 'gart', html: buildingArt(p.type, p.floors, 1, p.designSeed, p.quality) }), h('b', {}, p.name), h('small', { class: 'mute' }, p.status === 'satildi' ? `Kâr ${formatMoney(p.result?.profit ?? 0)} · ${formatDate(p.result?.soldDay ?? 0)}` : 'Teslim edildi'))) : [h('div', { class: 'empty' }, 'Tamamlanan projeleriniz burada sergilenir.')])),
+      h('div', { class: 'gallery' }, ...(done.length ? done.slice().reverse().map((p) => h('div', { class: 'gitem' }, h('div', { class: 'gart', html: buildingPhoto(p.type, p.floors, 1, p.designSeed, p.quality) }), h('b', {}, p.name), h('small', { class: 'mute' }, p.status === 'satildi' ? `Kâr ${formatMoney(p.result?.profit ?? 0)} · ${formatDate(p.result?.soldDay ?? 0)}` : 'Teslim edildi'))) : [h('div', { class: 'empty' }, 'Tamamlanan projeleriniz burada sergilenir.')])),
       ...(c.office >= 3 && got.length ? [h('div', { class: 'lbl-s', style: 'margin-top:8px' }, '🏆 Başarı rafı'), h('div', { class: 'shelf' }, ...got.slice(-8).map((a) => h('span', { class: 'shelfitem', title: `${a.t}: ${a.x}` }, '🏆')))] : []));
     card.append(scene, info); if (view === 'kesit') animateLights(scene, app.settings.reduced); void wasRising;
   };

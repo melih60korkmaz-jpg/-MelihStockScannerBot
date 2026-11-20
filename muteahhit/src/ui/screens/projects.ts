@@ -5,7 +5,7 @@ import { h, press, toast, askConfirm } from '../dom';
 import { colored, fmt, nf, ZONING_LABEL } from '../components';
 import type { App } from '../app';
 import { startConstructionUI } from '../startFlow';
-import { buildingArt, emptyArt, EMOJI } from '../art';
+import { buildingArt, buildingPhoto, emptyArt, EMOJI } from '../art';
 import { remainingDays } from '../../sim/construction';
 import { formatDate } from '../../core/calendar';
 import { openParcel } from './parcel';
@@ -25,7 +25,7 @@ export function projectsView(app: App, refresh: () => void): HTMLElement {
     const stage = pr.status === 'insaat' && b ? STAGES[b.stage]! : null;
     const prog = pr.status === 'insaat' && b ? (STAGES.slice(1, b.stage).reduce((a, x) => a + x.cost, 0) + STAGES[b.stage]!.cost * b.progress) / 100 : pr.status === 'taslak' ? 0 : 1;
     const spent = b ? b.spent + (b.matCost ?? 0) + b.unpaid : 0, left = Math.max(0, pr.budget.total - spent), eta = pr.status === 'insaat' && b ? remainingDays(pr) : null;
-    projs.append(h('div', { class: `card pj st-${pr.status}`, style: 'margin-bottom:10px' }, h('div', { class: 'pcover', html: buildingArt(pr.type, pr.floors, pr.status === 'taslak' ? 0.02 : prog, pr.designSeed, pr.quality) }), h('div', { class: 'pbody' },
+    projs.append(h('div', { class: `card pj st-${pr.status}`, style: 'margin-bottom:10px' }, h('div', { class: 'pcover', html: buildingPhoto(pr.type, pr.floors, pr.status === 'taslak' ? 0.02 : prog, pr.designSeed, pr.quality) }), h('div', { class: 'pbody' },
       h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' }, h('h3', { style: 'font-size:22px;flex:1' }, pr.name), h('span', { class: 'chip' }, t.label), h('span', { class: 'chip' }, q.label), h('span', { class: `chip ${STATUS[pr.status]![1]}` }, STATUS[pr.status]![0]), b?.stalled ? h('span', { class: 'chip bad' }, 'Nakit yok') : null),
       h('div', { class: 'mute', style: 'font-size:12px;margin:4px 0 8px' }, `${pr.hood} · ${cityData(pr.cityId)?.label} · ${pr.floors} kat · brüt ${nf(pr.brut)} m² · satılabilir ${nf(pr.satilabilir)} m²`),
       h('div', { class: 'kpis' }, h('div', { class: 'kpi', html: `<small>Proje bütçesi</small><b>${fmt(pr.budget.total)}</b>` }), h('div', { class: 'kpi', html: `<small>${pr.status === 'satildi' ? 'Satış' : 'Beklenen gelir'}</small><b>${fmt(pr.status === 'satildi' ? (pr.result?.revenue ?? 0) : pr.expected.revenue)}</b>` }), h('div', { class: 'kpi' }, h('small', {}, pr.status === 'satildi' ? 'Gerçekleşen kâr' : 'Beklenen kâr'), h('b', {}, colored(profit)))),

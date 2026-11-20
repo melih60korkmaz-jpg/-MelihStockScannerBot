@@ -1,3 +1,4 @@
+import { BUILDING_ART as BUILDING_IMG, MACHINE_ART as MACHINE_IMG, STAFF_ART as STAFF_IMG } from './artwork';
 /**
  * Görsel varlıklar (tek kaynak): personel portreleri, makine çizimleri, bina küçük resimleri, rozetler, halka göstergeler.
  * Hepsi kendi çizimimiz (SVG, lisans sorunu yok), tema renklerini kullanır, veriden üretilir ve yeniden kullanılır.
@@ -18,6 +19,7 @@ const ROLE: Record<string, { shirt: string; hat?: string; band?: string; extra?:
 };
 /** Meslek ve moral yüzlü portre. mood: 0–100 (gülümseme/üzgün). `id` ten rengi ve ifadeyi çeşitlendirir. */
 export function portrait(type: string, id: number, morale = 70): string {
+  if (STAFF_IMG[type]) return `<img class="pimg" src="${STAFF_IMG[type]}" alt="" loading="lazy" decoding="async">`;
   const r = ROLE[type] ?? ROLE.isci!, skin = SKIN[hash(id) % SKIN.length]!, m = morale >= 65 ? 'M17 31 q7 6 14 0' : morale >= 40 ? 'M18 33 h12' : 'M17 35 q7 -5 14 0';
   let s = `<circle cx="24" cy="24" r="23" fill="${C.s2}" stroke="${C.line}"/><path d="M6 46 q2 -13 18 -13 q16 0 18 13z" fill="${r.shirt}"/><rect x="21" y="29" width="6" height="6" fill="${skin}"/><circle cx="24" cy="21" r="9" fill="${skin}"/>`;
   s += `<circle cx="20.5" cy="20" r="1.2" fill="#1b1b1f"/><circle cx="27.5" cy="20" r="1.2" fill="#1b1b1f"/><path d="${m}" transform="translate(0 -1.5)" fill="none" stroke="#7a3b2e" stroke-width="1.4" stroke-linecap="round"/>`;
@@ -53,7 +55,7 @@ const MACHINE_ART: Record<string, string> = {
   iskele: `<g stroke="${MC.steel}" stroke-width="2.5" fill="none"><path d="M16 6 V52 M44 6 V52 M72 6 V52"/><path d="M16 16 H72 M16 30 H72 M16 44 H72"/><path d="M16 16 L44 30 L72 16 M16 30 L44 44 L72 30" stroke-width="1.5"/></g><rect x="14" y="14" width="60" height="3" fill="${MC.yellow}"/><rect x="14" y="28" width="60" height="3" fill="${MC.yellow}"/>`,
   kompresor: `<rect x="14" y="18" width="52" height="20" rx="10" fill="${MC.body}"/><rect x="62" y="22" width="14" height="14" fill="${MC.dark}"/><path d="M76 28 q8 0 10 -10" stroke="${C.mute}" fill="none" stroke-width="2"/><circle cx="30" cy="28" r="5" fill="none" stroke="#fff" stroke-opacity=".6"/>${wheel(24, 46)}${wheel(54, 46)}`,
 };
-export const machineArt = (id: string, state: 'ok' | 'broken' | 'idle' = 'ok'): string => svg(96, 56, `<rect width="96" height="56" rx="8" fill="#16171A"/><rect y="52" width="96" height="4" fill="#101113"/><g opacity="${state === 'idle' ? 0.7 : 1}">${MACHINE_ART[id] ?? MACHINE_ART.kamyon}</g>${state === 'broken' ? `<path d="M70 8 l14 0 -7 12z" fill="${C.bad}"/><text x="77" y="18" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">!</text>` : ''}`, id);
+export const machineArt = (id: string, state: 'ok' | 'broken' | 'idle' = 'ok'): string => MACHINE_IMG[id] ? `<div class="mimgw ${state}"><img src="${MACHINE_IMG[id]}" alt="" loading="lazy" decoding="async">${state === 'broken' ? '<b>!</b>' : ''}</div>` : svg(96, 56, `<rect width="96" height="56" rx="8" fill="#16171A"/><rect y="52" width="96" height="4" fill="#101113"/><g opacity="${state === 'idle' ? 0.7 : 1}">${MACHINE_ART[id] ?? MACHINE_ART.kamyon}</g>${state === 'broken' ? `<path d="M70 8 l14 0 -7 12z" fill="${C.bad}"/><text x="77" y="18" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">!</text>` : ''}`, id);
 
 // ---------- Bina küçük resimleri ----------
 /** Proje/ihale/galeri küçük resmi: tür, kat sayısı, kalite ve ilerleme (0–1) → yapım halindeki bina (iskele + vinç) ya da bitmiş. */
@@ -93,4 +95,11 @@ export function emptyArt(kind: 'proje' | 'arsa', size = 96): string {
     ? `<rect x="46" y="34" width="26" height="40" fill="none" stroke="${C.acc2}" stroke-width="1.2" stroke-dasharray="3 2"/>${[0, 1, 2, 3].map((i) => `<path d="M46 ${44 + i * 8}H72" stroke="${C.line}" stroke-width=".8"/>`).join('')}<path d="M24 74V14H70" stroke="${C.acc}" stroke-width="2" fill="none"/><path d="M24 22L48 14" stroke="${C.acc}" stroke-width="1"/><g class="emcrane"><path d="M62 14V30" stroke="${C.mute}" stroke-width=".8"/><rect x="58" y="30" width="8" height="5" fill="${C.mute}"/></g>`
     : `<path d="M22 60L40 30L78 36L84 62Z" fill="${C.acc}" fill-opacity=".12" stroke="${C.acc2}" stroke-width="1.2" stroke-dasharray="3 2"/><circle cx="22" cy="60" r="2.2" fill="${C.acc2}"/><circle cx="40" cy="30" r="2.2" fill="${C.acc2}"/><circle cx="78" cy="36" r="2.2" fill="${C.acc2}"/><circle cx="84" cy="62" r="2.2" fill="${C.acc2}"/><path d="M50 48l8 -8 8 8" stroke="${C.mute}" fill="none"/>`;
   return `<svg viewBox="0 0 100 80" width="${size}" height="${Math.round(size * 0.8)}" role="img" aria-hidden="true">${grid}${body}</svg>`;
+}
+
+/** Bina kapağı: altta ilerlemeyi gösteren çizim, üstte aynı tipin resmi — resim ilerleme oranında aşağıdan yukarı açılır (1 = tamamen görünür). */
+export function buildingPhoto(type: string, floors: number, progress: number, seed: number, quality: string): string {
+  const svgHtml = buildingArt(type, floors, progress, seed, quality), img = BUILDING_IMG[type]; if (!img) return svgHtml;
+  const p = Math.max(0, Math.min(1, progress));
+  return `<div class="bphoto">${p < 1 ? `<div class="bsvg">${svgHtml}</div>` : ''}<img src="${img}" alt="" loading="lazy" decoding="async" style="clip-path:inset(${((1 - p) * 100).toFixed(1)}% 0 0 0)"></div>`;
 }
