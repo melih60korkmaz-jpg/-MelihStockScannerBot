@@ -35,6 +35,6 @@ export function menuScreen(app: App): HTMLElement {
     btn('Yeni Oyun', () => app.go(newGameScreen(app), 'setup'), 'gold'),
     btn('Kayıtlar', () => app.go(savesScreen(app), 'calm')),
     btn('Ayarlar', () => { openSettings({ ...app, activeTier: () => app.scene?.activeTier ?? 'mid' }); }),
-    h('div', { class: 'foot' }, `v0.2 · Faz 2 · ${app.persistent ? 'Kayıtlar bu cihazda saklanır' : 'Kayıt kalıcı değil (gizli mod?)'}`),
+    h('div', { class: 'foot' }, `v1.1 · ${app.persistent ? 'Kayıtlar bu cihazda saklanır' : 'Kayıt kalıcı değil (gizli mod?)'}`),
   ));
 }
