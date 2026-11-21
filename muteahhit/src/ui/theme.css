@@ -508,3 +508,8 @@ mark { background:#FF8C3255; color:inherit; border-radius:3px; padding:0 1px; }
 .scchg { font:700 14px var(--font); padding:2px 8px; border-radius:99px; } .scchg.up { color:#3FBF8A; background:#3FBF8A1f; } .scchg.down { color:#FF4D5A; background:#FF4D5A1f; } .scsub { flex:1 1 100%; }
 .scsvg { width:100%; height:auto; display:block; margin-top:4px; } .scpulse { transform-box:fill-box; transform-origin:center; animation:scpulse 1.8s ease-out infinite; } @keyframes scpulse { 0% { transform:scale(1); opacity:.7; } 100% { transform:scale(3.2); opacity:0; } }
 .scrange { margin-top:6px; align-self:flex-start; } :root[data-motion="reduced"] .scpulse, :root[data-motion="reduced"] .scprice.flash { animation:none; }
+
+/* Karar/onay seçenekleri: turuncu vurgu */
+.btn.choice { background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 26%, var(--s1)), color-mix(in srgb, var(--accent) 14%, var(--s1))); border:1.5px solid var(--accent); color:var(--text, #fff); box-shadow:0 2px 8px #0006, 0 0 10px color-mix(in srgb, var(--accent) 25%, transparent); }
+.btn.choice b { color:var(--accent2); }
+.btn.choice:active { background:linear-gradient(180deg,var(--accent2),var(--accent)); } .btn.choice:active b, .btn.choice:active .mute { color:var(--on-accent); }

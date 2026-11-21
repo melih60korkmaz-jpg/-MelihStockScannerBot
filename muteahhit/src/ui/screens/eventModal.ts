@@ -17,7 +17,7 @@ export function openEventDecision(app: App): void {
   d.ch.forEach((c, i) => {
     const sure = [...c.e].map((e) => describeEffect(s, e)).filter(Boolean);
     const risk = c.p !== undefined ? [`%${Math.round(c.p * 100)} başarı`, ...(c.f ?? []).map((e) => 'Olmazsa: ' + describeEffect(s, e)).filter((x) => !x.endsWith(': '))] : [];
-    card.append(h('button', { class: 'btn', style: 'display:block;width:100%;text-align:left;margin-top:8px;padding:10px 12px;height:auto', onclick: () => { const r = app.store.run('ResolveEvent', { choice: i }); if (r.ok) { app.audio.sfx('confirm'); modal.classList.add('leaving'); setTimeout(() => modal.remove(), app.settings.reduced ? 0 : 200); } else { app.audio.sfx('error'); toast(r.error); } } },
+    card.append(h('button', { class: 'btn choice', style: 'display:block;width:100%;text-align:left;margin-top:8px;padding:10px 12px;height:auto', onclick: () => { const r = app.store.run('ResolveEvent', { choice: i }); if (r.ok) { app.audio.sfx('confirm'); modal.classList.add('leaving'); setTimeout(() => modal.remove(), app.settings.reduced ? 0 : 200); } else { app.audio.sfx('error'); toast(r.error); } } },
       h('b', {}, fill(s, c.l, p)), sure.length || risk.length ? h('div', { class: 'mute', style: 'font-size:12px;margin-top:2px' }, [...sure, ...risk].join(' · ')) : null));
   });
   modal.append(card); document.body.append(modal); press(app, 'stamp');
