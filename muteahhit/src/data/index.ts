@@ -89,7 +89,8 @@ export const staffType = (id: string) => STAFF_TYPES.find((t) => t.id === id);
 export const officeFor = (office: number) => OFFICES[Math.min(Math.max(1, office || 1), OFFICES.length) - 1]!;
 
 export type EffectTuple = [string, ...(number | string)[]];
-export interface EventChoice { l: string; e: EffectTuple[]; p?: number; s?: EffectTuple[]; f?: EffectTuple[] }
+/** n: her durumda, ns: başarıda, nf: başarısızlıkta — [devam olayı kimliği, kaç gün sonra]. */
+export interface EventChoice { l: string; e: EffectTuple[]; p?: number; s?: EffectTuple[]; f?: EffectTuple[]; n?: [string, number]; ns?: [string, number]; nf?: [string, number] }
 export interface EventDef { id: string; c: string; t: string; x: string; w: number; need: string[]; ch: EventChoice[]; def?: number }
 export const EVENTS = eventsRaw as unknown as EventDef[];
 export const eventDef = (id: string) => EVENTS.find((e) => e.id === id);

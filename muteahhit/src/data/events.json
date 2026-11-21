@@ -1,50 +1,3194 @@
 [
-{"id":"imar_affi","c":"mevzuat","t":"İmar affı söylentisi","x":"Belediyede imar affı konuşuluyor. Önceden yatırım yapanlar kazanabilir, ama söylenti boşa çıkabilir.","w":3,"need":["land"],"ch":[{"l":"Arsa alımına yüklen","e":[["cash",-1500000],["land",3]],"p":0.5,"f":[["rep",-1]]},{"l":"Beklemede kal","e":[]}]},
-{"id":"kentsel_donusum","c":"mevzuat","t":"Kentsel dönüşüm alanı ilan edildi","x":"{sehir}'de bir bölge riskli alan ilan edildi. Bölgedeki arsa değerleri hareketleniyor.","w":3,"need":["open"],"ch":[{"l":"Fırsatı değerlendir","e":[["land",4],["rep",1]]},{"l":"İlgilenme","e":[]}]},
-{"id":"vergi_denetimi","c":"mevzuat","t":"Vergi denetimi","x":"Maliye müfettişleri defterlerinizi incelemek istiyor.","w":3,"need":["month:3"],"ch":[{"l":"Muhasebeciyle sorunsuz geç","e":[["cash",-400000],["rep",1]]},{"l":"Evrakı hızlıca toparla","e":[["cash",-150000]],"p":0.55,"f":[["cash",-1800000],["rep",-2],["score",-20]]}],"def":0},
-{"id":"yapi_denetim","c":"mevzuat","t":"Yapı denetim incelemesi","x":"{proje} şantiyesine habersiz denetim geldi.","w":3,"need":["project"],"ch":[{"l":"Eksikleri hemen gider","e":[["cash",-500000],["rep",1]]},{"l":"İtiraz et","e":[],"p":0.4,"f":[["cash",-1500000],["stall",10],["rep",-2]]}],"def":0},
-{"id":"insaat_izni_gecikmesi","c":"mevzuat","t":"Ruhsat evrakı eksik çıktı","x":"{proje} için istenen ek evrak yüzünden şantiye bir süre bekleyebilir.","w":2,"need":["project"],"ch":[{"l":"Danışman tut (hızlandır)","e":[["cash",-600000]]},{"l":"Kendin takip et","e":[["stall",9]]}],"def":1},
-{"id":"celik_zam","c":"piyasa","t":"Demir çelik fiyatları sıçradı","x":"Dünya piyasasında çelik fiyatları sert yükseldi. Tedarikçiler yeni liste gönderdi.","w":4,"need":[],"ch":[{"l":"Stok yap (peşin al)","e":[["cash",-900000],["mat",6]]},{"l":"Fiyatları izle","e":[["mat",9]]}],"def":1},
-{"id":"cimento_indirim","c":"piyasa","t":"Çimento fabrikasından kampanya","x":"Bir fabrika stok eritmek için toplu alıma indirim yapıyor.","w":3,"need":[],"ch":[{"l":"Fırsatı kap","e":[["cash",-700000],["mat",-5]]},{"l":"Geç","e":[]}]},
-{"id":"kur_soku","c":"piyasa","t":"Kur şoku","x":"Döviz bir günde sıçradı; ithal girdiler pahalanıyor, piyasa ürkek.","w":2,"need":["noregime:kriz"],"ch":[{"l":"Hedge/stoklanma yap","e":[["cash",-1200000],["mat",3]]},{"l":"Duruşunu koru","e":[["mat",8],["housing",-1]]}],"def":1},
-{"id":"faiz_indirimi","c":"piyasa","t":"Merkez Bankası sürpriz faiz indirimi","x":"Faizler beklenmedik şekilde düştü. Konut talebi canlanıyor.","w":2,"need":["noregime:kriz"],"ch":[{"l":"Harika","e":[["rate",-1.5],["housing",2]]}]},
-{"id":"faiz_artisi","c":"piyasa","t":"Sürpriz faiz artışı","x":"Merkez Bankası enflasyonla mücadele için faizi artırdı. Krediler pahalılaştı.","w":2,"need":["noregime:kriz"],"ch":[{"l":"Hmm.","e":[["rate",1.5],["housing",-2]]}]},
-{"id":"konut_kampanyasi","c":"piyasa","t":"Kamu konut kredisi kampanyası","x":"Bankalar düşük faizli konut kredisi kampanyası başlattı. Alıcılar harekete geçti.","w":3,"need":["noregime:kriz"],"ch":[{"l":"Reklam yap","e":[["cash",-500000],["housing",3]]},{"l":"Kampanyanın rüzgârını bekle","e":[["housing",1.5]]}]},
-{"id":"yabanci_alici","c":"piyasa","t":"Yabancı yatırımcı ilgisi","x":"Yabancı alıcı grupları {sehir}'de lüks konut arıyor.","w":2,"need":["open"],"ch":[{"l":"Yurt dışı tanıtım","e":[["cash",-800000],["housing",3],["rep",1]]},{"l":"Mevcut müşterilerle devam","e":[["housing",1]]}]},
-{"id":"deprem_haberi","c":"doga","t":"Bölgede deprem","x":"Ülkenin başka bir bölgesinde deprem oldu. Müşteriler yapı kalitesini sorguluyor.","w":2,"need":[],"ch":[{"l":"Kalite sertifikasını öne çıkar","e":[["cash",-600000],["rep",2]]},{"l":"Sessiz kal","e":[["housing",-2]]}]},
-{"id":"sel_basma","c":"doga","t":"Sağanak yağış, şantiye su altında","x":"Şiddetli yağış {proje} şantiyesini bastı.","w":3,"need":["project"],"ch":[{"l":"Pompa ve ekip tut","e":[["cash",-700000],["stall",4]]},{"l":"Suyun çekilmesini bekle","e":[["stall",12]]}],"def":1},
-{"id":"firtina","c":"doga","t":"Fırtına uyarısı","x":"Fırtına nedeniyle vinç ve iskele güvenliği tartışılıyor.","w":2,"need":["project"],"ch":[{"l":"Önlem al","e":[["cash",-350000],["morale",3]]},{"l":"Çalışmaya devam","e":[],"p":0.6,"f":[["cash",-1600000],["stall",8],["morale",-8],["rep",-1]]}],"def":0},
-{"id":"sicak_hava","c":"doga","t":"Aşırı sıcak dalgası","x":"Sıcaklık rekor kırdı; işçiler zor durumda.","w":2,"need":["project"],"ch":[{"l":"Vardiyayı değiştir (öğleden sonra mola)","e":[["cash",-250000],["morale",4]]},{"l":"Aynen devam","e":[["morale",-6]]}]},
-{"id":"isci_grevi","c":"insan","t":"İşçi grevi tehdidi","x":"Şantiye işçileri maaş artışı ve iş güvenliği talepleriyle eylem hazırlığında.","w":3,"need":["project","staff"],"ch":[{"l":"Zam ve prim ver","e":[["cash",-1200000],["morale",12]]},{"l":"Pazarlık et","e":[["cash",-400000],["morale",3]],"p":0.5,"f":[["stall",10],["morale",-10]]},{"l":"Reddet","e":[["stall",14],["morale",-14],["rep",-1]]}],"def":2},
-{"id":"usta_ayrildi","c":"insan","t":"Usta başka firmaya geçmek istiyor","x":"Tecrübeli bir çalışanınız rakip firmadan teklif aldı.","w":3,"need":["staff"],"ch":[{"l":"Zam yap","e":[["cash",-300000],["morale",4]]},{"l":"Gitsin","e":[["leave",1],["morale",-4]]}],"def":1},
-{"id":"personel_odul","c":"insan","t":"Ekip başarı bekliyor","x":"Ekip son projeden sonra ikramiye bekliyor.","w":2,"need":["staff","sold>0"],"ch":[{"l":"İkramiye ver","e":[["cash",-900000],["morale",14]]},{"l":"Ver(me)","e":[["morale",-8]]}]},
-{"id":"is_kazasi_riski","c":"insan","t":"Güvenlik açığı tespit edildi","x":"Şantiye şefi iskelede ciddi bir güvenlik eksiği buldu.","w":3,"need":["project"],"ch":[{"l":"Hemen düzelt","e":[["cash",-450000],["morale",3]]},{"l":"Sonraya bırak","e":[],"p":0.55,"f":[["cash",-2200000],["stall",14],["rep",-3],["morale",-10]]}],"def":0},
-{"id":"stajyer_basvuru","c":"insan","t":"Üniversiteden staj başvuruları","x":"Mühendislik öğrencileri şirketinizde staj yapmak istiyor.","w":2,"need":[],"ch":[{"l":"Staj programı aç","e":[["cash",-250000],["rep",2]]},{"l":"Meşgulüz","e":[]}]},
-{"id":"komsu_dava","c":"hukuk","t":"Komşu parsel sahibinden dava","x":"{proje} için komşu bina sakinleri gürültü ve gölgelenme nedeniyle dava açtı.","w":3,"need":["project"],"ch":[{"l":"Uzlaş","e":[["cash",-1100000],["rep",1]]},{"l":"Mahkemeye git","e":[],"p":0.5,"f":[["cash",-2500000],["stall",12],["rep",-2]]}],"def":0},
-{"id":"kooperatif_sikayet","c":"hukuk","t":"Müşteri şikâyeti basına yansıdı","x":"Bir daire alıcısı gecikme ve kusurları sosyal medyada paylaştı.","w":2,"need":["sold>0"],"ch":[{"l":"Açık yanıt ver ve onar","e":[["cash",-500000],["rep",1],["sat",3]]},{"l":"Yok say","e":[["rep",-3],["sat",-4]]}]},
-{"id":"tapu_hatasi","c":"hukuk","t":"Tapu kaydında hata","x":"Bir parselin tapu kaydında eski bir şerh çıktı.","w":2,"need":["land"],"ch":[{"l":"Avukat tut","e":[["cash",-450000]]},{"l":"Ses çıkarma","e":[["land",-1.5]],"p":0.5,"f":[["cash",-1200000]]}]},
-{"id":"hirsizlik","c":"guvenlik","t":"Şantiyede hırsızlık","x":"Gece {proje} şantiyesinden malzeme ve alet çalındı.","w":3,"need":["project"],"ch":[{"l":"Güvenlik tut","e":[["cash",-500000]]},{"l":"Sigortadan talep et","e":[["cash",-200000],["rep",0]],"p":0.6,"f":[["cash",-900000]]}],"def":1},
-{"id":"yangin_riski","c":"guvenlik","t":"Depoda yangın çıktı","x":"Malzeme deposunda küçük bir yangın çıktı, hızlı söndürüldü.","w":2,"need":["project"],"ch":[{"l":"Yeni yangın sistemi kur","e":[["cash",-700000],["morale",3]]},{"l":"Hasarı say, geç","e":[["cash",-1000000],["morale",-3]]}]},
-{"id":"ihale_ipucu","c":"firsat","t":"Gizli ihale ipucu","x":"Tanıdık bir yetkili yakında açılacak bir ihaleden söz etti.","w":2,"need":["open"],"ch":[{"l":"Etik dışı, reddet","e":[["rep",2]]},{"l":"Ön hazırlık için danış","e":[["cash",-300000],["rep",-2],["score",0]],"p":0.5,"f":[["rep",-6],["cash",-1500000]]}],"def":0},
-{"id":"belediye_arsa","c":"firsat","t":"Belediye ucuz arsa satıyor","x":"Belediye bütçe sıkıntısıyla {sehir}'de bir arsayı piyasanın altında satışa çıkardı.","w":2,"need":["open"],"ch":[{"l":"Teklif ver","e":[["cash",-2500000],["land",2],["rep",1]]},{"l":"Pas geç","e":[]}]},
-{"id":"sponsor","c":"firsat","t":"Spor kulübü sponsorluğu","x":"Yerel bir spor kulübü sponsorluk teklif ediyor.","w":2,"need":[],"ch":[{"l":"Sponsor ol","e":[["cash",-1000000],["rep",3]]},{"l":"Reddet","e":[]}]},
-{"id":"odul_yarismasi","c":"firsat","t":"Mimarlık ödülü başvurusu","x":"Bir mimarlık ödülüne başvuru yapılabilir.","w":2,"need":["sold>0","rep>20"],"ch":[{"l":"Başvur","e":[["cash",-350000]],"p":0.4,"s":[["rep",6],["sat",4]],"f":[["rep",0]]},{"l":"Vazgeç","e":[]}]},
-{"id":"ikinci_el_makine","c":"firsat","t":"İkinci el makine fırsatı","x":"İflas eden bir firmanın makineleri uygun fiyata satılıyor.","w":2,"need":["cash>5000000"],"ch":[{"l":"Hepsini al","e":[["cash",-1800000],["morale",2],["machine",1]]},{"l":"Gerek yok","e":[]}]},
-{"id":"tedarikci_kredi","c":"firsat","t":"Tedarikçi vadeli ödeme öneriyor","x":"Güvenilir bir tedarikçi, sonraki alımlarda %3 indirim sunuyor.","w":2,"need":["project"],"ch":[{"l":"Anlaş","e":[["mat",-3],["rep",1]]},{"l":"Reddet","e":[]}]},
-{"id":"yatirimci_ilgi","c":"firsat","t":"Aile ofisi yatırım teklifi","x":"Bir aile ofisi, projelerinize küçük bir hibe/sermaye desteği önerdi.","w":2,"need":["rep>12"],"ch":[{"l":"Kabul et","e":[["cash",3000000],["rep",-1]]},{"l":"Bağımsız kal","e":[["rep",1]]}]},
-{"id":"miras_arsa","c":"firsat","t":"Uzak akrabadan küçük miras","x":"Akrabanızdan kalan bir arsa satılığa çıktı; değerinin altında satılıyor.","w":1,"need":[],"ch":[{"l":"Satın al","e":[["cash",-1500000],["land",1]]},{"l":"Pas geç","e":[]}]},
-{"id":"rakip_basari","c":"rakip","t":"Rakip firma büyük proje duyurdu","x":"Bir rakip, bölgenizde büyük bir proje duyurdu ve kampanya yapıyor.","w":3,"need":["open","rivals"],"ch":[{"l":"Karşı kampanya","e":[["cash",-900000],["rep",1]]},{"l":"Önemseme","e":[["housing",-0.5]]}]},
-{"id":"rakip_iflas","c":"rakip","t":"Rakip firma sıkıştı","x":"Bir rakip firma nakit sıkıntısı yaşıyor; makine ve stok satmak zorunda kalabilir.","w":2,"need":["rivals"],"ch":[{"l":"Ucuza al","e":[["cash",-1000000],["rival",12],["morale",2]]},{"l":"Karışma","e":[]}]},
-{"id":"personel_transfer","c":"rakip","t":"Rakipten personel transfer teklifi","x":"Rakip bir firma çalışanlarınızı kendi tarafına çekmeye çalışıyor.","w":2,"need":["staff","rivals"],"ch":[{"l":"Maaşları artır","e":[["cash",-600000],["morale",6]]},{"l":"Sessiz kal","e":[["leave",1],["morale",-3]]}]},
-{"id":"komsu_proje_deger","c":"piyasa","t":"Yakında metro hattı müjdesi","x":"{sehir}'de yeni bir metro hattı planı açıklandı.","w":2,"need":["open"],"ch":[{"l":"Bölgeye yatırım yap","e":[["housing",3],["land",3],["cash",-500000]]},{"l":"Habere bak","e":[["housing",1.5],["land",1.5]]}]},
-{"id":"alisveris_merkezi","c":"piyasa","t":"Büyük alışveriş merkezi planı","x":"Yakınınıza büyük bir AVM yapılacak.","w":2,"need":["open"],"ch":[{"l":"Planla","e":[["land",2],["housing",1]]},{"l":"Geç","e":[]}]},
-{"id":"dogal_gaz_kesintisi","c":"doga","t":"Altyapı çalışması","x":"Belediye altyapı çalışması yüzünden yolu kapattı; sevkiyatlar aksıyor.","w":2,"need":["project"],"ch":[{"l":"Alternatif yol/nakliye","e":[["cash",-400000]]},{"l":"Bekle","e":[["stall",6]]}],"def":1},
-{"id":"banka_kampanya","c":"finans","t":"Banka kredi kampanyası","x":"Bir banka şirketlerine özel düşük masraflı kredi kampanyası yaptı.","w":2,"need":["rep>10"],"ch":[{"l":"Ben de değerlendireyim","e":[["score",6],["rep",0]]},{"l":"Gerek yok","e":[]}]},
-{"id":"kredi_notu_hata","c":"finans","t":"Kredi kayıt bürosunda hata","x":"Kredi notunuz hatalı bir kayıt yüzünden düşürülmüş.","w":2,"need":["score<600"],"ch":[{"l":"İtiraz et (düzeltsinler)","e":[["cash",-100000],["score",30]]},{"l":"Boşver","e":[]}]},
-{"id":"alacak_tahsil","c":"finans","t":"Eski müşteri borcunu ödedi","x":"Uzun zamandır geciken bir müşteri sürpriz bir şekilde borcunu kapattı.","w":2,"need":["sold>0"],"ch":[{"l":"Güzel","e":[["cash",1200000]]}]},
-{"id":"sigorta_primi","c":"finans","t":"Şantiye sigortası yenileme","x":"Şantiye sigortanızın yenileme zamanı geldi.","w":2,"need":["project"],"ch":[{"l":"Yenile","e":[["cash",-500000],["morale",2]]},{"l":"Yenileme","e":[],"p":0.6,"f":[["cash",-2000000],["rep",-1]]}],"def":0},
-{"id":"basin_roportaj","c":"firsat","t":"Gazete röportaj teklifi","x":"Yerel bir gazete sizinle konuşmak istiyor.","w":2,"need":["rep>10"],"ch":[{"l":"Röportaj ver","e":[["rep",2]],"p":0.75,"f":[["rep",-2]]},{"l":"Reddet","e":[]}]},
-{"id":"muhasebe_hata","c":"finans","t":"Muhasebe hatası bulundu","x":"Muhasebeci bir önceki dönemde fazla vergi ödediğinizi fark etti.","w":2,"need":["month:6"],"ch":[{"l":"Düzelttir","e":[["cash",900000]]}]},
-{"id":"nakliye_grevi","c":"piyasa","t":"Nakliyeciler eylemde","x":"Kamyon sahipleri akaryakıt zamları nedeniyle iş bıraktı.","w":2,"need":["project"],"ch":[{"l":"Fiyatı yukarı çek","e":[["cash",-800000]]},{"l":"Eylemi bekle","e":[["stall",8],["mat",3]]}],"def":1},
-{"id":"muteahhit_dernegi","c":"firsat","t":"Müteahhitler birliği üyelik daveti","x":"Birlik ağınıza girmek için üyelik teklif ediyor: itibar ve bilgi paylaşımı.","w":2,"need":["rep>8"],"ch":[{"l":"Üye ol","e":[["cash",-400000],["rep",2],["score",5]]},{"l":"Gerek yok","e":[]}]}
+ {
+  "id": "imar_affi",
+  "c": "mevzuat",
+  "t": "İmar affı söylentisi",
+  "x": "Belediyede imar affı konuşuluyor. Önceden yatırım yapanlar kazanabilir, ama söylenti boşa çıkabilir.",
+  "w": 3,
+  "need": [
+   "land"
+  ],
+  "ch": [
+   {
+    "l": "Arsa alımına yüklen",
+    "e": [
+     [
+      "cash",
+      -1500000
+     ],
+     [
+      "land",
+      3
+     ]
+    ],
+    "p": 0.5,
+    "f": [
+     [
+      "rep",
+      -1
+     ]
+    ]
+   },
+   {
+    "l": "Beklemede kal",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "kentsel_donusum",
+  "c": "mevzuat",
+  "t": "Kentsel dönüşüm alanı ilan edildi",
+  "x": "{sehir}'de bir bölge riskli alan ilan edildi. Bölgedeki arsa değerleri hareketleniyor.",
+  "w": 3,
+  "need": [
+   "open"
+  ],
+  "ch": [
+   {
+    "l": "Fırsatı değerlendir",
+    "e": [
+     [
+      "land",
+      4
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "İlgilenme",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "vergi_denetimi",
+  "c": "mevzuat",
+  "t": "Vergi denetimi",
+  "x": "Maliye müfettişleri defterlerinizi incelemek istiyor.",
+  "w": 3,
+  "need": [
+   "month:3"
+  ],
+  "ch": [
+   {
+    "l": "Muhasebeciyle sorunsuz geç",
+    "e": [
+     [
+      "cash",
+      -400000
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Evrakı hızlıca toparla",
+    "e": [
+     [
+      "cash",
+      -150000
+     ]
+    ],
+    "p": 0.55,
+    "f": [
+     [
+      "cash",
+      -1800000
+     ],
+     [
+      "rep",
+      -2
+     ],
+     [
+      "score",
+      -20
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "yapi_denetim",
+  "c": "mevzuat",
+  "t": "Yapı denetim incelemesi",
+  "x": "{proje} şantiyesine habersiz denetim geldi.",
+  "w": 3,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Eksikleri hemen gider",
+    "e": [
+     [
+      "cash",
+      -500000
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "İtiraz et",
+    "e": [],
+    "p": 0.4,
+    "f": [
+     [
+      "cash",
+      -1500000
+     ],
+     [
+      "stall",
+      10
+     ],
+     [
+      "rep",
+      -2
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "insaat_izni_gecikmesi",
+  "c": "mevzuat",
+  "t": "Ruhsat evrakı eksik çıktı",
+  "x": "{proje} için istenen ek evrak yüzünden şantiye bir süre bekleyebilir.",
+  "w": 2,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Danışman tut (hızlandır)",
+    "e": [
+     [
+      "cash",
+      -600000
+     ]
+    ]
+   },
+   {
+    "l": "Kendin takip et",
+    "e": [
+     [
+      "stall",
+      9
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "celik_zam",
+  "c": "piyasa",
+  "t": "Demir çelik fiyatları sıçradı",
+  "x": "Dünya piyasasında çelik fiyatları sert yükseldi. Tedarikçiler yeni liste gönderdi.",
+  "w": 4,
+  "need": [],
+  "ch": [
+   {
+    "l": "Stok yap (peşin al)",
+    "e": [
+     [
+      "cash",
+      -900000
+     ],
+     [
+      "mat",
+      6
+     ]
+    ]
+   },
+   {
+    "l": "Fiyatları izle",
+    "e": [
+     [
+      "mat",
+      9
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "cimento_indirim",
+  "c": "piyasa",
+  "t": "Çimento fabrikasından kampanya",
+  "x": "Bir fabrika stok eritmek için toplu alıma indirim yapıyor.",
+  "w": 3,
+  "need": [],
+  "ch": [
+   {
+    "l": "Fırsatı kap",
+    "e": [
+     [
+      "cash",
+      -700000
+     ],
+     [
+      "mat",
+      -5
+     ]
+    ]
+   },
+   {
+    "l": "Geç",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "kur_soku",
+  "c": "piyasa",
+  "t": "Kur şoku",
+  "x": "Döviz bir günde sıçradı; ithal girdiler pahalanıyor, piyasa ürkek.",
+  "w": 2,
+  "need": [
+   "noregime:kriz"
+  ],
+  "ch": [
+   {
+    "l": "Hedge/stoklanma yap",
+    "e": [
+     [
+      "cash",
+      -1200000
+     ],
+     [
+      "mat",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Duruşunu koru",
+    "e": [
+     [
+      "mat",
+      8
+     ],
+     [
+      "housing",
+      -1
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "faiz_indirimi",
+  "c": "piyasa",
+  "t": "Merkez Bankası sürpriz faiz indirimi",
+  "x": "Faizler beklenmedik şekilde düştü. Konut talebi canlanıyor.",
+  "w": 2,
+  "need": [
+   "noregime:kriz"
+  ],
+  "ch": [
+   {
+    "l": "Harika",
+    "e": [
+     [
+      "rate",
+      -1.5
+     ],
+     [
+      "housing",
+      2
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "faiz_artisi",
+  "c": "piyasa",
+  "t": "Sürpriz faiz artışı",
+  "x": "Merkez Bankası enflasyonla mücadele için faizi artırdı. Krediler pahalılaştı.",
+  "w": 2,
+  "need": [
+   "noregime:kriz"
+  ],
+  "ch": [
+   {
+    "l": "Hmm.",
+    "e": [
+     [
+      "rate",
+      1.5
+     ],
+     [
+      "housing",
+      -2
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "konut_kampanyasi",
+  "c": "piyasa",
+  "t": "Kamu konut kredisi kampanyası",
+  "x": "Bankalar düşük faizli konut kredisi kampanyası başlattı. Alıcılar harekete geçti.",
+  "w": 3,
+  "need": [
+   "noregime:kriz"
+  ],
+  "ch": [
+   {
+    "l": "Reklam yap",
+    "e": [
+     [
+      "cash",
+      -500000
+     ],
+     [
+      "housing",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Kampanyanın rüzgârını bekle",
+    "e": [
+     [
+      "housing",
+      1.5
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "yabanci_alici",
+  "c": "piyasa",
+  "t": "Yabancı yatırımcı ilgisi",
+  "x": "Yabancı alıcı grupları {sehir}'de lüks konut arıyor.",
+  "w": 2,
+  "need": [
+   "open"
+  ],
+  "ch": [
+   {
+    "l": "Yurt dışı tanıtım",
+    "e": [
+     [
+      "cash",
+      -800000
+     ],
+     [
+      "housing",
+      3
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Mevcut müşterilerle devam",
+    "e": [
+     [
+      "housing",
+      1
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "deprem_haberi",
+  "c": "doga",
+  "t": "Bölgede deprem",
+  "x": "Ülkenin başka bir bölgesinde deprem oldu. Müşteriler yapı kalitesini sorguluyor.",
+  "w": 2,
+  "need": [],
+  "ch": [
+   {
+    "l": "Kalite sertifikasını öne çıkar",
+    "e": [
+     [
+      "cash",
+      -600000
+     ],
+     [
+      "rep",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Sessiz kal",
+    "e": [
+     [
+      "housing",
+      -2
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "sel_basma",
+  "c": "doga",
+  "t": "Sağanak yağış, şantiye su altında",
+  "x": "Şiddetli yağış {proje} şantiyesini bastı.",
+  "w": 3,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Pompa ve ekip tut",
+    "e": [
+     [
+      "cash",
+      -700000
+     ],
+     [
+      "stall",
+      4
+     ]
+    ]
+   },
+   {
+    "l": "Suyun çekilmesini bekle",
+    "e": [
+     [
+      "stall",
+      12
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "firtina",
+  "c": "doga",
+  "t": "Fırtına uyarısı",
+  "x": "Fırtına nedeniyle vinç ve iskele güvenliği tartışılıyor.",
+  "w": 2,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Önlem al",
+    "e": [
+     [
+      "cash",
+      -350000
+     ],
+     [
+      "morale",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Çalışmaya devam",
+    "e": [],
+    "p": 0.6,
+    "f": [
+     [
+      "cash",
+      -1600000
+     ],
+     [
+      "stall",
+      8
+     ],
+     [
+      "morale",
+      -8
+     ],
+     [
+      "rep",
+      -1
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "sicak_hava",
+  "c": "doga",
+  "t": "Aşırı sıcak dalgası",
+  "x": "Sıcaklık rekor kırdı; işçiler zor durumda.",
+  "w": 2,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Vardiyayı değiştir (öğleden sonra mola)",
+    "e": [
+     [
+      "cash",
+      -250000
+     ],
+     [
+      "morale",
+      4
+     ]
+    ]
+   },
+   {
+    "l": "Aynen devam",
+    "e": [
+     [
+      "morale",
+      -6
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "isci_grevi",
+  "c": "insan",
+  "t": "İşçi grevi tehdidi",
+  "x": "Şantiye işçileri maaş artışı ve iş güvenliği talepleriyle eylem hazırlığında.",
+  "w": 3,
+  "need": [
+   "project",
+   "staff"
+  ],
+  "ch": [
+   {
+    "l": "Zam ve prim ver",
+    "e": [
+     [
+      "cash",
+      -1200000
+     ],
+     [
+      "morale",
+      12
+     ]
+    ]
+   },
+   {
+    "l": "Pazarlık et",
+    "e": [
+     [
+      "cash",
+      -400000
+     ],
+     [
+      "morale",
+      3
+     ]
+    ],
+    "p": 0.5,
+    "f": [
+     [
+      "stall",
+      10
+     ],
+     [
+      "morale",
+      -10
+     ]
+    ]
+   },
+   {
+    "l": "Reddet",
+    "e": [
+     [
+      "stall",
+      14
+     ],
+     [
+      "morale",
+      -14
+     ],
+     [
+      "rep",
+      -1
+     ]
+    ]
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "usta_ayrildi",
+  "c": "insan",
+  "t": "Usta başka firmaya geçmek istiyor",
+  "x": "Tecrübeli bir çalışanınız rakip firmadan teklif aldı.",
+  "w": 3,
+  "need": [
+   "staff"
+  ],
+  "ch": [
+   {
+    "l": "Zam yap",
+    "e": [
+     [
+      "cash",
+      -300000
+     ],
+     [
+      "morale",
+      4
+     ]
+    ]
+   },
+   {
+    "l": "Gitsin",
+    "e": [
+     [
+      "leave",
+      1
+     ],
+     [
+      "morale",
+      -4
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "personel_odul",
+  "c": "insan",
+  "t": "Ekip başarı bekliyor",
+  "x": "Ekip son projeden sonra ikramiye bekliyor.",
+  "w": 2,
+  "need": [
+   "staff",
+   "sold>0"
+  ],
+  "ch": [
+   {
+    "l": "İkramiye ver",
+    "e": [
+     [
+      "cash",
+      -900000
+     ],
+     [
+      "morale",
+      14
+     ]
+    ]
+   },
+   {
+    "l": "Ver(me)",
+    "e": [
+     [
+      "morale",
+      -8
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "is_kazasi_riski",
+  "c": "insan",
+  "t": "Güvenlik açığı tespit edildi",
+  "x": "Şantiye şefi iskelede ciddi bir güvenlik eksiği buldu.",
+  "w": 3,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Hemen düzelt",
+    "e": [
+     [
+      "cash",
+      -450000
+     ],
+     [
+      "morale",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Sonraya bırak",
+    "e": [],
+    "p": 0.55,
+    "f": [
+     [
+      "cash",
+      -2200000
+     ],
+     [
+      "stall",
+      14
+     ],
+     [
+      "rep",
+      -3
+     ],
+     [
+      "morale",
+      -10
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "stajyer_basvuru",
+  "c": "insan",
+  "t": "Üniversiteden staj başvuruları",
+  "x": "Mühendislik öğrencileri şirketinizde staj yapmak istiyor.",
+  "w": 2,
+  "need": [],
+  "ch": [
+   {
+    "l": "Staj programı aç",
+    "e": [
+     [
+      "cash",
+      -250000
+     ],
+     [
+      "rep",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Meşgulüz",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "komsu_dava",
+  "c": "hukuk",
+  "t": "Komşu parsel sahibinden dava",
+  "x": "{proje} için komşu bina sakinleri gürültü ve gölgelenme nedeniyle dava açtı.",
+  "w": 3,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Uzlaş",
+    "e": [
+     [
+      "cash",
+      -1100000
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Mahkemeye git",
+    "e": [],
+    "p": 0.5,
+    "f": [
+     [
+      "cash",
+      -2500000
+     ],
+     [
+      "stall",
+      12
+     ],
+     [
+      "rep",
+      -2
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "kooperatif_sikayet",
+  "c": "hukuk",
+  "t": "Müşteri şikâyeti basına yansıdı",
+  "x": "Bir daire alıcısı gecikme ve kusurları sosyal medyada paylaştı.",
+  "w": 2,
+  "need": [
+   "sold>0"
+  ],
+  "ch": [
+   {
+    "l": "Açık yanıt ver ve onar",
+    "e": [
+     [
+      "cash",
+      -500000
+     ],
+     [
+      "rep",
+      1
+     ],
+     [
+      "sat",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Yok say",
+    "e": [
+     [
+      "rep",
+      -3
+     ],
+     [
+      "sat",
+      -4
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "tapu_hatasi",
+  "c": "hukuk",
+  "t": "Tapu kaydında hata",
+  "x": "Bir parselin tapu kaydında eski bir şerh çıktı.",
+  "w": 2,
+  "need": [
+   "land"
+  ],
+  "ch": [
+   {
+    "l": "Avukat tut",
+    "e": [
+     [
+      "cash",
+      -450000
+     ]
+    ]
+   },
+   {
+    "l": "Ses çıkarma",
+    "e": [
+     [
+      "land",
+      -1.5
+     ]
+    ],
+    "p": 0.5,
+    "f": [
+     [
+      "cash",
+      -1200000
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "hirsizlik",
+  "c": "guvenlik",
+  "t": "Şantiyede hırsızlık",
+  "x": "Gece {proje} şantiyesinden malzeme ve alet çalındı.",
+  "w": 3,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Güvenlik tut",
+    "e": [
+     [
+      "cash",
+      -500000
+     ]
+    ]
+   },
+   {
+    "l": "Sigortadan talep et",
+    "e": [
+     [
+      "cash",
+      -200000
+     ],
+     [
+      "rep",
+      0
+     ]
+    ],
+    "p": 0.6,
+    "f": [
+     [
+      "cash",
+      -900000
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "yangin_riski",
+  "c": "guvenlik",
+  "t": "Depoda yangın çıktı",
+  "x": "Malzeme deposunda küçük bir yangın çıktı, hızlı söndürüldü.",
+  "w": 2,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Yeni yangın sistemi kur",
+    "e": [
+     [
+      "cash",
+      -700000
+     ],
+     [
+      "morale",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Hasarı say, geç",
+    "e": [
+     [
+      "cash",
+      -1000000
+     ],
+     [
+      "morale",
+      -3
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "ihale_ipucu",
+  "c": "firsat",
+  "t": "Gizli ihale ipucu",
+  "x": "Tanıdık bir yetkili yakında açılacak bir ihaleden söz etti.",
+  "w": 2,
+  "need": [
+   "open"
+  ],
+  "ch": [
+   {
+    "l": "Etik dışı, reddet",
+    "e": [
+     [
+      "rep",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Ön hazırlık için danış",
+    "e": [
+     [
+      "cash",
+      -300000
+     ],
+     [
+      "rep",
+      -2
+     ],
+     [
+      "score",
+      0
+     ]
+    ],
+    "p": 0.5,
+    "f": [
+     [
+      "rep",
+      -6
+     ],
+     [
+      "cash",
+      -1500000
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "belediye_arsa",
+  "c": "firsat",
+  "t": "Belediye ucuz arsa satıyor",
+  "x": "Belediye bütçe sıkıntısıyla {sehir}'de bir arsayı piyasanın altında satışa çıkardı.",
+  "w": 2,
+  "need": [
+   "open"
+  ],
+  "ch": [
+   {
+    "l": "Teklif ver",
+    "e": [
+     [
+      "cash",
+      -2500000
+     ],
+     [
+      "land",
+      2
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Pas geç",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "sponsor",
+  "c": "firsat",
+  "t": "Spor kulübü sponsorluğu",
+  "x": "Yerel bir spor kulübü sponsorluk teklif ediyor.",
+  "w": 2,
+  "need": [],
+  "ch": [
+   {
+    "l": "Sponsor ol",
+    "e": [
+     [
+      "cash",
+      -1000000
+     ],
+     [
+      "rep",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Reddet",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "odul_yarismasi",
+  "c": "firsat",
+  "t": "Mimarlık ödülü başvurusu",
+  "x": "Bir mimarlık ödülüne başvuru yapılabilir.",
+  "w": 2,
+  "need": [
+   "sold>0",
+   "rep>20"
+  ],
+  "ch": [
+   {
+    "l": "Başvur",
+    "e": [
+     [
+      "cash",
+      -350000
+     ]
+    ],
+    "p": 0.4,
+    "s": [
+     [
+      "rep",
+      6
+     ],
+     [
+      "sat",
+      4
+     ]
+    ],
+    "f": [
+     [
+      "rep",
+      0
+     ]
+    ]
+   },
+   {
+    "l": "Vazgeç",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "ikinci_el_makine",
+  "c": "firsat",
+  "t": "İkinci el makine fırsatı",
+  "x": "İflas eden bir firmanın makineleri uygun fiyata satılıyor.",
+  "w": 2,
+  "need": [
+   "cash>5000000"
+  ],
+  "ch": [
+   {
+    "l": "Hepsini al",
+    "e": [
+     [
+      "cash",
+      -1800000
+     ],
+     [
+      "morale",
+      2
+     ],
+     [
+      "machine",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Gerek yok",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "tedarikci_kredi",
+  "c": "firsat",
+  "t": "Tedarikçi vadeli ödeme öneriyor",
+  "x": "Güvenilir bir tedarikçi, sonraki alımlarda %3 indirim sunuyor.",
+  "w": 2,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Anlaş",
+    "e": [
+     [
+      "mat",
+      -3
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Reddet",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "yatirimci_ilgi",
+  "c": "firsat",
+  "t": "Aile ofisi yatırım teklifi",
+  "x": "Bir aile ofisi, projelerinize küçük bir hibe/sermaye desteği önerdi.",
+  "w": 2,
+  "need": [
+   "rep>12"
+  ],
+  "ch": [
+   {
+    "l": "Kabul et",
+    "e": [
+     [
+      "cash",
+      3000000
+     ],
+     [
+      "rep",
+      -1
+     ]
+    ]
+   },
+   {
+    "l": "Bağımsız kal",
+    "e": [
+     [
+      "rep",
+      1
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "miras_arsa",
+  "c": "firsat",
+  "t": "Uzak akrabadan küçük miras",
+  "x": "Akrabanızdan kalan bir arsa satılığa çıktı; değerinin altında satılıyor.",
+  "w": 1,
+  "need": [],
+  "ch": [
+   {
+    "l": "Satın al",
+    "e": [
+     [
+      "cash",
+      -1500000
+     ],
+     [
+      "land",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Pas geç",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "rakip_basari",
+  "c": "rakip",
+  "t": "Rakip firma büyük proje duyurdu",
+  "x": "Bir rakip, bölgenizde büyük bir proje duyurdu ve kampanya yapıyor.",
+  "w": 3,
+  "need": [
+   "open",
+   "rivals"
+  ],
+  "ch": [
+   {
+    "l": "Karşı kampanya",
+    "e": [
+     [
+      "cash",
+      -900000
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Önemseme",
+    "e": [
+     [
+      "housing",
+      -0.5
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "rakip_iflas",
+  "c": "rakip",
+  "t": "Rakip firma sıkıştı",
+  "x": "Bir rakip firma nakit sıkıntısı yaşıyor; makine ve stok satmak zorunda kalabilir.",
+  "w": 2,
+  "need": [
+   "rivals"
+  ],
+  "ch": [
+   {
+    "l": "Ucuza al",
+    "e": [
+     [
+      "cash",
+      -1000000
+     ],
+     [
+      "rival",
+      12
+     ],
+     [
+      "morale",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Karışma",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "personel_transfer",
+  "c": "rakip",
+  "t": "Rakipten personel transfer teklifi",
+  "x": "Rakip bir firma çalışanlarınızı kendi tarafına çekmeye çalışıyor.",
+  "w": 2,
+  "need": [
+   "staff",
+   "rivals"
+  ],
+  "ch": [
+   {
+    "l": "Maaşları artır",
+    "e": [
+     [
+      "cash",
+      -600000
+     ],
+     [
+      "morale",
+      6
+     ]
+    ]
+   },
+   {
+    "l": "Sessiz kal",
+    "e": [
+     [
+      "leave",
+      1
+     ],
+     [
+      "morale",
+      -3
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "komsu_proje_deger",
+  "c": "piyasa",
+  "t": "Yakında metro hattı müjdesi",
+  "x": "{sehir}'de yeni bir metro hattı planı açıklandı.",
+  "w": 2,
+  "need": [
+   "open"
+  ],
+  "ch": [
+   {
+    "l": "Bölgeye yatırım yap",
+    "e": [
+     [
+      "housing",
+      3
+     ],
+     [
+      "land",
+      3
+     ],
+     [
+      "cash",
+      -500000
+     ]
+    ]
+   },
+   {
+    "l": "Habere bak",
+    "e": [
+     [
+      "housing",
+      1.5
+     ],
+     [
+      "land",
+      1.5
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "alisveris_merkezi",
+  "c": "piyasa",
+  "t": "Büyük alışveriş merkezi planı",
+  "x": "Yakınınıza büyük bir AVM yapılacak.",
+  "w": 2,
+  "need": [
+   "open"
+  ],
+  "ch": [
+   {
+    "l": "Planla",
+    "e": [
+     [
+      "land",
+      2
+     ],
+     [
+      "housing",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Geç",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "dogal_gaz_kesintisi",
+  "c": "doga",
+  "t": "Altyapı çalışması",
+  "x": "Belediye altyapı çalışması yüzünden yolu kapattı; sevkiyatlar aksıyor.",
+  "w": 2,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Alternatif yol/nakliye",
+    "e": [
+     [
+      "cash",
+      -400000
+     ]
+    ]
+   },
+   {
+    "l": "Bekle",
+    "e": [
+     [
+      "stall",
+      6
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "banka_kampanya",
+  "c": "finans",
+  "t": "Banka kredi kampanyası",
+  "x": "Bir banka şirketlerine özel düşük masraflı kredi kampanyası yaptı.",
+  "w": 2,
+  "need": [
+   "rep>10"
+  ],
+  "ch": [
+   {
+    "l": "Ben de değerlendireyim",
+    "e": [
+     [
+      "score",
+      6
+     ],
+     [
+      "rep",
+      0
+     ]
+    ]
+   },
+   {
+    "l": "Gerek yok",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "kredi_notu_hata",
+  "c": "finans",
+  "t": "Kredi kayıt bürosunda hata",
+  "x": "Kredi notunuz hatalı bir kayıt yüzünden düşürülmüş.",
+  "w": 2,
+  "need": [
+   "score<600"
+  ],
+  "ch": [
+   {
+    "l": "İtiraz et (düzeltsinler)",
+    "e": [
+     [
+      "cash",
+      -100000
+     ],
+     [
+      "score",
+      30
+     ]
+    ]
+   },
+   {
+    "l": "Boşver",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "alacak_tahsil",
+  "c": "finans",
+  "t": "Eski müşteri borcunu ödedi",
+  "x": "Uzun zamandır geciken bir müşteri sürpriz bir şekilde borcunu kapattı.",
+  "w": 2,
+  "need": [
+   "sold>0"
+  ],
+  "ch": [
+   {
+    "l": "Güzel",
+    "e": [
+     [
+      "cash",
+      1200000
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "sigorta_primi",
+  "c": "finans",
+  "t": "Şantiye sigortası yenileme",
+  "x": "Şantiye sigortanızın yenileme zamanı geldi.",
+  "w": 2,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Yenile",
+    "e": [
+     [
+      "cash",
+      -500000
+     ],
+     [
+      "morale",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Yenileme",
+    "e": [],
+    "p": 0.6,
+    "f": [
+     [
+      "cash",
+      -2000000
+     ],
+     [
+      "rep",
+      -1
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "basin_roportaj",
+  "c": "firsat",
+  "t": "Gazete röportaj teklifi",
+  "x": "Yerel bir gazete sizinle konuşmak istiyor.",
+  "w": 2,
+  "need": [
+   "rep>10"
+  ],
+  "ch": [
+   {
+    "l": "Röportaj ver",
+    "e": [
+     [
+      "rep",
+      2
+     ]
+    ],
+    "p": 0.75,
+    "f": [
+     [
+      "rep",
+      -2
+     ]
+    ]
+   },
+   {
+    "l": "Reddet",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "muhasebe_hata",
+  "c": "finans",
+  "t": "Muhasebe hatası bulundu",
+  "x": "Muhasebeci bir önceki dönemde fazla vergi ödediğinizi fark etti.",
+  "w": 2,
+  "need": [
+   "month:6"
+  ],
+  "ch": [
+   {
+    "l": "Düzelttir",
+    "e": [
+     [
+      "cash",
+      900000
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "nakliye_grevi",
+  "c": "piyasa",
+  "t": "Nakliyeciler eylemde",
+  "x": "Kamyon sahipleri akaryakıt zamları nedeniyle iş bıraktı.",
+  "w": 2,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Fiyatı yukarı çek",
+    "e": [
+     [
+      "cash",
+      -800000
+     ]
+    ]
+   },
+   {
+    "l": "Eylemi bekle",
+    "e": [
+     [
+      "stall",
+      8
+     ],
+     [
+      "mat",
+      3
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "muteahhit_dernegi",
+  "c": "firsat",
+  "t": "Müteahhitler birliği üyelik daveti",
+  "x": "Birlik ağınıza girmek için üyelik teklif ediyor: itibar ve bilgi paylaşımı.",
+  "w": 2,
+  "need": [
+   "rep>8"
+  ],
+  "ch": [
+   {
+    "l": "Üye ol",
+    "e": [
+     [
+      "cash",
+      -400000
+     ],
+     [
+      "rep",
+      2
+     ],
+     [
+      "score",
+      5
+     ]
+    ]
+   },
+   {
+    "l": "Gerek yok",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "kavga_cikti",
+  "c": "insan",
+  "t": "Şantiyede kavga",
+  "x": "{kisi} ile bir iş arkadaşı şantiyede kavga etti. Ekipte gerginlik var.",
+  "w": 3,
+  "need": [
+   "trait:huysuz",
+   "staff>1"
+  ],
+  "ch": [
+   {
+    "l": "İkisini de uyar",
+    "e": [
+     [
+      "tmorale",
+      -6
+     ],
+     [
+      "morale",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Arabuluculuk yap (mola, ortak yemek)",
+    "e": [
+     [
+      "cash",
+      -40000
+     ]
+    ],
+    "p": 0.65,
+    "s": [
+     [
+      "morale",
+      5
+     ]
+    ],
+    "f": [
+     [
+      "morale",
+      -6
+     ]
+    ]
+   },
+   {
+    "l": "{kisi} işten çıkar",
+    "e": [
+     [
+      "tleave",
+      1
+     ],
+     [
+      "morale",
+      -3
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "zam_talebi",
+  "c": "insan",
+  "t": "{kisi} zam ve terfi istiyor",
+  "x": "{kisi} hırslı biri: \"Emeğimin karşılığını almıyorum\" diyor ve sizinle konuşmak istiyor.",
+  "w": 3,
+  "need": [
+   "trait:hirsli"
+  ],
+  "ch": [
+   {
+    "l": "%15 zam ver",
+    "e": [
+     [
+      "traise",
+      15
+     ],
+     [
+      "tmorale",
+      10
+     ]
+    ]
+   },
+   {
+    "l": "Söz ver: 3 ay sonra bakalım",
+    "e": [
+     [
+      "tmorale",
+      2
+     ]
+    ],
+    "n": [
+     "zam_sozu",
+     90
+    ]
+   },
+   {
+    "l": "Reddet",
+    "e": [
+     [
+      "tmorale",
+      -10
+     ]
+    ],
+    "p": 0.5,
+    "s": [],
+    "f": [
+     [
+      "tleave",
+      1
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "zam_sozu",
+  "c": "insan",
+  "t": "{kisi} sözü hatırlatıyor",
+  "x": "{kisi}, üç ay önce verdiğiniz zam sözünü hatırlatıyor.",
+  "w": 3,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Sözü tut: %12 zam",
+    "e": [
+     [
+      "traise",
+      12
+     ],
+     [
+      "tmorale",
+      12
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Yine ertele",
+    "e": [
+     [
+      "tmorale",
+      -12
+     ]
+    ],
+    "p": 0.4,
+    "s": [],
+    "f": [
+     [
+      "tleave",
+      1
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "sadik_teklif",
+  "c": "insan",
+  "t": "{kisi} teklifi reddetti",
+  "x": "Rakip bir firma {kisi} adlı çalışana iki katı maaş teklif etti ama o \"Burada ailem gibiyim\" diyerek reddetti.",
+  "w": 3,
+  "need": [
+   "trait:sadik"
+  ],
+  "ch": [
+   {
+    "l": "Sürpriz prim ver",
+    "e": [
+     [
+      "cash",
+      -150000
+     ],
+     [
+      "tmorale",
+      12
+     ],
+     [
+      "morale",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "İçten teşekkür et",
+    "e": [
+     [
+      "tmorale",
+      4
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "takim_yemegi",
+  "c": "insan",
+  "t": "Mangal gecesi",
+  "x": "{kisi}, ekip için hafta sonu bir mangal gecesi düzenlemek istiyor.",
+  "w": 3,
+  "need": [
+   "trait:takimci"
+  ],
+  "ch": [
+   {
+    "l": "Masrafı karşıla",
+    "e": [
+     [
+      "cash",
+      -80000
+     ],
+     [
+      "morale",
+      8
+     ]
+    ]
+   },
+   {
+    "l": "İzin ver, masraf onların",
+    "e": [
+     [
+      "morale",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Gerek yok",
+    "e": [
+     [
+      "tmorale",
+      -3
+     ]
+    ]
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "tembel_uyari",
+  "c": "insan",
+  "t": "{kisi} işi savsaklıyor",
+  "x": "Şantiye şefi, {kisi} adlı çalışanın işi sürekli yavaşlattığından şikâyetçi.",
+  "w": 3,
+  "need": [
+   "trait:tembel",
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Sert uyar",
+    "e": [
+     [
+      "tmorale",
+      -8
+     ]
+    ],
+    "p": 0.6,
+    "s": [
+     [
+      "morale",
+      1
+     ]
+    ],
+    "f": [
+     [
+      "tleave",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Birebir konuş, hedef ver",
+    "e": [
+     [
+      "cash",
+      -20000
+     ]
+    ],
+    "p": 0.5,
+    "s": [
+     [
+      "tmorale",
+      8
+     ]
+    ],
+    "f": [
+     [
+      "tmorale",
+      -4
+     ]
+    ]
+   },
+   {
+    "l": "Görmezden gel",
+    "e": [
+     [
+      "morale",
+      -2
+     ]
+    ]
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "dikkatli_uyari",
+  "c": "guvenlik",
+  "t": "{kisi} bir tehlike fark etti",
+  "x": "Dikkatli {kisi}, {proje} şantiyesinde iskelede gevşek bir bağlantı fark etti.",
+  "w": 3,
+  "need": [
+   "trait:dikkatli",
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Hemen onar",
+    "e": [
+     [
+      "cash",
+      -120000
+     ],
+     [
+      "tmorale",
+      8
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Haftaya bırak",
+    "e": [],
+    "p": 0.7,
+    "s": [],
+    "f": [
+     [
+      "stall",
+      6
+     ],
+     [
+      "rep",
+      -1
+     ]
+    ]
+   },
+   {
+    "l": "Abartıyor, önemseme",
+    "e": [
+     [
+      "stall",
+      8
+     ],
+     [
+      "tmorale",
+      -8
+     ],
+     [
+      "rep",
+      -2
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "dikkatsiz_olay",
+  "c": "guvenlik",
+  "t": "Ucuz atlatılan kaza",
+  "x": "{kisi}, {proje} şantiyesinde bir aleti yukarıdan düşürdü; neyse ki kimse yaralanmadı.",
+  "w": 3,
+  "need": [
+   "trait:dikkatsiz",
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "İş güvenliği eğitimi ver",
+    "e": [
+     [
+      "cash",
+      -100000
+     ],
+     [
+      "morale",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Sert uyar",
+    "e": [
+     [
+      "tmorale",
+      -4
+     ]
+    ]
+   },
+   {
+    "l": "Üzerinde durma",
+    "e": [],
+    "p": 0.75,
+    "s": [],
+    "f": [
+     [
+      "stall",
+      5
+     ],
+     [
+      "rep",
+      -1
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "caliskan_oneri",
+  "c": "insan",
+  "t": "Verimlilik önerisi: {kisi}",
+  "x": "Çalışkan {kisi}, iş akışını hızlandıracak bir yöntem önerdi.",
+  "w": 3,
+  "need": [
+   "trait:caliskan"
+  ],
+  "ch": [
+   {
+    "l": "Önerisini dene",
+    "e": [
+     [
+      "cash",
+      -60000
+     ]
+    ],
+    "p": 0.7,
+    "s": [
+     [
+      "morale",
+      3
+     ],
+     [
+      "rep",
+      1
+     ]
+    ],
+    "f": []
+   },
+   {
+    "l": "Prim ver",
+    "e": [
+     [
+      "cash",
+      -100000
+     ],
+     [
+      "tmorale",
+      10
+     ]
+    ]
+   },
+   {
+    "l": "Teşekkür et",
+    "e": [
+     [
+      "tmorale",
+      3
+     ]
+    ]
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "dost_arsa",
+  "c": "firsat",
+  "t": "Eski dostun arsa teklifi",
+  "x": "Eski bir dostunuz: \"Rahmetli babamdan kalma bir arsa var, acil paraya ihtiyacım var, değerinin altında veririm\" diyor.",
+  "w": 2,
+  "need": [
+   "open",
+   "month:4"
+  ],
+  "ch": [
+   {
+    "l": "Arsayı satın al",
+    "e": [
+     [
+      "cash",
+      -900000
+     ],
+     [
+      "land",
+      2
+     ]
+    ],
+    "n": [
+     "dost_tapu",
+     45
+    ]
+   },
+   {
+    "l": "Kibarca reddet",
+    "e": [
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Biraz yardım et",
+    "e": [
+     [
+      "cash",
+      -200000
+     ],
+     [
+      "rep",
+      2
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "dost_tapu",
+  "c": "hukuk",
+  "t": "Arsada tapu şerhi çıktı",
+  "x": "Dostunuzdan aldığınız arsanın tapusunda eski bir şerh ortaya çıktı.",
+  "w": 3,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Avukat tut, temizlet",
+    "e": [
+     [
+      "cash",
+      -300000
+     ]
+    ],
+    "p": 0.75,
+    "s": [
+     [
+      "land",
+      4
+     ],
+     [
+      "rep",
+      2
+     ]
+    ],
+    "f": [
+     [
+      "rep",
+      -1
+     ]
+    ]
+   },
+   {
+    "l": "Dostunla konuşup çöz",
+    "e": [],
+    "p": 0.5,
+    "s": [
+     [
+      "land",
+      2
+     ]
+    ],
+    "f": [
+     [
+      "cash",
+      -500000
+     ]
+    ]
+   },
+   {
+    "l": "Vazgeç, zararı kabul et",
+    "e": [
+     [
+      "cash",
+      -400000
+     ]
+    ]
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "gazeteci_arastirma",
+  "c": "firsat",
+  "t": "Gazeteci dosya hazırlıyor",
+  "x": "Yerel bir gazeteci inşaat sektörü hakkında dosya hazırlıyor ve sizinle konuşmak istiyor.",
+  "w": 2,
+  "need": [
+   "sold>0",
+   "rep>10"
+  ],
+  "ch": [
+   {
+    "l": "Şantiyeyi göster, açık ol",
+    "e": [],
+    "p": 0.7,
+    "s": [
+     [
+      "rep",
+      3
+     ]
+    ],
+    "f": [
+     [
+      "rep",
+      -3
+     ]
+    ],
+    "n": [
+     "gazeteci_haber",
+     30
+    ]
+   },
+   {
+    "l": "Basın danışmanı tut",
+    "e": [
+     [
+      "cash",
+      -250000
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Cevap verme",
+    "e": [
+     [
+      "rep",
+      -1
+     ]
+    ]
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "gazeteci_haber",
+  "c": "firsat",
+  "t": "Haber yayınlandı",
+  "x": "Gazetecinin haberi yayınlandı; kamuoyunun tepkisi karışık.",
+  "w": 3,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Açıklama yap",
+    "e": [
+     [
+      "cash",
+      -50000
+     ]
+    ],
+    "p": 0.6,
+    "s": [
+     [
+      "rep",
+      2
+     ],
+     [
+      "sat",
+      3
+     ]
+    ],
+    "f": [
+     [
+      "rep",
+      -1
+     ]
+    ]
+   },
+   {
+    "l": "Sessiz kal",
+    "e": []
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "genc_muhendis",
+  "c": "insan",
+  "t": "Parlak genç mühendis",
+  "x": "Parlak bir genç mühendis, düşük maaşla ama hırslı şekilde sizinle çalışmak istiyor.",
+  "w": 2,
+  "need": [
+   "staff"
+  ],
+  "ch": [
+   {
+    "l": "Al ve eğit",
+    "e": [
+     [
+      "cash",
+      -300000
+     ],
+     [
+      "rep",
+      1
+     ]
+    ],
+    "n": [
+     "genc_patent",
+     120
+    ]
+   },
+   {
+    "l": "Staj olarak al",
+    "e": [
+     [
+      "cash",
+      -80000
+     ]
+    ]
+   },
+   {
+    "l": "Teşekkür et",
+    "e": []
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "genc_patent",
+  "c": "firsat",
+  "t": "Genç mühendis ödül kazandı",
+  "x": "Eğittiğiniz genç mühendisin geliştirdiği kalıp yöntemi bir yarışmada ödül kazandı.",
+  "w": 3,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Şirket adına patent başvurusu",
+    "e": [
+     [
+      "cash",
+      -100000
+     ]
+    ],
+    "p": 0.6,
+    "s": [
+     [
+      "rep",
+      4
+     ],
+     [
+      "cash",
+      600000
+     ]
+    ],
+    "f": [
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Basın duyurusu yap",
+    "e": [
+     [
+      "rep",
+      3
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "komsu_catlak",
+  "c": "hukuk",
+  "t": "Komşu bina çatlak iddiası",
+  "x": "{proje} yanındaki bina sahibi, duvarında inşaat yüzünden çatlak oluştuğunu iddia ediyor.",
+  "w": 3,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Bilirkişi çağır",
+    "e": [
+     [
+      "cash",
+      -150000
+     ]
+    ],
+    "p": 0.7,
+    "s": [
+     [
+      "rep",
+      2
+     ]
+    ],
+    "f": [
+     [
+      "cash",
+      -600000
+     ],
+     [
+      "rep",
+      -2
+     ]
+    ]
+   },
+   {
+    "l": "Onarımı üstlen",
+    "e": [
+     [
+      "cash",
+      -350000
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Dava açılsın",
+    "e": [],
+    "p": 0.4,
+    "s": [
+     [
+      "rep",
+      1
+     ]
+    ],
+    "f": [
+     [
+      "cash",
+      -900000
+     ],
+     [
+      "rep",
+      -3
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "tarihi_buluntu",
+  "c": "mevzuat",
+  "t": "Hafriyatta tarihi buluntu",
+  "x": "{proje} hafriyatında tarihi bir seramik parçası çıktı. Kazı durdurulabilir.",
+  "w": 2,
+  "need": [
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Bildir ve kurallara uy",
+    "e": [
+     [
+      "stall",
+      10
+     ],
+     [
+      "rep",
+      3
+     ]
+    ],
+    "n": [
+     "muze_ortak",
+     60
+    ]
+   },
+   {
+    "l": "Gizli tut",
+    "e": [],
+    "p": 0.5,
+    "s": [],
+    "f": [
+     [
+      "cash",
+      -1200000
+     ],
+     [
+      "rep",
+      -5
+     ],
+     [
+      "stall",
+      20
+     ]
+    ]
+   },
+   {
+    "l": "Müzeye bağış yap",
+    "e": [
+     [
+      "cash",
+      -200000
+     ],
+     [
+      "rep",
+      2
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "muze_ortak",
+  "c": "firsat",
+  "t": "Müze ortaklığı",
+  "x": "Müze, buluntu sayesinde projenize bilgi tabelası ve bir açılış töreni önerdi.",
+  "w": 3,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Törene katıl",
+    "e": [
+     [
+      "cash",
+      -80000
+     ],
+     [
+      "rep",
+      3
+     ],
+     [
+      "sat",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Katılma",
+    "e": []
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "belediye_acilis",
+  "c": "firsat",
+  "t": "Belediye başkanından davet",
+  "x": "Belediye başkanı sizi yeni park açılışına davet etti.",
+  "w": 2,
+  "need": [
+   "rep>12",
+   "open"
+  ],
+  "ch": [
+   {
+    "l": "Katıl, hediye götür",
+    "e": [
+     [
+      "cash",
+      -120000
+     ]
+    ],
+    "p": 0.6,
+    "s": [
+     [
+      "rep",
+      3
+     ],
+     [
+      "land",
+      2
+     ]
+    ],
+    "f": [
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Katılma",
+    "e": []
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "rakip_casus",
+  "c": "rakip",
+  "t": "Rakip planlarınızı kolluyor",
+  "x": "Rakip bir firmanın {proje} planlarını öğrenmeye çalıştığı söyleniyor.",
+  "w": 2,
+  "need": [
+   "rivals",
+   "project"
+  ],
+  "ch": [
+   {
+    "l": "Güvenliği artır",
+    "e": [
+     [
+      "cash",
+      -90000
+     ],
+     [
+      "morale",
+      -1
+     ]
+    ]
+   },
+   {
+    "l": "Sahte bilgi ver",
+    "e": [],
+    "p": 0.5,
+    "s": [
+     [
+      "rival",
+      1
+     ]
+    ],
+    "f": [
+     [
+      "rep",
+      -2
+     ]
+    ]
+   },
+   {
+    "l": "Aldırma",
+    "e": [],
+    "p": 0.5,
+    "s": [],
+    "f": [
+     [
+      "cash",
+      -300000
+     ]
+    ]
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "bayram_bonusu",
+  "c": "insan",
+  "t": "Bayram bonusu beklentisi",
+  "x": "Bayram yaklaşıyor; çalışanlar bonus bekliyor.",
+  "w": 2,
+  "need": [
+   "staff",
+   "month:5"
+  ],
+  "ch": [
+   {
+    "l": "Bonus ver",
+    "e": [
+     [
+      "cash",
+      -300000
+     ],
+     [
+      "morale",
+      10
+     ]
+    ]
+   },
+   {
+    "l": "Küçük hediye ver",
+    "e": [
+     [
+      "cash",
+      -100000
+     ],
+     [
+      "morale",
+      4
+     ]
+    ]
+   },
+   {
+    "l": "Verme",
+    "e": [
+     [
+      "morale",
+      -6
+     ]
+    ]
+   }
+  ],
+  "def": 1
+ },
+ {
+  "id": "calisan_borc",
+  "c": "insan",
+  "t": "{kisi} avans istiyor",
+  "x": "Çalışanınız {kisi}, ailesinin zor durumda olduğunu söyleyerek maaşından avans istiyor.",
+  "w": 3,
+  "need": [
+   "staff"
+  ],
+  "ch": [
+   {
+    "l": "Avans ver",
+    "e": [
+     [
+      "cash",
+      -60000
+     ],
+     [
+      "tmorale",
+      15
+     ]
+    ],
+    "n": [
+     "borc_geri",
+     90
+    ]
+   },
+   {
+    "l": "Hibe et",
+    "e": [
+     [
+      "cash",
+      -120000
+     ],
+     [
+      "tmorale",
+      20
+     ],
+     [
+      "morale",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Reddet",
+    "e": [
+     [
+      "tmorale",
+      -8
+     ]
+    ]
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "borc_geri",
+  "c": "insan",
+  "t": "{kisi} borcunu ödedi",
+  "x": "{kisi} aldığı avansı eksiksiz geri ödedi ve size teşekkür etti. Ekipte takdir topladınız.",
+  "w": 3,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Çok güzel",
+    "e": [
+     [
+      "cash",
+      60000
+     ],
+     [
+      "tmorale",
+      6
+     ],
+     [
+      "morale",
+      2
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Parayı hibe say",
+    "e": [
+     [
+      "tmorale",
+      15
+     ],
+     [
+      "morale",
+      3
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "fuar_daveti",
+  "c": "firsat",
+  "t": "Uluslararası inşaat fuarı",
+  "x": "Uluslararası bir inşaat fuarına davet aldınız.",
+  "w": 2,
+  "need": [
+   "open",
+   "cash>5"
+  ],
+  "ch": [
+   {
+    "l": "Stant aç",
+    "e": [
+     [
+      "cash",
+      -500000
+     ]
+    ],
+    "p": 0.6,
+    "s": [
+     [
+      "rep",
+      3
+     ],
+     [
+      "cash",
+      800000
+     ]
+    ],
+    "f": [
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Ziyaretçi olarak gez",
+    "e": [
+     [
+      "cash",
+      -120000
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Katılma",
+    "e": []
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "musteri_tavsiye",
+  "c": "firsat",
+  "t": "Memnun müşteri tavsiyesi",
+  "x": "Memnun bir müşteri sizi komşularına ve akrabalarına öneriyor.",
+  "w": 3,
+  "need": [
+   "sold>0"
+  ],
+  "ch": [
+   {
+    "l": "Teşekkür hediyesi gönder",
+    "e": [
+     [
+      "cash",
+      -40000
+     ],
+     [
+      "sat",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Referans kampanyası başlat",
+    "e": [
+     [
+      "cash",
+      -120000
+     ]
+    ],
+    "p": 0.6,
+    "s": [
+     [
+      "sat",
+      5
+     ],
+     [
+      "rep",
+      2
+     ]
+    ],
+    "f": []
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "deprem_denetim",
+  "c": "mevzuat",
+  "t": "Deprem sonrası sıkı denetim",
+  "x": "Bölgede deprem sonrası sıkı denetimler başladı; şantiyeniz de denetlenecek.",
+  "w": 2,
+  "need": [
+   "project",
+   "month:6"
+  ],
+  "ch": [
+   {
+    "l": "Tüm belgeleri hazır tut",
+    "e": [
+     [
+      "cash",
+      -100000
+     ],
+     [
+      "rep",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Danışman tut",
+    "e": [
+     [
+      "cash",
+      -250000
+     ]
+    ],
+    "p": 0.85,
+    "s": [
+     [
+      "rep",
+      3
+     ]
+    ],
+    "f": [
+     [
+      "stall",
+      5
+     ]
+    ]
+   },
+   {
+    "l": "Rutin devam et",
+    "e": [],
+    "p": 0.6,
+    "s": [],
+    "f": [
+     [
+      "stall",
+      8
+     ],
+     [
+      "rep",
+      -2
+     ],
+     [
+      "cash",
+      -400000
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ },
+ {
+  "id": "burs_istegi",
+  "c": "insan",
+  "t": "Burs ricası: {kisi}",
+  "x": "Çalışanınız {kisi}, oğlunun mimarlık okumak istediğini söyleyerek burs ricasında bulundu.",
+  "w": 2,
+  "need": [
+   "staff"
+  ],
+  "ch": [
+   {
+    "l": "Burs ver",
+    "e": [
+     [
+      "cash",
+      -150000
+     ],
+     [
+      "tmorale",
+      20
+     ],
+     [
+      "rep",
+      1
+     ]
+    ],
+    "n": [
+     "burs_mezun",
+     150
+    ]
+   },
+   {
+    "l": "Küçük destek",
+    "e": [
+     [
+      "cash",
+      -40000
+     ],
+     [
+      "tmorale",
+      8
+     ]
+    ]
+   },
+   {
+    "l": "Üzülerek reddet",
+    "e": [
+     [
+      "tmorale",
+      -5
+     ]
+    ]
+   }
+  ],
+  "def": 2
+ },
+ {
+  "id": "burs_mezun",
+  "c": "insan",
+  "t": "Bursiyer mezun oldu",
+  "x": "Burs verdiğiniz genç mimar mezun oldu ve şirkette çalışmak istediğini söyledi.",
+  "w": 3,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Tebrik et, mülakata al",
+    "e": [
+     [
+      "rep",
+      2
+     ],
+     [
+      "morale",
+      4
+     ]
+    ]
+   },
+   {
+    "l": "Başka firmaya tavsiye et",
+    "e": [
+     [
+      "rep",
+      3
+     ]
+    ]
+   }
+  ],
+  "def": 0
+ }
 ]

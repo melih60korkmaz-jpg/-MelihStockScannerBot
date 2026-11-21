@@ -1,3 +1,4 @@
+import { traitEff, traitOf } from './staff';
 import { dateOf } from '../core/calendar';
 import { gauss, rand, randInt } from '../core/rng';
 import { TL, type Money } from '../core/money';
@@ -32,7 +33,7 @@ export function crewCapacity(s: GameState, stageId: string, projectId?: number):
   for (const x of s.staff) {
     if (x.project !== undefined && x.project !== projectId) continue;
     const share = x.project === undefined ? 1 / nActive : 1;
-    cap += (w[x.type] ?? 0) * (0.8 + 0.4 * (x.experience / 100)) * (0.85 + 0.3 * (x.morale / 100)) * share;
+    cap += (w[x.type] ?? 0) * (0.8 + 0.4 * (x.experience / 100)) * (0.85 + 0.3 * (x.morale / 100)) * share * traitEff(x);
     if (x.type === 'santiye_sefi') chief = true;
   }
   return cap * (chief ? 1.15 : 1);
@@ -114,7 +115,8 @@ function completeStage(s: GameState, p: Project, b: BuildState, crew: number, ev
 const SAFETY_MULT = { dusuk: 1.8, normal: 1, yuksek: 0.45 } as const;
 function maybeAccident(s: GameState, p: Project, b: BuildState, cap: number, weather: string, events: GameEvent[]): boolean {
   const c = s.company!, workers = Math.min(25, cap), chief = s.staff.some((x) => x.type === 'santiye_sefi');
-  const prob = 0.0005 * Math.sqrt(workers + 1) * SAFETY_MULT[c.safety] * (weather === 'acik' ? 1 : 1.3) * (chief ? 0.7 : 1);
+  const careful = Math.min(1.6, Math.max(0.7, s.staff.reduce((m, x) => (FIELD.has(x.type) ? m * (traitOf(x).id === 'dikkatli' ? 0.96 : traitOf(x).id === 'dikkatsiz' ? 1.06 : 1) : m), 1)));
+  const prob = 0.0005 * Math.sqrt(workers + 1) * SAFETY_MULT[c.safety] * (weather === 'acik' ? 1 : 1.3) * (chief ? 0.7 : 1) * careful;
   if (rand(s.rng, 'construction') >= prob) return false;
   const days = randInt(s.rng, 'construction', 3, 9), comp = Math.round(TL(randInt(s.rng, 'construction', 60, 260) * 1000) * s.costIndex);
   b.accidentUntil = s.clock.day + days; b.stalled = 'kaza';

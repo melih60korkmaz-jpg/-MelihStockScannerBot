@@ -469,3 +469,4 @@ mark { background:#FF8C3255; color:inherit; border-radius:3px; padding:0 1px; }
 @media (max-height:460px) { .guidecard { height:calc(100% - 12px); } .ghead h2 { font-size:20px; } .gbody h2 { font-size:22px; } }
 :root[data-motion="reduced"] .gqa summary::before { transition:none; }
 @media (max-height:360px) { .menu .col { gap:6px; padding-top:6px; padding-bottom:6px; } .menu .btn.lg { min-height:40px; font-size:15px; } .menu .logo .word { font-size:34px; } .menu .foot { margin-top:0; font-size:10px; } }
+.chip.trait { font-size:11px; padding:1px 8px; background:var(--accent-bg); color:var(--accent-l); vertical-align:middle; margin-left:2px; }

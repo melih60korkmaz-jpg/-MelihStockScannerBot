@@ -1,3 +1,4 @@
+import { traitOf } from './staff';
 import { dateOf, isFirstOfMonth, isMonday, isNewYear } from '../core/calendar';
 import type { GameEvent, GameState } from '../core/types';
 import { monthKey } from '../core/calendar';
@@ -90,7 +91,7 @@ function monthly(s: GameState, events: GameEvent[]): void {
 
 /** Moral hedefe yaklaşır: güvenlik politikası, yakın kaza, nakit sıkıntısı etkiler. */
 function moraleMonthly(s: GameState): void {
-  const c = s.company!; const target = 68 + (c.safety === 'yuksek' ? 6 : c.safety === 'dusuk' ? -6 : 0) - (s.clock.day - c.lastAccidentDay < 90 ? 10 : 0) - (c.cash < 0 ? 8 : 0);
+  const c = s.company!; const team = Math.min(6, 2 * s.staff.filter((x) => traitOf(x).id === 'takimci').length); const target = 68 + team + (c.safety === 'yuksek' ? 6 : c.safety === 'dusuk' ? -6 : 0) - (s.clock.day - c.lastAccidentDay < 90 ? 10 : 0) - (c.cash < 0 ? 8 : 0);
   for (const x of s.staff) x.morale = Math.round(Math.min(100, Math.max(0, x.morale + (target - x.morale) * 0.25)));
 }
 

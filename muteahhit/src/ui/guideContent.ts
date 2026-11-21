@@ -92,6 +92,10 @@ export const GUIDE: Topic[] = [
       { ul: ['Saha çalışanında açılır listeden bir proje seçersen yalnızca orada çalışır.', '"Ortak havuz": aktif projeler arasında bölünür. Tek projen varsa hepsi oraya gider.', 'Ofis çalışanları projeye atanmaz.'] },
       { h: 'Verim ve moral' },
       { ul: ['Verim: deneyim ve morale bağlıdır. Deneyimli çalışan pahalı ama hızlı ve güvenlidir.', 'Moral düşerse verim düşer; kaza, nakit sıkıntısı ve gecikmeler moralı düşürür, başarı yükseltir.', 'Şantiye şefi ekibin verimini ve güvenliğini artırır.'] },
+      { h: 'Kişilik özellikleri' },
+      { p: 'Her çalışanın bir kişiliği vardır; kartında rozet olarak görünür, üzerine dokununca etkisi yazar. Kişilik küçük ama gerçek etkiler yaratır ve hikâye olaylarını tetikler.' },
+      { ul: ['💪 Çalışkan: verim %6 yüksek. 😴 Tembel: verim %8 düşük, uyarılabilir.', '🦺 Dikkatli: kaza riskini azaltır. ⚠️ Dikkatsiz: kaza riskini artırır.', '🤝 Sadık: başka firmaya geçmez, rastgele ayrılmaz. 🫶 Takım oyuncusu: ekip moralini yükseltir (en çok +6).', '😤 Huysuz: ekipte kavga çıkarabilir. 🚀 Hırslı: zam ve terfi ister; verilmezse ayrılabilir.'] },
+      { tip: 'Aynı ekipte çok sayıda tembel ya da dikkatsiz olması yavaşlatır ve kaza getirir; çalışkan ve takım oyuncuları değerlidir. Bir çalışanın özelliği değişmez.' },
       { h: 'İşe alma ve kapasite' },
       { ul: ['Ofis kapasitesi sınırlıdır: Küçük ofis 6, Ofis katı 20, Plaza katı 60, Şirket binası 150 kişi. Dolunca daha büyük merkeze taşınmak gerekir (Şirket › Genel Merkez).', 'Her çalışanın aylık maaşı vardır; maaşlar yıl başında zamlanabilir.', 'İşten çıkarma onay ister ve geri alınamaz.'] },
     ],
@@ -181,6 +185,7 @@ export const GUIDE: Topic[] = [
   },
   {
     id: 'olaylar', ico: '📰', title: 'Olaylar ve haberler', blocks: [
+      { p: 'Hikâye olayları: bazı kararlar sonradan devam eder. Örneğin bir çalışana avans verirsin, üç ay sonra borcunu öder; bir arsa alırsın, tapuda sorun çıkar; bir gazeteciyle konuşursun, haber yayınlanır. Çalışanların kişilikleri de kendi olaylarını getirir (kavga, zam talebi, mangal gecesi, tehlike uyarısı…). Devam olayı çıkmadan o kişi şirketten ayrılırsa olay atlanır.' },
       { p: 'Oyun sırasında olaylar çıkar: malzeme zammı, tedarikçi gecikmesi, makine arızası, iş kazası, kötü hava, müşteri şikâyeti, rakip hamleleri ve daha fazlası.' },
       { ul: ['Karar gerektiren olaylarda pencere açılır ve oyun durur. Her seçeneğin maliyeti, riski ve süresi yazar.', 'Süre dolarsa otomatik bir seçim uygulanır.', 'Bildirimler köşede kısa süre görünür; önemli olanlar kart olarak çıkar (başarım, seviye atlama, büyük kâr, ani net varlık düşüşü).', 'Net varlık bir ayda %15\'ten fazla düşerse kırmızı uyarı çıkar ve Finans\'a yönlendirir.'] },
     ],

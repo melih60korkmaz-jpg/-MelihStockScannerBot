@@ -73,7 +73,9 @@ export interface Parcel {
 export interface CityMarket { landIndex: number; housingIndex: number; supply?: number }
 export interface Rival { id: number; name: string; style: 'agresif' | 'dengeli' | 'temkinli'; home: string; cash: Money; rep: number; tech: number; projects: number; wins: number; failed: boolean; since: number; last?: string }
 export interface Progress { ach: Record<string, number>; quests: Record<string, number>; c: { loans: number; tendersWon: number; bids: number; events: number; unitsSold: number; started: number; bestQuality: number; crisisMonths: number; investors: number; equitySold: number } }
-export interface PendingEvent { id: string; day: number; projectId?: number; city?: string }
+export interface PendingEvent { id: string; day: number; projectId?: number; city?: string; staffId?: number }
+/** Hikâye zinciri: seçimden N gün sonra çıkacak devam olayı (isteğe bağlı alan; eski kayıtlarda yok). */
+export interface QueuedEvent { id: string; day: number; projectId?: number; city?: string; staffId?: number }
 export interface BuildState {
   stage: number;               // STAGES indeksi (1–17); 18 = bitti
   progress: number;            // aşama ilerlemesi 0–1
@@ -177,6 +179,7 @@ export interface GameState {
   rivals: Rival[];
   pending: PendingEvent | null;
   evtLast: Record<string, number>;
+  evtQueue?: QueuedEvent[];
   progress: Progress;
   /** Malzeme fiyat geçmişi (aylık etkin çarpan; en çok 36 ay). Eski kayıtlarda yoktur. */
   matHist?: Record<string, number[]>;

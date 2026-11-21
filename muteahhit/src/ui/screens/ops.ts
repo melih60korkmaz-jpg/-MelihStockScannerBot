@@ -1,3 +1,4 @@
+import { traitOf } from '../../sim/staff';
 import { formatDate } from '../../core/calendar';
 import { TL } from '../../core/money';
 import { MACHINES, MATERIALS, OFFICES, STAFF_TYPES, STAGES, SUPPLIERS, machine, officeFor, supplier } from '../../data';
@@ -27,7 +28,7 @@ export function opsView(app: App, refresh: () => void): HTMLElement {
 /** "Kim nerede?" panosu: gerçek atama verisinden — ofis, ortak havuz ve her aktif projedeki çalışanlar. */
 function whereBoard(app: App): HTMLElement {
   const s = app.store.state;
-  const person = (p: (typeof s.staff)[number]) => h('div', { class: 'wperson', title: `${p.name} · ${STAFF_TYPES.find((x) => x.id === p.type)?.label}` }, h('div', { class: 'wface', html: portrait(p.type, p.id, p.morale) }), h('small', {}, p.name.split(' ')[0]!));
+  const person = (p: (typeof s.staff)[number]) => h('div', { class: 'wperson', title: `${p.name} · ${STAFF_TYPES.find((x) => x.id === p.type)?.label} · ${traitOf(p).label}` }, h('div', { class: 'wface', html: portrait(p.type, p.id, p.morale) }), h('small', {}, p.name.split(' ')[0]!));
   const col = (ico: string, title: string, sub: string, people: typeof s.staff) => h('div', { class: 'wcol' }, h('div', { class: 'wh' }, h('b', {}, `${ico} ${title}`), h('small', {}, `${people.length} kişi${sub ? ' · ' + sub : ''}`)), h('div', { class: 'wppl' }, ...(people.length ? people.map(person) : [h('small', { class: 'mute' }, '—')])));
   const office = s.staff.filter((p) => !FIELD.has(p.type)), field = s.staff.filter((p) => FIELD.has(p.type)), pool = field.filter((p) => p.project === undefined || !s.projects.some((x) => x.id === p.project && (x.status === 'insaat' || x.status === 'taslak')));
   const active = s.projects.filter((p) => p.status === 'insaat' || p.status === 'taslak');
@@ -47,7 +48,7 @@ function team(app: App, refresh: () => void): HTMLElement {
       const card: HTMLElement = h('div', { class: `staffcard ${fresh.has(p.id) ? 'fresh' : ''}` },
         h('div', { class: `portrait ${tone}`, html: portrait(p.type, p.id, p.morale) }),
         h('div', { class: 'sbody' }, h('div', { style: 'display:flex;justify-content:space-between;gap:6px;align-items:baseline' }, h('b', {}, p.name), h('span', { class: 'num mute', style: 'font-size:12px' }, `${fmt(p.salary)}/ay`)),
-          h('small', { class: 'mute' }, `${STAFF_TYPES.find((x) => x.id === p.type)?.label} · deneyim ${p.experience}`),
+          h('small', { class: 'mute' }, `${STAFF_TYPES.find((x) => x.id === p.type)?.label} · deneyim ${p.experience} `, h('span', { class: 'chip trait', title: traitOf(p).desc }, `${traitOf(p).ico} ${traitOf(p).label}`)),
           h('div', { class: 'mini2' }, h('span', {}, 'Verim'), h('div', { class: 'meter' }, h('i', { style: `width:${Math.min(100, Math.round(eff * 80))}%;background:var(--accent2)` })), h('b', {}, `%${Math.round(eff * 100)}`)),
           h('div', { class: 'mini2' }, h('span', {}, 'Moral'), h('div', { class: 'meter' }, h('i', { style: `width:${p.morale}%;background:var(--${tone === 'good' ? 'ok' : tone === 'warn' ? 'warn' : 'bad'})` })), h('b', {}, String(p.morale))),
           h('div', { style: 'display:flex;gap:8px;align-items:center;margin-top:4px' }, isField ? sel : h('span', { class: 'chip' }, '🏢 Ofis'),
