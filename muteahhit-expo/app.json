@@ -38,6 +38,15 @@
     ],
     "runtimeVersion": {
       "policy": "appVersion"
+    },
+    "owner": "meeeellliiihh",
+    "extra": {
+      "eas": {
+        "projectId": "51b08b2c-73bb-4aa7-b33c-074a3e65683a"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/51b08b2c-73bb-4aa7-b33c-074a3e65683a"
     }
   }
 }

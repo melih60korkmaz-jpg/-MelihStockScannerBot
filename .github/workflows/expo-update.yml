@@ -30,7 +30,7 @@ jobs:
           if ! grep -q '"projectId"' app.json; then eas init --force --non-interactive; fi
           eas update:configure --non-interactive || true
       - name: Yayınla
-        run: eas update --branch main --message "${{ github.event.inputs.message || 'Oyun güncellemesi' }}" --non-interactive | tee /tmp/eas.log
+        run: eas update --branch main --environment production --message "${{ github.event.inputs.message || 'Oyun güncellemesi' }}" --non-interactive | tee /tmp/eas.log
       - name: Expo Go bağlantısı
         run: |
           PID=$(node -e "const a=require('./app.json');console.log(a.expo.extra?.eas?.projectId||'')")
