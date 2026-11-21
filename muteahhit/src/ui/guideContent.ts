@@ -1,0 +1,213 @@
+/**
+ * Rehber içeriği: oyunun nasıl oynandığı, her ekranın ne işe yaradığı ve takılınca ne yapılacağı.
+ * Sayılar oyun kodundaki gerçek değerlerdir (indirim oranları, kapasiteler, süreler). Değişirse burası da güncellenmeli.
+ */
+export type Block =
+  | { h: string }
+  | { p: string }
+  | { ul: string[] }
+  | { tip: string }
+  | { warn: string }
+  | { qa: [string, string][] };
+
+export interface Topic { id: string; ico: string; title: string; blocks: Block[] }
+
+export const TAB_TOPIC: Record<string, string> = { sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', finans: 'finans', piyasa: 'piyasa' };
+
+export const GUIDE: Topic[] = [
+  {
+    id: 'basla', ico: '🎮', title: 'Oyuna başlarken', blocks: [
+      { p: 'Bir inşaat şirketi kuruyorsun. Amaç: arsa alıp bina yapmak, daireleri satmak, kâr etmek ve şirketi küçük bir müteahhitlikten Holding\'e büyütmek.' },
+      { h: 'Oyunun döngüsü' },
+      { ul: ['1) Harita: arsa bul ve satın al.', '2) Projeler: arsaya bina tasarla, inşaatı başlat.', '3) Operasyon: ekip, malzeme ve makineyi hazır tut; şantiyeyi izle.', '4) Satış: bina bitince daireleri sat (ya da ön satışla erkenden başla).', '5) Finans: kasayı, borcu ve kârı takip et. Para biterse iş biter.'] },
+      { tip: 'En kolay başlangıç: Harita sekmesindeki "Hızlı başlangıç" kartı. Sana uygun bir arsa + proje önerir ve tek dokunuşla inşaata başlar. Nakdinin en fazla %45\'ini kullanır, geri kalanı güvende kalır.' },
+      { h: 'Ekranın yapısı' },
+      { ul: ['Üst çubuk: şirket adı, kasa, tarih, zaman hızı, ? (bu rehber), ayarlar, ana menü.', 'Alt çubuk: 7 sekme (Şirket, Harita, Projeler, Operasyon, İhale, Finans, Piyasa). Pasif sekmede nabız atan turuncu nokta, sıradaki görevin yeri.', 'Her sekmenin başında "burada ne var" satırı ve ? düğmesi bulunur; ? bu rehberin ilgili bölümünü açar.'] },
+    ],
+  },
+  {
+    id: 'zaman', ico: '⏱️', title: 'Zaman, kasa ve hız', blocks: [
+      { p: 'Oyun gerçek zamanlıdır: zaman sen durdurmadıkça akar. Bir oyun günü 1× hızda yaklaşık 2 saniyedir; 2× yaklaşık 0,8, 4× yaklaşık 0,3 saniye. ⏭30 düğmesi 30 günü hızlıca atlar.' },
+      { h: 'Zaman ne zaman durur?' },
+      { ul: ['⏸ ile sen durdurunca.', 'Herhangi bir pencere (satış merkezi, sipariş, kredi, genel merkez…) açıkken: değerler kaymasın diye zaman bekler.', 'Önemli bir gelişmede oyun kendiliğinden durur ve "⏸ Oyun duraklatıldı" bildirimi çıkar: karar gerektiren olay, seviye atlama, proje teslimi, ihale kazanma, iş kazası, kredi taksidi kaçırma, haciz, ekonomik kriz haberi, kasanın eksiye düşmesi, iflas.', 'Uygulamadan çıkınca / ekran kilitlenince oyun otomatik durur ve kaydeder.'] },
+      { h: 'Kasa' },
+      { p: 'Kasa, elindeki nakittir. Maaşlar, kira, malzeme ve makine giderleri her gün/ay kasadan çıkar. Kasa eksiye düşerse oyun durur; varlıklar zorla satılabilir. Ay sonunda hem kasa hem net varlık eksideyse şirket iflas eder.' },
+      { tip: 'Kasanın üstündeki yeşil/kırmızı sayaç son değişimi gösterir. Sağdaki "Nakit yeterlilik" kasanın mevcut giderlerle kaç ay yeteceğini gösterir; 3 ayın altı tehlikelidir.' },
+    ],
+  },
+  {
+    id: 'sirket', ico: '🏢', title: 'Şirket ekranı ve görevler', blocks: [
+      { p: 'Şirket sekmesi günün özetidir. Üstte şehir manzarası: gün saatine göre gökyüzü değişir; dokununca Genel Merkez açılır.' },
+      { h: 'Bölümler' },
+      { ul: ['Bugün ne yapmalıyım: görevler ve uyarılar. "Şimdi yap" düğmesi sıradaki görevin sekmesine götürür.', 'Projelerim: devam eden şantiyeler, ilerleme yüzdesi, projeye atanmış ekip sayısı ve "Şantiyeyi aç".', 'Para durumum: net varlık, nakit yeterlilik, son ay gelir/gider/net.', 'Şirket seviyesi: sıradaki seviyeye ne kadar kaldığı.', 'Piyasa: faiz, enflasyon, güven özeti.'] },
+      { h: 'Net varlık nedir?' },
+      { p: 'Kasa + arsaların piyasa değeri + biten/yapılmakta olan binalar + makineler − borçlar. Şirketin "gerçek" değeri budur; kasa yüksek ama borç da yüksekse net varlık düşüktür.' },
+    ],
+  },
+  {
+    id: 'harita', ico: '🗺️', title: 'Harita ve arsa', blocks: [
+      { p: 'Türkiye\'nin 81 ili haritada. Başta yalnızca başlangıç şehrin açık; yeni bir ilde şube açarak oradaki arsalara ve ihalelere erişirsin.' },
+      { h: 'Nasıl arsa alınır?' },
+      { ul: ['Haritada bir ile dokun, sonra ilçeyi seç.', 'Üstteki ölçütlerle (Satış fiyatı, Gelir, Rekabet, Gelişim) renkleri değiştir; turuncu/parlak olan, o ölçütte yüksek demektir.', 'Listeden bir arsaya dokun: alan, imar durumu, TAKS/KAKS, en çok kat, zemin, yollar, fiyat.', 'Fiyat pazarlığı yapabilirsin: teklifin liste fiyatının %80–100\'ü arasında olur. Daha önce reddedilen ya da daha düşük bir teklif tekrar kabul edilmez; yüksek teklif denemelisin.'] },
+      { h: 'Etüt (bilgi satın alma)' },
+      { ul: ['Zemin etüdü: 5 gün sürer; ücreti 20.000 ₺ + m² başına 35 ₺. Zeminin kaya mı kil mi, yeraltı suyu var mı ortaya çıkar. Yaptırmazsan inşaatta sürpriz ek maliyet çıkabilir (hafriyatta "zemin ortaya çıktı: ek maliyet" bildirimi).', 'İmar/pazar araştırması: 3 gün; ücreti 12.000 ₺ + m² başına 10 ₺. Bölgenin gelişimi hakkında ipucu verir.'] },
+      { h: 'Terimler' },
+      { ul: ['TAKS: arsanın ne kadarına bina oturabilir (taban oranı).', 'KAKS (emsal): toplam inşaat alanı çarpanı. Alan × KAKS = yapılabilecek toplam alan.', 'En çok kat: imarın izin verdiği üst sınır. Kat sayısı bu sınırı geçemez.', 'İmar türü: konut, ticaret, karma, sanayi vb. Hangi bina tipinin yapılabileceğini belirler.'] },
+      { h: 'Arsayı satmak' },
+      { ul: ['Hızlı sat: piyasa değerinin %92\'si, hemen nakit.', 'Satışa koy: kendi fiyatını (liste çarpanı) belirlersin; alıcı gelince satılır. Satıştan çekebilirsin.'] },
+      { tip: 'İlk arsada: küçük/orta alan, "konut" imarı, sağlam zemin, yola cepheli olanlar hem ucuzdur hem sorunsuzdur.' },
+    ],
+  },
+  {
+    id: 'projeler', ico: '🏗️', title: 'Projeler ve inşaat aşamaları', blocks: [
+      { p: 'Arsa alınca "Proje başlat" ile arsaya bir bina planlarsın. Proje; bina tipi, kat sayısı ve kalite seçimiyle bütçelenir.' },
+      { h: 'Bina tipleri' },
+      { ul: ['Konut: müstakil ev, apartman, site, villa, rezidans, lüks konut.', 'Ticari/endüstriyel: ofis binası, iş merkezi, fabrika, depo.', 'Her tipin birim maliyeti, tipik süresi ve satış çarpanı vardır. Küçük tipler hızlı ve ucuzdur; kule ve site gibi büyükler uzun sürer ve büyük sermaye ister.'] },
+      { h: 'Kalite' },
+      { p: 'Ekonomik, Standart, Premium, Lüks. Yüksek kalite maliyeti artırır; daha yüksek satış fiyatı, itibar ve düşük şikâyet getirir. Ucuz malzeme kısa vadede tasarruf, uzun vadede şikâyet ve garanti riskidir.' },
+      { h: '17 inşaat aşaması' },
+      { p: 'Proje kartındaki şeritte her parça bir aşamadır: proje planlama, mimari, statik, elektrik-mekanik proje, ruhsat, hafriyat, temel, betonarme/kat yükselme, duvar, elektrik+tesisat, yalıtım, sıva/cephe, pencere-kapı, iç dekorasyon, peyzaj, kontrol/teslim. Dolu parça tamamlandı; yanıp sönen sürüyor.' },
+      { h: 'Kartta ne görürsün' },
+      { ul: ['Bina resmi: inşaat ilerledikçe gri/sönük halden renkli hale açılır.', 'Proje bütçesi, beklenen gelir ve beklenen kâr.', 'Tahmini bitiş, gerçekleşen harcama, kalan bütçe.', 'Düğmeler: İnşaatı başlat, Şantiyeyi aç, Satış merkezi, Arsa dosyası.'] },
+      { h: 'İnşaat neden durur?' },
+      { ul: ['Malzeme yok: stok bitti ve sipariş gelmedi (Operasyon › Malzeme).', 'Nakit yok: aşamanın maliyetini ödeyecek kasa yok.', 'Kaza: iş kazası sonrası birkaç gün durur.', 'Hava: yağmurda dış işler yaklaşık yarı hızda, karda çok daha yavaş ilerler (durmaz).'] },
+      { tip: 'Ön satış: betonarme aşamasından sonra daireleri inşaat sürerken satabilirsin; nakit girer ama teslim gecikirse ceza doğar.' },
+    ],
+  },
+  {
+    id: 'santiye', ico: '🚧', title: '3B şantiye', blocks: [
+      { p: 'Projeler sekmesinden "Şantiyeyi aç" ya da Şirket ekranındaki proje kartından girersin. Bina, vinç, işçiler ve çevre inşaatın gerçek durumuna göre çizilir.' },
+      { ul: ['‹ (sol üst): şirket ekranına döner.', 'Üstteki noktalar: inşaat aşamaları; dolu olan bitti, halkalı olan sürüyor.', 'Sağ üst: kasa, tarih ve oyun hızı. Zaman şantiyede de akar.', 'Sağdaki kamera düğmeleri: Kuş, Yan, Ön, Yakın, Üst bakış. Parmakla döndürüp iki parmakla yakınlaştırabilirsin.', 'Alt panel (▲ ile açılır): Genel durum, Aşamalar, Kaynak (malzeme ve ekip) ve Maliyet sekmeleri.', 'Taslak projede büyük "İnşaatı başlat" düğmesi vardır.'] },
+      { h: 'Neleri görürsün' },
+      { ul: ['Hava: yağmur ve kar şantiyeye yansır; akşam ve gece ışıklar açılır.', 'Malzeme eksikse işçiler bekler ve uyarı çıkar.', 'Pompa, vinç, kamyonlar o aşamanın ihtiyacına göre çalışır.'] },
+      { tip: 'Telefon yavaşsa Ayarlar › Grafik kalitesi: Düşük seç ya da Otomatik bırak; oyun kendisi ayarlar.' },
+    ],
+  },
+  {
+    id: 'ekip', ico: '👷', title: 'Ekip ve "Kim nerede?"', blocks: [
+      { p: 'Operasyon › Ekip. Üstteki "Kim nerede?" panosu kimin nerede çalıştığını gösterir: Ofis, Ortak havuz ve her aktif proje için ayrı bir sütun. Yana kaydırarak hepsini görürsün.' },
+      { h: 'İki tür çalışan' },
+      { ul: ['Saha: işçi, usta, kalıpçı, demirci, elektrikçi, tesisatçı, şantiye şefi. İnşaatta çalışırlar.', 'Ofis: mimar, mühendis, proje yöneticisi, muhasebeci, satış danışmanı, satın alma sorumlusu. Ofiste çalışırlar; tasarım, ruhsat, satış ve alım gibi işleri hızlandırırlar.'] },
+      { h: 'Atama' },
+      { ul: ['Saha çalışanında açılır listeden bir proje seçersen yalnızca orada çalışır.', '"Ortak havuz": aktif projeler arasında bölünür. Tek projen varsa hepsi oraya gider.', 'Ofis çalışanları projeye atanmaz.'] },
+      { h: 'Verim ve moral' },
+      { ul: ['Verim: deneyim ve morale bağlıdır. Deneyimli çalışan pahalı ama hızlı ve güvenlidir.', 'Moral düşerse verim düşer; kaza, nakit sıkıntısı ve gecikmeler moralı düşürür, başarı yükseltir.', 'Şantiye şefi ekibin verimini ve güvenliğini artırır.'] },
+      { h: 'İşe alma ve kapasite' },
+      { ul: ['Ofis kapasitesi sınırlıdır: Küçük ofis 6, Ofis katı 20, Plaza katı 60, Şirket binası 150 kişi. Dolunca daha büyük merkeze taşınmak gerekir (Şirket › Genel Merkez).', 'Her çalışanın aylık maaşı vardır; maaşlar yıl başında zamlanabilir.', 'İşten çıkarma onay ister ve geri alınamaz.'] },
+    ],
+  },
+  {
+    id: 'malzeme', ico: '🧱', title: 'Malzeme ve tedarik', blocks: [
+      { p: 'Operasyon › Malzeme. 17 malzeme: demir, hazır beton, çimento, tuğla, gazbeton, kum, çakıl, cam, alüminyum, seramik, parke, boya, yalıtım, kablo, boru, kapı-pencere, çatı. Her aşama kendi malzemesini tüketir.' },
+      { ul: ['Tabloda stok, yolda olan sipariş, birim fiyat ve fiyat trendi (▲ pahalandı, ▼ ucuzladı) görünür.', '"Sipariş" ile miktar ve tedarikçi seçersin; toplam tutar yazarken canlı güncellenir. Malzeme gecikmeyle gelir ("yolda").', 'Sağdaki "Otomatik satın alma" açıksa aktif aşamanın malzemesi tercih edilen tedarikçiden otomatik sipariş edilir.'] },
+      { h: 'Tedarikçi seçimi' },
+      { p: 'Yerel toptancı, ucuz tedarik, A.Ş. ve direkt tedarik gibi seçenekler fiyat, teslim süresi ve güvenilirlik açısından farklıdır. Ucuz olan geç ya da eksik getirebilir.' },
+      { tip: 'Stok tutmak fiyat artışına karşı korur ama nakit bağlar. Malzeme zam haberi geldiyse biraz önceden almak mantıklı olabilir.' },
+    ],
+  },
+  {
+    id: 'makine', ico: '🚜', title: 'Makineler', blocks: [
+      { p: 'Operasyon › Makine. Kule vinç, mobil vinç, ekskavatör, kepçe, dozer, beton pompası, beton mikseri, forklift, kamyon, jeneratör, iskele, kompresör.' },
+      { ul: ['Satın alırsan sende kalır: aylık bakım ve yakıt gideri var, zamanla değer kaybeder, arızalanabilir.', 'Satın almazsan ilgili aşamada makine günlük kiralanır: sermaye ayırmazsın ama birim maliyet yüksektir.', 'Kartta durum: Beklemede, Kullanımda ya da Arızalı. Arızalı makine tamir bitene kadar çalışmaz; kartı gri olur ve kırmızı "!" çıkar.', 'Sat düğmesi değerinin %90\'ını geri öder.'] },
+      { tip: 'Yeni oyunda geçmişine göre küçük bir ekipman hediye gelir (örneğin Eski Kalfa için kamyon ve iskele).' },
+    ],
+  },
+  {
+    id: 'guvenlik', ico: '🦺', title: 'İş güvenliği ve politikalar', blocks: [
+      { p: 'Operasyon › Politika. İş güvenliği seviyesi ve tedarikçi tercihini seçersin.' },
+      { ul: ['Güvenlik harcaması kısa vadede maliyeti artırır, kaza olasılığını düşürür. Kaza olursa inşaat durur, tazminat ödersin, moral ve itibar düşer.', 'Tedarikçi tercihi otomatik alımda kullanılır.'] },
+    ],
+  },
+  {
+    id: 'satis', ico: '🏷️', title: 'Satış merkezi', blocks: [
+      { p: 'Projeler › Satış merkezi. Bina bitince (veya ön satışla) daireleri buradan satarsın. Üstte satılan daire sayısı, sözleşme geliri ve tahsil edilecek tutar görünür.' },
+      { h: 'Fiyat çubuğu' },
+      { p: 'Fiyatı adil değerin %80–125\'i arasında ayarlarsın. Sürüklerken talep düzeyi, tahmini satış hızı ve daire liste fiyatları anında güncellenir; bırakınca kaydedilir. Düşük fiyat hızlı satar, yüksek fiyat kârı artırır ama bekletir.' },
+      { h: 'Seçenekler' },
+      { ul: ['Peşin satış: %4 indirimli, para hemen girer.', 'Taksitli satış: fiyat +%6, %25 peşin, kalanı 12 ay; müşteri ödemeyi kaçırabilir (temerrüt riski).', 'Kapora: fiyatın %5\'i; süre içinde tamamlanmazsa iptal olabilir.', 'Ön satış: inşaat sürerken (betonarme aşamasından sonra) %10 indirimle, %40 peşin. Teslim gecikirse ceza doğar.', 'Emlakçı: satışı yaklaşık %30 hızlandırır, %2,5 komisyon alır.', '"Kalanları toplu sat": bitmiş binadaki satılmamış tüm daireleri adil değerin %92\'sine yatırımcıya satar; onay ister.'] },
+      { h: 'Piyasa görünümü' },
+      { p: 'Talep (Düşük/Orta/Yüksek), tahmini satış hızı, m² adil fiyat, müşteri memnuniyeti ve satılmamış daire sayısı gösterilir. Talep piyasaya ve markana bağlıdır; faiz yükseldikçe düşer.' },
+      { h: 'Teslim sonrası' },
+      { p: 'Müşteri memnuniyeti kaliteye, teslim süresine ve fiyat algısına bağlıdır. Şikâyetler ve 2 yıllık garanti talepleri çıkabilir; düşük kalite maliyetli olur.' },
+    ],
+  },
+  {
+    id: 'ihale', ico: '📜', title: 'İhaleler', blocks: [
+      { p: 'Şubenin bulunduğu illerde her ay yeni ihaleler açılır (okul, hastane, belediye binası vb.). Açık ihaleye dokunup teklif fiyatını seçersin.' },
+      { ul: ['Teklif aralığı yaklaşık maliyetin altından üstüne uzanır; sürüklerken beklenen kâr görünür.', 'Teminat gerekir; oranı ihale kartında yazar. ', 'Sadece en düşük teklif kazanmaz: itibar, yeterlilik ve kapasite de puanlanır. Çok düşük teklif kazandırır ama zarar ettirir.', 'Kazanırsan "Sözleşmeli işler"e düşer: teslim süresi, gecikme cezası ve aşama aşama ödeme (hakediş) vardır.', 'Hakediş gecikmeli gelir; nakit akışını planla.', 'İhale kazanınca ve teslimde zaman duraklar, özel sahne gösterilir.'] },
+      { tip: 'İlk ihale için görev ödülü vardır. Şubesi olmayan ilde ihale görünmez: Harita\'dan şube aç.' },
+    ],
+  },
+  {
+    id: 'finans', ico: '💰', title: 'Finans', blocks: [
+      { p: 'Finans sekmesi şirketin parasıdır. Altı alt sekme:' },
+      { ul: ['Gelir-Gider: üstte Kasa, Net varlık, Son ay net, Toplam borç kartları (önceki aya göre ▲/▼ değişimle); altında sağlık göstergeleri (borç/limit, kârlılık, nakit yeterlilik, özkaynak), grafikler ve aylık gelir tablosu.', 'Nakit akışı: ay sonu kasa ve aylık net nakit değişimi.', 'Gider dağılımı: son 12 ayın giderleri halka grafikte ve kalem kalem.', 'Bilanço: neye sahipsin, neyi borçlusun.', 'Krediler ve Ortaklar: bir sonraki bölümde.'] },
+      { h: 'Vergi' },
+      { p: 'Her çeyrek kârın %25\'i vergi olarak ödenir; zarar bir sonraki çeyreğe devreder ve vergiden düşer. Sermaye, kredi ve yatırım hareketleri gelir tablosuna girmez.' },
+      { h: 'Göstergeler ne demek?' },
+      { ul: ['Borç/limit: kredi limitinin ne kadarını kullandın. %50 üstü dikkat, %80 üstü riskli.', 'Kârlılık: son 6 ayda gelirin ne kadarı kâr. Eksi ise zarar ediyorsun.', 'Nakit yeterlilik: kasan mevcut giderlere kaç ay yeter. 6 ay sağlıklı, 3 ay altı riskli.'] },
+      { h: 'Kasa eksiye düşerse' },
+      { p: 'Oyun durur ve varlıklar zorla satılır. Ay sonunda kasa ve net varlık ikisi birden eksideyse iflas edersin; oyun biter ve ana menüye dönersin.' },
+    ],
+  },
+  {
+    id: 'banka', ico: '🏦', title: 'Krediler ve ortaklar', blocks: [
+      { p: 'Finans › Krediler. 4 banka: Devlet Bankası, Özel Banka, Katılım Bankası, Hızlı Finansman. Her biri faiz, vade ve şartlarda farklıdır.' },
+      { ul: ['Tutar ve vadeyi seçince taksit, faiz ve toplam geri ödeme anında görünür.', 'Faiz = politika faizi + banka marjı + kredi notuna bağlı fark. Yüksek kredi notu daha ucuz kredi demektir.', 'Taksit gününde kasa yetmezse: kredi notu düşer; üst üste 3 kaçırmada haciz gelir ve varlıkların satılır.', 'Erken geri ödeme yapabilirsin; faizden kazanırsın.', 'Kısa vadeli finansman pahalıdır: yalnızca nakit köprüsü için kullan.'] },
+      { h: 'Ortaklar ve yatırımcılar' },
+      { p: 'Finans › Ortaklar. Yatırımcı bir projeye para koyar, karşılığında kâr payı alır (pay oranını kaydırıcıyla seçersin). Para proje sonunda iade edilir. Kâr payını ve ödeme zamanını düşünerek kullan.' },
+      { tip: 'Kredi, makine ve proje için ayrı ürünler sunar. İlk kredi görevi küçük bir tutarla alınıp hemen geri ödenebilir.' },
+    ],
+  },
+  {
+    id: 'piyasa', ico: '📈', title: 'Piyasa ve rakipler', blocks: [
+      { p: 'Piyasa oyuncudan bağımsız evrilir. Üstteki kartta ekonomik rejim yazar: Dengeli, Genişleme, Aşırı ısınma, Daralma, Kriz, Toparlanma.' },
+      { ul: ['Politika faizi: yükselirse kredi pahalanır ve konut talebi düşer.', 'Enflasyon: inşaat maliyetlerini ve maaşları artırır.', 'Piyasa güveni: yüksekse konut talebi artar.', 'Malzeme endeksi: malzeme fiyatlarının genel seviyesi. Kartlardaki ▲/▼ rozetleri önceki aya göre değişimi gösterir; kırmızı maliyet artışı, yeşil iyi gelişmedir.', 'Konut piyasası grafiği: açık illerde fiyat gidişi (başlangıç = 100).'] },
+      { h: 'Kriz' },
+      { p: 'Kriz nadirdir ve ipucuyla gelir: faiz yükselir, güven düşer, haberler kötüleşir. Kriz haberi gelince oyun durur. Hazırlıklı olmak için nakdini yüksek tut, borcunu azalt.' },
+      { h: 'Rakipler' },
+      { p: 'Rakip şirketler aynı kurallarla arsa alır, proje yapar, ihaleye girer. Bazıları büyür, bazıları iflas eder (arsaları piyasaya düşer; fırsat olabilir). Rakip yoğun bölgede satış yavaşlar.' },
+    ],
+  },
+  {
+    id: 'gelisim', ico: '🏆', title: 'Seviye, merkez ve başarımlar', blocks: [
+      { h: 'Şirket seviyeleri (8)' },
+      { ul: ['1 Şahıs Müteahhit, 2 Küçük Firma, 3 Yerel Firma, 4 Bölge Firması, 5 Şehir Markası, 6 Çok Şehirli Firma, 7 Ulusal Firma, 8 Holding.', 'Seviye için tamamlanan proje, net varlık, itibar ve açık il sayısı eşikleri birlikte aranır. İlerlemeyi Şirket ekranındaki seviye kartından izle.', 'Seviye atlayınca kredi notu +15 ve itibar +2 kazanırsın; yeni özellikler açılır.'] },
+      { h: 'Genel merkez' },
+      { ul: ['Şirket ekranında şehir resmine dokun. Kesit görünümü ofisini, Manzara görünümü yapay zekâ resmini gösterir.', 'Merkez seviyeleri: Küçük Ofis (6 kişi), Ofis Katı (20 kişi, seviye 2 + 300.000 ₺), Plaza Katı (60 kişi, seviye 4 + 1,5 M₺), Şirket Binası (150 kişi, seviye 6 + 6 M₺).', 'Daha büyük merkez yeni odalar açar (yönetici odası, toplantı salonu, başarı rafı, lüks kat). Çalışan sayısı, projeler ve başarımlar merkezde görünür.'] },
+      { h: 'Görevler ve başarımlar' },
+      { ul: ['14 görev sana sıradaki adımı söyler; ödülü nakit, itibar ya da kredi notudur.', 'Başarımlar (rozetler) istatistiklerinden otomatik açılır; önemli olanlarda kart çıkar. Şirket ekranındaki "Başarımlar" düğmesiyle hepsini ve açılma tarihlerini görürsün.', 'Her başarım yalnızca bir kez açılır.'] },
+    ],
+  },
+  {
+    id: 'olaylar', ico: '📰', title: 'Olaylar ve haberler', blocks: [
+      { p: 'Oyun sırasında olaylar çıkar: malzeme zammı, tedarikçi gecikmesi, makine arızası, iş kazası, kötü hava, müşteri şikâyeti, rakip hamleleri ve daha fazlası.' },
+      { ul: ['Karar gerektiren olaylarda pencere açılır ve oyun durur. Her seçeneğin maliyeti, riski ve süresi yazar.', 'Süre dolarsa otomatik bir seçim uygulanır.', 'Bildirimler köşede kısa süre görünür; önemli olanlar kart olarak çıkar (başarım, seviye atlama, büyük kâr, ani net varlık düşüşü).', 'Net varlık bir ayda %15\'ten fazla düşerse kırmızı uyarı çıkar ve Finans\'a yönlendirir.'] },
+    ],
+  },
+  {
+    id: 'ayarlar', ico: '⚙️', title: 'Ayarlar ve kayıt', blocks: [
+      { h: 'Ayarlar' },
+      { ul: ['Müzik ve ses efektleri: aç/kapat ve ses seviyesi.', 'Kaldığım yerden devam: açılışta son kayda otomatik girer.', 'Titreşim: yalnızca destekleyen cihazlarda (uygulama sürümünde iPhone dahil).', 'Animasyonlar: Tam veya Azaltılmış. Animasyon yoğunluğu: Canlı veya Sakin (konfeti ve büyük sahneler kapanır).', 'Grafik kalitesi: Otomatik, Düşük, Orta, Yüksek. Otomatik, yavaşlayınca kendisi düşürür.', 'Oyunu tanıt: açılış anlatıcısını yeniden başlatır.'] },
+      { h: 'Kayıt' },
+      { ul: ['Oyun kendiliğinden kaydeder: bir işlemden birkaç saniye sonra, her ay ve uygulamadan çıkarken.', 'Ana menü (☰) önce kaydeder. Kayıtlar ekranında 3 otomatik ve 5 manuel yuva bulunur; yükleyebilir ya da silebilirsin.', 'Kayıtlar bu cihazda saklanır; uygulamayı silersen gider.'] },
+    ],
+  },
+  {
+    id: 'takildim', ico: '🆘', title: 'Takıldım! Sık sorulanlar', blocks: [
+      { qa: [
+        ['İnşaat durdu, neden?', 'Şantiye ekranındaki uyarı bandı ve alt panel nedenini gösterir: malzeme yok (Operasyon › Malzeme\'den sipariş ver ya da otomatik alımı aç), nakit yok (kasayı doldur: kredi, ön satış, varlık sat) veya kaza (birkaç gün bekler).'],
+        ['İnşaatı başlat düğmesi çalışmıyor.', 'Düğme onay penceresi açar; "Evet" demelisin. Nakit yetmiyorsa uyarı çıkar. Taslak projenin tasarım bedeli ve ilk aşama için kasada para olmalı.'],
+        ['Oyun kendiliğinden durdu.', 'Önemli bir gelişme oldu (olay kararı, seviye, teslim, kaza, kriz, kasa eksi). "⏸" bildirimini okuyup hız düğmesine dokunarak devam et. Bir pencere açıksa zaman beklediğini unutma; kapat.'],
+        ['Param bitti.', 'Önce Finans › Gelir-Gider\'de nakit yeterliliğe bak. Çözümler: ön satış aç, tamamlanmış daireleri sat ya da toplu sat, krediyi uygun faizle al, yatırımcı bul, gereksiz makine ve arsa sat, işten çıkarma son çaredir.'],
+        ['Satış çok yavaş.', 'Satış merkezinde fiyat çubuğunu aşağı çek (talep ve satış hızı hemen güncellenir), emlakçıyı aç, peşin satışa ya da taksite izin ver. Faiz yüksekse ve piyasa daralıyorsa talep zaten düşüktür.'],
+        ['Arsa teklifim kabul edilmiyor.', 'Reddedilen ya da daha düşük teklif tekrar kabul edilmez; biraz yüksek bir teklif dene. Liste fiyatının %100\'ünü verirsen alırsın.'],
+        ['Hangi bina tipini yapmalıyım?', 'İlk işte müstakil ev ya da küçük apartman: hızlı, ucuz, düşük risk. Büyük bina tipleri sermaye ve uzun süre ister. Hızlı başlangıç kartı sana uygun olanı önerir.'],
+        ['Ekibim yetmiyor / işler yavaş.', 'Operasyon › Ekip\'te işçi ve usta ekle; saha çalışanlarını projeye ata. Ofis doluysa daha büyük genel merkeze taşın. Düşük moral de yavaşlatır.'],
+        ['Kredi taksidini kaçırdım.', 'Kredi notu düşer; üst üste 3 kaçırmada haciz gelir. Hemen kasayı doldurup Finans › Krediler\'den ödeme yap.'],
+        ['Nasıl daha hızlı büyürüm?', 'Görevleri izle (ödülleri nakit), her projeyi kârlı bitirip itibarı artır, ihalelere gir, yeni ilde şube aç. Seviye atladıkça daha büyük bina tipleri ve merkezler açılır.'],
+        ['Oyun açılmıyor / donuyor.', 'Ekranın üstünde kırmızı bir hata kutusu çıkıyorsa içindeki yazıyı bildir. Grafik kalitesini Düşük yap. Uygulamayı kapatıp açınca son kayıttan devam edersin.'],
+      ] },
+    ],
+  },
+];

@@ -7,6 +7,7 @@ import { openSettings } from './settings';
 import { newGameScreen } from './wizard';
 import { savesScreen } from './saves';
 import { hubScreen } from './hub';
+import { openGuide } from '../guide';
 
 export function menuScreen(app: App): HTMLElement {
   app.audio.setMood('menu');
@@ -34,6 +35,7 @@ export function menuScreen(app: App): HTMLElement {
     cont,
     btn('Yeni Oyun', () => app.go(newGameScreen(app), 'setup'), 'gold'),
     btn('Kayıtlar', () => app.go(savesScreen(app), 'calm')),
+    btn('Nasıl oynanır?', () => openGuide(app)),
     btn('Ayarlar', () => { openSettings({ ...app, activeTier: () => app.scene?.activeTier ?? 'mid' }); }),
     h('div', { class: 'foot' }, `v1.1 · ${app.persistent ? 'Kayıtlar bu cihazda saklanır' : 'Kayıt kalıcı değil (gizli mod?)'}`),
   ));

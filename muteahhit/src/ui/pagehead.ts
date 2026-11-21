@@ -1,6 +1,7 @@
 import { h } from './dom';
 import { EMOJI } from './art';
 import type { App } from './app';
+import { openGuide, TAB_TOPIC } from './guide';
 
 export type TabId = 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'finans' | 'piyasa';
 /** Her sekmenin tek satırlık tanıtımı ve "Ne yapılır?" yardımı. Oyuncu hangi ekranda ne bulacağını hep görsün. */
@@ -17,7 +18,7 @@ export const TAB_INFO: Record<TabId, { ico: string; title: string; sub: string; 
 export function pageHead(app: App, tab: TabId): HTMLElement {
   const i = TAB_INFO[tab];
   const el = h('div', { class: 'pghead' }, h('span', { class: 'pgico' }, i.ico), h('div', { class: 'pgtxt' }, h('b', {}, i.title), h('small', {}, i.sub)),
-    h('button', { class: 'pghelp', 'aria-label': `${i.title} yardımı`, onclick: () => { app.audio.sfx('click'); openHelp(tab); } }, '?'));
+    h('button', { class: 'pghelp', 'aria-label': `${i.title} yardımı`, onclick: () => { app.audio.sfx('click'); openGuide(app, TAB_TOPIC[tab]); } }, '?'));
   return el;
 }
 

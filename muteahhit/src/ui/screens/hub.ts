@@ -25,6 +25,7 @@ import { ACHIEVEMENTS, LEVEL_DEFS, QUESTS, STAGES } from '../../data';
 import { heroBanner } from '../hero';
 import { openHQ } from '../hq';
 import { pageHead } from '../pagehead';
+import { openGuide, TAB_TOPIC } from '../guide';
 import { startTutorial, tutorialDone } from '../tutorial';
 import { saveView } from '../../platform/lastView';
 import { BIG_PROFIT, achievementCard, crisisBanner, levelUpScene, successCard } from '../moments';
@@ -79,6 +80,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
     hud.append(
       h('div', { class: 'id' }, h('span', { html: emblemSvg(c.emblem.shape, c.emblem.color, 38) }), h('div', { style: 'min-width:0' }, h('b', {}, c.name), ref.sub)),
       ref.cashPill, h('div', { class: 'sp' }), h('div', { class: 'pill' }, h('small', {}, 'TARİH'), ref.date), seg,
+      h('button', { class: 'btn ibtn guidebtn', 'aria-label': 'Rehber: oyun nasıl oynanır', title: 'Rehber', onclick: () => { press(app); openGuide(app, TAB_TOPIC[tab]); } }, '?'),
       h('button', { class: 'btn ibtn', 'aria-label': 'Ayarlar', html: ICON.gear, onclick: () => { press(app); openSettings({ ...app, activeTier: () => app.scene?.activeTier ?? 'mid' }); } }),
       h('button', { class: 'btn ibtn', 'aria-label': 'Ana menü', html: ICON.menu, onclick: async () => { press(app); app.store.setSpeed(0); try { await app.saves.autosave(app.store.state); } catch { /* menü yine açılır */ } app.menu(); } }),
     );
