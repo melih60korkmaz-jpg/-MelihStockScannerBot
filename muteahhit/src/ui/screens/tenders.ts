@@ -1,3 +1,4 @@
+import { emblemSvg } from '../emblem';
 import { formatDate } from '../../core/calendar';
 import { cityData, buildingType, quality } from '../../data';
 import { h, press, toast } from '../dom';
@@ -47,6 +48,6 @@ function openBid(app: App, t: Tender, refresh: () => void): void {
     for (const l of lines) if (l) out.append(h('div', { class: l.startsWith('Eksik') || l.startsWith('Bu fiyat') || l.includes('elenirsiniz') ? 'neg' : 'mute' }, l));
     go.disabled = !el.ok || s.company!.cash < bondOf(t, price);
   };
-  modal.append(h('div', { class: 'card', style: 'width:min(480px,95vw)' }, h('h3', {}, t.title), h('div', { class: 'mute', style: 'font-size:12px' }, `Yaklaşık maliyet ${fmt(t.refCost)} · ${t.client === 'kamu' ? 'kamu: yaklaşık maliyet üstü teklif geçersiz' : 'özel: en çok %12 üstü'} · avans %10, hakediş aşama aşama (45 gün vadeli)`), lab, rng, out, h('div', { style: 'display:flex;gap:8px;justify-content:flex-end' }, h('button', { class: 'btn', onclick: close }, 'Vazgeç'), go)));
+  modal.append(h('div', { class: 'card', style: 'width:min(480px,95vw)' }, h('div', { class: 'letterhead' }, h('span', { html: emblemSvg(s.company!.emblem.shape, s.company!.emblem.color, 30) }), h('div', {}, h('b', {}, s.company!.name), h('small', {}, `Teklif mektubu · Yetkili: ${s.company!.founder ?? 'Patron'}`))), h('h3', {}, t.title), h('div', { class: 'mute', style: 'font-size:12px' }, `Yaklaşık maliyet ${fmt(t.refCost)} · ${t.client === 'kamu' ? 'kamu: yaklaşık maliyet üstü teklif geçersiz' : 'özel: en çok %12 üstü'} · avans %10, hakediş aşama aşama (45 gün vadeli)`), lab, rng, out, h('div', { style: 'display:flex;gap:8px;justify-content:flex-end' }, h('button', { class: 'btn', onclick: close }, 'Vazgeç'), go)));
   document.body.append(modal); upd();
 }

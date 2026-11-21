@@ -27,6 +27,7 @@ export interface Company {
   founderBackground: string;
   startCity: string;
   emblem: { shape: number; color: number };
+  founder?: string;           // kurucu (oyuncu) adı; eski kayıtlarda yok → 'Patron'
   level: number;
   office: number;
   reputation: number;   // 0-100

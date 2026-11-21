@@ -1,3 +1,4 @@
+import { emblemSvg } from './emblem';
 import { formatMoney } from '../core/money';
 import type { Project, Tender } from '../core/types';
 import { buildingType } from '../data';
@@ -22,7 +23,7 @@ export function deliveryScene(app: App, p: Project): void {
 }
 export function tenderWinScene(app: App, t: Tender): void {
   app.audio.sfx('fanfare'); celebrate(app.settings.reduced);
-  scene(app, 'tender', [...(TENDER_ART ? [h('div', { class: 'cart wide' }, h('img', { src: TENDER_ART, alt: '', decoding: 'async' }))] : []), h('div', { class: 'cemoji' }, '🤝'), h('div', { class: 'ctitle' }, 'İHALE KAZANILDI'), h('h2', {}, t.title), h('div', { class: 'cfacts' }, h('span', {}, `💰 Sözleşme ${formatMoney(t.bid?.price ?? 0)}`), h('span', {}, `💸 %10 avans yattı`), h('span', {}, `📅 ${t.months} ay`))], 4000);
+  scene(app, 'tender', [...(TENDER_ART ? [h('div', { class: 'cart wide' }, h('img', { src: TENDER_ART, alt: '', decoding: 'async' }))] : []), h('div', { class: 'cemoji' }, '🤝'), h('div', { class: 'ctitle' }, 'İHALE KAZANILDI'), h('div', { class: 'letterhead lh-c' }, h('span', { html: emblemSvg(app.store.state.company!.emblem.shape, app.store.state.company!.emblem.color, 28) }), h('div', {}, h('b', {}, app.store.state.company!.name), h('small', {}, `Yüklenici · İmza: ${app.store.state.company!.founder ?? 'Patron'}`))), h('h2', {}, t.title), h('div', { class: 'cfacts' }, h('span', {}, `💰 Sözleşme ${formatMoney(t.bid?.price ?? 0)}`), h('span', {}, `💸 %10 avans yattı`), h('span', {}, `📅 ${t.months} ay`))], 4000);
 }
 /** Şantiye tanıtımı: proje adı ve binanın silueti kısaca belirir; 3D sahne arkada yüklenir. */
 export function siteIntro(app: App, p: Project): void {

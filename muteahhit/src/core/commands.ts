@@ -27,9 +27,9 @@ export interface CommandDef<P> {
 }
 
 export interface Emblem { shape: number; color: number }
-export const EMBLEM_SHAPES = 12;
-export const EMBLEM_COLORS = 6;
-export interface CreateCompanyParams { name: string; founderBackground: string; startCity: string; difficulty?: string; emblem?: Emblem; starterGear?: boolean }
+export const EMBLEM_SHAPES = 10; // logo galerisi (ui/emblem.ts LOGOS.length ile aynı olmalı; testle doğrulanır)
+export const EMBLEM_COLORS = 8; // kurumsal renk sayısı (BRAND_COLORS.length)
+export interface CreateCompanyParams { name: string; founderBackground: string; startCity: string; difficulty?: string; emblem?: Emblem; starterGear?: boolean; founder?: string }
 export interface HireStaffParams { type: string }
 export interface FireStaffParams { staffId: number }
 
@@ -43,6 +43,7 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     if (s.company) return 'Şirket zaten kurulmuş.';
     const name = p.name.trim();
     if (name.length < 2 || name.length > 32) return 'Şirket adı 2–32 karakter olmalı.';
+    if (p.founder !== undefined && p.founder.trim().length > 24) return 'Kurucu adı en çok 24 karakter olmalı.';
     if (!background(p.founderBackground)) return 'Geçersiz patron geçmişi.';
     if (!CITIES.some((c) => c.id === p.startCity)) return 'Geçersiz başlangıç şehri.';
     if (p.difficulty !== undefined && !difficulty(p.difficulty)) return 'Geçersiz zorluk.';
@@ -56,7 +57,7 @@ const createCompany: CommandDef<CreateCompanyParams> = {
     const mult = difficulty(s.meta.difficulty)!.capitalMult;
     s.company = {
       name: p.name.trim(), founderBackground: p.founderBackground, startCity: p.startCity,
-      emblem: p.emblem ?? { shape: 0, color: 0 },
+      emblem: p.emblem ?? { shape: 0, color: 0 }, founder: (p.founder ?? '').trim().slice(0, 24) || 'Patron',
       level: 1, office: 1, reputation: bg.reputation, creditScore: bg.creditScore, cash: 0, stats: { completed: 0, sold: 0, profit: 0 }, safety: 'normal', procurement: { auto: true, supplier: 'yerel' }, lastAccidentDay: -999, satisfaction: 60, ownership: 100, bankrupt: false,
     };
     post(s, 'sermaye', mul(TL(bg.startCashTL), mult), { memo: 'Kuruluş sermayesi' });
