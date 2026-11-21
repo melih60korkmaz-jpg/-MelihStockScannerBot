@@ -35,6 +35,9 @@
           "initialOrientation": "LANDSCAPE"
         }
       ]
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }
