@@ -81,7 +81,7 @@ function materials(app: App, refresh: () => void): HTMLElement {
   const t = h('table', { class: 'tbl' }, h('tr', {}, ...['Malzeme', 'Stok', 'Yolda', 'Birim fiyat', 'Trend', ''].map((x) => h('th', {}, x))));
   for (const m of MATERIALS) {
     const mp = s.matPrice[m.id] ?? 1, trend = mp > 1.04 ? '▲' : mp < 0.96 ? '▼' : '•';
-    t.append(h('tr', {}, h('td', {}, h('span', { class: 'matic' }, MAT_ICON[m.id] ?? '📦'), m.label), h('td', {}, `${nf(stockQty(s, m.id), 1)} ${m.unit}`), h('td', {}, incomingQty(s, m.id) > 0 ? nf(incomingQty(s, m.id), 1) : '—'), h('td', {}, fmt(unitPrice(s, m.id, c.procurement.supplier))), h('td', { class: mp > 1.04 ? 'neg' : mp < 0.96 ? 'pos' : '' }, `${trend} ${(mp * 100 - 100).toFixed(0)}%`),
+    t.append(h('tr', {}, h('td', {}, h('span', { class: 'matic' }, MAT_ICON[m.id] ?? '📦'), m.label), h('td', {}, `${nf(stockQty(s, m.id), 1)} ${m.unit}`), h('td', {}, incomingQty(s, m.id) > 0 ? nf(incomingQty(s, m.id), 1) : '—'), h('td', {}, fmt(unitPrice(s, m.id, c.procurement.supplier))), h('td', { class: mp > 1.04 ? 'neg' : mp < 0.96 ? 'pos' : '' }, `${trend} ${Math.round(mp * 100 - 100) === 0 ? '0' : Math.round(mp * 100 - 100)}%`),
       h('td', {}, h('button', { class: 'btn', style: 'min-height:34px;padding:0 10px;font-size:12px', onclick: () => { press(app); orderModal(app, m.id, refresh); } }, 'Sipariş'))));
   }
   return h('div', { class: 'cols' }, h('div', { class: 'card', style: 'overflow:auto' }, h('div', { class: 'lbl-s' }, 'Malzeme stoğu ve fiyatlar'), t),

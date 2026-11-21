@@ -47,8 +47,11 @@ export class Store {
   setSpeed(sp: Speed) { this.speed = sp; this.acc = 0; this.emit([{ type: 'SPEED', day: this.state.clock.day, data: { speed: sp } }]); }
 
   /** requestAnimationFrame'den çağrılır. Büyük dt (arka plandan dönüş) sınırlanır. */
+  /** Arayüz: açık bir pencere (modal) varken zaman akmasın. main.ts atar; testlerde tanımsızdır. */
+  static hold: (() => boolean) | null = null;
   frame(dtMs: number): void {
     if (this.speed === 0 || !this.state.company) return;
+    if (Store.hold?.()) { this.acc = 0; return; }
     this.acc += Math.min(dtMs, 1000);
     const per = SPEED_MS[this.speed];
     while (this.acc >= per) {

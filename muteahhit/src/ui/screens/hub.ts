@@ -169,7 +169,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
         const cap = creditCapacity(s), debt = debtTotal(s), inc = last.reduce((a, r) => a + r.income, 0), net = last.reduce((a, r) => a + r.net, 0), margin = inc > 0 ? net / inc : 0, rwm = runwayMonths(s), nw = netWorth(s), assets = nw + debt;
         body.append(h('div', { class: 'card gauges' },
           h('div', { class: 'gg' }, h('div', { html: ring(cap.total > 0 ? debt / cap.total : 0, debt / Math.max(1, cap.total) > 0.8 ? C.bad : debt / Math.max(1, cap.total) > 0.5 ? C.warn : C.ok, `%${Math.round((cap.total > 0 ? debt / cap.total : 0) * 100)}`, 'limit') }), h('small', {}, `${EMOJI.kredi} Borç ${formatMoney(debt)}`), h('span', { class: `gst ${debt / Math.max(1, cap.total) > 0.8 ? 'bad' : debt / Math.max(1, cap.total) > 0.5 ? 'warn' : 'ok'}` }, debt / Math.max(1, cap.total) > 0.8 ? 'Riskli' : debt / Math.max(1, cap.total) > 0.5 ? 'Dikkat' : 'Sağlıklı')),
-          h('div', { class: 'gg' }, h('div', { html: ring(Math.max(0, Math.min(1, 0.5 + margin)), margin >= 0 ? C.ok : C.bad, `%${Math.round(margin * 100)}`, 'marj') }), h('small', {}, '📊 Kârlılık (6 ay)'), h('span', { class: `gst ${margin >= 0.1 ? 'ok' : margin >= 0 ? 'warn' : 'bad'}` }, margin >= 0.1 ? 'Sağlıklı' : margin >= 0 ? 'Dikkat' : 'Zarar')),
+          h('div', { class: 'gg' }, h('div', { html: ring(Math.max(0, Math.min(1, 0.5 + margin)), margin >= 0 ? C.ok : C.bad, `${margin < -0.005 ? '−' : ''}%${Math.abs(Math.round(margin * 100))}`, 'marj') }), h('small', {}, '📊 Kârlılık (6 ay)'), h('span', { class: `gst ${margin >= 0.1 ? 'ok' : margin >= 0 ? 'warn' : 'bad'}` }, margin >= 0.1 ? 'Sağlıklı' : margin >= 0 ? 'Dikkat' : 'Zarar')),
           h('div', { class: 'gg' }, h('div', { html: ring(rwm === null ? 1 : rwm / 12, rwm === null || rwm >= 6 ? C.ok : rwm >= 3 ? C.warn : C.bad, rwm === null ? '∞' : rwm.toFixed(1), 'ay') }), h('small', {}, `${EMOJI.finans} Nakit yeterlilik`), h('span', { class: `gst ${rwm === null || rwm >= 6 ? 'ok' : rwm >= 3 ? 'warn' : 'bad'}` }, rwm === null || rwm >= 6 ? 'Sağlıklı' : rwm >= 3 ? 'Dikkat' : 'Riskli')),
           h('div', { class: 'gg' }, h('div', { html: ring(assets > 0 ? Math.max(0, nw) / assets : 0, C.acc2, `%${Math.round((assets > 0 ? Math.max(0, nw) / assets : 0) * 100)}`, 'özkaynak') }), h('small', {}, `${EMOJI.sirket} Şirket değeri ${formatMoney(nw)}`))));
       }
@@ -197,6 +197,14 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
 
   // ---------------- Piyasa ----------------
   let lastViewKey = '', lastNW: number | null = null;
+  // Kullanıcı bir alanla uğraşırken (yazı, kaydırıcı, açılır liste) otomatik yenileme o alanı silmesin: bırakınca yenile
+  let pendingRedraw = false, dragging = false;
+  const inputBusy = () => { const a = document.activeElement as HTMLElement | null; return dragging || (!!a && view.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName) && (a as HTMLInputElement).type !== 'checkbox'); };
+  const flushRedraw = () => setTimeout(() => { if (pendingRedraw && !inputBusy() && root.isConnected) { pendingRedraw = false; drawView(); } }, 200);
+  view.addEventListener('pointerdown', (e) => { const el = e.target as HTMLElement; if (el.tagName === 'INPUT' || el.tagName === 'SELECT') dragging = true; });
+  const upHandler = () => { if (!root.isConnected) { for (const ev of ['pointerup', 'pointercancel']) window.removeEventListener(ev, upHandler); return; } if (dragging) { dragging = false; flushRedraw(); } };
+  for (const ev of ['pointerup', 'pointercancel']) window.addEventListener(ev, upHandler);
+  view.addEventListener('focusout', flushRedraw); view.addEventListener('change', flushRedraw);
   const drawView = () => {
     const vkey = `${tab}:${tab === 'harita' ? mapKey() : ''}`, keep = vkey === lastViewKey ? view.scrollTop : 0; lastViewKey = vkey; view.innerHTML = '';
     view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'finans' ? finance() : marketView(app, drawView));
@@ -253,7 +261,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'BANKRUPT') { app.audio.sfx('alarm'); app.haptic('heavy'); showBankrupt(); }
       if (e.type === 'CASH_NEGATIVE') { app.audio.sfx('error'); toast('Kasa eksiye düştü! Oyun duraklatıldı.', 5000); }
     }
-    drawHud(); if (redraw) drawView();
+    drawHud(); if (redraw) { if (inputBusy()) pendingRedraw = true; else drawView(); }
   });
   const showBankrupt = () => {
     if (document.querySelector('.bankrupt')) return; const s = app.store.state;

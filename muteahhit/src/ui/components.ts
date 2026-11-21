@@ -5,7 +5,7 @@ import { h } from './dom';
 
 export const fmt = (m: Money) => formatMoney(m);
 export const fmtM2 = (m: Money) => `${new Intl.NumberFormat('tr-TR').format(Math.round(m / 100))} ₺/m²`;
-export const pct = (x: number, d = 0) => `%${(x * 100).toFixed(d).replace('.', ',')}`;
+export const pct = (x: number, d = 0) => { let s = (x * 100).toFixed(d); if (Number(s) === 0) s = s.replace('-', ''); return `%${s.replace('.', ',')}`; };
 export const nf = (n: number, d = 0) => new Intl.NumberFormat('tr-TR', { maximumFractionDigits: d, minimumFractionDigits: d }).format(n);
 export const ZONING_LABEL: Record<string, string> = { konut: 'Konut', ticaret: 'Ticaret', karma: 'Karma', sanayi: 'Sanayi' };
 export const SOIL_LABEL: Record<string, string> = { saglam: 'Sağlam zemin', kaya: 'Kayalık', kil: 'Sıkışık kil', dolgu: 'Dolgu', yeralti_suyu: 'Yüksek yeraltı suyu', egimli: 'Eğimli arazi' };

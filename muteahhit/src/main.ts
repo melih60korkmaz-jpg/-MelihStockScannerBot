@@ -120,3 +120,6 @@ addEventListener('orientationchange', () => setTimeout(() => scene?.resize(), 20
 
 // Açılış tamamlandı işareti: index.html'deki hata paneli bunu bekler.
 (window as unknown as { __booted?: boolean }).__booted = true;
+
+// Pencere (modal) açıkken oyun zamanı beklesin: teklif/satış/kredi gibi işlemler sırasında değerler kaymasın.
+Store.hold = () => { const ms = document.querySelectorAll('.modal:not(.leaving)'); for (const m of Array.from(ms)) if ((m as HTMLElement).offsetParent !== null || getComputedStyle(m).position === 'fixed') return true; return false; };

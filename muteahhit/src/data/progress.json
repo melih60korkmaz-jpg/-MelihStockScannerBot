@@ -19,7 +19,7 @@
   {"id":"q_ekip","t":"Ekibini kur","x":"Operasyon sekmesinden en az 3 çalışan işe al.","m":"staff","n":3,"r":{"cash":150000}},
   {"id":"q_proje","t":"İlk projeni başlat","x":"Arsa dosyasından proje oluştur ve şantiyeyi başlat.","m":"started","n":1,"r":{"rep":1}},
   {"id":"q_teslim","t":"İlk binanı tamamla","x":"İnşaatı bitir ve teslim et.","m":"completed","n":1,"r":{"cash":500000,"rep":2}},
-  {"id":"q_satis","t":"İlk dairenı sat","x":"Satış merkezinden fiyat belirle ve ilk daireyi sat.","m":"unitsSold","n":1,"r":{"cash":300000}},
+  {"id":"q_satis","t":"İlk daireni sat","x":"Satış merkezinden fiyat belirle ve ilk daireyi sat.","m":"unitsSold","n":1,"r":{"cash":300000}},
   {"id":"q_kapat","t":"İlk projeni kapat","x":"Tüm daireleri sat; kâr kesinleşsin.","m":"sold","n":1,"r":{"cash":800000,"rep":2}},
   {"id":"q_kredi","t":"Bankayla tanış","x":"Finans › Krediler'den ilk kredini kullan.","m":"loans","n":1,"r":{"cash":0,"score":10}},
   {"id":"q_makine","t":"Kendi makineni al","x":"Operasyon › Makine'den bir makine satın al.","m":"machines","n":1,"r":{"cash":150000}},

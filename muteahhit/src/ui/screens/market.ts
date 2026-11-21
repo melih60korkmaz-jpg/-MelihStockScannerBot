@@ -33,7 +33,7 @@ export function marketView(app: App, refresh: () => void): HTMLElement {
   // Malzeme fiyat geçmişi
   const hist = s.matHist?.[mem.mat] ?? [], chips = h('div', { class: 'opts' }, ...MATERIALS.map((x) => h('button', { class: mem.mat === x.id ? 'on' : '', onclick: () => { press(app); mem.mat = x.id; refresh(); } }, x.label)));
   const ch = hist.length >= 2 ? (hist.at(-1)! / hist[Math.max(0, hist.length - 13)]! - 1) * 100 : null;
-  const mats = h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('div', { class: 'lbl-s', style: 'margin:0' }, `${EMOJI.malzeme} Malzeme fiyatı (etkin çarpan)`), ch !== null ? h('b', { class: ch > 0 ? 'neg' : 'pos' }, `${ch > 0 ? '+' : ''}${ch.toFixed(1)}% (12 ay)`) : null), chips,
+  const mats = h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('div', { class: 'lbl-s', style: 'margin:0' }, `${EMOJI.malzeme} Malzeme fiyatı (etkin çarpan)`), ch !== null ? h('b', { class: ch > 0 ? 'neg' : 'pos' }, `${ch > 0 ? '+' : ''}${Number(ch.toFixed(1)) === 0 ? '0.0' : ch.toFixed(1)}% (12 ay)`) : null), chips,
     lineChart(hist.map((v, i) => ({ label: `${i + 1}. ay`, value: Math.round(v * 100) })), (n) => String(n), 140));
 
   // Rakipler: itibar ve aktif proje karşılaştırması (biz dahil)
