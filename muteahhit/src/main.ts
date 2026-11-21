@@ -117,3 +117,6 @@ addEventListener('orientationchange', () => setTimeout(() => scene?.resize(), 20
 (window as any).__app = app; // test/hata ayıklama
 (window as any).__music = music;
 (window as any).__openEvent = () => openEventDecision(app); // hata ayıklama: bekleyen olay penceresini aç
+
+// Açılış tamamlandı işareti: index.html'deki hata paneli bunu bekler.
+(window as unknown as { __booted?: boolean }).__booted = true;

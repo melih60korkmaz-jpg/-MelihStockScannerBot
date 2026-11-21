@@ -422,3 +422,4 @@ html[data-motion=reduced] .cine, html[data-motion=reduced] .cinebox, html[data-m
 .donutw { display:flex; gap:14px; align-items:center; flex-wrap:wrap; } .donut { width:140px; height:140px; flex:none; } .dseg { transition:stroke-dasharray .6s ease; animation:dsegin .7s ease-out both; } @keyframes dsegin { from { opacity:0 } }
 .dleg { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; font-size:13px; min-width:150px; flex:1; } .dleg li { display:flex; align-items:center; gap:8px; } .dleg i { width:10px; height:10px; border-radius:3px; flex:none; } .dleg span { flex:1; } 
 :root[data-motion="reduced"] .fk, :root[data-motion="reduced"] .dseg { animation:none; }
+.matic { display:inline-block; width:26px; font-size:16px; } .tbl td .matic { vertical-align:-1px; }
