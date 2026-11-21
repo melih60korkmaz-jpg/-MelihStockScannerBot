@@ -33,7 +33,7 @@ export const ipoPrice = (s: GameState): Money => Math.max(1, Math.round(fairPric
 export function goPublic(s: GameState, pct: number, events: GameEvent[]): Money {
   const c = s.company!, price = ipoPrice(s), proceeds = Math.round(price * SHARES * pct / 100 * 0.97);
   post(s, 'hisse', proceeds, { memo: `Halka arz (%${pct})` }); c.ownership -= pct; c.reputation = clamp(c.reputation + 3, 0, 100);
-  s.equity = { listed: true, ipoDay: s.clock.day, shares: SHARES, price, ipoPrice: price, hist: [price] };
+  s.equity = { listed: true, ipoDay: s.clock.day, shares: SHARES, price, ipoPrice: price, hist: [price], fair: fairPrice(s) };
   events.push({ type: 'IPO', day: s.clock.day, pause: true, data: { pct, price, proceeds } }); return proceeds;
 }
 export function tradeError(s: GameState, kind: 'sec' | 'buy', pct: number): string | null {
@@ -52,12 +52,21 @@ export function buyback(s: GameState, pct: number): Money {
   const v = buybackCost(s, pct); post(s, 'hisse', -v, { memo: `Hisse geri alımı (%${pct})` }); s.company!.ownership += pct;
   s.equity!.price = Math.round(s.equity!.price * (1 + pct / 150)); return v;
 }
-/** Aylık fiyat hareketi: fiyat gerçek değere (net varlık × çarpan) %30 yaklaşır, ±%4 gürültü. İlk 6 ayda halka arz fiyatının altına itibar ceza/ödülü. */
+/**
+ * Aylık: adil değer (net varlık × çarpan) yeniden hesaplanır; itibar etkisi uygulanır.
+ * Günlük: fiyat, adil değere doğru yumuşakça çekilir (mean-reversion, günde ≤%3 hareket) ve ±%1,2 gürültü alır:
+ * grafik her oyun günü hareket eder ama düzenli ve dengeli kalır; fiyat adil değerden uzun süre kopmaz.
+ */
 export function stockMonthly(s: GameState): void {
   const e = s.equity; if (!e?.listed || !s.company) return;
-  const fair = fairPrice(s), noise = 1 + (hash01(Math.floor(s.clock.day / 30) * 131 + 7) - 0.5) * 0.08;
-  e.price = Math.max(1, Math.round((e.price * 0.7 + fair * 0.3) * noise)); e.hist.push(e.price); if (e.hist.length > 60) e.hist.shift();
+  e.fair = fairPrice(s);
   const c = s.company; if (e.price > e.ipoPrice * 1.3) c.reputation = clamp(c.reputation + 0.5, 0, 100); else if (e.price < e.ipoPrice * 0.7) c.reputation = clamp(c.reputation - 0.5, 0, 100);
+}
+export function stockDaily(s: GameState): void {
+  const e = s.equity; if (!e?.listed || !s.company) return;
+  if (e.fair === undefined) e.fair = fairPrice(s);
+  const noise = (hash01(s.clock.day * 131 + 17) - 0.5) * 0.024, drift = ((e.fair - e.price) / e.price) * 0.06;
+  e.price = Math.max(1, Math.round(e.price * (1 + clamp(drift + noise, -0.03, 0.03)))); e.hist.push(e.price); if (e.hist.length > 240) e.hist.shift();
 }
 
 // ---------------- rakip satın alma ----------------

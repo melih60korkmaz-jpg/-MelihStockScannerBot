@@ -144,3 +144,11 @@ describe('altyapı ihalesi akışı ve başarımlar', () => {
     const e2: GameEvent[] = []; checkProgress(s, e2, false, true); expect(e2.filter((e) => e.type === 'ACHIEVEMENT').length).toBe(0);
   });
 });
+
+describe('borsa fiyatı: günlük, dengeli hareket', () => {
+  it('her gün bir fiyat noktası; günlük değişim ≤%3; fiyat adil değerden kopmaz; grafik 240 noktayı aşmaz', () => {
+    const s = setup(7, TL(2_000_000_000)); dispatch(s, 'GoPublic', { pct: 15 }); const e = s.equity!; let worst = 0, far = 0, prev = e.price;
+    for (let d = 0; d < 730; d++) { advanceDays(s, 1); const move = Math.abs(e.price / prev - 1); worst = Math.max(worst, move); prev = e.price; far = Math.max(far, Math.abs(e.price / (e.fair ?? e.price) - 1)); }
+    expect(worst).toBeLessThanOrEqual(0.0301); expect(far).toBeLessThan(0.45); expect(e.hist.length).toBe(240); expect(new Set(e.hist.slice(-60)).size).toBeGreaterThan(30);
+  });
+});

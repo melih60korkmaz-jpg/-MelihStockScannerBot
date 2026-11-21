@@ -9,7 +9,7 @@ import { aliveRivals } from '../../sim/rivals';
 import { ACQ_MIN_LEVEL, IPO_MIN_LEVEL, IPO_MIN_NW, SHARES, acquisitionPrice, buybackCost, fairPrice, ipoPrice, marketCap, secondaryProceeds } from '../../sim/stock';
 import { ENERGY_TIERS, GM_COST_TL, VENTURE_INFO, energyCapex, ventureSalePrice, ventureValue } from '../../sim/ventures';
 import { C, ring } from '../art';
-import { lineChart } from '../charts';
+import { stockChart } from '../stockChart';
 import { fmt, nf } from '../components';
 import { askConfirm, h, press, toast } from '../dom';
 import type { App } from '../app';
@@ -126,12 +126,14 @@ function market(app: App, refresh: () => void): HTMLElement {
       h('button', { class: 'btn gold', style: 'margin-top:8px;min-height:40px', disabled: !reqs.every((r) => r[1]), onclick: async () => { if (await askConfirm(`Şirketin %${pct}'i halka arz edilsin mi? Sahipliğiniz %${c.ownership - pct} olur.`)) run(app, 'GoPublic', { pct }, 'Şirket halka arz edildi!', refresh, 'stamp'); } }, 'Halka arz et'));
   };
   const trade = () => {
-    if (!e?.listed) return null; let sec = 5, buy = 3; const hist = e.hist.map((v, i) => ({ label: `${i + 1}`, value: v }));
+    if (!e?.listed) return null; let sec = 5, buy = 3; const chart = stockChart((n) => fmt(n), e.ipoPrice); chart.update(e.hist);
+    // Canlı: her oyun gününde grafik ve fiyat kutuları yenilenir (ekran yeniden kurulmaz)
+    const unsub = app.store.subscribe((evs) => { if (!chart.el.isConnected) { unsub(); return; } if (evs.some((x) => x.type === 'DAY') && s.equity) chart.update(s.equity.hist); });
     const secLab = h('small', { class: 'mute' }), buyLab = h('small', { class: 'mute' });
     const secR = h('input', { type: 'range', min: 3, max: 15, step: 1, value: sec, 'aria-label': 'İkincil satış oranı', style: 'flex:1' }) as HTMLInputElement, buyR = h('input', { type: 'range', min: 1, max: 10, step: 1, value: buy, 'aria-label': 'Geri alım oranı', style: 'flex:1' }) as HTMLInputElement;
     const u1 = () => { sec = Number(secR.value); secLab.textContent = `%${sec} sat → ${fmt(secondaryProceeds(s, sec))}`; }, u2 = () => { buy = Number(buyR.value); buyLab.textContent = `%${buy} geri al → ${fmt(buybackCost(s, buy))}`; }; secR.oninput = u1; buyR.oninput = u2; u1(); u2();
     return h('div', { class: 'card', style: 'margin-bottom:10px' }, h('div', { class: 'lbl-s' }, '📈 Borsa'), h('div', { class: 'kpis' }, h('div', { class: 'kpi', html: `<small>Hisse fiyatı</small><b>${fmt(e.price)}</b>` }), h('div', { class: 'kpi', html: `<small>Piyasa değeri</small><b>${fmt(marketCap(s))}</b>` }), h('div', { class: 'kpi', html: `<small>Sahipliğiniz</small><b>%${c.ownership}</b>` }), h('div', { class: 'kpi', html: `<small>Halka arz fiyatı</small><b>${fmt(e.ipoPrice)}</b>` })),
-      e.hist.length >= 2 ? lineChart(hist, (n) => fmt(n), 130) : h('div', { class: 'mute', style: 'font-size:12px' }, 'Fiyat grafiği ay sonlarında oluşur.'), h('div', { class: 'mute', style: 'font-size:12px;margin:4px 0' }, `Adil değer ≈ ${fmt(fairPrice(s))}/hisse. Fiyat adil değere yaklaşır; itibar, güven ve büyüme etkiler.`),
+      chart.el, h('div', { class: 'mute', style: 'font-size:12px;margin:4px 0' }, `Adil değer ≈ ${fmt(fairPrice(s))}/hisse. Fiyat adil değere yaklaşır; itibar, güven ve büyüme etkiler.`),
       h('div', { class: 'cols' }, h('div', {}, h('div', { style: 'display:flex;gap:8px;align-items:center' }, secR, secLab), h('button', { class: 'btn', style: 'min-height:38px;margin-top:6px', onclick: async () => { if (await askConfirm(`%${sec} ikincil satış yapılsın mı? Fiyat biraz düşer.`)) run(app, 'SecondaryOffering', { pct: sec }, 'İkincil satış tamamlandı', refresh, 'coin'); } }, 'Hisse sat')),
         h('div', {}, h('div', { style: 'display:flex;gap:8px;align-items:center' }, buyR, buyLab), h('button', { class: 'btn', style: 'min-height:38px;margin-top:6px', onclick: async () => { if (await askConfirm(`%${buy} hisse geri alınsın mı?`)) run(app, 'Buyback', { pct: buy }, 'Hisse geri alındı', refresh); } }, 'Geri al'))));
   };

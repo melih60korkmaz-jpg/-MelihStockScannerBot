@@ -503,3 +503,8 @@ mark { background:#FF8C3255; color:inherit; border-radius:3px; padding:0 1px; }
 .vcard { display:flex; gap:12px; align-items:center; margin-bottom:8px; flex-wrap:wrap; } .vico { font-size:32px; width:46px; text-align:center; flex:none; } .vbody { flex:1; min-width:180px; }
 .tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; } .tiers .btn small { font-weight:500; font-size:11px; }
 .infrac { display:flex; align-items:center; justify-content:center; min-height:72px; background:linear-gradient(180deg,var(--s2),var(--s0)); } .infraico { font-size:44px; line-height:1; padding:10px; }
+/* canlı hisse grafiği */
+.sc { margin:6px 0 8px; } .schead { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; } .scprice { font:700 30px/1 var(--font-h); } .scprice.flash { animation:scflash .5s ease-out; } @keyframes scflash { 0% { color:var(--accent-l); transform:scale(1.04); } 100% { color:var(--text); transform:none; } }
+.scchg { font:700 14px var(--font); padding:2px 8px; border-radius:99px; } .scchg.up { color:#3FBF8A; background:#3FBF8A1f; } .scchg.down { color:#FF4D5A; background:#FF4D5A1f; } .scsub { flex:1 1 100%; }
+.scsvg { width:100%; height:auto; display:block; margin-top:4px; } .scpulse { transform-box:fill-box; transform-origin:center; animation:scpulse 1.8s ease-out infinite; } @keyframes scpulse { 0% { transform:scale(1); opacity:.7; } 100% { transform:scale(3.2); opacity:0; } }
+.scrange { margin-top:6px; align-self:flex-start; } :root[data-motion="reduced"] .scpulse, :root[data-motion="reduced"] .scprice.flash { animation:none; }

@@ -16,7 +16,7 @@ import { eventsDaily, eventsMonthly } from './events';
 import { tendersDaily, tendersMonthly } from './tenders';
 import { infraDaily, infraMonthly, infraPrune } from './infra';
 import { venturesMonthly } from './ventures';
-import { stockMonthly } from './stock';
+import { stockDaily, stockMonthly } from './stock';
 import { loansMonthly, forcedLiquidation, debtTotal } from './loans';
 
 /**
@@ -40,6 +40,7 @@ export function advanceDay(s: GameState): GameEvent[] {
     salesDaily(s, events);
     tendersDaily(s, events);
     infraDaily(s, events);
+    stockDaily(s);
     eventsDaily(s, events);
   }
   track(s, events); if (s.clock.day % 6 === 0) checkProgress(s, events);

@@ -87,7 +87,7 @@ export interface Venture {
 export type Division = 'insaat' | 'isletme' | 'enerji' | 'altyapi' | 'bagli';
 export type Strategy = 'buyume' | 'dengeli' | 'temkinli';
 export interface HoldingState { strategy: Record<'isletme' | 'enerji' | 'altyapi', Strategy>; gm: Record<'isletme' | 'enerji' | 'altyapi', boolean> }
-export interface StockState { listed: boolean; ipoDay: number; shares: number; price: Money; ipoPrice: Money; hist: number[] }
+export interface StockState { listed: boolean; ipoDay: number; shares: number; price: Money; ipoPrice: Money; hist: number[]; fair?: Money }   // hist: günlük kapanışlar (en çok 240)
 /** Altyapı işi (yol, köprü, tünel, baraj…): ihaleyle kazanılır; ilerleme makine ve ekip kapasitesine bağlıdır; hakediş 45 gün vadelidir. */
 export interface InfraJob {
   id: number; tenderId: number; kind: string; name: string; city: string; price: Money; advance: Money; bond: Money; trueCost: Money;
