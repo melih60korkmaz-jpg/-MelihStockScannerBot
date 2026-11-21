@@ -1,67 +1,511 @@
 {
-"levels": [
-  {"level":1,"label":"Şahıs Müteahhit","need":{}},
-  {"level":2,"label":"Küçük Firma","need":{"completed":1,"nw":8000000}},
-  {"level":3,"label":"Yerel Firma","need":{"completed":3,"nw":25000000,"rep":20}},
-  {"level":4,"label":"Bölge Firması","need":{"completed":6,"nw":80000000,"rep":35,"cities":2}},
-  {"level":5,"label":"Şehir Markası","need":{"completed":10,"nw":250000000,"rep":50,"cities":3}},
-  {"level":6,"label":"Çok Şehirli Firma","need":{"completed":15,"nw":700000000,"rep":62,"cities":5}},
-  {"level":7,"label":"Ulusal Firma","need":{"completed":22,"nw":2000000000,"rep":75,"cities":8}},
-  {"level":8,"label":"Holding","need":{"completed":30,"nw":6000000000,"rep":88,"cities":12}}
-],
-"offices": [
-  {"office":2,"minLevel":2,"costTL":300000},
-  {"office":3,"minLevel":4,"costTL":1500000},
-  {"office":4,"minLevel":6,"costTL":6000000}
-],
-"quests": [
-  {"id":"q_arsa","t":"İlk arsanı al","x":"Harita sekmesinden bir bölge seç, arsayı incele ve satın al.","m":"parcels","n":1,"r":{"cash":200000}},
-  {"id":"q_ekip","t":"Ekibini kur","x":"Operasyon sekmesinden en az 3 çalışan işe al.","m":"staff","n":3,"r":{"cash":150000}},
-  {"id":"q_proje","t":"İlk projeni başlat","x":"Arsa dosyasından proje oluştur ve şantiyeyi başlat.","m":"started","n":1,"r":{"rep":1}},
-  {"id":"q_teslim","t":"İlk binanı tamamla","x":"İnşaatı bitir ve teslim et.","m":"completed","n":1,"r":{"cash":500000,"rep":2}},
-  {"id":"q_satis","t":"İlk daireni sat","x":"Satış merkezinden fiyat belirle ve ilk daireyi sat.","m":"unitsSold","n":1,"r":{"cash":300000}},
-  {"id":"q_kapat","t":"İlk projeni kapat","x":"Tüm daireleri sat; kâr kesinleşsin.","m":"sold","n":1,"r":{"cash":800000,"rep":2}},
-  {"id":"q_kredi","t":"Bankayla tanış","x":"Finans › Krediler'den ilk kredini kullan.","m":"loans","n":1,"r":{"cash":0,"score":10}},
-  {"id":"q_makine","t":"Kendi makineni al","x":"Operasyon › Makine'den bir makine satın al.","m":"machines","n":1,"r":{"cash":150000}},
-  {"id":"q_sube","t":"İkinci şehir","x":"Harita'dan yeni bir ilde şube aç.","m":"cities","n":2,"r":{"cash":500000,"rep":2}},
-  {"id":"q_ihale","t":"İlk ihaleye gir","x":"İhale sekmesinden bir ihaleye teklif ver.","m":"bids","n":1,"r":{"rep":1}},
-  {"id":"q_3proje","t":"Üç proje","x":"Toplam 3 proje tamamla.","m":"completed","n":3,"r":{"cash":1500000,"rep":3}},
-  {"id":"q_nw","t":"25 milyonluk firma","x":"Net varlığın 25 milyon ₺'ye ulaşsın.","m":"nw","n":25000000,"r":{"cash":1000000}},
-  {"id":"q_ihalekaz","t":"Kamu işi","x":"Bir ihaleyi kazan.","m":"tendersWon","n":1,"r":{"cash":1500000,"rep":4}},
-  {"id":"q_kriz","t":"Krizi atlat","x":"Ekonomik kriz dönemini 6 ay boyunca iflas etmeden geçir.","m":"crisisMonths","n":6,"r":{"cash":3000000,"rep":5}}
-],
-"achievements": [
-  {"id":"a_ilk","t":"Temel Atıldı","x":"İlk binanı tamamla.","m":"completed","n":1},
-  {"id":"a_5","t":"Beş Bina","x":"5 proje tamamla.","m":"completed","n":5},
-  {"id":"a_15","t":"Şehrin Silüeti","x":"15 proje tamamla.","m":"completed","n":15},
-  {"id":"a_30","t":"Mimarın Adı","x":"30 proje tamamla.","m":"completed","n":30},
-  {"id":"a_sat1","t":"Anahtar Teslim","x":"İlk projeni tamamen sat.","m":"sold","n":1},
-  {"id":"a_sat10","t":"Satış Ustası","x":"10 projeyi tamamen sat.","m":"sold","n":10},
-  {"id":"a_100d","t":"Yüz Daire","x":"100 daire sat.","m":"unitsSold","n":100},
-  {"id":"a_500d","t":"Mahalle Kuran","x":"500 daire sat.","m":"unitsSold","n":500},
-  {"id":"a_nw10","t":"On Milyonluk","x":"Net varlık 10 milyon ₺.","m":"nw","n":10000000},
-  {"id":"a_nw100","t":"Yüz Milyonluk","x":"Net varlık 100 milyon ₺.","m":"nw","n":100000000},
-  {"id":"a_nw1b","t":"Milyarder","x":"Net varlık 1 milyar ₺.","m":"nw","n":1000000000},
-  {"id":"a_kar10","t":"İlk Büyük Kâr","x":"Toplam 10 milyon ₺ kâr.","m":"profit","n":10000000},
-  {"id":"a_kar50","t":"Kârlı İş","x":"Toplam 50 milyon ₺ kâr.","m":"profit","n":50000000},
-  {"id":"a_kar500","t":"Altın Dokunuş","x":"Toplam 500 milyon ₺ kâr.","m":"profit","n":500000000},
-  {"id":"a_sehir2","t":"Yeni Şehir","x":"İkinci ilde şube aç.","m":"cities","n":2},
-  {"id":"a_sehir3","t":"Çok Şehirli","x":"3 ilde şube aç.","m":"cities","n":3,"hint":false},
-  {"id":"a_sehir10","t":"Ülke Çapında","x":"10 ilde şube aç.","m":"cities","n":10},
-  {"id":"a_ekip20","t":"Büyük Aile","x":"20 çalışan.","m":"staff","n":20},
-  {"id":"a_makine5","t":"Makine Parkı","x":"5 makine.","m":"machines","n":5},
-  {"id":"a_ihale1","t":"Resmî Mühür","x":"İlk ihaleni kazan.","m":"tendersWon","n":1},
-  {"id":"a_ihale5","t":"Kamu Müteahhidi","x":"5 ihale kazan.","m":"tendersWon","n":5},
-  {"id":"a_kalite","t":"Kusursuz İşçilik","x":"Kalite puanı 90+ bir proje bitir.","m":"bestQuality","n":90},
-  {"id":"a_itibar50","t":"Güvenilir İsim","x":"İtibar 50.","m":"rep","n":50},
-  {"id":"a_itibar90","t":"Efsane","x":"İtibar 90.","m":"rep","n":90},
-  {"id":"a_kredi","t":"Kaldıraç","x":"3 kredi kullan.","m":"loans","n":3},
-  {"id":"a_ortak","t":"Ortak Girişim","x":"Bir projede yatırımcı bul.","m":"investors","n":1},
-  {"id":"a_pay","t":"Halka Doğru","x":"Şirket payı sat.","m":"equitySold","n":1},
-  {"id":"a_olay25","t":"Her Şeye Hazır","x":"25 karar olayı yönet.","m":"events","n":25},
-  {"id":"a_kriz","t":"Fırtınadan Sağ Çıkan","x":"Krizi 6 ay iflas etmeden geçir.","m":"crisisMonths","n":6},
-  {"id":"a_10yil","t":"On Yıllık Usta","x":"10 yıl hayatta kal.","m":"months","n":120},
-  {"id":"a_lvl4","t":"Bölge Firması","x":"Seviye 4'e ulaş.","m":"level","n":4},
-  {"id":"a_lvl8","t":"Sektör Lideri","x":"Seviye 8'e ulaş.","m":"level","n":8}
-]
+ "levels": [
+  {
+   "level": 1,
+   "label": "Şahıs Müteahhit",
+   "need": {}
+  },
+  {
+   "level": 2,
+   "label": "Küçük Firma",
+   "need": {
+    "completed": 1,
+    "nw": 8000000
+   }
+  },
+  {
+   "level": 3,
+   "label": "Yerel Firma",
+   "need": {
+    "completed": 3,
+    "nw": 25000000,
+    "rep": 20
+   }
+  },
+  {
+   "level": 4,
+   "label": "Bölge Firması",
+   "need": {
+    "completed": 6,
+    "nw": 80000000,
+    "rep": 35,
+    "cities": 2
+   }
+  },
+  {
+   "level": 5,
+   "label": "Şehir Markası",
+   "need": {
+    "completed": 10,
+    "nw": 250000000,
+    "rep": 50,
+    "cities": 3
+   }
+  },
+  {
+   "level": 6,
+   "label": "Çok Şehirli Firma",
+   "need": {
+    "completed": 15,
+    "nw": 700000000,
+    "rep": 62,
+    "cities": 5
+   }
+  },
+  {
+   "level": 7,
+   "label": "Ulusal Firma",
+   "need": {
+    "completed": 22,
+    "nw": 2000000000,
+    "rep": 75,
+    "cities": 8
+   }
+  },
+  {
+   "level": 8,
+   "label": "Holding",
+   "need": {
+    "completed": 30,
+    "nw": 6000000000,
+    "rep": 88,
+    "cities": 12
+   }
+  }
+ ],
+ "offices": [
+  {
+   "office": 2,
+   "minLevel": 2,
+   "costTL": 300000
+  },
+  {
+   "office": 3,
+   "minLevel": 4,
+   "costTL": 1500000
+  },
+  {
+   "office": 4,
+   "minLevel": 6,
+   "costTL": 6000000
+  }
+ ],
+ "quests": [
+  {
+   "id": "q_arsa",
+   "t": "İlk arsanı al",
+   "x": "Harita sekmesinden bir bölge seç, arsayı incele ve satın al.",
+   "m": "parcels",
+   "n": 1,
+   "r": {
+    "cash": 200000
+   }
+  },
+  {
+   "id": "q_ekip",
+   "t": "Ekibini kur",
+   "x": "Operasyon sekmesinden en az 3 çalışan işe al.",
+   "m": "staff",
+   "n": 3,
+   "r": {
+    "cash": 150000
+   }
+  },
+  {
+   "id": "q_proje",
+   "t": "İlk projeni başlat",
+   "x": "Arsa dosyasından proje oluştur ve şantiyeyi başlat.",
+   "m": "started",
+   "n": 1,
+   "r": {
+    "rep": 1
+   }
+  },
+  {
+   "id": "q_teslim",
+   "t": "İlk binanı tamamla",
+   "x": "İnşaatı bitir ve teslim et.",
+   "m": "completed",
+   "n": 1,
+   "r": {
+    "cash": 500000,
+    "rep": 2
+   }
+  },
+  {
+   "id": "q_satis",
+   "t": "İlk daireni sat",
+   "x": "Satış merkezinden fiyat belirle ve ilk daireyi sat.",
+   "m": "unitsSold",
+   "n": 1,
+   "r": {
+    "cash": 300000
+   }
+  },
+  {
+   "id": "q_kapat",
+   "t": "İlk projeni kapat",
+   "x": "Tüm daireleri sat; kâr kesinleşsin.",
+   "m": "sold",
+   "n": 1,
+   "r": {
+    "cash": 800000,
+    "rep": 2
+   }
+  },
+  {
+   "id": "q_kredi",
+   "t": "Bankayla tanış",
+   "x": "Finans › Krediler'den ilk kredini kullan.",
+   "m": "loans",
+   "n": 1,
+   "r": {
+    "cash": 0,
+    "score": 10
+   }
+  },
+  {
+   "id": "q_makine",
+   "t": "Kendi makineni al",
+   "x": "Operasyon › Makine'den bir makine satın al.",
+   "m": "machines",
+   "n": 1,
+   "r": {
+    "cash": 150000
+   }
+  },
+  {
+   "id": "q_sube",
+   "t": "İkinci şehir",
+   "x": "Harita'dan yeni bir ilde şube aç.",
+   "m": "cities",
+   "n": 2,
+   "r": {
+    "cash": 500000,
+    "rep": 2
+   }
+  },
+  {
+   "id": "q_ihale",
+   "t": "İlk ihaleye gir",
+   "x": "İhale sekmesinden bir ihaleye teklif ver.",
+   "m": "bids",
+   "n": 1,
+   "r": {
+    "rep": 1
+   }
+  },
+  {
+   "id": "q_3proje",
+   "t": "Üç proje",
+   "x": "Toplam 3 proje tamamla.",
+   "m": "completed",
+   "n": 3,
+   "r": {
+    "cash": 1500000,
+    "rep": 3
+   }
+  },
+  {
+   "id": "q_nw",
+   "t": "25 milyonluk firma",
+   "x": "Net varlığın 25 milyon ₺'ye ulaşsın.",
+   "m": "nw",
+   "n": 25000000,
+   "r": {
+    "cash": 1000000
+   }
+  },
+  {
+   "id": "q_ihalekaz",
+   "t": "Kamu işi",
+   "x": "Bir ihaleyi kazan.",
+   "m": "tendersWon",
+   "n": 1,
+   "r": {
+    "cash": 1500000,
+    "rep": 4
+   }
+  },
+  {
+   "id": "q_kriz",
+   "t": "Krizi atlat",
+   "x": "Ekonomik kriz dönemini 6 ay boyunca iflas etmeden geçir.",
+   "m": "crisisMonths",
+   "n": 6,
+   "r": {
+    "cash": 3000000,
+    "rep": 5
+   }
+  }
+ ],
+ "achievements": [
+  {
+   "id": "a_ilk",
+   "t": "Temel Atıldı",
+   "x": "İlk binanı tamamla.",
+   "m": "completed",
+   "n": 1
+  },
+  {
+   "id": "a_5",
+   "t": "Beş Bina",
+   "x": "5 proje tamamla.",
+   "m": "completed",
+   "n": 5
+  },
+  {
+   "id": "a_15",
+   "t": "Şehrin Silüeti",
+   "x": "15 proje tamamla.",
+   "m": "completed",
+   "n": 15
+  },
+  {
+   "id": "a_30",
+   "t": "Mimarın Adı",
+   "x": "30 proje tamamla.",
+   "m": "completed",
+   "n": 30
+  },
+  {
+   "id": "a_sat1",
+   "t": "Anahtar Teslim",
+   "x": "İlk projeni tamamen sat.",
+   "m": "sold",
+   "n": 1
+  },
+  {
+   "id": "a_sat10",
+   "t": "Satış Ustası",
+   "x": "10 projeyi tamamen sat.",
+   "m": "sold",
+   "n": 10
+  },
+  {
+   "id": "a_100d",
+   "t": "Yüz Daire",
+   "x": "100 daire sat.",
+   "m": "unitsSold",
+   "n": 100
+  },
+  {
+   "id": "a_500d",
+   "t": "Mahalle Kuran",
+   "x": "500 daire sat.",
+   "m": "unitsSold",
+   "n": 500
+  },
+  {
+   "id": "a_nw10",
+   "t": "On Milyonluk",
+   "x": "Net varlık 10 milyon ₺.",
+   "m": "nw",
+   "n": 10000000
+  },
+  {
+   "id": "a_nw100",
+   "t": "Yüz Milyonluk",
+   "x": "Net varlık 100 milyon ₺.",
+   "m": "nw",
+   "n": 100000000
+  },
+  {
+   "id": "a_nw1b",
+   "t": "Milyarder",
+   "x": "Net varlık 1 milyar ₺.",
+   "m": "nw",
+   "n": 1000000000
+  },
+  {
+   "id": "a_kar10",
+   "t": "İlk Büyük Kâr",
+   "x": "Toplam 10 milyon ₺ kâr.",
+   "m": "profit",
+   "n": 10000000
+  },
+  {
+   "id": "a_kar50",
+   "t": "Kârlı İş",
+   "x": "Toplam 50 milyon ₺ kâr.",
+   "m": "profit",
+   "n": 50000000
+  },
+  {
+   "id": "a_kar500",
+   "t": "Altın Dokunuş",
+   "x": "Toplam 500 milyon ₺ kâr.",
+   "m": "profit",
+   "n": 500000000
+  },
+  {
+   "id": "a_sehir2",
+   "t": "Yeni Şehir",
+   "x": "İkinci ilde şube aç.",
+   "m": "cities",
+   "n": 2
+  },
+  {
+   "id": "a_sehir3",
+   "t": "Çok Şehirli",
+   "x": "3 ilde şube aç.",
+   "m": "cities",
+   "n": 3,
+   "hint": false
+  },
+  {
+   "id": "a_sehir10",
+   "t": "Ülke Çapında",
+   "x": "10 ilde şube aç.",
+   "m": "cities",
+   "n": 10
+  },
+  {
+   "id": "a_ekip20",
+   "t": "Büyük Aile",
+   "x": "20 çalışan.",
+   "m": "staff",
+   "n": 20
+  },
+  {
+   "id": "a_makine5",
+   "t": "Makine Parkı",
+   "x": "5 makine.",
+   "m": "machines",
+   "n": 5
+  },
+  {
+   "id": "a_ihale1",
+   "t": "Resmî Mühür",
+   "x": "İlk ihaleni kazan.",
+   "m": "tendersWon",
+   "n": 1
+  },
+  {
+   "id": "a_ihale5",
+   "t": "Kamu Müteahhidi",
+   "x": "5 ihale kazan.",
+   "m": "tendersWon",
+   "n": 5
+  },
+  {
+   "id": "a_kalite",
+   "t": "Kusursuz İşçilik",
+   "x": "Kalite puanı 90+ bir proje bitir.",
+   "m": "bestQuality",
+   "n": 90
+  },
+  {
+   "id": "a_itibar50",
+   "t": "Güvenilir İsim",
+   "x": "İtibar 50.",
+   "m": "rep",
+   "n": 50
+  },
+  {
+   "id": "a_itibar90",
+   "t": "Efsane",
+   "x": "İtibar 90.",
+   "m": "rep",
+   "n": 90
+  },
+  {
+   "id": "a_kredi",
+   "t": "Kaldıraç",
+   "x": "3 kredi kullan.",
+   "m": "loans",
+   "n": 3
+  },
+  {
+   "id": "a_ortak",
+   "t": "Ortak Girişim",
+   "x": "Bir projede yatırımcı bul.",
+   "m": "investors",
+   "n": 1
+  },
+  {
+   "id": "a_pay",
+   "t": "Halka Doğru",
+   "x": "Şirket payı sat.",
+   "m": "equitySold",
+   "n": 1
+  },
+  {
+   "id": "a_olay25",
+   "t": "Her Şeye Hazır",
+   "x": "25 karar olayı yönet.",
+   "m": "events",
+   "n": 25
+  },
+  {
+   "id": "a_kriz",
+   "t": "Fırtınadan Sağ Çıkan",
+   "x": "Krizi 6 ay iflas etmeden geçir.",
+   "m": "crisisMonths",
+   "n": 6
+  },
+  {
+   "id": "a_10yil",
+   "t": "On Yıllık Usta",
+   "x": "10 yıl hayatta kal.",
+   "m": "months",
+   "n": 120
+  },
+  {
+   "id": "a_lvl4",
+   "t": "Bölge Firması",
+   "x": "Seviye 4'e ulaş.",
+   "m": "level",
+   "n": 4
+  },
+  {
+   "id": "a_lvl8",
+   "t": "Sektör Lideri",
+   "x": "Seviye 8'e ulaş.",
+   "m": "level",
+   "n": 8
+  },
+  {
+   "id": "a_otel",
+   "t": "Otelci",
+   "x": "Bir otel ya da AVM'yi işletmeye al.",
+   "m": "hotels",
+   "n": 1
+  },
+  {
+   "id": "a_enerji",
+   "t": "Enerji Üreticisi",
+   "x": "Bir güneş ya da rüzgâr santrali kur.",
+   "m": "energy",
+   "n": 1
+  },
+  {
+   "id": "a_altyapi",
+   "t": "Altyapı Devi",
+   "x": "Bir altyapı işini teslim et.",
+   "m": "infraDone",
+   "n": 1
+  },
+  {
+   "id": "a_borsa",
+   "t": "Halka Açık",
+   "x": "Şirketini halka arz et.",
+   "m": "public",
+   "n": 1
+  },
+  {
+   "id": "a_satinal",
+   "t": "Büyük Balık",
+   "x": "Bir rakip şirketi satın al.",
+   "m": "acquired",
+   "n": 1
+  },
+  {
+   "id": "a_holding5",
+   "t": "Holding Başkanı",
+   "x": "5 farklı iş koluna sahip ol.",
+   "m": "ventures",
+   "n": 5
+  }
+ ]
 }

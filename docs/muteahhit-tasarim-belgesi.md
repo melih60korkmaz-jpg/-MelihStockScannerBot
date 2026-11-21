@@ -936,3 +936,9 @@ Petrol mavisi/altın/turkuaz arayüz kimliği kaldırıldı. Renkler `src/ui/the
 - Karma tasarım: katalog/profil/başarım/galeri kartları (`.mcat .hirecard .bcard .gitem`) açık yüzeyli.
 - Harita ısı skalası antrasit→çelik→bakır→turuncu; Higgsfield resimleri bordo/mor tonları turuncuya kaydırılarak yeniden işlendi.
 - Hata düzeltmesi: `font-variant-emoji:emoji` kuralı rakamları emoji gibi çiziyordu, kaldırıldı.
+
+### Revizyon v1.2 — Holding: işletmeler, enerji, altyapı, borsa
+- Yeni sekme **Holding** (seviye 4): Özet (bölüm kâr tablosu, strateji, genel müdür), Otel & AVM, Enerji, Altyapı, Borsa & Satın alma. Kayıt sürümü 11 (`ventures`, `infra`, `holding`, `equity`; v10 göçü).
+- Otel/AVM: yeni bina tipleri (seviye 4); bitince işletmeye alınır. Gelir doluluk × mevsim × rejim × güven × itibar; gider sabit. Net getiri hedefi yıllık %12–14. Enerji: güneş/rüzgâr, mevsim ve şehir faktörleri, arıza. Rastgelelik RNG tüketmez (ay ve kimlikten türeyen sabit gürültü): mevcut denge testleri korunur.
+- Altyapı ihaleleri (seviye 5): mevcut ihale motoru yeniden kullanılır; kazanılan iş `InfraJob` olur; ilerleme makine/ekip kapasitesine bağlı, hakediş %10'luk dilimlerle.
+- Holding (seviye 6): bölüm stratejisi ve genel müdür. Borsa: halka arz (seviye 7), ikincil satış, geri alım, rakip satın alma (seviye 6, bağlı şirket).

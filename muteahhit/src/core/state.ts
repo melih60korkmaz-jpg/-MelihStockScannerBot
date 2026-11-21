@@ -9,7 +9,7 @@ export function initialMacro(): MacroState {
   return { regime: 'normal', regimeSince: 0, regimeEnd: 24 * 30, calmUntilDay: 0, policyRate: 18, inflation: 14, confidence: 58, materialIndex: 100 };
 }
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 export function newGameState(seed: number, difficulty: Difficulty = 'gercekci'): GameState {
   const s: GameState = {
@@ -45,6 +45,7 @@ export function newGameState(seed: number, difficulty: Difficulty = 'gercekci'):
     rivals: [],
     pending: null,
     evtLast: {},
+    ventures: [], infra: [], holding: { strategy: { isletme: 'dengeli', enerji: 'dengeli', altyapi: 'dengeli' }, gm: { isletme: false, enerji: false, altyapi: false } }, equity: null,
     progress: newProgress(),
   };
   initMarket(s); initRivals(s);

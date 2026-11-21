@@ -14,6 +14,9 @@ import { checkProgress, progressMonthly, track } from './progress';
 import { rivalsMonthly } from './rivals';
 import { eventsDaily, eventsMonthly } from './events';
 import { tendersDaily, tendersMonthly } from './tenders';
+import { infraDaily, infraMonthly, infraPrune } from './infra';
+import { venturesMonthly } from './ventures';
+import { stockMonthly } from './stock';
 import { loansMonthly, forcedLiquidation, debtTotal } from './loans';
 
 /**
@@ -36,6 +39,7 @@ export function advanceDay(s: GameState): GameEvent[] {
     constructionDaily(s, events, isMonday(day));
     salesDaily(s, events);
     tendersDaily(s, events);
+    infraDaily(s, events);
     eventsDaily(s, events);
   }
   track(s, events); if (s.clock.day % 6 === 0) checkProgress(s, events);
@@ -76,6 +80,9 @@ function monthly(s: GameState, events: GameEvent[]): void {
   salesMonthly(s, events);
   loansMonthly(s, events);
   tendersMonthly(s, events);
+  infraMonthly(s); infraPrune(s);
+  venturesMonthly(s, events);
+  stockMonthly(s);
   eventsMonthly(s, events);
   progressMonthly(s);
   s.costIndex *= 1 + (s.macro.inflation / 100 / 12) * 0.85;

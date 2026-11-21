@@ -18,6 +18,9 @@ function metricRaw(s: GameState, m: string): number {
     case 'rep': return c.reputation; case 'level': return c.level; case 'months': return Math.floor(s.clock.day / 30);
     case 'started': return p.started; case 'loans': return p.loans; case 'tendersWon': return p.tendersWon; case 'bids': return p.bids; case 'events': return p.events;
     case 'unitsSold': return p.unitsSold; case 'bestQuality': return p.bestQuality; case 'crisisMonths': return p.crisisMonths; case 'investors': return p.investors; case 'equitySold': return p.equitySold;
+    case 'ventures': return s.ventures.length; case 'energy': return s.ventures.filter((v) => v.kind === 'gunes' || v.kind === 'ruzgar').length;
+    case 'hotels': return s.ventures.filter((v) => v.kind === 'otel' || v.kind === 'avm').length; case 'infraDone': return s.infra.filter((j) => j.status === 'bitti').length;
+    case 'public': return s.equity?.listed ? 1 : 0; case 'acquired': return s.ventures.filter((v) => v.kind === 'bagli').length;
     default: return 0;
   }
 }

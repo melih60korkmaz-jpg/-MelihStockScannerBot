@@ -63,7 +63,8 @@ export function planProject(s: GameState, p: Parcel, typeId: string, qualityId: 
   const profit = { mid: prof(revMid, total), low: prof(Math.round(revMid * (1 - band)), totalHigh), high: prof(Math.round(revMid * (1 + band)), totalLow) };
   const breakEvenPerM2 = satilabilir > 0 ? Math.round((total + land) / (satilabilir * (1 - COMMISSION))) : 0;
   const empty = { floors: b.floors, emsal: b.emsal, brut, satilabilir };
-  return { ok: !b.reason, ...(b.reason ? { reason: b.reason } : {}), ...empty, cost: { base, soil, soilLow, soilHigh, soft, total, totalLow, totalHigh, designFee }, months, salePerM2, revenue: { mid: revMid, low: Math.round(revMid * (1 - band)), high: Math.round(revMid * (1 + band)) }, landCost: land, commission, profit, margin: revMid > 0 ? profit.mid / revMid : 0, breakEvenPerM2, fit };
+  const lvlReason = t.minLevel && s.company && s.company.level < t.minLevel ? `${t.label} için şirket seviyesi ${t.minLevel} gerekir.` : undefined, why = b.reason ?? lvlReason;
+  return { ok: !why, ...(why ? { reason: why } : {}), ...empty, cost: { base, soil, soilLow, soilHigh, soft, total, totalLow, totalHigh, designFee }, months, salePerM2, revenue: { mid: revMid, low: Math.round(revMid * (1 - band)), high: Math.round(revMid * (1 + band)) }, landCost: land, commission, profit, margin: revMid > 0 ? profit.mid / revMid : 0, breakEvenPerM2, fit };
 }
 
 export function projectName(s: GameState, typeId: string): string {

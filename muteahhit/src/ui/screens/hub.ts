@@ -25,6 +25,7 @@ import { ACHIEVEMENTS, LEVEL_DEFS, QUESTS, STAGES } from '../../data';
 import { heroBanner } from '../hero';
 import { openHQ } from '../hq';
 import { pageHead } from '../pagehead';
+import { holdingView, setHoldingSub } from './holding';
 import { openGuide, TAB_TOPIC } from '../guide';
 import { startTutorial, tutorialDone } from '../tutorial';
 import { saveView } from '../../platform/lastView';
@@ -49,9 +50,10 @@ const ICON = {
   pause: '<svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M8 5v14M16 5v14" stroke-width="3.2"/></svg>',
   doc: '<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>',
   menu: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  hold: '<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V5h6v3M3 13h18M11 13v2h2v-2"/></svg>',
 };
-type Tab = 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'finans' | 'piyasa';
-const TABS: [Tab, string, keyof typeof ICON][] = [['sirket', 'Şirket', 'home'], ['harita', 'Harita', 'pin'], ['projeler', 'Projeler', 'build'], ['operasyon', 'Operasyon', 'team'], ['ihale', 'İhale', 'doc'], ['finans', 'Finans', 'chart'], ['piyasa', 'Piyasa', 'globe']];
+type Tab = 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
+const TABS: [Tab, string, keyof typeof ICON][] = [['sirket', 'Şirket', 'home'], ['harita', 'Harita', 'pin'], ['projeler', 'Projeler', 'build'], ['operasyon', 'Operasyon', 'team'], ['ihale', 'İhale', 'doc'], ['holding', 'Holding', 'hold'], ['finans', 'Finans', 'chart'], ['piyasa', 'Piyasa', 'globe']];
 
 const monthLabel = (key: string) => { const [y, m] = key.split('-'); return `${['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][Number(m) - 1]} ${y!.slice(2)}`; };
 const dayLabel = (d: number) => { const x = dateOf(d); return monthLabel(`${x.year}-${String(x.month).padStart(2, '0')}`); };
@@ -105,7 +107,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   const drawTabs = () => {
     tabs.innerHTML = '';
     const coach = nextQuest(app.store.state)?.tab;
-    for (const [id, label, ic] of TABS) tabs.append(h('button', { class: `tab ${tab === id ? 'on' : ''}${coach === id && tab !== id ? ' coach' : ''}`, 'aria-current': tab === id ? 'page' : null, onclick: () => { if (tab === id) return; press(app); tab = id; saveView({ company: app.store.state.company!.name, tab }); drawTabs(); drawView(); } }, h('span', { html: ICON[ic], style: 'display:flex' }), label));
+    for (const [id, label, ic] of TABS) { if (id === 'holding' && app.store.state.company!.level < 4 && tab !== 'holding') continue; tabs.append(h('button', { class: `tab ${tab === id ? 'on' : ''}${coach === id && tab !== id ? ' coach' : ''}`, 'aria-current': tab === id ? 'page' : null, onclick: () => { if (tab === id) return; press(app); tab = id; saveView({ company: app.store.state.company!.name, tab }); drawTabs(); drawView(); } }, h('span', { html: ICON[ic], style: 'display:flex' }), label)) }
   };
 
   // ---------------- Şirket ----------------
@@ -224,17 +226,17 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   const drawView = () => {
     const vkey = `${tab}:${tab === 'harita' ? mapKey() : ''}`, keep = vkey === lastViewKey ? view.scrollTop : 0; lastViewKey = vkey; view.innerHTML = '';
     if (tab !== 'sirket') view.append(pageHead(app, tab));
-    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'finans' ? finance() : marketView(app, drawView));
+    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'holding' ? holdingView(app, drawView) : tab === 'finans' ? finance() : marketView(app, drawView));
     view.scrollTop = keep;
   };
 
   // Olaylar: gün akışı yalnızca HUD'u günceller; ay/komut olayları sekmeyi yeniler
-  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED', 'QUEST_DONE', 'ACHIEVEMENT', 'LEVEL_UP', 'OFFICE_UPGRADED']);
+  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED', 'QUEST_DONE', 'ACHIEVEMENT', 'LEVEL_UP', 'OFFICE_UPGRADED', 'VENTURE_OPENED', 'VENTURE_BROKE', 'VENTURE_SOLD', 'INFRA_DONE', 'IPO', 'ACQUIRED', 'STRATEGY_SET', 'GM_SET', 'BUYBACK']);
   const unsub = app.store.subscribe((evs) => {
     if (!root.isConnected) { unsub(); return; }
     let redraw = false;
     for (const e of evs) {
-      if (e.pause && !['EVENT_DECISION', 'LEVEL_UP', 'BANKRUPT', 'CASH_NEGATIVE', 'TENDER_WON', 'PROJECT_COMPLETED', 'CONTRACT_DONE'].includes(e.type)) toast('⏸ Oyun duraklatıldı — önemli bir gelişme var. Devam için hız düğmesine dokunun.', 3500);
+      if (e.pause && !['EVENT_DECISION', 'LEVEL_UP', 'BANKRUPT', 'CASH_NEGATIVE', 'TENDER_WON', 'PROJECT_COMPLETED', 'CONTRACT_DONE', 'INFRA_DONE', 'IPO'].includes(e.type)) toast('⏸ Oyun duraklatıldı — önemli bir gelişme var. Devam için hız düğmesine dokunun.', 3500);
       if (REDRAW.has(e.type)) redraw = true;
       if (e.type === 'MONTH') void app.saves.autosave(app.store.state).catch(() => {});
       if (e.type === 'MACRO_NEWS') { const d = e.data as { text: string; tone: string }; app.audio.sfx(d.tone === 'bad' ? 'error' : 'confirm'); toast(d.text, 5000); }
@@ -261,7 +263,13 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'LOAN_ROLLED') toast('İnşaat kredisi vadesi doldu: ticari krediye devredildi.', 4500);
       if (e.type === 'HAKEDIS') app.audio.sfx('coin');
       if (e.type === 'TENDER_NEW' && !evs.some((x) => x.type === 'TENDER_NEW' && x !== e && evs.indexOf(x) < evs.indexOf(e))) toast(evs.filter((x) => x.type === 'TENDER_NEW').length > 1 ? 'Yeni ihaleler açıldı. İhale sekmesine bakın.' : 'Yeni ihale açıldı. İhale sekmesine bakın.', 3500);
-      if (e.type === 'TENDER_WON') { const tn = app.store.state.tenders.find((x) => x.id === e.data!.tenderId); if (tn) tenderWinScene(app, tn); toast('İhaleyi kazandınız! Avans yattı; projeyi Projeler sekmesinden başlatın.', 6000); }
+      if (e.type === 'TENDER_WON') { const tn = app.store.state.tenders.find((x) => x.id === e.data!.tenderId); if (tn) tenderWinScene(app, tn); toast(e.data!.infra ? 'Altyapı ihalesini kazandınız! Avans yattı; iş Holding › Altyapı\'da başladı (makine ve ekip gerekir).' : 'İhaleyi kazandınız! Avans yattı; projeyi Projeler sekmesinden başlatın.', 6000); }
+      if (e.type === 'INFRA_DONE') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast(`Altyapı işi teslim edildi: ${e.data!.name} · kâr ${formatMoney(e.data!.profit as number)}${(e.data!.late as number) > 0 ? ` (${e.data!.late} gün gecikme)` : ''}`, 6500); }
+      if (e.type === 'VENTURE_OPENED') { app.audio.sfx('stamp'); toast(`🏛️ Yeni iş kolu: ${e.data!.name}`, 4500); }
+      if (e.type === 'VENTURE_BROKE') toast(`⚠️ ${e.data!.name}: santral arızası, bu ay üretim yok.`, 4500);
+      if (e.type === 'VENTURE_SOLD') toast(`İş kolu satıldı: ${formatMoney(e.data!.price as number)}`, 3500);
+      if (e.type === 'IPO') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast(`📈 Şirket halka açıldı! Kaynak ${formatMoney(e.data!.proceeds as number)}`, 6000); }
+      if (e.type === 'ACQUIRED') { app.audio.sfx('stamp'); toast(`🏛️ ${e.data!.rival} satın alındı (bağlı şirket)`, 5000); }
       if (e.type === 'TENDER_LOST') { app.audio.sfx('error'); toast(e.data!.reason === 'elendi' ? 'İhaleden elendiniz: olağan dışı düşük teklif.' : `İhaleyi kaybettiniz. Kazanan: ${e.data!.winner}.`, 5000); }
       if (e.type === 'HAKEDIS') toast(`Hakediş tahsil edildi: ${formatMoney(e.data!.amount as number)}`, 3500);
       if (e.type === 'CONTRACT_DONE') { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast(`İhale işi teslim edildi · kâr ${formatMoney(e.data!.profit as number)}${(e.data!.penalty as number) > 0 ? ` (gecikme cezası ${formatMoney(e.data!.penalty as number)})` : ''}`, 6000); }
@@ -274,7 +282,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'OFFICE_UPGRADED' && !document.querySelector('.hq')) { app.audio.sfx('fanfare'); openHQ(app); }
       if (e.type === 'QUEST_DONE') { drawTabs(); app.audio.sfx('confirm'); toast(`Görev tamam: ${QUESTS.find((q) => q.id === e.data!.id)?.t ?? ''}`, 4000); }
       if (e.type === 'ACHIEVEMENT') achievementCard(app, e.data!.id as string);
-      if (e.type === 'LEVEL_UP') { app.audio.sfx('fanfare'); app.haptic('heavy'); levelUpScene(app, e.data!.level as number, e.data!.label as string); }
+      if (e.type === 'LEVEL_UP') { drawTabs(); app.audio.sfx('fanfare'); app.haptic('heavy'); levelUpScene(app, e.data!.level as number, e.data!.label as string); }
       if (e.type === 'BANKRUPT') { app.audio.sfx('alarm'); app.haptic('heavy'); showBankrupt(); }
       if (e.type === 'CASH_NEGATIVE') { app.audio.sfx('error'); toast('Kasa eksiye düştü! Oyun duraklatıldı.', 5000); }
     }
@@ -289,7 +297,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   if (app.store.state.pending) setTimeout(() => openEventDecision(app), 0);
   // Yeni oyunda (gün ≤ 1) anlatıcı bir kez başlar; otomasyon tarayıcılarında (webdriver) kendiliğinden açılmaz.
   if (app.store.state.clock.day <= 1 && !tutorialDone() && !navigator.webdriver) setTimeout(() => { if (root.isConnected) startTutorial(app); }, 900);
-  app.openTab = (t, sb) => { tab = t; saveView({ company: app.store.state.company!.name, tab }); if (sb) sub = sb; drawTabs(); drawView(); };
+  app.openTab = (t, sb) => { if (t === 'holding' && sb) setHoldingSub(sb); tab = t; saveView({ company: app.store.state.company!.name, tab }); if (sb) sub = sb; drawTabs(); drawView(); };
   root.addEventListener('unmount', () => { unsub(); cancelAnimationFrame(tween); if (app.openTab) delete app.openTab; });
   buildHud(); drawHud(); drawTabs(); drawView(); app.audio.setMood(moodNow());
   return root;

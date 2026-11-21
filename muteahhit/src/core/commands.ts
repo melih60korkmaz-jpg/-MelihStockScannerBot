@@ -8,6 +8,8 @@ import { bidError, placeBid } from '../sim/tenders';
 import { quoteInvestor, takeInvestor, equityQuote, sellEquity, refundInvestor } from '../sim/investors';
 import { quoteLoan, takeLoan, repayLoan, restructureLoan, type LoanKind } from '../sim/loans';
 import { createStaff } from '../sim/staff';
+import { buildEnergy, buildError, operateError, operateProject, sellError, sellVenture, strategyError } from '../sim/ventures';
+import { acquireError, acquireRival, buyback, goPublic, ipoError, secondaryOffering, tradeError } from '../sim/stock';
 import { DIFFICULTY_MACRO } from '../sim/macro';
 import { SURVEY_DAYS, TAPU_HARCI, QUICK_SALE_DISCOUNT, askPrice, fairValue, reservePrice, surveyCost } from '../sim/land';
 import { newDesignSeed, planProject, projectName } from '../sim/projects';
@@ -322,7 +324,31 @@ const setSalesPolicy: CommandDef<SalesPolicyParams> = {
   apply(s, p) { const pol = s.projects.find((x) => x.id === p.projectId)!.sales!; if (p.priceMult !== undefined) pol.priceMult = +p.priceMult.toFixed(3); if (p.agent !== undefined) pol.agent = p.agent; if (p.installments !== undefined) pol.installments = p.installments; if (p.presale !== undefined) pol.presale = p.presale; return [ev(s, 'SALES_POLICY', { projectId: p.projectId })]; },
 };
 
+// ---------------- Holding: iş kolları, altyapı, borsa ----------------
+const buildVentureCmd: CommandDef<{ kind: 'gunes' | 'ruzgar'; city: string; tier: number }> = {
+  validate: (s, p) => buildError(s, p.kind, p.city, p.tier),
+  apply(s, p) { const ev0: GameEvent[] = []; buildEnergy(s, p.kind, p.city, p.tier, provinceData(p.city)?.name ?? p.city, ev0); return ev0; },
+};
+const operateProjectCmd: CommandDef<{ projectId: number }> = {
+  validate: (s, p) => operateError(s, s.projects.find((x) => x.id === p.projectId)),
+  apply(s, p) { const e: GameEvent[] = []; operateProject(s, s.projects.find((x) => x.id === p.projectId)!, e); return e; },
+};
+const sellVentureCmd: CommandDef<{ id: number }> = { validate: (s, p) => sellError(s, p.id), apply(s, p) { const e: GameEvent[] = []; sellVenture(s, p.id, e); return e; } };
+const setStrategyCmd: CommandDef<{ division: string; strategy: string }> = {
+  validate: (s, p) => strategyError(s, p.division, p.strategy),
+  apply(s, p) { s.holding.strategy[p.division as 'isletme'] = p.strategy as 'buyume'; return [ev(s, 'STRATEGY_SET', { division: p.division, strategy: p.strategy })]; },
+};
+const toggleGmCmd: CommandDef<{ division: string }> = {
+  validate: (s, p) => strategyError(s, p.division, 'dengeli'),
+  apply(s, p) { const d = p.division as 'isletme'; s.holding.gm[d] = !s.holding.gm[d]; return [ev(s, 'GM_SET', { division: d, on: s.holding.gm[d] })]; },
+};
+const goPublicCmd: CommandDef<{ pct: number }> = { validate: (s, p) => ipoError(s, p.pct), apply(s, p) { const e: GameEvent[] = []; goPublic(s, p.pct, e); return e; } };
+const secondaryCmd: CommandDef<{ pct: number }> = { validate: (s, p) => tradeError(s, 'sec', p.pct), apply(s, p) { const e: GameEvent[] = []; secondaryOffering(s, p.pct, e); return e; } };
+const buybackCmd: CommandDef<{ pct: number }> = { validate: (s, p) => tradeError(s, 'buy', p.pct), apply(s, p) { buyback(s, p.pct); return [ev(s, 'BUYBACK', { pct: p.pct })]; } };
+const acquireCmd: CommandDef<{ rivalId: number }> = { validate: (s, p) => acquireError(s, p.rivalId), apply(s, p) { const e: GameEvent[] = []; acquireRival(s, p.rivalId, e); return e; } };
+
 export const COMMANDS = {
+  BuildVenture: buildVentureCmd, OperateProject: operateProjectCmd, SellVenture: sellVentureCmd, SetStrategy: setStrategyCmd, ToggleGM: toggleGmCmd, GoPublic: goPublicCmd, SecondaryOffering: secondaryCmd, Buyback: buybackCmd, AcquireRival: acquireCmd,
   StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, UpgradeOffice: upgradeOffice, ResolveEvent: resolveEventCmd, PlaceBid: placeBidCmd, TakeLoan: takeLoanCmd, TakeInvestor: takeInvestorCmd, SellEquity: sellEquityCmd, RepayLoan: repayLoanCmd, RestructureLoan: restructureCmd, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,
   CreateCompany: createCompany,

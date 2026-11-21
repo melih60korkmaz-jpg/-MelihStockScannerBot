@@ -10,8 +10,8 @@ import { planProject } from './projects';
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 function seeded(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
-export const AVG_AREA: Record<string, number> = { mustakil: 0, apartman: 95, site: 110, villa: 220, rezidans: 75, luks: 140, ofis: 70, is_merkezi: 90, fabrika: 0, depo: 0 };
-const SPEED: Record<string, number> = { mustakil: 0.8, apartman: 1, site: 1.05, villa: 0.5, rezidans: 0.9, luks: 0.55, ofis: 0.7, is_merkezi: 0.6, fabrika: 0.3, depo: 0.35 };
+export const AVG_AREA: Record<string, number> = { mustakil: 0, apartman: 95, site: 110, villa: 220, rezidans: 75, luks: 140, ofis: 70, is_merkezi: 90, otel: 32, avm: 60, fabrika: 0, depo: 0 };
+const SPEED: Record<string, number> = { mustakil: 0.8, apartman: 1, site: 1.05, villa: 0.5, rezidans: 0.9, luks: 0.55, ofis: 0.7, is_merkezi: 0.6, otel: 0.35, avm: 0.3, fabrika: 0.3, depo: 0.35 };
 export const PRESALE_DISCOUNT = 0.9, CASH_DISCOUNT = 0.96, INSTALLMENT_MARKUP = 1.06, DOWN_TAKSIT = 0.25, DOWN_PRESALE = 0.4, KAPORA = 0.05, AGENT_FEE = 0.025, BULK = 0.92;
 export const WARRANTY_DAYS = 730;
 export const defaultSales = (): SalesPolicy => ({ priceMult: 1, agent: false, installments: true, presale: false, contract: 0, commission: 0, sold: 0 });
@@ -23,7 +23,7 @@ export function generateUnits(s: GameState, p: Project): Unit[] {
   const r = seeded(p.designSeed ^ 0x51ed), avg = AVG_AREA[p.type] ?? 90;
   const n = avg > 0 ? Math.max(1, Math.round(p.satilabilir / avg)) : p.type === 'mustakil' ? 1 : Math.max(1, Math.min(4, Math.round(p.satilabilir / 1500)));
   const w = Array.from({ length: n }, () => 0.8 + r() * 0.4), sw = w.reduce((a, x) => a + x, 0), per = Math.ceil(n / Math.max(1, p.floors)), F = Math.max(1, p.floors);
-  const use = p.type === 'ofis' || p.type === 'is_merkezi' ? 'ticari' : p.type === 'fabrika' || p.type === 'depo' ? 'sanayi' : 'konut';
+  const use = p.type === 'ofis' || p.type === 'is_merkezi' || p.type === 'otel' || p.type === 'avm' ? 'ticari' : p.type === 'fabrika' || p.type === 'depo' ? 'sanayi' : 'konut';
   const FAC = { G: 1.02, D: 1.0, B: 1.0, K: 0.98 } as const, faces = ['K', 'G', 'D', 'B'] as const;
   const out: Unit[] = [];
   for (let i = 0; i < n; i++) {

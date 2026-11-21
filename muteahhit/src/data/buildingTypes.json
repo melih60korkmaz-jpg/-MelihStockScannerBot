@@ -167,6 +167,41 @@
    "minFloors": 1,
    "saleMult": 0.72,
    "blurb": "Hızlı ve ucuz; düşük marj."
+  },
+  {
+   "id": "otel",
+   "label": "Otel",
+   "use": "ticari",
+   "zoning": [
+    "ticaret",
+    "karma"
+   ],
+   "costM2": 32000,
+   "monthsMin": 30,
+   "monthsMax": 48,
+   "floorsCap": 14,
+   "minArea": 1500,
+   "minFloors": 3,
+   "saleMult": 1.5,
+   "minLevel": 4,
+   "blurb": "Bitince işletmeye al: doluluk, mevsim ve işletme geliri. İstersen odaları satabilirsin."
+  },
+  {
+   "id": "avm",
+   "label": "AVM",
+   "use": "ticari",
+   "zoning": [
+    "ticaret"
+   ],
+   "costM2": 26000,
+   "monthsMin": 30,
+   "monthsMax": 48,
+   "floorsCap": 5,
+   "minArea": 4000,
+   "minFloors": 2,
+   "saleMult": 1.4,
+   "minLevel": 4,
+   "blurb": "Bitince işletmeye al: kiracılardan aylık kira. Ticari potansiyeli yüksek bölge ister."
   }
  ],
  "qualities": [

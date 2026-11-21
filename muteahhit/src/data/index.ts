@@ -56,7 +56,7 @@ export type { DistrictDef, CityFull, Province, Region, Zoning } from './geo';
 import { cityData, PROVINCES } from './geo';
 const PROVINCES_COUNT = () => PROVINCES.length;
 import type { Zoning } from './geo';
-export interface BuildingTypeDef { id: string; label: string; use: 'konut' | 'ticari' | 'sanayi'; zoning: Zoning[]; costM2: number; monthsMin: number; monthsMax: number; floorsCap: number; minArea: number; minFloors: number; saleMult: number; blurb: string }
+export interface BuildingTypeDef { id: string; label: string; use: 'konut' | 'ticari' | 'sanayi'; zoning: Zoning[]; costM2: number; monthsMin: number; monthsMax: number; floorsCap: number; minArea: number; minFloors: number; saleMult: number; minLevel?: number; blurb: string }
 export interface QualityDef { id: string; label: string; costMult: number; saleMult: number; blurb: string }
 export const BUILDING_TYPES = (btRaw as any).types as BuildingTypeDef[];
 export const QUALITIES = (btRaw as any).qualities as QualityDef[];

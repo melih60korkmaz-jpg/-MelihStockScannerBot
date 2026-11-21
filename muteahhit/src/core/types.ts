@@ -72,6 +72,28 @@ export interface Parcel {
   projectId?: number;
 }
 export interface CityMarket { landIndex: number; housingIndex: number; supply?: number }
+/** İş kolları (Holding): gayrimenkul işletmeleri, enerji santralleri ve satın alınan bağlı şirketler. */
+export type VentureKind = 'otel' | 'avm' | 'gunes' | 'ruzgar' | 'bagli';
+export interface Venture {
+  id: number; kind: VentureKind; name: string; city: string; openedDay: number; readyDay: number;
+  capex: Money;            // yatırım bedeli (kayıt değeri)
+  size: number;            // otel: oda · avm: kiralanabilir m² · gunes/ruzgar: MW · bagli: 0
+  quality: number;         // 0 ekonomik … 3 lüks (otel/avm)
+  ci0: number;             // açılıştaki maliyet endeksi (enflasyonla gelir/gider ölçeklenir)
+  projectId?: number; rivalName?: string; brokenUntil?: number;
+  last: { revenue: Money; cost: Money; occ: number; day: number };
+  total: { revenue: Money; cost: Money };
+}
+export type Division = 'insaat' | 'isletme' | 'enerji' | 'altyapi' | 'bagli';
+export type Strategy = 'buyume' | 'dengeli' | 'temkinli';
+export interface HoldingState { strategy: Record<'isletme' | 'enerji' | 'altyapi', Strategy>; gm: Record<'isletme' | 'enerji' | 'altyapi', boolean> }
+export interface StockState { listed: boolean; ipoDay: number; shares: number; price: Money; ipoPrice: Money; hist: number[] }
+/** Altyapı işi (yol, köprü, tünel, baraj…): ihaleyle kazanılır; ilerleme makine ve ekip kapasitesine bağlıdır; hakediş 45 gün vadelidir. */
+export interface InfraJob {
+  id: number; tenderId: number; kind: string; name: string; city: string; price: Money; advance: Money; bond: Money; trueCost: Money;
+  startDay: number; deadline: number; months: number; progress: number; spent: Money; doneShare: number; pending: { day: number; amount: Money }[];
+  status: 'devam' | 'bitti'; stalled: 'nakit' | 'kapasite' | null; bondReturned?: boolean; result?: { profit: Money; late: number; day: number };
+}
 export interface Rival { id: number; name: string; style: 'agresif' | 'dengeli' | 'temkinli'; home: string; cash: Money; rep: number; tech: number; projects: number; wins: number; failed: boolean; since: number; last?: string }
 export interface Progress { ach: Record<string, number>; quests: Record<string, number>; c: { loans: number; tendersWon: number; bids: number; events: number; unitsSold: number; started: number; bestQuality: number; crisisMonths: number; investors: number; equitySold: number } }
 export interface PendingEvent { id: string; day: number; projectId?: number; city?: string; staffId?: number }
@@ -115,6 +137,7 @@ export interface Project {
   matIndexAtPlan: number;
   budget: { base: Money; soil: Money; soft: Money; total: Money; designFee: Money };
   expected: { revenue: Money; months: number };
+  operatedBy?: number;       // işletmeye alındıysa iş kolu kimliği (satış merkezi kapanır, değer işletmeden gelir)
 }
 export interface Order { id: number; material: string; qty: number; unitPrice: Money; supplier: string; placedDay: number; arriveDay: number; delayed: boolean; quality: number }
 export interface Machine { id: number; type: string; boughtDay: number; price: Money; brokenUntil: number; uses: number; usedDay?: number }
@@ -135,6 +158,7 @@ export interface Loan {
 export interface Investment { id: number; projectId: number; amount: Money; share: number; day: number; paidOut?: boolean }
 export interface TenderReq { rep: number; score: number; completed: number; staff: number; machines: number }
 export interface Tender {
+  infra?: boolean;   // altyapı ihalesi (proje yerine altyapı işi doğurur)
   id: number; kind: string; title: string; city: string; client: 'kamu' | 'ozel'; type: string; quality: string; area: number; months: number;
   refCost: Money; trueCost: Money; req: TenderReq; bondPct: number; openDay: number; evalDay: number;
   bid?: { price: Money; day: number; bond: Money }; rivals: { name: string; price: Money; tech: number; rep: number }[];
@@ -181,6 +205,7 @@ export interface GameState {
   pending: PendingEvent | null;
   evtLast: Record<string, number>;
   evtQueue?: QueuedEvent[];
+  ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;
   /** Malzeme fiyat geçmişi (aylık etkin çarpan; en çok 36 ay). Eski kayıtlarda yoktur. */
   matHist?: Record<string, number[]>;

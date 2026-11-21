@@ -143,5 +143,50 @@
   "id": "olay_gelir",
   "label": "Olay geliri",
   "kind": "gelir"
+ },
+ {
+  "id": "isletme_gelir",
+  "label": "İşletme geliri (otel/AVM)",
+  "kind": "gelir"
+ },
+ {
+  "id": "enerji_gelir",
+  "label": "Enerji satış geliri",
+  "kind": "gelir"
+ },
+ {
+  "id": "altyapi_gelir",
+  "label": "Altyapı işi hakedişi",
+  "kind": "gelir"
+ },
+ {
+  "id": "bagli_gelir",
+  "label": "Bağlı şirket geliri",
+  "kind": "gelir"
+ },
+ {
+  "id": "isletme_gider",
+  "label": "İşletme giderleri (otel/AVM)",
+  "kind": "gider"
+ },
+ {
+  "id": "enerji_gider",
+  "label": "Enerji santrali giderleri",
+  "kind": "gider"
+ },
+ {
+  "id": "altyapi_gider",
+  "label": "Altyapı işi giderleri",
+  "kind": "gider"
+ },
+ {
+  "id": "yatirim_isletme",
+  "label": "İşletme ve enerji yatırımı",
+  "kind": "yatirim"
+ },
+ {
+  "id": "hisse",
+  "label": "Halka arz ve hisse işlemleri",
+  "kind": "finansman"
  }
 ]

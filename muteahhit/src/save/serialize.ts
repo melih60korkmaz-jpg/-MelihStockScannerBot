@@ -67,6 +67,8 @@ export const MIGRATIONS: Record<number, (s: any) => any> = {
   },
   // v8 → v9 (Faz 9): rakipler, olay kataloğu
   9: (s) => { s.progress = { ach: {}, quests: {}, c: { loans: 0, tendersWon: 0, bids: 0, events: 0, unitsSold: 0, started: 0, bestQuality: 0, crisisMonths: 0, investors: 0, equitySold: 0 } }; if (s.company) s.company.office = 1; s.meta.version = 10; return s; },
+  // v10 → v11: iş kolları (otel/AVM/enerji), altyapı işleri, holding ve borsa
+  10: (s) => { s.ventures = []; s.infra = []; s.holding = { strategy: { isletme: 'dengeli', enerji: 'dengeli', altyapi: 'dengeli' }, gm: { isletme: false, enerji: false, altyapi: false } }; s.equity = null; s.meta.version = 11; return s; },
   8: (s) => { s.rivals = []; s.pending = null; s.evtLast = {}; s.meta.version = 9; return s; },
 };
 

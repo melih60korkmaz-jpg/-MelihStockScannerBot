@@ -497,3 +497,9 @@ mark { background:#FF8C3255; color:inherit; border-radius:3px; padding:0 1px; }
 /* şirket markası: antet ve proje kartı logosu */
 .letterhead { display:flex; gap:10px; align-items:center; padding-bottom:8px; margin-bottom:8px; border-bottom:1px solid var(--line); } .letterhead b { font:700 15px var(--font-h); letter-spacing:.04em; text-transform:uppercase; display:block; } .letterhead small { color:var(--mute); font-size:11px; } .letterhead.lh-c { justify-content:center; border:0; margin:2px 0 4px; padding:0; }
 .pcover { position:relative; } .pjlogo { position:absolute; top:5px; left:5px; display:flex; border-radius:7px; box-shadow:0 2px 6px #000a; line-height:0; }
+/* Holding */
+.divgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; } @media (max-width:700px) { .divgrid { grid-template-columns:repeat(2,1fr); } }
+.divc { padding:10px 12px; border-left:3px solid var(--line); display:flex; flex-direction:column; gap:3px; } .divc.good { border-left-color:#3FBF8A; } .divc.bad { border-left-color:#FF4D5A; }
+.vcard { display:flex; gap:12px; align-items:center; margin-bottom:8px; flex-wrap:wrap; } .vico { font-size:32px; width:46px; text-align:center; flex:none; } .vbody { flex:1; min-width:180px; }
+.tiers { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; } .tiers .btn small { font-weight:500; font-size:11px; }
+.infrac { display:flex; align-items:center; justify-content:center; min-height:72px; background:linear-gradient(180deg,var(--s2),var(--s0)); } .infraico { font-size:44px; line-height:1; padding:10px; }

@@ -23,6 +23,8 @@ export function designOf(spec: BuildingSpec) {
   let style: FacadeStyle, roof: RoofKind;
   if (t === 'fabrika' || t === 'depo') { style = 'metal'; roof = 'sanayi'; }
   else if (t === 'ofis' || t === 'is_merkezi') { style = pick<FacadeStyle>(['cam', 'cam', 'serit']); roof = t === 'is_merkezi' ? 'tac' : 'teras'; }
+  else if (t === 'otel') { style = pick<FacadeStyle>(['cam', 'balkon', 'balkon']); roof = 'tac'; }
+  else if (t === 'avm') { style = pick<FacadeStyle>(['cam', 'serit']); roof = 'teras'; }
   else if (t === 'rezidans') { style = pick<FacadeStyle>(['cam', 'balkon']); roof = 'tac'; }
   else if (t === 'luks') { style = pick<FacadeStyle>(['cam', 'tas', 'balkon']); roof = pick<RoofKind>(['teras', 'tac']); }
   else if (t === 'villa') { style = pick<FacadeStyle>(['tas', 'tugla']); roof = 'egimli'; }

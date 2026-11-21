@@ -12,7 +12,7 @@ export type Block =
 
 export interface Topic { id: string; ico: string; title: string; blocks: Block[] }
 
-export const TAB_TOPIC: Record<string, string> = { sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', finans: 'finans', piyasa: 'piyasa' };
+export const TAB_TOPIC: Record<string, string> = { sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
 
 export const GUIDE: Topic[] = [
   {
@@ -138,8 +138,32 @@ export const GUIDE: Topic[] = [
   {
     id: 'ihale', ico: '📜', title: 'İhaleler', blocks: [
       { p: 'Şubenin bulunduğu illerde her ay yeni ihaleler açılır (okul, hastane, belediye binası vb.). Açık ihaleye dokunup teklif fiyatını seçersin.' },
-      { ul: ['Teklif aralığı yaklaşık maliyetin altından üstüne uzanır; sürüklerken beklenen kâr görünür.', 'Teminat gerekir; oranı ihale kartında yazar. ', 'Sadece en düşük teklif kazanmaz: itibar, yeterlilik ve kapasite de puanlanır. Çok düşük teklif kazandırır ama zarar ettirir.', 'Kazanırsan "Sözleşmeli işler"e düşer: teslim süresi, gecikme cezası ve aşama aşama ödeme (hakediş) vardır.', 'Hakediş gecikmeli gelir; nakit akışını planla.', 'İhale kazanınca ve teslimde zaman duraklar, özel sahne gösterilir.'] },
+      { ul: ['Seviye 5\'ten itibaren altyapı ihaleleri de açılır (yol, köprü, tünel, baraj); onlar Holding › Altyapı\'da yürür.', 'Teklif aralığı yaklaşık maliyetin altından üstüne uzanır; sürüklerken beklenen kâr görünür.', 'Teminat gerekir; oranı ihale kartında yazar. ', 'Sadece en düşük teklif kazanmaz: itibar, yeterlilik ve kapasite de puanlanır. Çok düşük teklif kazandırır ama zarar ettirir.', 'Kazanırsan "Sözleşmeli işler"e düşer: teslim süresi, gecikme cezası ve aşama aşama ödeme (hakediş) vardır.', 'Hakediş gecikmeli gelir; nakit akışını planla.', 'İhale kazanınca ve teslimde zaman duraklar, özel sahne gösterilir.'] },
       { tip: 'İlk ihale için görev ödülü vardır. Şubesi olmayan ilde ihale görünmez: Harita\'dan şube aç.' },
+    ],
+  },
+  {
+    id: 'holding', ico: '🏛️', title: 'Holding: otel, AVM, enerji, altyapı', blocks: [
+      { p: 'Seviye 4\'ten itibaren (Bölge Firması) alt barda "Holding" sekmesi açılır. Burada yalnızca inşaat satmakla kalmaz, gelir getiren iş kolları kurar ve şirketini bir holdinge dönüştürürsün. Alt sekmeler: Özet, Otel & AVM, Enerji, Altyapı, Borsa & Satın alma.' },
+      { h: 'Özet' },
+      { ul: ['Her bölümün son 3 aylık geliri, gideri ve kârı defterden hesaplanır: İnşaat ve satış, Gayrimenkul işletmeleri, Enerji, Altyapı işleri, Bağlı şirketler ve Merkez (ofis, maaş, faiz, vergi).', 'Seviye 6\'da her bölüm için strateji seçilir: Büyüme (gelir +%6, gider +%10), Dengeli, Temkinli (gelir −%4, gider −%10).', 'Seviye 6\'da bölümlere genel müdür atanabilir: gelir +%5, gider −%3, maaşı aylık yaklaşık 150.000 ₺ (enflasyonla artar).'] },
+      { h: 'Otel ve AVM işletmeciliği (seviye 4)' },
+      { ul: ['Projeler\'de Otel ya da AVM tipinde proje başlat. Otel yaklaşık 32.000 ₺/m², AVM 26.000 ₺/m²; yapımı 30–48 ay sürer, büyük arsa ister.', 'Bina bitince daireleri satmak yerine "İşletmeye al": birimler satışa çıkmaz, bina bir iş koluna dönüşür.', 'Aylık gelir; otelde doluluğa ve mevsime (sahilde yaz çok, kış az), AVM\'de kiracı doluluğuna bağlıdır. Ekonomik rejim, piyasa güveni ve itibar da etkiler. Giderler büyük ölçüde sabittir; gelir düşünce kâr hızla küçülür.', 'Yıllık net getiri yaklaşık %12–14\'tür. İşletmeyi satarsan değerinin %92\'sini alırsın; değer yılda yaklaşık %1,2 azalır (en az %70).'] },
+      { h: 'Enerji yatırımları (seviye 5)' },
+      { ul: ['Güneş santrali: 1, 3 ya da 8 MW (yaklaşık 9, 25, 62 milyon ₺; maliyet endeksiyle artar). Yaklaşık 2 ayda devreye girer. Yazın çok, kışın az üretir; Antalya, Adana, Konya güneşte, İzmir, İstanbul, Kocaeli rüzgârda öndedir.', 'Rüzgâr santrali: 2, 6 ya da 15 MW (yaklaşık 22, 60, 140 milyon ₺). Yaklaşık 4 ayda devreye girer. Kışın güçlüdür. Arıza ihtimali aylık yaklaşık %5 (güneşte %2); arızalı ay üretim olmaz ve onarım masrafı çıkar.', 'Yıllık net getiri yaklaşık %14–15\'tir; santral yalnızca bulunduğun açık illerde kurulur.'] },
+      { h: 'Altyapı işleri (seviye 5)' },
+      { ul: ['İhale sekmesinde yol, köprü, tünel, baraj ve kanalizasyon/su şebekesi ihaleleri açılır. Şartları sağlamak gerekir (itibar, kredi notu, tamamlanan proje, çalışan, makine).', 'Kazanınca iş Holding › Altyapı\'da başlar. İlerleme saha ekibine ve makine parkına bağlıdır; kapasite yetersizse iş ilerlemez, nakit yoksa durur. Kapasite aktif işler arasında bölünür.', 'Her %10 ilerleme bir hakediş doğurur (45 gün sonra tahsil). Bitişte kalan hakediş ve teminat gelir; gecikirse günde %0,1 ceza (en çok %10).'] },
+      { tip: 'Altyapı işleri büyük sermaye ve çok makine ister. Önce makine parkını büyüt, ekibi güçlendir, sonra yola çık.' },
+    ],
+  },
+  {
+    id: 'borsa', ico: '📈', title: 'Borsa ve şirket satın alma', blocks: [
+      { h: 'Halka arz (seviye 7)' },
+      { ul: ['Şartlar: şirket seviyesi 7, net varlık en az 1 milyar ₺, itibar en az 55. Şirketin %10–25\'ini halka açarsın; fiyat adil değerin %92\'si, kaynağın %97\'si sana kalır.', 'Sahipliğin hiçbir zaman %60\'ın altına inemez (ortaklık ve yatırımcı satışları dahil).', 'Halka açık olunca her ay hisse fiyatı adil değere (net varlık × çarpan) yaklaşır; çarpan piyasa güveni, itibar ve büyümeyle artar. Fiyat halka arz fiyatının %30 üstündeyken itibar artar, %30 altındayken azalır.'] },
+      { h: 'Hisse işlemleri' },
+      { ul: ['İkincil satış (%3–15): nakit getirir, fiyatı biraz düşürür.', 'Geri alım (%1–10): nakit harcar, sahipliğini ve fiyatı artırır.'] },
+      { h: 'Rakip şirket satın alma (seviye 6)' },
+      { ul: ['Rakiplerin listesinde fiyat görünür; iflas etmiş olanlar çok ucuzdur. Satın alınan şirket "bağlı şirket" olur: aylık gelir getirir (yıllık yaklaşık %14, rakibin gücüne bağlı), rakip azalır, itibar artar.', 'Aynı şirket iki kez satın alınamaz.'] },
     ],
   },
   {
@@ -210,6 +234,7 @@ export const GUIDE: Topic[] = [
         ['Hangi bina tipini yapmalıyım?', 'İlk işte müstakil ev ya da küçük apartman: hızlı, ucuz, düşük risk. Büyük bina tipleri sermaye ve uzun süre ister. Hızlı başlangıç kartı sana uygun olanı önerir.'],
         ['Ekibim yetmiyor / işler yavaş.', 'Operasyon › Ekip\'te işçi ve usta ekle; saha çalışanlarını projeye ata. Ofis doluysa daha büyük genel merkeze taşın. Düşük moral de yavaşlatır.'],
         ['Kredi taksidini kaçırdım.', 'Kredi notu düşer; üst üste 3 kaçırmada haciz gelir. Hemen kasayı doldurup Finans › Krediler\'den ödeme yap.'],
+        ['Otel ya da AVM nasıl yapılır?', 'Seviye 4\'te Projeler\'den arsaya Otel/AVM projesi başlat (büyük ve ticari imarlı arsa gerekir). Bitince Holding › Otel & AVM\'den işletmeye al; her ay gelir getirir.'],
         ['Nasıl daha hızlı büyürüm?', 'Görevleri izle (ödülleri nakit), her projeyi kârlı bitirip itibarı artır, ihalelere gir, yeni ilde şube aç. Seviye atladıkça daha büyük bina tipleri ve merkezler açılır.'],
         ['Oyun açılmıyor / donuyor.', 'Ekranın üstünde kırmızı bir hata kutusu çıkıyorsa içindeki yazıyı bildir. Grafik kalitesini Düşük yap. Uygulamayı kapatıp açınca son kayıttan devam edersin.'],
       ] },

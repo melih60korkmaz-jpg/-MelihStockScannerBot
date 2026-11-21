@@ -3,6 +3,7 @@ import { pick, rand, randInt } from '../core/rng';
 import type { GameEvent, GameState, Parcel, Project, Tender } from '../core/types';
 import { buildingType, cityData, STAGES } from '../data';
 import { post } from './ledger';
+import { winInfra } from './infra';
 import { tenderRivals } from './rivals';
 import { newDesignSeed, planProject } from './projects';
 
@@ -86,7 +87,7 @@ export function evaluateTender(s: GameState, t: Tender, events: GameEvent[]): vo
     t.status = 'elendi'; t.result = { winner: top?.name ?? '—', ...out, reason: 'Olağan dışı düşük teklif: elendiniz.' }; post(s, 'teminat', t.bid.bond, { memo: 'Teminat iadesi' });
     events.push({ type: 'TENDER_LOST', day, data: { tenderId: t.id, reason: 'elendi' } }); return;
   }
-  if (top?.me) { t.status = 'kazandi'; t.result = { winner: c.name, ...out }; winTender(s, t, events); }
+  if (top?.me) { t.status = 'kazandi'; t.result = { winner: c.name, ...out }; if (t.infra) winInfra(s, t, events); else winTender(s, t, events); }
   else { const rv = s.rivals.find((r) => r.name === top!.name); if (rv) { rv.wins++; rv.projects++; rv.last = 'ihale'; } t.status = 'kaybetti'; t.result = { winner: top!.name, ...out }; post(s, 'teminat', t.bid.bond, { memo: 'Teminat iadesi' }); c.reputation = clamp(c.reputation, 0, 100); events.push({ type: 'TENDER_LOST', day, data: { tenderId: t.id, winner: top!.name } }); }
 }
 
