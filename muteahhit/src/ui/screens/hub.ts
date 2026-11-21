@@ -123,7 +123,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
         h('div', { class: 'lbl-s' }, 'Net varlık'),
         h('div', { style: 'display:flex;gap:12px;align-items:flex-end;justify-content:space-between' },
           h('div', {}, nwBig, h('div', { class: 'mute', style: 'font-size:12px', html: (delta === null ? 'İlk ay sonunda karşılaştırma başlar' : `Geçen aya göre ${signed(delta)}`) + (landAssetValue(s) > 0 ? ` · Nakit ${formatMoney(c.cash)} · Arsalar ${formatMoney(landAssetValue(s))}` : '') })),
-          h('div', { style: 'width:42%;min-width:110px', html: sparkline(hist.map((p) => p.netWorth), '#C64252', 44) })),
+          h('div', { style: 'width:42%;min-width:110px', html: sparkline(hist.map((p) => p.netWorth), '#FF8C32', 44) })),
         h('div', { class: 'lbl-s', style: 'margin-top:12px' }, `Nakit yeterlilik · ${rw === null ? 'sınırsız (gelir giderleri karşılıyor)' : rw.toFixed(1) + ' ay'}`),
         h('div', { class: 'meter', role: 'img', 'aria-label': 'Nakit yeterlilik' }, h('i', { style: `width:${pct}%;background:${col}` }))),
       h('div', { class: 'card kpis' },
@@ -158,7 +158,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       { // Üst özet kartları: kasa / net varlık / son ay net / borç — önceki aya göre gerçek değişim rozetiyle
         const hs = s.history, cur = s.company!.cash, prevCash = hs.length >= 2 ? hs.at(-2)!.cash : null, nwNow = netWorth(s), prevNW = hs.length >= 2 ? hs.at(-2)!.netWorth : null, lastRow = rows.at(-1), debtNow = debtTotal(s);
         const chip = (d: number | null, goodUp: boolean) => d === null || d === 0 ? '' : `<span class="dlt ${(d > 0) === goodUp ? 'good' : 'bad'}">${d > 0 ? '▲' : '▼'} ${formatMoney(Math.abs(d))}</span>`;
-        const card = (ico: string, label: string, val: string, d: number | null, goodUp: boolean, series: number[], tone: string) => h('div', { class: `card fk ${tone}` }, h('div', { class: 'lbl-s' }, `${ico} ${label}`), h('b', { class: 'fkv', html: val }), h('div', { html: chip(d, goodUp) || '<span class="mute" style="font-size:12px">Karşılaştırma ay sonunda</span>' }), h('div', { html: series.length >= 2 ? sparkline(series, tone === 'bad' ? '#FF4D5A' : tone === 'good' ? '#3FBF8A' : '#C64252', 26) : '' }));
+        const card = (ico: string, label: string, val: string, d: number | null, goodUp: boolean, series: number[], tone: string) => h('div', { class: `card fk ${tone}` }, h('div', { class: 'lbl-s' }, `${ico} ${label}`), h('b', { class: 'fkv', html: val }), h('div', { html: chip(d, goodUp) || '<span class="mute" style="font-size:12px">Karşılaştırma ay sonunda</span>' }), h('div', { html: series.length >= 2 ? sparkline(series, tone === 'bad' ? '#FF4D5A' : tone === 'good' ? '#3FBF8A' : '#FF8C32', 26) : '' }));
         body.append(h('div', { class: 'fkgrid' },
           card(EMOJI.finans, 'Kasa', formatMoney(cur), prevCash === null ? null : cur - prevCash, true, hs.slice(-12).map((p) => p.cash), cur < 0 ? 'bad' : 'neutral'),
           card(EMOJI.sirket, 'Net varlık', formatMoney(nwNow), prevNW === null ? null : nwNow - prevNW, true, hs.slice(-12).map((p) => p.netWorth), nwNow < 0 ? 'bad' : 'neutral'),

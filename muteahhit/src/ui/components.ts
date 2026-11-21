@@ -22,17 +22,17 @@ export function blueprint(p: Parcel): HTMLElement {
   const x0 = 70 + (150 - pw) / 2, y0 = 40 + (130 - ph) / 2, cut = 6 + hash(p.id, 3) * 14;
   const pts = [[x0, y0], [x0 + pw - cut, y0], [x0 + pw, y0 + cut], [x0 + pw, y0 + ph], [x0, y0 + ph]].map((q) => q.join(',')).join(' ');
   const s = Math.sqrt(p.taks), ew = pw * s * 0.92, eh = ph * s * 0.92, ex = x0 + (pw - ew) / 2, ey = y0 + (ph - eh) / 2;
-  let roads = `<rect x="0" y="${y0 + ph + 8}" width="${W}" height="22" fill="#38383F"/><line x1="0" x2="${W}" y1="${y0 + ph + 19}" y2="${y0 + ph + 19}" stroke="#737277" stroke-dasharray="8 6" stroke-width="1.4"/>`;
-  if (p.roads >= 2) roads += `<rect x="${x0 + pw + 8}" y="0" width="22" height="${H}" fill="#38383F"/><line y1="0" y2="${H}" x1="${x0 + pw + 19}" x2="${x0 + pw + 19}" stroke="#737277" stroke-dasharray="8 6" stroke-width="1.4"/>`;
-  if (p.roads >= 3) roads += `<rect x="0" y="${y0 - 30}" width="${W}" height="22" fill="#38383F"/><line x1="0" x2="${W}" y1="${y0 - 19}" y2="${y0 - 19}" stroke="#737277" stroke-dasharray="8 6" stroke-width="1.4"/>`;
+  let roads = `<rect x="0" y="${y0 + ph + 8}" width="${W}" height="22" fill="#4A5058"/><line x1="0" x2="${W}" y1="${y0 + ph + 19}" y2="${y0 + ph + 19}" stroke="#9299A1" stroke-dasharray="8 6" stroke-width="1.4"/>`;
+  if (p.roads >= 2) roads += `<rect x="${x0 + pw + 8}" y="0" width="22" height="${H}" fill="#4A5058"/><line y1="0" y2="${H}" x1="${x0 + pw + 19}" x2="${x0 + pw + 19}" stroke="#9299A1" stroke-dasharray="8 6" stroke-width="1.4"/>`;
+  if (p.roads >= 3) roads += `<rect x="0" y="${y0 - 30}" width="${W}" height="22" fill="#4A5058"/><line x1="0" x2="${W}" y1="${y0 - 19}" y2="${y0 - 19}" stroke="#9299A1" stroke-dasharray="8 6" stroke-width="1.4"/>`;
   let nb = ''; for (let i = 0; i < 5; i++) { const nx = 8 + hash(p.id, 10 + i) * 50, ny = 14 + i * 36 + hash(p.id, 20 + i) * 8; if (ny + 20 < y0 + ph + 6) nb += `<rect x="${nx}" y="${ny}" width="${22 + hash(p.id, 30 + i) * 22}" height="${18 + hash(p.id, 40 + i) * 10}" fill="#2b2c32" stroke="#44454d" stroke-width="0.8"/>`; }
-  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Vaziyet planı"><rect width="${W}" height="${H}" fill="#1D1E22"/>${roads}${nb}
-    <polygon points="${pts}" fill="#27282D" stroke="#A5A1A3" stroke-width="1.6" stroke-dasharray="5 3"/>
-    <rect x="${ex}" y="${ey}" width="${ew}" height="${eh}" fill="#A83246" fill-opacity=".35" stroke="#C64252" stroke-width="1.6"/>
-    <text x="${ex + ew / 2}" y="${ey + eh / 2 + 3}" text-anchor="middle" font-size="9" font-weight="700" fill="#F2F0F0" font-family="Inter,sans-serif">Taban ${nf(p.area * p.taks)} m²</text>
-    <text x="${x0 + pw / 2}" y="${y0 - 5}" text-anchor="middle" font-size="9" fill="#A5A1A3" font-family="Inter,sans-serif">${nf(p.area)} m² parsel${p.corner ? ' · köşe' : ''}</text>
-    <text x="${W - 40}" y="${H - 8}" font-size="8" fill="#737277" font-family="Inter,sans-serif">${p.roads} yol cephesi</text>
-    <g transform="translate(18 ${H - 34})"><path d="M0 -14 L7 4 L0 0 L-7 4 Z" fill="#A5A1A3"/><text x="0" y="16" text-anchor="middle" font-size="8" font-weight="700" fill="#A5A1A3">K</text></g></svg>`;
+  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Vaziyet planı"><rect width="${W}" height="${H}" fill="#202328"/>${roads}${nb}
+    <polygon points="${pts}" fill="#343940" stroke="#C0C4C8" stroke-width="1.6" stroke-dasharray="5 3"/>
+    <rect x="${ex}" y="${ey}" width="${ew}" height="${eh}" fill="#F07824" fill-opacity=".35" stroke="#FF8C32" stroke-width="1.6"/>
+    <text x="${ex + ew / 2}" y="${ey + eh / 2 + 3}" text-anchor="middle" font-size="9" font-weight="700" fill="#F5F5F3" font-family="Inter,sans-serif">Taban ${nf(p.area * p.taks)} m²</text>
+    <text x="${x0 + pw / 2}" y="${y0 - 5}" text-anchor="middle" font-size="9" fill="#C0C4C8" font-family="Inter,sans-serif">${nf(p.area)} m² parsel${p.corner ? ' · köşe' : ''}</text>
+    <text x="${W - 40}" y="${H - 8}" font-size="8" fill="#9299A1" font-family="Inter,sans-serif">${p.roads} yol cephesi</text>
+    <g transform="translate(18 ${H - 34})"><path d="M0 -14 L7 4 L0 0 L-7 4 Z" fill="#C0C4C8"/><text x="0" y="16" text-anchor="middle" font-size="8" font-weight="700" fill="#C0C4C8">K</text></g></svg>`;
   return h('div', { class: 'paper', html: svg });
 }
 
@@ -42,9 +42,9 @@ export function massing(p: Parcel, floors: number): HTMLElement {
   const cx = W / 2, cy = 150, c = 0.866, sn = 0.5, hh = fh * fl;
   const P = (x: number, y: number, z: number) => `${(cx + (x - y) * c).toFixed(1)},${(cy + (x + y) * sn - z).toFixed(1)}`;
   const top = [P(0, 0, hh), P(a, 0, hh), P(a, b, hh), P(0, b, hh)].join(' '), left = [P(0, b, 0), P(a, b, 0), P(a, b, hh), P(0, b, hh)].join(' '), right = [P(a, 0, 0), P(a, b, 0), P(a, b, hh), P(a, 0, hh)].join(' ');
-  let lines = ''; for (let i = 1; i < fl; i++) lines += `<polyline points="${P(0, b, i * fh)} ${P(a, b, i * fh)} ${P(a, 0, i * fh)}" fill="none" stroke="#101113" stroke-opacity=".45" stroke-width=".8"/>`;
-  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Yapılaşma hacmi"><ellipse cx="${cx}" cy="${cy + 18}" rx="${a * 1.1}" ry="${a * 0.45}" fill="#ffffff10"/><polygon points="${left}" fill="#8F293B"/><polygon points="${right}" fill="#A83246"/><polygon points="${top}" fill="#C64252"/>${lines}
-    <text x="12" y="16" font-size="10" fill="#A5A1A3" font-family="Inter,sans-serif">${fl} kat</text></svg>`;
+  let lines = ''; for (let i = 1; i < fl; i++) lines += `<polyline points="${P(0, b, i * fh)} ${P(a, b, i * fh)} ${P(a, 0, i * fh)}" fill="none" stroke="#17191C" stroke-opacity=".45" stroke-width=".8"/>`;
+  const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Yapılaşma hacmi"><ellipse cx="${cx}" cy="${cy + 18}" rx="${a * 1.1}" ry="${a * 0.45}" fill="#ffffff10"/><polygon points="${left}" fill="#C95B17"/><polygon points="${right}" fill="#F07824"/><polygon points="${top}" fill="#FF8C32"/>${lines}
+    <text x="12" y="16" font-size="10" fill="#C0C4C8" font-family="Inter,sans-serif">${fl} kat</text></svg>`;
   return h('div', { html: svg });
 }
 
@@ -77,8 +77,8 @@ export function skylineSvg(id: string, density: number, income: number, transit:
   let hsh = 2166136261; for (const ch of id) hsh = Math.imul(hsh ^ ch.charCodeAt(0), 16777619) >>> 0;
   const rnd = () => { hsh = (Math.imul(hsh, 1664525) + 1013904223) >>> 0; return hsh / 4294967296; };
   const n = 6 + Math.round(density / 12), maxH = 14 + density * 0.34, bw = W / n;
-  const wall = income > 62 ? '#3a2a31' : '#2c2d33', glass = income > 62 ? '#C64252' : '#8E919B';
-  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" role="img" aria-label="Bölge silueti"><rect width="${W}" height="${H}" fill="#16171A"/>`;
+  const wall = income > 62 ? '#3a3128' : '#343940', glass = income > 62 ? '#FF8C32' : '#9299A1';
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none" role="img" aria-label="Bölge silueti"><rect width="${W}" height="${H}" fill="#17191C"/>`;
   for (let i = 0; i < n; i++) {
     const w = bw * (0.7 + rnd() * 0.5), x = i * bw + (bw - w) / 2, hh = Math.min(H - 12, maxH * (0.45 + rnd() * 0.75)), y = H - 9 - hh;
     s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${hh.toFixed(1)}" fill="${wall}"/>`;
@@ -86,7 +86,7 @@ export function skylineSvg(id: string, density: number, income: number, transit:
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (rnd() < 0.42) s += `<rect x="${(x + 1.5 + c * 5).toFixed(1)}" y="${(y + 2 + r * 6).toFixed(1)}" width="2.4" height="3" fill="${glass}" opacity="${(0.35 + rnd() * 0.5).toFixed(2)}"/>`;
   }
   if (density < 45) for (let i = 0; i < 5; i++) { const x = 10 + rnd() * (W - 20); s += `<circle cx="${x.toFixed(1)}" cy="${H - 14}" r="${(3 + rnd() * 2).toFixed(1)}" fill="#3FBF8A" opacity=".55"/><rect x="${(x - 0.6).toFixed(1)}" y="${H - 12}" width="1.2" height="4" fill="#5b5d66"/>`; }
-  s += `<rect x="0" y="${H - 9}" width="${W}" height="9" fill="#101113"/>`;
-  if (transit > 55) { s += `<line x1="0" x2="${W}" y1="${H - 4.5}" y2="${H - 4.5}" stroke="#A83246" stroke-width="1.6" stroke-dasharray="${transit > 75 ? '' : '6 4'}"/>`; for (let i = 1; i < 4; i++) s += `<circle cx="${(W * i) / 4}" cy="${H - 4.5}" r="2.4" fill="#F2F0F0"/>`; }
+  s += `<rect x="0" y="${H - 9}" width="${W}" height="9" fill="#17191C"/>`;
+  if (transit > 55) { s += `<line x1="0" x2="${W}" y1="${H - 4.5}" y2="${H - 4.5}" stroke="#F07824" stroke-width="1.6" stroke-dasharray="${transit > 75 ? '' : '6 4'}"/>`; for (let i = 1; i < 4; i++) s += `<circle cx="${(W * i) / 4}" cy="${H - 4.5}" r="2.4" fill="#F5F5F3"/>`; }
   return s + '</svg>';
 }

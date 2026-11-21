@@ -17,7 +17,7 @@ const mem = { onlyAffordable: false, zoomTo: '' as string, mode: 'turkey' as 'tu
 const TR_BOX = (() => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const p of PROVINCES) { x0 = Math.min(x0, p.bbox[0]); y0 = Math.min(y0, p.bbox[1]); x1 = Math.max(x1, p.bbox[2]); y1 = Math.max(y1, p.bbox[3]); } return { x: x0 - 80, y: y0 - 80, w: x1 - x0 + 160, h: y1 - y0 + 160 }; })();
 const norm = (s: string) => s.toLocaleLowerCase('tr').replace(/[ıİ]/g, 'i');
 /** Değer → antrasit gri kademesi (düşük: koyu, yüksek: açık); seçili bölge CSS ile bordo vurgulanır. */
-const RAMP = ['#3E4C8E', '#6B5BA8', '#B0507A', '#E0804E', '#E8C15A'] as const; // düşük → yüksek: çivit → mor → gül → turuncu → sarı (bordo temayla uyumlu)
+const RAMP = ['#3D4651', '#5C6A78', '#B5642A', '#FF8C32', '#FFD08A'] as const; // düşük → yüksek: antrasit → çelik → bakır → turuncu → açık turuncu
 const hexRgb = (h2: string) => [1, 3, 5].map((i) => parseInt(h2.slice(i, i + 2), 16));
 export const rampColor = (t: number): string => { const k = Math.max(0, Math.min(1, t)) * (RAMP.length - 1), i = Math.min(RAMP.length - 2, Math.floor(k)), f = k - i, a = hexRgb(RAMP[i]!), b = hexRgb(RAMP[i + 1]!); return '#' + a.map((v, j) => Math.round(v + (b[j]! - v) * f).toString(16).padStart(2, '0')).join(''); };
 const shade = (t: number) => ({ fill: rampColor(t), op: '0.92' });
@@ -85,7 +85,7 @@ function turkeyView(app: App, refresh: () => void, sel: Province): HTMLElement {
     labels += `<text class="lb2" x="${p.cx}" y="${p.cy}" font-size="${p.areaKm2 > 9000 ? 150 : p.areaKm2 > 3500 ? 120 : 90}" text-anchor="middle">${p.name}</text>`;
   }
   const st = PROVINCES.find((p) => p.id === c.startCity)!;
-  svg.innerHTML = `<rect x="${TR_BOX.x}" y="${TR_BOX.y}" width="${TR_BOX.w}" height="${TR_BOX.h}" fill="transparent"/>${paths}${labels}<circle cx="${st.cx}" cy="${st.cy}" r="60" fill="#C64252" stroke="#F2F0F0" stroke-width="12"/>`;
+  svg.innerHTML = `<rect x="${TR_BOX.x}" y="${TR_BOX.y}" width="${TR_BOX.w}" height="${TR_BOX.h}" fill="transparent"/>${paths}${labels}<circle cx="${st.cx}" cy="${st.cy}" r="60" fill="#FF8C32" stroke="#F5F5F3" stroke-width="12"/>`;
   const wrap = h('div', { class: 'mapbox', style: 'position:relative' }, svg, h('div', { class: 'legend' }, h('span', {}, 'Düşük'), h('i', {}), h('span', {}, 'Yüksek'), h('span', { style: 'margin-left:10px' }, '● Başlangıç · bordo çerçeve = açık il')));
   const vb = mem.vb && mem.vbKey === 'tr' ? mem.vb : { ...TR_BOX }; mem.vb = vb; mem.vbKey = 'tr';
   const pz = panZoom(svg, TR_BOX, vb, (z) => svg.setAttribute('data-z', z > 3.2 ? '3' : z > 1.8 ? '2' : '1'));

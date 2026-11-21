@@ -31,7 +31,7 @@ export function toast(msg: string, ms = 2600) {
 export function celebrate(reduced: boolean) {
   if (document.documentElement.dataset.fx === 'calm') return; // "Sakin" yoğunluk: kutlama efekti yok
   const box = h('div', { class: 'confetti', 'aria-hidden': 'true' });
-  const n = reduced ? 0 : 36, cols = ['#C64252', '#A83246', '#F2F0F0', '#A5A1A3', '#737277'];
+  const n = reduced ? 0 : 36, cols = ['#FF8C32', '#F07824', '#F5F5F3', '#C0C4C8', '#9299A1'];
   for (let i = 0; i < n; i++) box.append(h('i', { style: `left:${Math.round(Math.random() * 100)}%;background:${cols[i % cols.length]};animation-delay:${(Math.random() * 0.5).toFixed(2)}s;animation-duration:${(1.4 + Math.random() * 1.1).toFixed(2)}s;transform:rotate(${Math.round(Math.random() * 360)}deg)` }));
   if (reduced) box.classList.add('glow'); document.body.append(box); setTimeout(() => box.remove(), reduced ? 900 : 2800);
 }

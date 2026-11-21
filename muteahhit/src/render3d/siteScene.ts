@@ -21,7 +21,7 @@ export class SiteScene {
   private sky: THREE.Mesh; private skyU: { top: { value: THREE.Color }; hor: { value: THREE.Color } };
   private building!: SiteBuilding; private props!: SiteProps; private crane!: TowerCrane; private crane2: TowerCrane | null = null; private excavator = new Excavator(); private workers = new Workers(); private weather = new Weather(); private dust = new Dust(90); private pump = new ConcretePump(); private glows: THREE.Sprite[] = []; private flood = [new THREE.SpotLight(0xfff0d0, 0, 120, 0.85, 0.7, 1.2), new THREE.SpotLight(0xfff0d0, 0, 120, 0.85, 0.7, 1.2)];
   private trucks: { g: THREE.Group; kind: string; off: number; speed: number; drum?: THREE.Mesh }[] = []; private ground!: THREE.Mesh; private world = new THREE.Group(); private surround: Surroundings | null = null;
-  private nightGlow = { value: 0 }; private covers: THREE.Mesh[] = []; private spec!: SiteSpec; private disposed = false; private moon = new THREE.DirectionalLight(0x7f9bd6, 0); private plotW = 40; private plotD = 30;
+  private nightGlow = { value: 0 }; private covers: THREE.Mesh[] = []; private spec!: SiteSpec; private disposed = false; private moon = new THREE.DirectionalLight(0x9aa6b8, 0); private plotW = 40; private plotD = 30;
   private state: SiteState = { u: 1, stalled: false, weather: 'acik', workers: 3, done: false }; private u = 1; private time = 0; private tod = 0.6; private speed = 0; private reduced = false;
   private tierSetting: Quality = 'auto'; private tier: Tier = 'mid'; private raf = 0; private running = false; private last = 0;
   private cam = { yaw: 0.7, pitch: 0.55, dist: 80, tx: 0, ty: 12, tz: 0 }; private goal = { ...this.cam }; private idle = 0; private R = 40; private orbitAuto = false;
@@ -154,7 +154,7 @@ export class SiteScene {
     const w = st.weather, wd = w === 'yagmur' ? 0.62 : w === 'kar' ? 0.78 : 1;
     this.sun.position.set(Math.cos(ang) * 90, Math.max(8, sunY * 90), 40); this.sun.target.position.set(0, 0, 0);
     this.sun.color.setRGB(1, 0.85 - gold * 0.25, 0.7 - gold * 0.35 + (1 - gold) * 0.2); this.sun.intensity = (0.1 + 3.2 * day) * wd; this.hemi.intensity = (0.62 + 0.55 * day) * (w === 'acik' ? 1 : 0.9); this.moon.intensity = 1.1 * night * (w === 'acik' ? 1 : 0.7);
-    const top = new THREE.Color('#0a1428').lerp(new THREE.Color(w === 'acik' ? '#4f8fd0' : '#7d8794'), day), hor = new THREE.Color('#1b2745').lerp(new THREE.Color(w === 'acik' ? '#cfe3f2' : '#a9b2ba'), day).lerp(new THREE.Color('#f2a35e'), gold * 0.7 * (w === 'acik' ? 1 : 0.3));
+    const top = new THREE.Color('#0d0f12').lerp(new THREE.Color(w === 'acik' ? '#4f8fd0' : '#7d8794'), day), hor = new THREE.Color('#1d2026').lerp(new THREE.Color(w === 'acik' ? '#cfe3f2' : '#a9b2ba'), day).lerp(new THREE.Color('#f2a35e'), gold * 0.7 * (w === 'acik' ? 1 : 0.3));
     this.skyU.top.value.copy(top); this.skyU.hor.value.copy(hor); (this.scene.fog as THREE.Fog).color.copy(hor); { const mist = w === 'acik' ? Math.max(0, 1 - Math.abs(this.tod - 0.28) / 0.1) : 0; (this.scene.fog as THREE.Fog).near = (w === 'acik' ? 140 : 70) * (1 - 0.55 * mist); (this.scene.fog as THREE.Fog).far = (w === 'acik' ? 700 : 380) * (1 - 0.4 * mist); } // sabah sisi: gün doğumunda kısa süre
     this.renderer.toneMappingExposure = 1.1 - 0.2 * day;
     this.surround?.update(dt, this.time, night, w, anim);

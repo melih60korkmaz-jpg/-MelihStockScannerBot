@@ -113,7 +113,7 @@ class Block {
     const rb: THREE.Matrix4[] = []; for (let i = 0; i <= nx; i++) for (let j = 0; j <= nz; j++) for (let k = 0; k < 3; k++) rb.push(M(-hw + (i * w) / nx + (k - 1) * 0.15, 1.1, -hd + (j * d) / nz, 0.06, 2.2, 0.06));
     this.rebar = inst(BOX, mat('#6b5a4a'), rb, false); g.add(this.rebar);
     // hologram (proje görseli)
-    this.holoFill = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ color: '#C64252', transparent: true, opacity: 0.08, depthWrite: false })); this.holoFill.scale.set(w, this.topH, d); this.holoFill.position.y = this.topH / 2;
+    this.holoFill = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ color: '#FF8C32', transparent: true, opacity: 0.08, depthWrite: false })); this.holoFill.scale.set(w, this.topH, d); this.holoFill.position.y = this.topH / 2;
     this.holo = new THREE.LineSegments(new THREE.EdgesGeometry(BOX), new THREE.LineBasicMaterial({ color: '#E07A87', transparent: true, opacity: 0.8 })); this.holo.scale.copy(this.holoFill.scale); this.holo.position.copy(this.holoFill.position); g.add(this.holoFill, this.holo);
     // çatı
     g.add(this.roofTop); const rm2 = mat(pal.roof, { roughness: 0.8 });

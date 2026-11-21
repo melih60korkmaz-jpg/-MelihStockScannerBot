@@ -19,7 +19,7 @@ const BIOME: Record<Region, { grass: string; grass2: string; leaf: string[]; tre
 };
 const FACADES = ['#f2e6cf', '#dfe4e8', '#f6f1e4', '#d9b48c', '#c7d0d4', '#efd8c0', '#e9c8c0', '#cfe0c8', '#e8d4a8', '#bcd3e0'].map((c) => new THREE.Color(c));
 const ROOFS = ['#9a3a22', '#7a3a2a', '#5a4a40', '#3d4651', '#8a5a3a', '#4a5a6a'].map((c) => new THREE.Color(c));
-const CARS = ['#d9d9d9', '#2b2f36', '#b02a2a', '#2d5fa8', '#e8e8e8', '#c9a227', '#3f7f4f', '#7a7f88'].map((c) => new THREE.Color(c));
+const CARS = ['#d9d9d9', '#2b2f36', '#b02a2a', '#2d5fa8', '#e8e8e8', '#FFB15C', '#3f7f4f', '#7a7f88'].map((c) => new THREE.Color(c));
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const M4 = (x: number, y: number, z: number, sx: number, sy: number, sz: number, ry = 0) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), ry), new THREE.Vector3(sx, sy, sz));
 

@@ -175,12 +175,12 @@ export class MenuScene {
     const R = rng(2027);
     const S = this.scene;
     const horizon = new THREE.Color('#e8965a');
-    S.fog = new THREE.Fog(horizon.clone().lerp(new THREE.Color('#3a3a5c'), 0.35), 90, 340);
+    S.fog = new THREE.Fog(horizon.clone().lerp(new THREE.Color('#3a3430'), 0.35), 90, 340);
 
     // Gökyüzü (gradyan küre)
     const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 24, 16), new THREE.ShaderMaterial({
       side: THREE.BackSide, depthWrite: false, fog: false,
-      uniforms: { top: { value: new THREE.Color('#14213f') }, mid: { value: new THREE.Color('#7a4f7a') }, hor: { value: new THREE.Color('#f2a35e') } },
+      uniforms: { top: { value: new THREE.Color('#1b1d22') }, mid: { value: new THREE.Color('#6a4a38') }, hor: { value: new THREE.Color('#ff9a45') } },
       vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);} ',
       fragmentShader: 'varying vec3 vP; uniform vec3 top; uniform vec3 mid; uniform vec3 hor; void main(){ float h = clamp(vP.y,0.0,1.0); vec3 c = mix(hor, mid, smoothstep(0.0,0.22,h)); c = mix(c, top, smoothstep(0.18,0.7,h)); gl_FragColor = vec4(c,1.0);} ',
     }));
@@ -191,7 +191,7 @@ export class MenuScene {
     sunSprite.scale.set(420, 420, 1); sunSprite.position.set(-260, 60, -520); S.add(sunSprite);
 
     // Işıklar
-    S.add(new THREE.HemisphereLight(0x8fa6dc, 0x30262a, 1.0));
+    S.add(new THREE.HemisphereLight(0xa9b4c4, 0x30282a, 1.0));
     this.sun = new THREE.DirectionalLight(0xffb67a, 3.2);
     this.sun.position.set(-70, 36, 50); this.sun.target.position.set(0, 10, 0);
     const sc = this.sun.shadow.camera; sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 10; sc.far = 220;
@@ -333,7 +333,7 @@ export class MenuScene {
   }
 
   private makeCrane(S: THREE.Scene, x: number, z: number, h: number, jibLen: number, phase: number): Crane {
-    const yel = new THREE.MeshStandardMaterial({ color: '#F5B700', roughness: 0.6, flatShading: true });
+    const yel = new THREE.MeshStandardMaterial({ color: '#F5C542', roughness: 0.6, flatShading: true });
     const dark = new THREE.MeshStandardMaterial({ color: '#3a3f4a', roughness: 0.8 });
     this.shadowMats.push(yel, dark);
     const g = new THREE.Group(); g.position.set(x + 11, 0, z - 11);

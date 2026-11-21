@@ -3,7 +3,7 @@ import { rng } from './siteBuilding';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const std = (c: string | number, o: Partial<THREE.MeshStandardMaterialParameters> = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.75, flatShading: true, ...o });
-const YEL = std('#F5B700', { roughness: 0.6 }), DARK = std('#3a3f4a', { roughness: 0.8 });
+const YEL = std('#F5C542', { roughness: 0.6 }), DARK = std('#3a3f4a', { roughness: 0.8 });
 const mesh = (g: THREE.BufferGeometry, m: THREE.Material, x = 0, y = 0, z = 0, sx = 1, sy = 1, sz = 1, shadow = true) => { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); o.scale.set(sx, sy, sz); o.castShadow = shadow; o.receiveShadow = true; return o; };
 
 /** Kule vinç: yükseklik değişebilir (bina yükseldikçe vinç de yükselir). */
@@ -59,7 +59,7 @@ export function makeTruck(kind: 'dump' | 'mixer' | 'lorry', color: string) {
   for (const z of [3.2, 0.2, -2.8]) for (const x of [-1.2, 1.2]) g.add(mesh(wheel, DARK, x, 0.55, z, 1, 1, 1, false));
   g.add(mesh(BOX, new THREE.MeshBasicMaterial({ color: '#fff2c4' }), 0, 1.1, 4.52, 1.8, 0.28, 0.1, false));
   let drum: THREE.Mesh | undefined;
-  if (kind === 'dump') g.add(mesh(BOX, std('#c9a227'), 0, 2.2, -1.4, 2.5, 1.8, 4.6));
+  if (kind === 'dump') g.add(mesh(BOX, std('#FFB15C'), 0, 2.2, -1.4, 2.5, 1.8, 4.6));
   else if (kind === 'mixer') { drum = mesh(new THREE.CylinderGeometry(1.2, 1.4, 4.8, 10), std('#e4e4e0'), 0, 2.5, -1.2, 1, 1, 1); drum.rotation.x = Math.PI / 2 + 0.25; g.add(drum); }
   else { g.add(mesh(BOX, std('#d9d4c8'), 0, 2.2, -1.4, 2.5, 2.2, 4.8)); }
   return { group: g, drum };
@@ -79,7 +79,7 @@ export class SiteProps {
     this.fence = new THREE.InstancedMesh(BOX, std('#c9ccd2', { roughness: 0.5 }), fm.length); fm.forEach((x, i) => this.fence.setMatrixAt(i, x)); this.fence.castShadow = true; g.add(this.fence);
     // levha (proje adı)
     const c = document.createElement('canvas'); c.width = 512; c.height = 256; const x = c.getContext('2d')!;
-    x.fillStyle = '#F5B700'; x.fillRect(0, 0, 512, 256); x.fillStyle = '#1a1300'; x.font = '700 34px sans-serif'; x.fillText('İNŞAAT ALANI', 24, 56); x.font = '700 44px sans-serif'; x.fillText(name.slice(0, 18), 24, 130); x.font = '24px sans-serif'; x.fillText('Yetkisiz girilmez · Baret zorunlu', 24, 200);
+    x.fillStyle = '#F5C542'; x.fillRect(0, 0, 512, 256); x.fillStyle = '#1a1300'; x.font = '700 34px sans-serif'; x.fillText('İNŞAAT ALANI', 24, 56); x.font = '700 44px sans-serif'; x.fillText(name.slice(0, 18), 24, 130); x.font = '24px sans-serif'; x.fillText('Yetkisiz girilmez · Baret zorunlu', 24, 200);
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
     this.sign = mesh(BOX, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }), -8, 2.6, hd + 0.4, 6, 3, 0.15); g.add(this.sign, mesh(BOX, DARK, -10.6, 1.3, hd + 0.4, 0.2, 2.6, 0.2), mesh(BOX, DARK, -5.4, 1.3, hd + 0.4, 0.2, 2.6, 0.2));
     // konteynerler
@@ -223,7 +223,7 @@ export class ConcretePump {
   group = new THREE.Group(); private seg1: THREE.Mesh; private seg2: THREE.Mesh; private stream: THREE.Mesh; private splash: THREE.Mesh; private base = new THREE.Vector3(); private pos = new THREE.Vector3();
   constructor() {
     const t = makeTruck('lorry', '#6b6e78'); this.group.add(t.group);
-    const orange = std('#C64252', { roughness: 0.55 });
+    const orange = std('#FF8C32', { roughness: 0.55 });
     this.seg1 = mesh(BOX, orange, 0, 0, 0, 0.5, 1, 0.5); this.seg2 = mesh(BOX, orange, 0, 0, 0, 0.4, 1, 0.4);
     this.stream = mesh(new THREE.CylinderGeometry(0.22, 0.34, 1, 8), std('#9a9ea8', { roughness: 0.4 }), 0, 0, 0, 1, 1, 1, false); this.splash = mesh(new THREE.CylinderGeometry(1.1, 1.4, 0.18, 10), std('#8c909a', { roughness: 0.5 }), 0, 0, 0, 1, 1, 1, false);
     this.group.add(this.seg1, this.seg2, this.stream, this.splash); this.base.set(0, 3.6, 0.5);

@@ -930,3 +930,9 @@ Petrol mavisi/altın/turkuaz arayüz kimliği kaldırıldı. Renkler `src/ui/the
 - `moments.ts`: orta yoğunlukta başarım kartı, büyük yoğunlukta seviye sahnesi / büyük kâr kartı (≥5 M₺), kriz şeridi (kayıp tutarı + Finans yönlendirmesi).
 - Ayar: `fx` (Canlı/Sakin) — Sakin modda konfeti kapanır; hareket azaltma ayrıca saygı görür.
 - Yeni başarımlar: Yeni Şehir, İlk Büyük Kâr; a_lvl8 "Sektör Lideri".
+
+### Revizyon v1.1 — Antrasit × Endüstriyel Turuncu
+- Renkler `theme.css` `:root` değişkenlerinden yönetilir (`--bg/--s0..s3/--line`, `--accent/--accent2/--accent-d/--accent-l`, `--on-accent`, açık yüzey `--l1..l3`). Turuncu üzerindeki metin koyu antrasit (`--on-accent`).
+- Karma tasarım: katalog/profil/başarım/galeri kartları (`.mcat .hirecard .bcard .gitem`) açık yüzeyli.
+- Harita ısı skalası antrasit→çelik→bakır→turuncu; Higgsfield resimleri bordo/mor tonları turuncuya kaydırılarak yeniden işlendi.
+- Hata düzeltmesi: `font-variant-emoji:emoji` kuralı rakamları emoji gibi çiziyordu, kaldırıldı.

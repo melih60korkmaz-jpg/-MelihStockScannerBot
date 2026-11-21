@@ -13,10 +13,10 @@ export const EMBLEM_PATHS = [
   'M12 2l3 7 7 .6-5.3 4.7 1.7 7.2L12 17.8 5.6 21.5l1.7-7.2L2 9.6 9 9z',     // yıldız
   'M2 5h9v4H2zM13 5h9v4h-9zM2 11h5v4H2zM9 11h9v4H9zM20 11h2v4h-2zM2 17h9v4H2zM13 17h9v4h-9z', // tuğla
 ];
-export const EMBLEM_COLORS_HEX = ['#C64252', '#2ECC8F', '#3E7BFA', '#E5484D', '#B07CFF', '#EDEFF2'];
+export const EMBLEM_COLORS_HEX = ['#FF8C32', '#2ECC8F', '#9299A1', '#E5484D', '#FFB15C', '#EDEFF2'];
 
 export function emblemSvg(shape: number, color: number, size = 44): string {
   const bg = EMBLEM_COLORS_HEX[color] ?? EMBLEM_COLORS_HEX[0]!;
   const d = EMBLEM_PATHS[shape] ?? EMBLEM_PATHS[0]!;
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><rect x="0.5" y="0.5" width="23" height="23" rx="6" fill="${bg}"/><path d="${d}" fill="#101113" fill-rule="evenodd" transform="translate(3.6 3.6) scale(0.7)"/></svg>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><rect x="0.5" y="0.5" width="23" height="23" rx="6" fill="${bg}"/><path d="${d}" fill="#17191C" fill-rule="evenodd" transform="translate(3.6 3.6) scale(0.7)"/></svg>`;
 }
