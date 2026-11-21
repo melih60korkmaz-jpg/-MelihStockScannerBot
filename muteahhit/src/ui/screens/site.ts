@@ -1,3 +1,4 @@
+import { brandHex } from '../emblem';
 import { openGuide } from '../guide';
 import { dateOf, formatDate } from '../../core/calendar';
 import { formatMoney } from '../../core/money';
@@ -33,7 +34,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
   const parcelOf = (p: Project) => app.store.state.parcels.find((x) => x.id === p.parcelId);
   let sheetOpen = false, tab: 'genel' | 'asamalar' | 'kaynak' | 'maliyet' = 'genel', reportShown = false;
 
-  const specOf = (p: Project) => { const pc = parcelOf(p)!, t = buildingType(p.type)!; return { type: p.type, quality: p.quality, seed: p.designSeed, floors: p.floors, footprint: Math.max(60, pc ? pc.area * pc.taks : 120), plotW: 40, plotD: 30, use: t.use, name: p.name, roads: pc?.roads ?? 1, corner: pc?.corner ?? false, region: cityData(p.cityId)?.province.region, density: pc ? districtData(pc.city, pc.district)?.density : 60 }; };
+  const specOf = (p: Project) => { const pc = parcelOf(p)!, t = buildingType(p.type)!; return { type: p.type, quality: p.quality, seed: p.designSeed, floors: p.floors, footprint: Math.max(60, pc ? pc.area * pc.taks : 120), plotW: 40, plotD: 30, use: t.use, name: p.name, roads: pc?.roads ?? 1, corner: pc?.corner ?? false, region: cityData(p.cityId)?.province.region, density: pc ? districtData(pc.city, pc.district)?.density : 60, brand: { hex: brandHex(app.store.state.company!.emblem.color), shape: app.store.state.company!.emblem.shape, color: app.store.state.company!.emblem.color } }; };
   const stateOf = (p: Project): SiteState => {
     const s = app.store.state, b = p.build;
     const u = p.status === 'taslak' ? 3 : p.status === 'insaat' && b ? b.stage + b.progress : 18;
@@ -79,7 +80,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
     else if (p.status === 'insaat' && st?.permit) { msg = `Ruhsat bekleniyor (${Math.max(0, Math.round(b!.progress * 100))}%)`; tone = 'info'; }
     else if (p.status === 'insaat' && st?.outdoor && s.weather[p.cityId] !== 'acik') { msg = `${WORD[s.weather[p.cityId]!]} hava: dış işler yavaşlıyor`; tone = 'warn'; }
     banner.style.display = msg ? 'block' : 'none'; banner.className = `banner ${tone}`; banner.textContent = msg;
-    scene?.setState(stateOf(p)); scene?.setSpeed(app.store.speed); { const st2 = stateOf(p); app.audio.ambient({ on: p.status === 'insaat' || p.status === 'taslak', working: p.status === 'insaat' && !st2.stalled && app.store.speed > 0, weather: st2.weather }); }
+    scene?.setState(stateOf(p)); scene?.setSpeed(app.store.speed); { const st2 = stateOf(p); app.audio.ambient({ on: p.status === 'insaat' || p.status === 'taslak', working: p.status === 'insaat' && !st2.stalled && app.store.speed > 0, weather: st2.weather, stage: p.build ? p.build.stage + p.build.progress : undefined }); }
     drawSheet(p);
   };
 
@@ -159,7 +160,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
 
   const p0 = proj(); if (!p0) { queueMicrotask(leave); return root; }
   if (scene) {
-    { const st0 = stateOf(p0); app.audio.ambient({ on: p0.status === 'insaat' || p0.status === 'taslak', working: p0.status === 'insaat' && !st0.stalled && app.store.speed > 0, weather: st0.weather }); }
+    { const st0 = stateOf(p0); app.audio.ambient({ on: p0.status === 'insaat' || p0.status === 'taslak', working: p0.status === 'insaat' && !st0.stalled && app.store.speed > 0, weather: st0.weather, stage: p0.build ? p0.build.stage + p0.build.progress : undefined }); }
     scene.setReduced(app.settings.reduced); scene.setQuality(app.settings.value.quality); scene.setSpec(specOf(p0)); scene.setState(stateOf(p0), true);
     scene.onContext = (lost) => { if (lost) toast('Grafik bağlamı kaybedildi; sahne yeniden yüklenecek.'); }; scene.resize(); scene.start();
   } else root.append(h('div', { class: 'banner warn', style: 'display:block;top:50%' }, '3D görünüm bu cihazda kullanılamıyor; veriler aşağıda.'));

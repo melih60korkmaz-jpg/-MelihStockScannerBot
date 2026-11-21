@@ -1,6 +1,7 @@
 import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
+import { dateOf } from './calendar';
 import { post } from '../sim/ledger';
 import { checkProgress, officeStepFor, track } from '../sim/progress';
 import { resolveEvent } from '../sim/events';
@@ -15,6 +16,7 @@ import { SURVEY_DAYS, TAPU_HARCI, QUICK_SALE_DISCOUNT, askPrice, fairValue, rese
 import { newDesignSeed, planProject, projectName } from '../sim/projects';
 import { bulkSellRemaining, unitsOf } from '../sim/sales';
 import { canTrade, openCity } from '../sim/land';
+import { ORDER_DAYS, FOCI, MANAGER_TYPES, activeOrder, canChangeFocus, decorCost, decorDef, hasDecor, logDecision, orderDef } from '../sim/control';
 import { startConstruction, settle, activeProjects } from '../sim/construction';
 import { placeOrder, unitPrice } from '../sim/materials';
 import { machineValue, SELL_FACTOR } from '../sim/machines';
@@ -347,7 +349,26 @@ const secondaryCmd: CommandDef<{ pct: number }> = { validate: (s, p) => tradeErr
 const buybackCmd: CommandDef<{ pct: number }> = { validate: (s, p) => tradeError(s, 'buy', p.pct), apply(s, p) { buyback(s, p.pct); return [ev(s, 'BUYBACK', { pct: p.pct })]; } };
 const acquireCmd: CommandDef<{ rivalId: number }> = { validate: (s, p) => acquireError(s, p.rivalId), apply(s, p) { const e: GameEvent[] = []; acquireRival(s, p.rivalId, e); return e; } };
 
+// ---- Yönetim: odak, emir, müdür, ofis eşyası ----
+const setFocusCmd: CommandDef<{ id: string }> = {
+  validate(s, p) { if (!s.company) return 'Önce şirket kurulmalı.'; if (!FOCI.some((f) => f.id === p.id)) return 'Geçersiz odak.'; if (!canChangeFocus(s)) return 'Yıllık odak yılda bir kez seçilir.'; return null; },
+  apply(s, p) { const f = FOCI.find((x) => x.id === p.id)!; s.company!.focus = { id: f.id, year: dateOf(s.clock.day).year }; logDecision(s, 'odak', `Yıllık odak: ${f.label}`, f.desc); return [ev(s, 'FOCUS_SET', { id: f.id })]; },
+};
+const issueOrderCmd: CommandDef<{ projectId: number; order: string | null }> = {
+  validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr || pr.status !== 'insaat') return 'Emir yalnızca inşaatı süren projeye verilir.'; if (p.order !== null && !orderDef(p.order)) return 'Geçersiz emir.'; if (p.order !== null && activeOrder(s, pr)) return 'Önce mevcut emri iptal edin ya da bitmesini bekleyin.'; return null; },
+  apply(s, p) { const pr = s.projects.find((x) => x.id === p.projectId)!; if (p.order === null) { delete pr.order; return [ev(s, 'ORDER_SET', { projectId: pr.id, order: null })]; } const o = orderDef(p.order)!; pr.order = { id: o.id, until: s.clock.day + ORDER_DAYS }; logDecision(s, 'emir', `${pr.name}: ${o.label}`, `${ORDER_DAYS} gün · ${o.desc}`); return [ev(s, 'ORDER_SET', { projectId: pr.id, order: o.id })]; },
+};
+const setManagerCmd: CommandDef<{ projectId: number; staffId: number | null }> = {
+  validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr || pr.status === 'satildi') return 'Proje bulunamadı.'; if (p.staffId === null) return null; const x = s.staff.find((q) => q.id === p.staffId); if (!x || !MANAGER_TYPES.includes(x.type)) return 'Müdür; şef, mühendis, usta ya da proje yöneticisi olmalı.'; const other = s.projects.find((q) => q.manager === p.staffId && q.id !== pr.id && q.status === 'insaat'); if (other) return `${x.name} zaten ${other.name} projesini yönetiyor.`; return null; },
+  apply(s, p) { const pr = s.projects.find((x) => x.id === p.projectId)!; if (p.staffId === null) { delete pr.manager; return [ev(s, 'MANAGER_SET', { projectId: pr.id })]; } const x = s.staff.find((q) => q.id === p.staffId)!; pr.manager = x.id; x.project = pr.id; logDecision(s, 'mudur', `${pr.name}: müdür ${x.name}`, `Proje yönetimi ${x.name}'e devredildi.`); return [ev(s, 'MANAGER_SET', { projectId: pr.id, staffId: x.id })]; },
+};
+const buyDecorCmd: CommandDef<{ id: string }> = {
+  validate(s, p) { const c = s.company; if (!c) return 'Önce şirket kurulmalı.'; const d = decorDef(p.id); if (!d) return 'Geçersiz eşya.'; if (hasDecor(s, d.id)) return 'Bu eşya zaten var.'; if (c.office < d.minOffice) return 'Bu eşya için daha büyük bir ofis gerekir.'; if (c.cash < decorCost(d)) return 'Yeterli nakit yok.'; return null; },
+  apply(s, p) { const d = decorDef(p.id)!; post(s, 'ofis', -decorCost(d), { memo: `Ofis: ${d.label}` }); (s.company!.decor ??= []).push(d.id); logDecision(s, 'ofis', `Ofis: ${d.label}`, d.desc); return [ev(s, 'DECOR_BOUGHT', { id: d.id })]; },
+};
+
 export const COMMANDS = {
+  SetFocus: setFocusCmd, IssueOrder: issueOrderCmd, SetManager: setManagerCmd, BuyDecor: buyDecorCmd,
   BuildVenture: buildVentureCmd, OperateProject: operateProjectCmd, SellVenture: sellVentureCmd, SetStrategy: setStrategyCmd, ToggleGM: toggleGmCmd, GoPublic: goPublicCmd, SecondaryOffering: secondaryCmd, Buyback: buybackCmd, AcquireRival: acquireCmd,
   StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, UpgradeOffice: upgradeOffice, ResolveEvent: resolveEventCmd, PlaceBid: placeBidCmd, TakeLoan: takeLoanCmd, TakeInvestor: takeInvestorCmd, SellEquity: sellEquityCmd, RepayLoan: repayLoanCmd, RestructureLoan: restructureCmd, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,

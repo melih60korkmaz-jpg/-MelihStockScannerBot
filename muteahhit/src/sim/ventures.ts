@@ -1,3 +1,4 @@
+import { focusVenture } from './control';
 import { TL, type Money } from '../core/money';
 import { dateOf } from '../core/calendar';
 import type { GameEvent, GameState, Project, Strategy, Venture, VentureKind } from '../core/types';
@@ -53,6 +54,7 @@ export function divisionMod(s: GameState, div: 'isletme' | 'enerji' | 'altyapi' 
   const st: Strategy = s.holding.strategy[div], gm = s.holding.gm[div];
   let rev = st === 'buyume' ? 1.06 : st === 'temkinli' ? 0.96 : 1, opex = st === 'buyume' ? 1.1 : st === 'temkinli' ? 0.9 : 1;
   if (gm) { rev *= 1.05; opex *= 0.97; }
+  rev *= focusVenture(s);
   return { rev, opex };
 }
 

@@ -513,3 +513,8 @@ mark { background:#FF8C3255; color:inherit; border-radius:3px; padding:0 1px; }
 .btn.choice { background:linear-gradient(180deg, color-mix(in srgb, var(--accent) 26%, var(--s1)), color-mix(in srgb, var(--accent) 14%, var(--s1))); border:1.5px solid var(--accent); color:var(--text, #fff); box-shadow:0 2px 8px #0006, 0 0 10px color-mix(in srgb, var(--accent) 25%, transparent); }
 .btn.choice b { color:var(--accent2); }
 .btn.choice:active { background:linear-gradient(180deg,var(--accent2),var(--accent)); } .btn.choice:active b, .btn.choice:active .mute { color:var(--on-accent); }
+
+/* Ofis eşyaları */
+.decor { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; margin-top:6px; }
+.decorit { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; height:auto; padding:8px 10px; }
+.decorit small { font-size:11px; line-height:1.2; } .decorit.own { opacity:.75; border-color:var(--accent); }

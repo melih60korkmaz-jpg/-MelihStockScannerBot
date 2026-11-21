@@ -10,6 +10,7 @@ import { buildingArt, buildingPhoto, emptyArt, EMOJI } from '../art';
 import { remainingDays } from '../../sim/construction';
 import { formatDate } from '../../core/calendar';
 import { openParcel } from './parcel';
+import { openManage } from '../manageUi';
 import { openProjectWizard } from './projectWizard';
 import { openSales } from './sales';
 import { unitsOf } from '../../sim/sales';
@@ -38,6 +39,7 @@ export function projectsView(app: App, refresh: () => void): HTMLElement {
         pr.operatedBy !== undefined ? h('button', { class: 'btn gold', onclick: () => { press(app); app.openTab?.('holding', 'isletme'); } }, '🏨 İşletmede · Holding') : null,
         (pr.type === 'otel' || pr.type === 'avm') && pr.status === 'tamamlandi' && pr.operatedBy === undefined ? h('button', { class: 'btn gold', onclick: () => { press(app); app.openTab?.('holding', 'isletme'); } }, '🏨 İşletmeye al') : null,
         pr.sales && !pr.contract && pr.operatedBy === undefined && (pr.status === 'insaat' || pr.status === 'tamamlandi') ? h('button', { class: pr.status === 'tamamlandi' ? 'btn' : 'btn', onclick: () => { press(app); openSales(app, pr.id, refresh); } }, 'Satış merkezi') : null,
+        pr.status === 'insaat' ? h('button', { class: 'btn', onclick: () => { press(app); openManage(app, pr.id); } }, '🎛️ Yönet') : null,
         pr.status === 'taslak' ? h('button', { class: 'btn gold', onclick: () => { press(app); startConstructionUI(app, pr.id, () => app.openSite(pr.id)); } }, '🏗️ İnşaatı başlat') : null,
         pr.status !== 'satildi' ? h('button', { class: pr.status === 'taslak' || pr.status === 'insaat' ? 'btn gold' : 'btn', onclick: () => { press(app); app.openSite(pr.id); } }, pr.status === 'taslak' ? 'Şantiyeyi gör' : pr.status === 'insaat' ? 'Şantiyeyi aç' : 'Binayı aç') : null,
         p && !pr.contract && pr.status !== 'satildi' ? h('button', { class: 'btn', onclick: () => { press(app); openParcel(app, p.id, refresh); } }, 'Arsa dosyası') : null,

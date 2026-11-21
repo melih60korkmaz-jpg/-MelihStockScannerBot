@@ -1,3 +1,4 @@
+import { emblemSvgStandalone } from '../ui/emblem';
 import * as THREE from 'three';
 import { rng } from './siteBuilding';
 
@@ -69,7 +70,7 @@ export function makeTruck(kind: 'dump' | 'mixer' | 'lorry', color: string) {
 export class SiteProps {
   group = new THREE.Group(); dirt: THREE.Mesh; fence: THREE.InstancedMesh; trees: THREE.InstancedMesh; crowns: THREE.InstancedMesh; grass: THREE.Mesh; lamps: THREE.Mesh[] = []; piles = new THREE.Group(); stakes: THREE.InstancedMesh; sign: THREE.Mesh;
   private treeCount = 0;
-  constructor(public plotW: number, public plotD: number, name: string, seed: number) {
+  constructor(public plotW: number, public plotD: number, name: string, seed: number, brand?: { hex: string; shape: number; color: number }) {
     const r = rng(seed), g = this.group, hw = plotW / 2, hd = plotD / 2;
     // çit (gate güney kenarında boşluk)
     const fm: THREE.Matrix4[] = [], m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
@@ -81,6 +82,11 @@ export class SiteProps {
     const c = document.createElement('canvas'); c.width = 512; c.height = 256; const x = c.getContext('2d')!;
     x.fillStyle = '#F5C542'; x.fillRect(0, 0, 512, 256); x.fillStyle = '#1a1300'; x.font = '700 34px sans-serif'; x.fillText('İNŞAAT ALANI', 24, 56); x.font = '700 44px sans-serif'; x.fillText(name.slice(0, 18), 24, 130); x.font = '24px sans-serif'; x.fillText('Yetkisiz girilmez · Baret zorunlu', 24, 200);
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    if (brand) { // şirket logosu ve marka rengi şeridi
+      x.fillStyle = brand.hex; x.fillRect(0, 0, 512, 14); x.fillRect(0, 242, 512, 14);
+      const img = new Image(); img.onload = () => { x.drawImage(img, 400, 16, 100, 100); tex.needsUpdate = true; };
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(emblemSvgStandalone(brand.shape, brand.color, 128));
+    }
     this.sign = mesh(BOX, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }), -8, 2.6, hd + 0.4, 6, 3, 0.15); g.add(this.sign, mesh(BOX, DARK, -10.6, 1.3, hd + 0.4, 0.2, 2.6, 0.2), mesh(BOX, DARK, -5.4, 1.3, hd + 0.4, 0.2, 2.6, 0.2));
     // konteynerler
     const cm = [std('#2f7f9f'), std('#c4552b'), std('#7a8a3a')];
@@ -132,6 +138,8 @@ export class Workers {
     this.mesh.castShadow = this.heads.castShadow = true; this.mesh.frustumCulled = this.heads.frustumCulled = false; this.mesh.count = this.heads.count = 0;
     for (let i = 0; i < this.max; i++) this.st.push({ x: 0, z: 0, y: 0, tx: 0, tz: 0, ty: 0, wait: 0, top: false });
   }
+  /** Kask rengi: şirket marka rengi. */
+  setBrand(hex?: string) { (this.heads.material as THREE.MeshStandardMaterial).color.set(hex ?? '#f5d90a'); }
   setCount(n: number, hw: number, hd: number) { n = Math.max(0, Math.min(this.max, n)); if (n > this.n) for (let i = this.n; i < n; i++) { const s = this.st[i]!; s.x = s.tx = (this.r() - 0.5) * hw; s.z = s.tz = hd + 2; } this.n = n; this.mesh.count = this.heads.count = n; }
   /** `stage`: aktif aşama (u). Görev aşamaya göre değişir: kazıda çukurda, betonda pompa çevresinde, cephede binanın dibinde, peyzajda dış alanda. */
   update(dt: number, t: number, active: boolean, hw: number, hd: number, topY: number, working: boolean, stage = 9, focus?: { x: number; z: number }) {

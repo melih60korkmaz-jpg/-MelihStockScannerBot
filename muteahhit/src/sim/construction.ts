@@ -1,3 +1,4 @@
+import { projectMods } from './control';
 import { traitEff, traitOf } from './staff';
 import { dateOf } from '../core/calendar';
 import { gauss, rand, randInt } from '../core/rng';
@@ -105,7 +106,7 @@ function onStageStart(s: GameState, p: Project, b: BuildState, events: GameEvent
 function completeStage(s: GameState, p: Project, b: BuildState, crew: number, events: GameEvent[]): void {
   const st = STAGES[b.stage]!;
   if (b.stage >= 6) { // yapım aşamaları kaliteyi belirler: kademe + ekip + malzeme kalitesi (A +6, C −6)
-    const q = clamp((TIER_Q[p.quality] ?? 74) + (crew - 1) * 8 + (b.qAdj ?? 0) * 6 + gauss(s.rng, 'construction') * 3, 30, 100);
+    const q = clamp((TIER_Q[p.quality] ?? 74) + (crew - 1) * 8 + (b.qAdj ?? 0) * 6 + projectMods(s, p).q + gauss(s.rng, 'construction') * 3, 30, 100);
     b.qualitySum += q * st.cost; b.qualityW += st.cost;
   }
   events.push({ type: 'STAGE_COMPLETED', day: s.clock.day, data: { projectId: p.id, stage: b.stage, id: st.id } });
@@ -116,7 +117,7 @@ const SAFETY_MULT = { dusuk: 1.8, normal: 1, yuksek: 0.45 } as const;
 function maybeAccident(s: GameState, p: Project, b: BuildState, cap: number, weather: string, events: GameEvent[]): boolean {
   const c = s.company!, workers = Math.min(25, cap), chief = s.staff.some((x) => x.type === 'santiye_sefi');
   const careful = Math.min(1.6, Math.max(0.7, s.staff.reduce((m, x) => (FIELD.has(x.type) ? m * (traitOf(x).id === 'dikkatli' ? 0.96 : traitOf(x).id === 'dikkatsiz' ? 1.06 : 1) : m), 1)));
-  const prob = 0.0005 * Math.sqrt(workers + 1) * SAFETY_MULT[c.safety] * (weather === 'acik' ? 1 : 1.3) * (chief ? 0.7 : 1) * careful;
+  const prob = 0.0005 * Math.sqrt(workers + 1) * SAFETY_MULT[c.safety] * (weather === 'acik' ? 1 : 1.3) * (chief ? 0.7 : 1) * careful * projectMods(s, p).risk;
   if (rand(s.rng, 'construction') >= prob) return false;
   const days = randInt(s.rng, 'construction', 3, 9), comp = Math.round(TL(randInt(s.rng, 'construction', 60, 260) * 1000) * s.costIndex);
   b.accidentUntil = s.clock.day + days; b.stalled = 'kaza';
@@ -144,7 +145,7 @@ export function advanceConstruction(s: GameState, p: Project, events: GameEvent[
     const crew = st.office ? (hasRole(s, st.office) ? 1.25 : 0.85) : crewFactor(s, p, st.id);
     if (!st.office && b.stage >= 6 && maybeAccident(s, p, b, cap, weather, events)) return;
     const wm = st.outdoor ? (weather === 'kar' ? 0.2 : weather === 'yagmur' ? 0.5 : 1) : 1;
-    const mult = Math.max(0.05, crew * wm), d = (days[b.stage]! * (st.permit ? b.permitMult : 1)) || 1;
+    const pm = projectMods(s, p), mult = Math.max(0.05, crew * wm * pm.speed), d = (days[b.stage]! * (st.permit ? b.permitMult : 1)) || 1;
     const need = ((1 - b.progress) * d) / mult;
     let use = Math.min(remaining, need), dp = (use * mult) / d;
 
@@ -155,7 +156,7 @@ export function advanceConstruction(s: GameState, p: Project, events: GameEvent[
     if (short) { use = (dp * d) / mult; b.matShort = short; } else delete b.matShort;
 
     // maliyet: tahakkuk (işçilik, malzeme kalemi dışı giderler) + makine günü (sahip: yakıt, değilse kira)
-    const full = st.prepaid ? 0 : b.stageBudget[b.stage]! * priceFactor(s, b) * b.stageMult;
+    const full = st.prepaid ? 0 : b.stageBudget[b.stage]! * priceFactor(s, b) * b.stageMult * pm.cost;
     const cov = st.office ? 0 : Math.min(1, crewRatio(s, p, st.id));
     const fracSum = (st.materials ?? []).reduce((a, [, f]) => a + f, 0), hasMach = !!st.machines?.length;
     const partMal = full * SPLIT.malzeme * (1 - fracSum) * dp, partIns = full * SPLIT.insaat * (1 - SPLIT.insaat * 0 - cov) * dp, partMak0 = hasMach ? 0 : full * SPLIT.makine * dp;

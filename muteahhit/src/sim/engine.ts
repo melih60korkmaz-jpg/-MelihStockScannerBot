@@ -13,6 +13,7 @@ import { monthlyCosts, netWorth } from './finance';
 import { checkProgress, progressMonthly, track } from './progress';
 import { rivalsMonthly } from './rivals';
 import { reportYearly } from './report';
+import { boardMonthly, decorBonus } from './control';
 import { eventsDaily, eventsMonthly } from './events';
 import { tendersDaily, tendersMonthly } from './tenders';
 import { infraDaily, infraMonthly, infraPrune } from './infra';
@@ -76,6 +77,7 @@ function monthly(s: GameState, events: GameEvent[]): void {
   const c = s.company!;
   macroMonthly(s, events);
   rivalsMonthly(s, events);
+  boardMonthly(s);
   marketMonthly(s, events);
   materialsMonthly(s, events);
   moraleMonthly(s);
@@ -100,7 +102,7 @@ function monthly(s: GameState, events: GameEvent[]): void {
 
 /** Moral hedefe yaklaşır: güvenlik politikası, yakın kaza, nakit sıkıntısı etkiler. */
 function moraleMonthly(s: GameState): void {
-  const c = s.company!; const team = Math.min(6, 2 * s.staff.filter((x) => traitOf(x).id === 'takimci').length); const target = 68 + team + (c.safety === 'yuksek' ? 6 : c.safety === 'dusuk' ? -6 : 0) - (s.clock.day - c.lastAccidentDay < 90 ? 10 : 0) - (c.cash < 0 ? 8 : 0);
+  const c = s.company!; const team = Math.min(6, 2 * s.staff.filter((x) => traitOf(x).id === 'takimci').length) + decorBonus(s, 'morale'); const target = 68 + team + (c.safety === 'yuksek' ? 6 : c.safety === 'dusuk' ? -6 : 0) - (s.clock.day - c.lastAccidentDay < 90 ? 10 : 0) - (c.cash < 0 ? 8 : 0);
   for (const x of s.staff) x.morale = Math.round(Math.min(100, Math.max(0, x.morale + (target - x.morale) * 0.25)));
 }
 

@@ -6,6 +6,7 @@ import { createStaff, traitOf } from './staff';
 import { netWorth } from './finance';
 import { post } from './ledger';
 import { aliveRivals } from './rivals';
+import { logDecision } from './control';
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 export const DECISION_TIMEOUT = 20, COOLDOWN = 300;
@@ -130,6 +131,7 @@ export function resolveEvent(s: GameState, choice: number, events: GameEvent[], 
   if (ch.p !== undefined) { success = rand(s.rng, 'events') < ch.p; for (const e of (success ? ch.s : ch.f) ?? []) apply(s, e, p, events); }
   const next = ch.n ?? (success === true ? ch.ns : success === false ? ch.nf : undefined);
   if (next && eventDef(next[0])) (s.evtQueue ??= []).push({ id: next[0], day: s.clock.day + next[1], ...(p.projectId !== undefined ? { projectId: p.projectId } : {}), ...(p.city ? { city: p.city } : {}), ...(p.staffId !== undefined ? { staffId: p.staffId } : {}) });
+  logDecision(s, d.c === 'kurul' ? 'kurul' : 'olay', d.t.replace(/\{kisi\}/g, who ?? 'Çalışan'), `${ch.l}${[...ch.e].map((e) => describeEffect(s, e)).filter(Boolean).length ? ' → ' + [...ch.e].map((e) => describeEffect(s, e)).filter(Boolean).join(', ') : ''}${success === undefined ? '' : success ? ' (başarılı)' : ' (olmadı)'}${auto ? ' [süre doldu]' : ''}`);
   s.pending = null; events.push({ type: 'EVENT_RESOLVED', day: s.clock.day, data: { id: d.id, choice, auto, ...(who ? { who } : {}), ...(success !== undefined ? { success } : {}) } });
   return { ok: true, ...(success !== undefined ? { success } : {}) };
 }

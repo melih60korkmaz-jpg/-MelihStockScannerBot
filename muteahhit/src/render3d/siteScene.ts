@@ -6,7 +6,7 @@ import { newQuality, qualityStep } from './quality';
 import type { Region } from '../data/geo';
 import { ConcretePump, Dust, Excavator, SiteProps, TowerCrane, Weather, Workers, makeGlow, makeTruck } from './siteProps';
 
-export interface SiteSpec extends BuildingSpec { use: 'konut' | 'ticari' | 'sanayi'; name: string; roads: number; corner: boolean; region?: Region; density?: number }
+export interface SiteSpec extends BuildingSpec { use: 'konut' | 'ticari' | 'sanayi'; name: string; roads: number; corner: boolean; region?: Region; density?: number; brand?: { hex: string; shape: number; color: number } }
 export interface SiteState { u: number; stalled: boolean; weather: 'acik' | 'yagmur' | 'kar'; workers: number; done: boolean; occupancy?: number }
 type Tier = Exclude<Quality, 'auto'>; // quality.ts ile aynı küme
 const TIER = { low: { pr: 1, shadows: false, workers: 8, fps: 30, rain: false, dust: 0, flood: 0 }, mid: { pr: 1.5, shadows: false, workers: 16, fps: 60, rain: true, dust: 50, flood: 1 }, high: { pr: 2, shadows: true, workers: 24, fps: 60, rain: true, dust: 90, flood: 2 } };
@@ -54,12 +54,12 @@ export class SiteScene {
     const plotArea = Math.max(spec.footprint * 1.9, spec.footprint + 160); this.plotW = Math.sqrt(plotArea * asp); this.plotD = plotArea / this.plotW;
     this.world.clear(); this.trucks = []; this.world.add(this.dust.points);
     this.building = new SiteBuilding({ ...spec, plotW: this.plotW, plotD: this.plotD }, spec.use); this.world.add(this.building.group);
-    this.props = new SiteProps(this.plotW, this.plotD, spec.name, spec.seed); this.world.add(this.props.group);
+    this.props = new SiteProps(this.plotW, this.plotD, spec.name, spec.seed, spec.brand); this.workers.setBrand(spec.brand?.hex); this.world.add(this.props.group);
     const ext = this.building.extent, reach = Math.max(ext.w, ext.d) * 0.75 + 14;
     this.crane = new TowerCrane(reach, 0); this.crane.group.position.set(ext.w / 2 + 3.5, 0, -(ext.d / 2 + 3.5)); this.world.add(this.crane.group);
     this.crane2 = this.building.blocks.length > 1 ? new TowerCrane(reach * 0.8, 2) : null; if (this.crane2) { this.crane2.group.position.set(-(ext.w / 2 + 3.5), 0, ext.d / 2 + 3.5); this.world.add(this.crane2.group); }
     this.excavator.group.position.set(ext.w / 2 + 6, 0, ext.d / 4); this.world.add(this.excavator.group, this.workers.mesh, this.workers.heads);
-    const kinds: ['dump' | 'mixer' | 'lorry', string][] = [['dump', '#d9d4c8'], ['dump', '#f08a24'], ['mixer', '#e8e8e4'], ['mixer', '#e8e8e4'], ['lorry', '#2f7f9f']];
+    const kinds: ['dump' | 'mixer' | 'lorry', string][] = [['dump', '#d9d4c8'], ['dump', spec.brand?.hex ?? '#f08a24'], ['mixer', '#e8e8e4'], ['mixer', '#e8e8e4'], ['lorry', spec.brand?.hex ?? '#2f7f9f']];
     this.glows = [];
     kinds.forEach(([k, c], i) => { const t = makeTruck(k, c); this.world.add(t.group); this.trucks.push({ g: t.group, kind: k, off: i / kinds.length, speed: 0.016 + (i % 2) * 0.004, ...(t.drum ? { drum: t.drum } : {}) });
       for (const x of [-0.8, 0.8]) { const g = makeGlow('#ffe9b0', 5); g.position.set(x, 1.1, 5.2); t.group.add(g); this.glows.push(g); } });

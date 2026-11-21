@@ -8,6 +8,7 @@ import { brandHex, emblemInner, emblemSvg } from './emblem';
 import { hourOf, skyAt } from './hero';
 import { h, press, toast, celebrate } from './dom';
 import { hqArt } from './artwork';
+import { DECOR, decorCost, hasDecor } from '../sim/control';
 import type { App } from './app';
 
 export type RoomKind = 'lobi' | 'acik' | 'toplanti-s' | 'toplanti-b' | 'yonetici' | 'proje' | 'basari' | 'luks' | 'logo';
@@ -88,6 +89,10 @@ export function openHQ(app: App, onClose?: () => void): void {
       h('div', { style: 'display:flex;gap:10px;align-items:center' }, h('span', { html: emblemSvg(c.emblem.shape, c.emblem.color, 42) }), h('div', { style: 'min-width:0' }, h('h2', { style: 'font-size:24px;line-height:1' }, c.name), h('small', { class: 'mute' }, `${EMOJI.sirket} ${o.label} · seviye ${c.level}`), h('small', { class: 'mute', style: 'display:block' }, `Kurucu: ${c.founder ?? 'Patron'}`))), h('button', { class: 'btn', style: 'margin-left:auto', onclick: close }, 'Kapat'),
       h('div', { class: 'kpis', style: 'margin:8px 0' }, h('div', { class: 'kpi', html: `<small>Kapasite</small><b>${s.staff.length}/${o.capacity}</b>` }), h('div', { class: 'kpi', html: `<small>Aylık kira</small><b>${formatMoney(TL(o.monthlyRentTL))}</b>` }), h('div', { class: 'kpi', html: `<small>Tamamlanan</small><b>${c.stats.completed}</b>` })),
       st ? h('div', { class: 'card', style: 'padding:10px' }, h('b', {}, `Sonraki merkez: ${officeFor(st.office).label}`), h('div', { class: 'mute', style: 'font-size:12px;margin:2px 0 8px' }, `${officeFor(st.office).capacity} kişi · seviye ${st.minLevel} gerekir · taşınma ${formatMoney(TL(st.costTL))}`), h('button', { class: 'btn gold', disabled: c.level < st.minLevel || c.cash < TL(st.costTL), onclick: () => { const r = app.store.run('UpgradeOffice', {}); if (r.ok) { app.audio.sfx('fanfare'); celebrate(app.settings.reduced); toast('Yeni genel merkeze taşındınız!'); rising = true; render(); } else { app.audio.sfx('error'); toast(r.error); } } }, c.level < st.minLevel ? `Seviye ${st.minLevel} gerekli` : 'Merkezi yükselt')) : h('div', { class: 'chip good' }, 'En üst merkez seviyesindesiniz'),
+      h('div', { class: 'lbl-s', style: 'margin-top:10px' }, '🪑 Ofis eşyaları'),
+      h('div', { class: 'decor' }, ...DECOR.map((d) => { const own = hasDecor(s, d.id), lock = c.office < d.minOffice;
+        return h('button', { class: `btn decorit${own ? ' own' : ' choice'}`, disabled: own || lock, title: d.desc, onclick: () => { const r = app.store.run('BuyDecor', { id: d.id }); if (r.ok) { app.audio.sfx('confirm'); toast(`${d.label} ofise yerleşti`); render(); } else { app.audio.sfx('error'); toast(r.error); } } },
+          h('span', { style: 'font-size:22px' }, d.ico), h('b', {}, d.label), h('small', {}, own ? '✔ ofiste' : lock ? `ofis ${d.minOffice}+` : formatMoney(decorCost(d))), h('small', { class: 'mute' }, d.desc)); })),
       h('div', { class: 'lbl-s', style: 'margin-top:10px' }, `🏗️ Proje galerisi (${done.length}) · 🤝 Kazanılan ihale (${wins.length}) · 🏆 Başarım (${got.length})`),
       h('div', { class: 'gallery' }, ...(done.length ? done.slice().reverse().map((p) => h('div', { class: 'gitem' }, h('div', { class: 'gart', html: buildingPhoto(p.type, p.floors, 1, p.designSeed, p.quality) }), h('b', {}, p.name), h('small', { class: 'mute' }, p.status === 'satildi' ? `Kâr ${formatMoney(p.result?.profit ?? 0)} · ${formatDate(p.result?.soldDay ?? 0)}` : 'Teslim edildi'))) : [h('div', { class: 'empty' }, 'Tamamlanan projeleriniz burada sergilenir.')])),
       ...(c.office >= 3 && got.length ? [h('div', { class: 'lbl-s', style: 'margin-top:8px' }, '🏆 Başarı rafı'), h('div', { class: 'shelf' }, ...got.slice(-8).map((a) => h('span', { class: 'shelfitem', title: `${a.t}: ${a.x}` }, '🏆')))] : []));

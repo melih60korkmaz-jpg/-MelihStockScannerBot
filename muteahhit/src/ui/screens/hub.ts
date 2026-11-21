@@ -32,6 +32,7 @@ import { saveView } from '../../platform/lastView';
 import { BIG_PROFIT, achievementCard, crisisBanner, levelUpScene, successCard } from '../moments';
 import { openEventDecision } from './eventModal';
 import { openYearReport } from '../reportUi';
+import { mgmtCard, openManage } from '../manageUi';
 import { STYLE_LABEL, aliveRivals } from '../../sim/rivals';
 import { eventDef } from '../../data';
 import { creditCapacity, debtTotal } from '../../sim/loans';
@@ -152,10 +153,10 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       const b = p.build, st = b ? STAGES[b.stage] : null, prog = b ? (STAGES.slice(1, b.stage).reduce((a, x) => a + x.cost, 0) + STAGES[b.stage]!.cost * b.progress) / 100 : 0, crew = s.staff.filter((x) => x.project === p.id).length;
       return h('div', { class: 'pmini' }, h('div', { style: 'display:flex;justify-content:space-between;gap:8px;align-items:baseline' }, h('b', {}, p.name), h('small', { class: 'mute' }, `%${Math.round(prog * 100)}`)),
         h('div', { class: 'meter' }, h('i', { style: `width:${Math.round(prog * 100)}%;background:var(--accent2)` })),
-        h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px' }, h('small', { class: 'mute' }, `${st?.label ?? 'Başlıyor'} · 👷 ${crew ? crew + ' atanmış' : 'ortak havuz'}`), h('button', { class: 'btn', style: 'min-height:32px;font-size:12px;margin-left:auto', onclick: () => { press(app); app.openSite(p.id); } }, 'Şantiyeyi aç')));
+        h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px' }, h('small', { class: 'mute' }, `${st?.label ?? 'Başlıyor'} · 👷 ${crew ? crew + ' atanmış' : 'ortak havuz'}`), h('button', { class: 'btn', style: 'min-height:32px;font-size:12px;margin-left:auto', onclick: () => { press(app); openManage(app, p.id); } }, '🎛️ Yönet'), h('button', { class: 'btn', style: 'min-height:32px;font-size:12px', onclick: () => { press(app); app.openSite(p.id); } }, 'Şantiyeyi aç')));
     }) : [h('div', { class: 'empty' }, 'Aktif şantiye yok. Harita sekmesinden arsa alıp proje başlat.')]), h('button', { class: 'btn', style: 'margin-top:8px;min-height:36px', onclick: () => { press(app); app.openTab?.('projeler'); } }, 'Tüm projeler ▸'));
     const newLeft = h('div', { class: 'col' }, sec('🎯', 'Bugün ne yapmalıyım?'), R[0]!, R[2]!, sec('🏗️', 'Projelerim'), mini);
-    const newRight = h('div', { class: 'col' }, sec('💰', 'Para durumum'), L[0]!, L[1]!, sec('🏅', 'Şirket seviyesi'), R[1]!, sec('📈', 'Piyasa'), R[3]!);
+    const newRight = h('div', { class: 'col' }, sec('💰', 'Para durumum'), L[0]!, L[1]!, sec('🧭', 'Yönetim'), mgmtCard(app), sec('🏅', 'Şirket seviyesi'), R[1]!, sec('📈', 'Piyasa'), R[3]!);
     return h('div', {}, hero, h('div', { class: 'cols', style: 'margin-top:12px' }, newLeft, newRight));
   };
 
@@ -232,7 +233,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
 
   // Olaylar: gün akışı yalnızca HUD'u günceller; ay/komut olayları sekmeyi yeniler
-  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED', 'QUEST_DONE', 'ACHIEVEMENT', 'LEVEL_UP', 'OFFICE_UPGRADED', 'VENTURE_OPENED', 'VENTURE_BROKE', 'VENTURE_SOLD', 'INFRA_DONE', 'IPO', 'ACQUIRED', 'STRATEGY_SET', 'GM_SET', 'BUYBACK', 'YEAR_REPORT']);
+  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED', 'QUEST_DONE', 'ACHIEVEMENT', 'LEVEL_UP', 'OFFICE_UPGRADED', 'VENTURE_OPENED', 'VENTURE_BROKE', 'VENTURE_SOLD', 'INFRA_DONE', 'IPO', 'ACQUIRED', 'STRATEGY_SET', 'GM_SET', 'BUYBACK', 'YEAR_REPORT', 'FOCUS_SET', 'ORDER_SET', 'MANAGER_SET', 'DECOR_BOUGHT']);
   const unsub = app.store.subscribe((evs) => {
     if (!root.isConnected) { unsub(); return; }
     let redraw = false;

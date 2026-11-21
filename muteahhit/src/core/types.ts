@@ -27,7 +27,10 @@ export interface Company {
   founderBackground: string;
   startCity: string;
   emblem: { shape: number; color: number };
-  founder?: string;           // kurucu (oyuncu) adı; eski kayıtlarda yok → 'Patron'
+  founder?: string;
+  /** Yıllık odak (kurul kararı) ve ofis eşyaları; eski kayıtlarda yok. */
+  focus?: { id: string; year: number };
+  decor?: string[];           // kurucu (oyuncu) adı; eski kayıtlarda yok → 'Patron'
   level: number;
   office: number;
   reputation: number;   // 0-100
@@ -101,6 +104,8 @@ export interface YearReport {
   completed: number; sold: number; totals: { completed: number; sold: number }; reputation: number; level: number;
   rank: number; rivals: number; leader: string | null; topIncome?: { cat: string; amount: Money }; topExpense?: { cat: string; amount: Money }; staff: number; openProjects: number;
 }
+/** Karar günlüğü kaydı. */
+export interface Decision { day: number; kind: string; title: string; detail: string }
 export interface Progress { ach: Record<string, number>; quests: Record<string, number>; c: { loans: number; tendersWon: number; bids: number; events: number; unitsSold: number; started: number; bestQuality: number; crisisMonths: number; investors: number; equitySold: number } }
 export interface PendingEvent { id: string; day: number; projectId?: number; city?: string; staffId?: number }
 /** Hikâye zinciri: seçimden N gün sonra çıkacak devam olayı (isteğe bağlı alan; eski kayıtlarda yok). */
@@ -143,6 +148,9 @@ export interface Project {
   matIndexAtPlan: number;
   budget: { base: Money; soil: Money; soft: Money; total: Money; designFee: Money };
   expected: { revenue: Money; months: number };
+  /** Yönetim emri (süreli) ve proje müdürü; eski kayıtlarda yok. */
+  order?: { id: string; until: number };
+  manager?: number;
   operatedBy?: number;       // işletmeye alındıysa iş kolu kimliği (satış merkezi kapanır, değer işletmeden gelir)
 }
 export interface Order { id: number; material: string; qty: number; unitPrice: Money; supplier: string; placedDay: number; arriveDay: number; delayed: boolean; quality: number }
@@ -212,6 +220,7 @@ export interface GameState {
   evtLast: Record<string, number>;
   evtQueue?: QueuedEvent[];
   reports?: YearReport[];
+  decisions?: Decision[];
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;
   /** Malzeme fiyat geçmişi (aylık etkin çarpan; en çok 36 ay). Eski kayıtlarda yoktur. */

@@ -3190,5 +3190,199 @@
    }
   ],
   "def": 0
+ },
+ {
+  "id": "kurul_temettu",
+  "c": "kurul",
+  "t": "Yönetim kurulu: temettü",
+  "x": "Ortaklar bu çeyrek kârdan pay istiyor. Dağıtırsanız ortaklar memnun olur, ama kasa küçülür.",
+  "w": 1,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Temettü dağıt",
+    "e": [
+     [
+      "cash",
+      -1500000
+     ],
+     [
+      "rep",
+      1
+     ],
+     [
+      "morale",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Kârı şirkette tut",
+    "e": [
+     [
+      "score",
+      6
+     ]
+    ]
+   },
+   {
+    "l": "Yarı yarıya anlaş",
+    "e": [
+     [
+      "cash",
+      -700000
+     ],
+     [
+      "score",
+      2
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "kurul_butce",
+  "c": "kurul",
+  "t": "Yönetim kurulu: pazarlama bütçesi",
+  "x": "Satış ekibi daha fazla reklam bütçesi istiyor. Finans ise harcamaların kısılmasını öneriyor.",
+  "w": 1,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Pazarlamayı artır",
+    "e": [
+     [
+      "cash",
+      -900000
+     ],
+     [
+      "sat",
+      4
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Kemer sıkma kararı al",
+    "e": [
+     [
+      "cash",
+      600000
+     ],
+     [
+      "morale",
+      -3
+     ]
+    ]
+   },
+   {
+    "l": "Bütçeyi aynen sürdür",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "kurul_yatirim",
+  "c": "kurul",
+  "t": "Yönetim kurulu: yatırım önerisi",
+  "x": "Kurul, önümüzdeki çeyrek için bir yatırım yönü seçmenizi bekliyor.",
+  "w": 1,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Makine filosunu tazele",
+    "e": [
+     [
+      "cash",
+      -1200000
+     ],
+     [
+      "machine",
+      1
+     ],
+     [
+      "morale",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Ekibe eğitim ve prim ver",
+    "e": [
+     [
+      "cash",
+      -800000
+     ],
+     [
+      "morale",
+      6
+     ]
+    ]
+   },
+   {
+    "l": "Nakit rezervi oluştur",
+    "e": [
+     [
+      "score",
+      8
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "kurul_risk",
+  "c": "kurul",
+  "t": "Yönetim kurulu: risk komitesi",
+  "x": "Risk komitesi şantiye güvenliği ve sigorta konusunda rapor sundu. Bir yönde karar vermeniz isteniyor.",
+  "w": 1,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Güvenlik yatırımı yap",
+    "e": [
+     [
+      "cash",
+      -1000000
+     ],
+     [
+      "morale",
+      4
+     ],
+     [
+      "rep",
+      1
+     ]
+    ]
+   },
+   {
+    "l": "Sigorta teminatını artır",
+    "e": [
+     [
+      "cash",
+      -600000
+     ],
+     [
+      "score",
+      6
+     ]
+    ]
+   },
+   {
+    "l": "Mevcut politikayı sürdür",
+    "e": []
+   }
+  ]
  }
 ]

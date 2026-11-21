@@ -1,3 +1,4 @@
+import { focusId } from './control';
 import { TL, type Money } from '../core/money';
 import { pick, rand, randInt } from '../core/rng';
 import type { GameEvent, GameState, InfraJob, Tender } from '../core/types';
@@ -65,7 +66,7 @@ export function infraDaily(s: GameState, events: GameEvent[]): void {
     if (j.status !== 'devam') continue;
     const { cap } = infraCapacity(s, j); const w = s.weather[j.city] === 'kar' ? 0.35 : s.weather[j.city] === 'yagmur' ? 0.6 : 1;
     if (cap < 0.3) { j.stalled = 'kapasite'; continue; }
-    const dp = Math.min(1 - j.progress, (cap * w) / (j.months * 30)), cost = Math.round(dp * j.trueCost);
+    const dp = Math.min(1 - j.progress, (cap * w * (focusId(s) === 'altyapi' ? 1.08 : 1)) / (j.months * 30)), cost = Math.round(dp * j.trueCost);
     if (cost > 0 && c.cash < cost) { j.stalled = 'nakit'; continue; }
     j.stalled = null; if (cost > 0) post(s, 'altyapi_gider', -cost, { memo: j.name }); j.progress += dp; j.spent += cost;
     while (j.progress >= j.doneShare + 0.1 - 1e-9 && j.doneShare < 1 - 1e-9 && j.progress < 1 - 1e-9) { j.doneShare = +(j.doneShare + 0.1).toFixed(2); j.pending.push({ day: day + 45, amount: Math.round((j.price - j.advance) * 0.1) }); }

@@ -2,6 +2,8 @@ import { cityData, ledgerCat } from '../data';
 import { rivalProfile, rivalWorth, standing } from '../sim/rivalLife';
 import { STYLE_LABEL } from '../sim/rivals';
 import type { Rival } from '../core/types';
+import { canChangeFocus } from '../sim/control';
+import { openFocus } from './manageUi';
 import { fmt } from './components';
 import { h } from './dom';
 import { emblemSvg } from './emblem';
@@ -42,5 +44,6 @@ export function openYearReport(app: App, year?: number): void {
     line('Tamamlanan iş', String(r.completed)), line('Satılan proje', String(r.sold)), line('İtibar / seviye', `${r.reputation} · ${r.level}`), line('Ekip', `${r.staff} kişi`),
     line('Sektör sırası', `${r.rank}. / ${r.rivals}${r.leader ? ` (lider: ${r.leader})` : ''}`, r.rank === 1 ? 'pos' : ''),
     prev ? h('div', { class: 'mute', style: 'font-size:12px;margin-top:4px' }, `Geçen yıl kâr: ${fmt(prev.profit)}`) : null,
-    h('p', { style: 'margin:8px 0 0;font-weight:600' }, verdict)));
+    h('p', { style: 'margin:8px 0 0;font-weight:600' }, verdict),
+    canChangeFocus(app.store.state) && app.store.state.company!.level >= 2 ? h('button', { class: 'btn gold', style: 'margin-top:8px', onclick: () => openFocus(app) }, '🎯 Yeni yılın odağını seç') : null));
 }

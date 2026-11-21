@@ -1,9 +1,9 @@
 import type { SettingsStore } from '../platform/settings';
 import { BAR, buildMusicBus, newMusicState, scheduleBar, type MusicBus, type MusicState } from './music';
 
-export type Sfx = 'click' | 'toggle' | 'confirm' | 'error' | 'clink' | 'stamp' | 'coin' | 'bell' | 'alarm' | 'hammer' | 'fanfare' | 'whoosh';
+export type Sfx = 'click' | 'toggle' | 'confirm' | 'error' | 'clink' | 'stamp' | 'coin' | 'bell' | 'alarm' | 'hammer' | 'fanfare' | 'whoosh' | 'drill' | 'beep' | 'crane' | 'mixer' | 'saw';
 export type MusicMood = 'menu' | 'game' | 'tense' | 'off';
-export interface Ambience { on: boolean; working: boolean; weather: 'acik' | 'yagmur' | 'kar' }
+export interface Ambience { on: boolean; working: boolean; weather: 'acik' | 'yagmur' | 'kar'; /** inşaat aşaması (u); verilirse aşamaya uygun sesler çalar */ stage?: number }
 
 /**
  * Tek AudioContext, tek arka plan müziği (aynı anda ikisi çalamaz: mood değişince eskisi fade-out olur).
@@ -117,8 +117,17 @@ export class AudioEngine {
     const t = ctx.currentTime, a = this.amb, on = a.on && this.settings.value.sfxOn;
     this.ambNodes.rumble.gain.setTargetAtTime(on ? (a.working ? 0.16 : 0.07) : 0.0001, t, 0.6);
     this.ambNodes.rain.gain.setTargetAtTime(on && a.weather === 'yagmur' ? 0.07 : 0.0001, t, 0.8);
-    if (on && a.working && this.ambTimer === null) { const tick = () => { if (this.amb.on && this.amb.working) this.sfx(Math.random() < 0.6 ? 'hammer' : 'clink'); this.ambTimer = window.setTimeout(tick, 1400 + Math.random() * 3200); }; this.ambTimer = window.setTimeout(tick, 800); }
+    if (on && a.working && this.ambTimer === null) { const tick = () => { if (this.amb.on && this.amb.working) this.sfx(this.pickSite()); this.ambTimer = window.setTimeout(tick, 1400 + Math.random() * 3200); }; this.ambTimer = window.setTimeout(tick, 800); }
     if ((!on || !a.working) && this.ambTimer !== null) { clearTimeout(this.ambTimer); this.ambTimer = null; }
+  }
+
+  /** Aşamaya göre şantiye sesi: kazıda iş makinesi ve geri vites bipi, betonda mikser, yapımda matkap/testere/çekiç, vinç gıcırtısı. */
+  private pickSite(): Sfx {
+    const st = this.amb.stage, r = Math.random(); if (st === undefined) return r < 0.6 ? 'hammer' : 'clink';
+    if (st < 7) return r < 0.45 ? 'beep' : r < 0.8 ? 'mixer' : 'clink';
+    if (st < 11) return r < 0.4 ? 'mixer' : r < 0.6 ? 'beep' : r < 0.8 ? 'crane' : 'hammer';
+    if (st < 16) return r < 0.28 ? 'drill' : r < 0.5 ? 'hammer' : r < 0.68 ? 'saw' : r < 0.84 ? 'crane' : 'clink';
+    return r < 0.4 ? 'saw' : r < 0.7 ? 'clink' : 'beep';
   }
 
   // ---- Efektler ----
@@ -144,6 +153,11 @@ export class AudioEngine {
       case 'hammer': tone(180, 0.07, 0.12, 'triangle', 0, 90); tone(2200, 0.03, 0.05, 'square'); tone(180, 0.07, 0.08, 'triangle', 0.18, 90); break;
       case 'fanfare': for (const [f, at] of [[523, 0], [659, 0.12], [784, 0.24], [1047, 0.38]] as const) { tone(f, 0.34, 0.13, 'triangle', at); tone(f * 2, 0.3, 0.04, 'sine', at); } tone(1047, 0.8, 0.12, 'triangle', 0.5); tone(1319, 0.8, 0.08, 'triangle', 0.5); break;
       case 'whoosh': tone(300, 0.14, 0.05, 'sine', 0, 700); break;
+      case 'drill': for (let i = 0; i < 7; i++) tone(260 + (i % 2) * 30, 0.07, 0.05, 'sawtooth', i * 0.075, 330); break;
+      case 'beep': tone(1000, 0.16, 0.06, 'square'); tone(1000, 0.16, 0.06, 'square', 0.3); tone(1000, 0.16, 0.06, 'square', 0.6); break;
+      case 'crane': tone(95, 0.9, 0.06, 'sawtooth', 0, 70); tone(140, 0.8, 0.03, 'triangle', 0.1, 100); break;
+      case 'mixer': tone(70, 1.4, 0.08, 'sawtooth', 0, 62); tone(105, 1.3, 0.04, 'triangle', 0.05, 95); break;
+      case 'saw': tone(900, 0.5, 0.05, 'sawtooth', 0, 1250); tone(1800, 0.5, 0.025, 'square', 0, 2300); break;
     }
   }
 }

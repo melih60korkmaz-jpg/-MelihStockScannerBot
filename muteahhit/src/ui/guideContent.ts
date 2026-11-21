@@ -157,6 +157,18 @@ export const GUIDE: Topic[] = [
     ],
   },
   {
+    id: 'yonetim', ico: '🧭', title: 'Yönetim: odak, emir, kurul', blocks: [
+      { h: 'Yıllık odak' },
+      { ul: ['Şirket sekmesindeki Yönetim kartından yılda bir odak seçersin: konut satışı, lüks segment, kamu ve altyapı ya da holding. Her biri küçük ama gerçek bir bonus verir.'] },
+      { h: 'Emirler ve proje müdürü' },
+      { ul: ['İnşaatı süren projede "🎛️ Yönet": hızlandır, kaliteye odaklan, maliyeti kıs ya da güvenliğe öncelik ver. Emir 45 gün sürer; her emrin bedeli açıkça yazılıdır.', 'Şef, mühendis, usta ya da proje yöneticisini proje müdürü yap: deneyimi ve kişiliği hızı, kaliteyi ve kaza riskini etkiler. Bir kişi aynı anda tek projeyi yönetir.'] },
+      { h: 'Yönetim kurulu ve karar günlüğü' },
+      { ul: ['Seviye 2\'den sonra her çeyrek (Ocak, Nisan, Temmuz, Ekim) kurul toplanır ve senden karar bekler.', 'Verdiğin tüm kararlar ve anlık etkileri Karar günlüğünde birikir.'] },
+      { h: 'Ofis ve şantiye' },
+      { ul: ['Genel Merkez ekranından ofis eşyaları alabilirsin (ihale puanı, moral, satış hızı).', 'Şantiyede tabela, kasklar ve kamyonlar marka renginde; sesler inşaat aşamasına göre değişir.'] },
+    ],
+  },
+  {
     id: 'borsa', ico: '📈', title: 'Borsa ve şirket satın alma', blocks: [
       { h: 'Halka arz (seviye 7)' },
       { ul: ['Şartlar: şirket seviyesi 7, net varlık en az 1 milyar ₺, itibar en az 55. Şirketin %10–25\'ini halka açarsın; fiyat adil değerin %92\'si, kaynağın %97\'si sana kalır.', 'Sahipliğin hiçbir zaman %60\'ın altına inemez (ortaklık ve yatırımcı satışları dahil).', 'Halka açık olunca her ay hisse fiyatı adil değere (net varlık × çarpan) yaklaşır; çarpan piyasa güveni, itibar ve büyümeyle artar. Fiyat halka arz fiyatının %30 üstündeyken itibar artar, %30 altındayken azalır.'] },
