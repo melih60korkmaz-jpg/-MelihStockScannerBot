@@ -18,7 +18,7 @@ function spawn(s: GameState, i: number): Rival {
 export function initRivals(s: GameState): void { s.rivals = []; for (let i = 0; i < ALIVE; i++) s.rivals.push(spawn(s, i)); }
 export const aliveRivals = (s: GameState) => s.rivals.filter((r) => !r.failed);
 
-function news(s: GameState, events: GameEvent[], text: string, tone: 'info' | 'warn' | 'bad' | 'ok' = 'info') {
+export function news(s: GameState, events: GameEvent[], text: string, tone: 'info' | 'warn' | 'bad' | 'ok' = 'info') {
   s.news.unshift({ day: s.clock.day, text, tone: tone as never }); if (s.news.length > 30) s.news.length = 30;
   events.push({ type: 'MACRO_NEWS', day: s.clock.day, data: { regime: s.macro.regime, text, tone } });
 }

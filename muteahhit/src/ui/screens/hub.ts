@@ -31,6 +31,7 @@ import { startTutorial, tutorialDone } from '../tutorial';
 import { saveView } from '../../platform/lastView';
 import { BIG_PROFIT, achievementCard, crisisBanner, levelUpScene, successCard } from '../moments';
 import { openEventDecision } from './eventModal';
+import { openYearReport } from '../reportUi';
 import { STYLE_LABEL, aliveRivals } from '../../sim/rivals';
 import { eventDef } from '../../data';
 import { creditCapacity, debtTotal } from '../../sim/loans';
@@ -231,7 +232,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
 
   // Olaylar: gün akışı yalnızca HUD'u günceller; ay/komut olayları sekmeyi yeniler
-  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED', 'QUEST_DONE', 'ACHIEVEMENT', 'LEVEL_UP', 'OFFICE_UPGRADED', 'VENTURE_OPENED', 'VENTURE_BROKE', 'VENTURE_SOLD', 'INFRA_DONE', 'IPO', 'ACQUIRED', 'STRATEGY_SET', 'GM_SET', 'BUYBACK']);
+  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED', 'QUEST_DONE', 'ACHIEVEMENT', 'LEVEL_UP', 'OFFICE_UPGRADED', 'VENTURE_OPENED', 'VENTURE_BROKE', 'VENTURE_SOLD', 'INFRA_DONE', 'IPO', 'ACQUIRED', 'STRATEGY_SET', 'GM_SET', 'BUYBACK', 'YEAR_REPORT']);
   const unsub = app.store.subscribe((evs) => {
     if (!root.isConnected) { unsub(); return; }
     let redraw = false;
@@ -256,6 +257,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'PROJECT_COMPLETED') { const pr = app.store.state.projects.find((x) => x.id === e.data!.projectId); if (pr && !document.querySelector('.site')) deliveryScene(app, pr); toast('Bir proje tamamlandı! Projeler sekmesinden şantiyeyi açın.', 5000); }
       if (e.type === 'PROJECT_STARTED') toast('İnşaat başladı.');
       if (e.type === 'PROJECT_SOLD') { if ((e.data!.profit as number) >= BIG_PROFIT) successCard(app, e.data!.price as number, e.data!.profit as number); else { app.audio.sfx('coin'); toast(`Bina satıldı: ${formatMoney(e.data!.price as number)}`, 4500); } }
+      if (e.type === 'YEAR_REPORT') openYearReport(app, e.data!.year as number);
       if (e.type === 'YEAR') toast(`Yeni yıl: personel maaşlarına %${((e.data!.raise as number) * 100).toFixed(0)} zam yapıldı.`, 4500);
       if (e.type === 'LOAN_MISSED') { app.audio.sfx('error'); toast(`Kredi taksiti ödenemedi (${e.data!.missed}/3)! Kredi notu düştü. 3 kaçırmada haciz başlar.`, 6000); }
       if (e.type === 'SEIZURE') { app.audio.sfx('alarm'); app.haptic('heavy'); toast(`Haciz: varlıklarınız zorla satıldı (${formatMoney(e.data!.raised as number)}).`, 6000); }

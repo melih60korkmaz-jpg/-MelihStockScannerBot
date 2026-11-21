@@ -95,6 +95,12 @@ export interface InfraJob {
   status: 'devam' | 'bitti'; stalled: 'nakit' | 'kapasite' | null; bondReturned?: boolean; result?: { profit: Money; late: number; day: number };
 }
 export interface Rival { id: number; name: string; style: 'agresif' | 'dengeli' | 'temkinli'; home: string; cash: Money; rep: number; tech: number; projects: number; wins: number; failed: boolean; since: number; last?: string }
+/** Yıllık rapor (isteğe bağlı dizi; eski kayıtlarda yok). */
+export interface YearReport {
+  year: number; revenue: Money; expense: Money; profit: Money; netWorth: Money; netWorthChange: Money | null; cash: Money;
+  completed: number; sold: number; totals: { completed: number; sold: number }; reputation: number; level: number;
+  rank: number; rivals: number; leader: string | null; topIncome?: { cat: string; amount: Money }; topExpense?: { cat: string; amount: Money }; staff: number; openProjects: number;
+}
 export interface Progress { ach: Record<string, number>; quests: Record<string, number>; c: { loans: number; tendersWon: number; bids: number; events: number; unitsSold: number; started: number; bestQuality: number; crisisMonths: number; investors: number; equitySold: number } }
 export interface PendingEvent { id: string; day: number; projectId?: number; city?: string; staffId?: number }
 /** Hikâye zinciri: seçimden N gün sonra çıkacak devam olayı (isteğe bağlı alan; eski kayıtlarda yok). */
@@ -205,6 +211,7 @@ export interface GameState {
   pending: PendingEvent | null;
   evtLast: Record<string, number>;
   evtQueue?: QueuedEvent[];
+  reports?: YearReport[];
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;
   /** Malzeme fiyat geçmişi (aylık etkin çarpan; en çok 36 ay). Eski kayıtlarda yoktur. */

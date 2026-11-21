@@ -12,6 +12,7 @@ import { salesDaily, salesMonthly } from './sales';
 import { monthlyCosts, netWorth } from './finance';
 import { checkProgress, progressMonthly, track } from './progress';
 import { rivalsMonthly } from './rivals';
+import { reportYearly } from './report';
 import { eventsDaily, eventsMonthly } from './events';
 import { tendersDaily, tendersMonthly } from './tenders';
 import { infraDaily, infraMonthly, infraPrune } from './infra';
@@ -31,7 +32,7 @@ export function advanceDay(s: GameState): GameEvent[] {
   events.push({ type: 'DAY', day });
 
   if (s.company) {
-    if (isNewYear(day)) yearly(s, events);
+    if (isNewYear(day)) { yearly(s, events); reportYearly(s, events); }
     if (isFirstOfMonth(day)) monthly(s, events);
     if (isMonday(day)) { listingsWeekly(s, events); events.push({ type: 'WEEK', day }); }
     processScheduled(s, events);

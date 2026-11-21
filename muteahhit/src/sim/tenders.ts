@@ -4,7 +4,7 @@ import type { GameEvent, GameState, Parcel, Project, Tender } from '../core/type
 import { buildingType, cityData, STAGES } from '../data';
 import { post } from './ledger';
 import { winInfra } from './infra';
-import { tenderRivals } from './rivals';
+import { news, tenderRivals } from './rivals';
 import { newDesignSeed, planProject } from './projects';
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
@@ -88,7 +88,7 @@ export function evaluateTender(s: GameState, t: Tender, events: GameEvent[]): vo
     events.push({ type: 'TENDER_LOST', day, data: { tenderId: t.id, reason: 'elendi' } }); return;
   }
   if (top?.me) { t.status = 'kazandi'; t.result = { winner: c.name, ...out }; if (t.infra) winInfra(s, t, events); else winTender(s, t, events); }
-  else { const rv = s.rivals.find((r) => r.name === top!.name); if (rv) { rv.wins++; rv.projects++; rv.last = 'ihale'; } t.status = 'kaybetti'; t.result = { winner: top!.name, ...out }; post(s, 'teminat', t.bid.bond, { memo: 'Teminat iadesi' }); c.reputation = clamp(c.reputation, 0, 100); events.push({ type: 'TENDER_LOST', day, data: { tenderId: t.id, winner: top!.name } }); }
+  else { const rv = s.rivals.find((r) => r.name === top!.name); if (rv) { rv.wins++; rv.projects++; rv.last = 'ihale'; news(s, events, `${rv.name}, “${t.title}” ihalesini kazandı.`, 'info'); } t.status = 'kaybetti'; t.result = { winner: top!.name, ...out }; post(s, 'teminat', t.bid.bond, { memo: 'Teminat iadesi' }); c.reputation = clamp(c.reputation, 0, 100); events.push({ type: 'TENDER_LOST', day, data: { tenderId: t.id, winner: top!.name } }); }
 }
 
 /** Kazanılan ihale: işveren arsası + sözleşmeli proje; %10 avans; aşama bazlı hakediş (45 gün vadeli). */
