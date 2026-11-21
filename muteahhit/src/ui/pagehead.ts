@@ -1,0 +1,43 @@
+import { h } from './dom';
+import { EMOJI } from './art';
+import type { App } from './app';
+
+export type TabId = 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'finans' | 'piyasa';
+/** Her sekmenin tek satırlık tanıtımı ve "Ne yapılır?" yardımı. Oyuncu hangi ekranda ne bulacağını hep görsün. */
+export const TAB_INFO: Record<TabId, { ico: string; title: string; sub: string; help: string[] }> = {
+  sirket: { ico: EMOJI.sirket, title: 'Şirket', sub: 'Genel durum: bugün ne yapmalı, paran ve projelerin.', help: ['Üstteki şehir resmine dokununca Genel Merkez açılır.', 'Görevler sana sıradaki adımı söyler; "Şimdi yap" ilgili sekmeye götürür.', 'Net varlık ve nakit yeterlilik, şirketin ne kadar dayanabileceğini gösterir.'] },
+  harita: { ico: EMOJI.harita, title: 'Harita', sub: 'Nerede arsa alacağını seç: il, ilçe, fiyat ve gelişim.', help: ['Bir ile dokun, sonra ilçeyi seç; arsaları listeden incele.', 'Renkler seçtiğin ölçüte göre (satış fiyatı, gelir, rekabet, gelişim) değişir.', 'Yeni bir ilde şube açarsan oradaki arsalara ve ihalelere erişirsin.'] },
+  projeler: { ico: EMOJI.insaat, title: 'Projeler', sub: 'Arsadan satışa tüm işlerin: tasarım, inşaat, satış.', help: ['Sol sütun projelerin, sağ sütun sahip olduğun arsalar.', '"Şantiyeyi aç" 3B şantiye görünümünü açar; "Satış merkezi" fiyat ve satışları yönetir.', 'Aşama şeridi 17 inşaat aşamasının hangisinde olduğunu gösterir.'] },
+  operasyon: { ico: EMOJI.personel, title: 'Operasyon', sub: 'Kim nerede çalışıyor: ekip, malzeme stoğu, makineler, politikalar.', help: ['Ekip: kimin hangi projede olduğunu "Kim nerede" panosunda gör, listeden ata veya işe al/çıkar.', 'Malzeme: stok ve fiyatlar, sipariş ver ya da otomatik satın almayı aç.', 'Makine: satın al, sat; arızalıları ve kullanımdakileri izle.', 'Politika: iş güvenliği ve tedarikçi tercihi.'] },
+  ihale: { ico: EMOJI.ihale, title: 'İhale', sub: 'Kamu ve özel işlere teklif ver; kazanırsan sözleşmeli iş olur.', help: ['Açık ihalelerden birine dokun, teklif fiyatını seç.', 'Teklif düşük olursa kazanma şansı artar, kâr azalır.', 'Kazanılan işler "Sözleşmeli işler" altında görünür; süresinde teslim et.'] },
+  finans: { ico: EMOJI.finans, title: 'Finans', sub: 'Paranın durumu: gelir-gider, nakit akışı, krediler, ortaklar.', help: ['Gelir-Gider: kasa, net varlık, borç ve sağlık göstergeleri.', 'Krediler: banka kredisi al, geri öde. Ortaklar: yatırımcı al.', 'Kasa eksiye düşerse oyun durur; nakit yeterliliğini izle.'] },
+  piyasa: { ico: EMOJI.piyasa, title: 'Piyasa', sub: 'Dış dünya: faiz, enflasyon, malzeme fiyatı ve rakipler.', help: ['Ekonomik rejim (genişleme, kriz…) tüm fiyatları etkiler.', 'Yüksek faiz kredi maliyetini, enflasyon inşaat maliyetini artırır.', 'Rakipler aynı arsalar ve ihaleler için yarışır.'] },
+};
+
+export function pageHead(app: App, tab: TabId): HTMLElement {
+  const i = TAB_INFO[tab];
+  const el = h('div', { class: 'pghead' }, h('span', { class: 'pgico' }, i.ico), h('div', { class: 'pgtxt' }, h('b', {}, i.title), h('small', {}, i.sub)),
+    h('button', { class: 'pghelp', 'aria-label': `${i.title} yardımı`, onclick: () => { app.audio.sfx('click'); openHelp(tab); } }, '?'));
+  return el;
+}
+
+export function openHelp(tab: TabId): void {
+  const i = TAB_INFO[tab];
+  const m = h('div', { class: 'modal', role: 'dialog', 'aria-label': `${i.title} yardımı` });
+  const close = () => m.remove();
+  m.append(h('div', { class: 'card helpcard' }, h('h2', {}, `${i.ico} ${i.title}`), h('p', { class: 'mute' }, i.sub), h('ul', {}, ...i.help.map((t) => h('li', {}, t))), h('button', { class: 'btn gold', onclick: close }, 'Anladım')));
+  m.addEventListener('pointerdown', (e) => { if (e.target === m) close(); });
+  document.body.append(m);
+}
+
+/** Şantiye ekranı rehberi: hangi düğme ne yapar. */
+export function openSiteHelp(): void {
+  const m = h('div', { class: 'modal', role: 'dialog', 'aria-label': 'Şantiye rehberi' });
+  const close = () => m.remove();
+  const row = (k: string, v: string) => h('li', {}, h('b', {}, k + ' '), v);
+  m.append(h('div', { class: 'card helpcard' }, h('h2', {}, '🏗️ Şantiye rehberi'), h('p', { class: 'mute' }, 'Bu ekran projenin 3B şantiyesi. Zaman burada da akar.'),
+    h('ul', {}, row('‹ (sol üst)', 'şirket ekranına döner.'), row('Üstteki noktalar:', 'inşaat aşamaları; dolu olan bitti, halkalı olan sürüyor.'), row('Sağ üst:', 'kasa, tarih ve oyun hızı (⏸ durdur, 1×, 2×, 4×).'), row('Sağdaki kamera düğmeleri:', 'Kuş, Yan, Ön, Yakın, Üst bakış; parmağınla da döndürüp yakınlaştırabilirsin.'), row('Alt panel (▲):', 'Genel durum, Aşamalar, Kaynak (malzeme/ekip), Maliyet sekmeleri.'), row('Taslak projede:', '"İnşaatı başlat" düğmesi inşaatı başlatır.')),
+    h('button', { class: 'btn gold', onclick: close }, 'Anladım')));
+  m.addEventListener('pointerdown', (e) => { if (e.target === m) close(); });
+  document.body.append(m);
+}

@@ -2,6 +2,8 @@ import type { Quality, Motion, Fx } from '../../platform/settings';
 import { hapticsSupported } from '../../platform/haptics';
 import { h, press, type UiCtx } from '../dom';
 import type { SettingsStore } from '../../platform/settings';
+import type { App } from '../app';
+import { startTutorial } from '../tutorial';
 
 export function openSettings(ctx: UiCtx & { settings: SettingsStore; activeTier?: () => string }, onClose?: () => void) {
   const S = ctx.settings;
@@ -44,6 +46,7 @@ export function openSettings(ctx: UiCtx & { settings: SettingsStore; activeTier?
       row('Ses efektleri', toggle(() => S.value.sfxOn, (v) => S.set('sfxOn', v))),
       row('Efekt seviyesi', sv),
       h('div', { class: 'sec' }, 'Oyun'),
+      ...(typeof (ctx as unknown as { openTab?: unknown }).openTab === 'function' ? [row('Oyunu tanıt (rehber)', h('button', { class: 'btn', style: 'min-height:40px', onclick: () => { close(); startTutorial(ctx as unknown as App); } }, 'Başlat'), 'Şef Ayşe oyunu adım adım yeniden anlatır.')] : []),
       row('Kaldığım yerden devam', toggle(() => S.value.autoResume, (v) => S.set('autoResume', v)), 'Açılışta son kayıtla doğrudan oyuna girer. Kayıt otomatik alınır (işlem yapıldıktan birkaç saniye sonra, her ay ve uygulamadan çıkarken).'),
       h('div', { class: 'sec' }, 'Dokunma'),
       row('Titreşim', toggle(() => S.value.haptics && hapticsSupported(), (v) => S.set('haptics', v), !hapticsSupported()),

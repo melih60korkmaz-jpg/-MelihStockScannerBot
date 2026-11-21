@@ -21,9 +21,11 @@ import { tendersView } from './tenders';
 import { marketView } from './market';
 import { deliveryScene, tenderWinScene } from '../cinema';
 import { levelCard, nextQuest, questsCard } from './progress';
-import { ACHIEVEMENTS, LEVEL_DEFS, QUESTS } from '../../data';
+import { ACHIEVEMENTS, LEVEL_DEFS, QUESTS, STAGES } from '../../data';
 import { heroBanner } from '../hero';
 import { openHQ } from '../hq';
+import { pageHead } from '../pagehead';
+import { startTutorial, tutorialDone } from '../tutorial';
 import { saveView } from '../../platform/lastView';
 import { BIG_PROFIT, achievementCard, crisisBanner, levelUpScene, successCard } from '../moments';
 import { openEventDecision } from './eventModal';
@@ -137,7 +139,19 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
         h('div', { class: 'kpis', style: 'margin-top:8px' },
           h('div', { class: 'kpi', html: `<small>Faiz</small><b>%${m.policyRate.toFixed(1)}</b>` }), h('div', { class: 'kpi', html: `<small>Enflasyon</small><b>%${m.inflation.toFixed(1)}</b>` }), h('div', { class: 'kpi', html: `<small>Güven</small><b>${m.confidence.toFixed(0)}</b>` }))));
     const hero = heroBanner(s); hero.addEventListener('click', () => { press(app); openHQ(app); });
-    return h('div', {}, hero, h('div', { class: 'cols', style: 'margin-top:12px' }, left, right));
+    // Bölümlere ayrılmış düzen: Bugün → Projelerim | Para durumum → Şirket seviyesi → Piyasa
+    const L = Array.from(left.children), R = Array.from(right.children);
+    const sec = (ico: string, t: string) => h('div', { class: 'sechd' }, h('span', {}, ico), t);
+    const act = s.projects.filter((p) => p.status === 'insaat');
+    const mini = h('div', { class: 'card' }, ...(act.length ? act.map((p) => {
+      const b = p.build, st = b ? STAGES[b.stage] : null, prog = b ? (STAGES.slice(1, b.stage).reduce((a, x) => a + x.cost, 0) + STAGES[b.stage]!.cost * b.progress) / 100 : 0, crew = s.staff.filter((x) => x.project === p.id).length;
+      return h('div', { class: 'pmini' }, h('div', { style: 'display:flex;justify-content:space-between;gap:8px;align-items:baseline' }, h('b', {}, p.name), h('small', { class: 'mute' }, `%${Math.round(prog * 100)}`)),
+        h('div', { class: 'meter' }, h('i', { style: `width:${Math.round(prog * 100)}%;background:var(--accent2)` })),
+        h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px' }, h('small', { class: 'mute' }, `${st?.label ?? 'Başlıyor'} · 👷 ${crew ? crew + ' atanmış' : 'ortak havuz'}`), h('button', { class: 'btn', style: 'min-height:32px;font-size:12px;margin-left:auto', onclick: () => { press(app); app.openSite(p.id); } }, 'Şantiyeyi aç')));
+    }) : [h('div', { class: 'empty' }, 'Aktif şantiye yok. Harita sekmesinden arsa alıp proje başlat.')]), h('button', { class: 'btn', style: 'margin-top:8px;min-height:36px', onclick: () => { press(app); app.openTab?.('projeler'); } }, 'Tüm projeler ▸'));
+    const newLeft = h('div', { class: 'col' }, sec('🎯', 'Bugün ne yapmalıyım?'), R[0]!, R[2]!, sec('🏗️', 'Projelerim'), mini);
+    const newRight = h('div', { class: 'col' }, sec('💰', 'Para durumum'), L[0]!, L[1]!, sec('🏅', 'Şirket seviyesi'), R[1]!, sec('📈', 'Piyasa'), R[3]!);
+    return h('div', {}, hero, h('div', { class: 'cols', style: 'margin-top:12px' }, newLeft, newRight));
   };
 
   // ---------------- Finans ----------------
@@ -207,6 +221,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   view.addEventListener('focusout', flushRedraw); view.addEventListener('change', flushRedraw);
   const drawView = () => {
     const vkey = `${tab}:${tab === 'harita' ? mapKey() : ''}`, keep = vkey === lastViewKey ? view.scrollTop : 0; lastViewKey = vkey; view.innerHTML = '';
+    if (tab !== 'sirket') view.append(pageHead(app, tab));
     view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'finans' ? finance() : marketView(app, drawView));
     view.scrollTop = keep;
   };
@@ -270,6 +285,8 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
   if (app.store.state.company?.bankrupt) showBankrupt();
   if (app.store.state.pending) setTimeout(() => openEventDecision(app), 0);
+  // Yeni oyunda (gün ≤ 1) anlatıcı bir kez başlar; otomasyon tarayıcılarında (webdriver) kendiliğinden açılmaz.
+  if (app.store.state.clock.day <= 1 && !tutorialDone() && !navigator.webdriver) setTimeout(() => { if (root.isConnected) startTutorial(app); }, 900);
   app.openTab = (t, sb) => { tab = t; saveView({ company: app.store.state.company!.name, tab }); if (sb) sub = sb; drawTabs(); drawView(); };
   root.addEventListener('unmount', () => { unsub(); cancelAnimationFrame(tween); if (app.openTab) delete app.openTab; });
   buildHud(); drawHud(); drawTabs(); drawView(); app.audio.setMood(moodNow());

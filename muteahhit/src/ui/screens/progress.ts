@@ -33,7 +33,7 @@ export function nextQuest(s: GameState): { id: string; tab: string } | null {
 }
 export function questsCard(app: App): HTMLElement {
   const s = app.store.state, open = QUESTS.filter((q) => s.progress.quests[q.id] === undefined).slice(0, 3), doneN = Object.keys(s.progress.quests).length;
-  const card = h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('div', { class: 'lbl-s', style: 'margin:0' }, 'Görevler'), h('span', { class: 'mute', style: 'font-size:12px' }, `${doneN}/${QUESTS.length} tamam`)));
+  const card = h('div', { class: 'card questscard' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('div', { class: 'lbl-s', style: 'margin:0' }, 'Görevler'), h('span', { class: 'mute', style: 'font-size:12px' }, `${doneN}/${QUESTS.length} tamam`)));
   if (!open.length) card.append(h('div', { class: 'empty' }, 'Tüm görevler tamamlandı!'));
   for (const q of open) {
     const have = Math.min(q.n, metric(s, q.m)), pct = Math.round((have / q.n) * 100), rw = [q.r.cash ? fmt(TL(q.r.cash)) : '', q.r.rep ? `+${q.r.rep} itibar` : '', q.r.score ? `+${q.r.score} not` : ''].filter(Boolean).join(' · ');

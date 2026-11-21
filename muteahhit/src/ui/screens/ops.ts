@@ -24,6 +24,17 @@ export function opsView(app: App, refresh: () => void): HTMLElement {
   void s; return h('div', { style: 'display:flex;flex-direction:column' }, seg, body);
 }
 
+/** "Kim nerede?" panosu: gerçek atama verisinden — ofis, ortak havuz ve her aktif projedeki çalışanlar. */
+function whereBoard(app: App): HTMLElement {
+  const s = app.store.state;
+  const person = (p: (typeof s.staff)[number]) => h('div', { class: 'wperson', title: `${p.name} · ${STAFF_TYPES.find((x) => x.id === p.type)?.label}` }, h('div', { class: 'wface', html: portrait(p.type, p.id, p.morale) }), h('small', {}, p.name.split(' ')[0]!));
+  const col = (ico: string, title: string, sub: string, people: typeof s.staff) => h('div', { class: 'wcol' }, h('div', { class: 'wh' }, h('b', {}, `${ico} ${title}`), h('small', {}, `${people.length} kişi${sub ? ' · ' + sub : ''}`)), h('div', { class: 'wppl' }, ...(people.length ? people.map(person) : [h('small', { class: 'mute' }, '—')])));
+  const office = s.staff.filter((p) => !FIELD.has(p.type)), field = s.staff.filter((p) => FIELD.has(p.type)), pool = field.filter((p) => p.project === undefined || !s.projects.some((x) => x.id === p.project && (x.status === 'insaat' || x.status === 'taslak')));
+  const active = s.projects.filter((p) => p.status === 'insaat' || p.status === 'taslak');
+  const cols = [col('🏢', 'Ofis', 'yönetim/satış', office), col('🔄', 'Ortak havuz', 'projelere bölünür', pool), ...active.map((pr) => col(pr.status === 'insaat' ? '🚧' : '📐', pr.name, pr.status === 'insaat' ? 'şantiyede' : 'taslak', field.filter((p) => p.project === pr.id)))];
+  return h('div', { class: 'card wboard' }, h('div', { class: 'lbl-s' }, '👥 Kim nerede?'), h('div', { class: 'wscroll' }, ...cols));
+}
+
 function team(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, c = s.company!, cap = officeFor(c.office).capacity, payroll = s.staff.reduce((a, x) => a + x.salary, 0);
   const projects = s.projects.filter((p) => p.status === 'insaat' || p.status === 'taslak');
@@ -48,7 +59,8 @@ function team(app: App, refresh: () => void): HTMLElement {
   for (const t of STAFF_TYPES) hire.append(h('div', { class: 'card hirecard' }, h('div', { class: 'portrait sm', html: portrait(t.id, hashId(t.id), 75) }), h('h3', {}, t.label), h('small', {}, `~${fmt(TL(t.baseSalaryTL * 1.075))} – ${fmt(TL(t.baseSalaryTL * 1.3))} /ay`),
     h('button', { class: 'btn gold', style: 'min-height:40px', disabled: s.staff.length >= cap, onclick: () => { const r = app.store.run('HireStaff', { type: t.id }); if (r.ok) { fresh.clear(); fresh.add(app.store.state.staff.at(-1)!.id); refresh(); setTimeout(() => { fresh.clear(); }, 1500); press(app, 'confirm'); toast(`${t.label} işe alındı.`); } else { app.audio.sfx('error'); toast(r.error); } } }, s.staff.length >= cap ? 'Ofis dolu' : 'İşe al')));
   const nextOffice = OFFICES[c.level];
-  return h('div', { class: 'cols' }, list, h('div', { class: 'col' }, h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `Ofis: ${officeFor(c.office).label}`), h('div', { class: 'mute', style: 'font-size:12px' }, `Kapasite ${cap} kişi · kira ${fmt(TL(officeFor(c.office).monthlyRentTL))}/ay (enflasyonla artar).${nextOffice ? ` Sonraki: ${nextOffice.label} (${nextOffice.capacity} kişi) — şirket seviyesi yükselince.` : ''}`)), hire));
+  const cols = h('div', { class: 'cols' }, list, h('div', { class: 'col' }, h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `Ofis: ${officeFor(c.office).label}`), h('div', { class: 'mute', style: 'font-size:12px' }, `Kapasite ${cap} kişi · kira ${fmt(TL(officeFor(c.office).monthlyRentTL))}/ay (enflasyonla artar).${nextOffice ? ` Sonraki: ${nextOffice.label} (${nextOffice.capacity} kişi) — şirket seviyesi yükselince.` : ''}`)), hire));
+  return h('div', { style: 'display:flex;flex-direction:column;gap:10px' }, whereBoard(app), cols);
 }
 
 function orderModal(app: App, matId: string, refresh: () => void) {
