@@ -31,7 +31,14 @@ export function openSales(app: App, projectId: number, onClose?: () => void): vo
       h('div', { class: 'kpi', html: `<small>Satılan</small><b>${sold.length}/${us.length}</b>` }), h('div', { class: 'kpi', html: `<small>Sözleşme geliri</small><b>${fmt(pol.contract)}</b>` }), h('div', { class: 'kpi', html: `<small>Tahsil edilecek</small><b>${fmt(recv)}</b>` })));
     // politika
     const out = h('b', {}, pct(pol.priceMult, 0)), rng = h('input', { type: 'range', min: 80, max: 125, step: 1, value: Math.round(pol.priceMult * 100), 'aria-label': 'Fiyat çarpanı' }) as HTMLInputElement; rng.style.setProperty('--p', `${((pol.priceMult * 100 - 80) / 45) * 100}%`);
-    rng.oninput = () => { out.textContent = `%${rng.value}`; rng.style.setProperty('--p', `${((Number(rng.value) - 80) / 45) * 100}%`); };
+    rng.oninput = () => {
+      out.textContent = `%${rng.value}`; rng.style.setProperty('--p', `${((Number(rng.value) - 80) / 45) * 100}%`);
+      // Canlı önizleme: sürüklerken talep, satış hızı ve liste fiyatları anında güncellenir (kayıt bırakınca yapılır)
+      const pol2 = { ...pol, priceMult: Number(rng.value) / 100 }, c2 = saleChance(s, p, pol2), d2 = c2.p > 0 ? 1 / c2.p : Infinity;
+      const set = (k: string, v: string) => { const el = body.querySelector(`[data-k="${k}"]`); if (el) el.textContent = v; };
+      set('talep', `${c2.p * 30 > 0.35 ? 'Yüksek' : c2.p * 30 > 0.18 ? 'Orta' : 'Düşük'} (piyasa ${c2.demand.toFixed(2)} · marka ${c2.brand.toFixed(2)})`); set('hiz', Number.isFinite(d2) && open ? `daire başına ~${Math.round(d2)} gün` : '—');
+      for (const u of us) { const el = body.querySelector(`[data-lp="${u.id}"]`); if (el) el.textContent = fmt(listPrice(u, perM2, pol2)); }
+    };
     rng.onchange = () => { app.store.run('SetSalesPolicy', { projectId, priceMult: Number(rng.value) / 100 }); };
     const tog = (label: string, sub: string, key: 'agent' | 'installments' | 'presale', dis = '') => h('div', { class: 'row', style: 'min-height:46px' }, h('div', { class: 'lbl' }, label, h('small', {}, dis || sub)),
       h('button', { class: 'tog', role: 'switch', 'aria-label': label, 'aria-checked': String(pol[key]), onclick: () => { app.audio.sfx('toggle'); app.store.run('SetSalesPolicy', { projectId, [key]: !pol[key] } as never); } }));
@@ -42,13 +49,13 @@ export function openSales(app: App, projectId: number, onClose?: () => void): vo
         tog('Emlakçı', `Satışı %30 hızlandırır · komisyon ${pct(AGENT_FEE, 1)}`, 'agent'), tog('Taksitli satış', 'Fiyat +%6, %25 peşin, 12 ay vade (temerrüt riski)', 'installments'),
         tog('Ön satış', `İnşaat sürerken (betonarmeden sonra) %${Math.round((1 - PRESALE_DISCOUNT) * 100)} indirimle, %40 peşin`, 'presale', p.status === 'insaat' && (!p.build || p.build.stage < 8) ? 'Betonarme aşamasından itibaren açılır' : p.status === 'tamamlandi' ? 'Bina bitti; ön satış gerekmiyor' : '')),
       h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Piyasa görünümü'),
-        h('div', { class: 'kv' }, ...[['Satışa açık', open ? 'Evet' : 'Hayır (bina bitince ya da ön satışla)'], ['Talep', `${demandLabel} (piyasa ${ch.demand.toFixed(2)} · marka ${ch.brand.toFixed(2)})`], ['Tahmini satış hızı', Number.isFinite(avgDays) && open ? `daire başına ~${Math.round(avgDays)} gün` : '—'], ['m² adil fiyat', fmtM2(perM2)], ['Müşteri memnuniyeti', String(s.company!.satisfaction)], ['Satılmamış', `${left} daire`]].flatMap(([a, b]) => [h('span', {}, a!), h('span', {}, b!)])),
+        h('div', { class: 'kv' }, ...[['Satışa açık', open ? 'Evet' : 'Hayır (bina bitince ya da ön satışla)'], ['Talep', `${demandLabel} (piyasa ${ch.demand.toFixed(2)} · marka ${ch.brand.toFixed(2)})`], ['Tahmini satış hızı', Number.isFinite(avgDays) && open ? `daire başına ~${Math.round(avgDays)} gün` : '—'], ['m² adil fiyat', fmtM2(perM2)], ['Müşteri memnuniyeti', String(s.company!.satisfaction)], ['Satılmamış', `${left} daire`]].flatMap(([a, b]) => [h('span', {}, a!), h('span', a === 'Talep' ? { 'data-k': 'talep' } : a === 'Tahmini satış hızı' ? { 'data-k': 'hiz' } : {}, b!)])),
         p.status === 'tamamlandi' && left > 0 ? h('button', { class: 'btn block', style: 'margin-top:10px', onclick: async () => { const tot = us.filter((u) => u.status !== 'satildi').reduce((a, u) => a + Math.round(unitFair(u, perM2) * BULK), 0); if (!(await askConfirm(`Kalan ${left} daire yatırımcıya ${fmt(tot)} bedelle satılsın mı? (adil değerin %92'si)`))) return; const r = app.store.run('SellProjectBulk', { projectId }); if (r.ok) { press(app, 'confirm', 'medium'); toast('Kalan daireler toplu satıldı.'); } else toast(r.error); } }, `Kalanları toplu sat (%92)`) : null)));
     // daire tablosu
     const t = h('table', { class: 'tbl' }, h('tr', {}, ...['Kat', 'Oda', 'm²', 'Manzara', 'Cephe', 'Liste fiyatı', 'Durum'].map((x) => h('th', {}, x))));
     for (const u of us) {
       const st = u.status === 'satildi' ? h('span', { class: 'pos' }, `${PAY[u.payment ?? 'pesin']} · ${fmt(u.price ?? 0)}${u.delivered ? ` · ☺ ${u.sat ?? '-'}` : ''}`) : u.status === 'kapora' ? h('span', { class: 'warn' }, `Kapora (${formatDate(u.kaporaUntil ?? 0)})`) : h('span', { class: 'mute' }, 'Boş');
-      t.append(h('tr', {}, h('td', {}, String(u.floor)), h('td', {}, u.rooms), h('td', {}, nf(u.area, 0)), h('td', {}, String(u.view)), h('td', {}, FACE[u.facing]!), h('td', {}, fmt(listPrice(u, perM2, pol))), h('td', {}, st)));
+      t.append(h('tr', {}, h('td', {}, String(u.floor)), h('td', {}, u.rooms), h('td', {}, nf(u.area, 0)), h('td', {}, String(u.view)), h('td', {}, FACE[u.facing]!), h('td', { 'data-lp': String(u.id) }, fmt(listPrice(u, perM2, pol))), h('td', {}, st)));
     }
     body.append(h('div', { class: 'card tscroll', style: 'margin-top:8px;max-height:200px;overflow:auto' }, h('div', { class: 'lbl-s' }, 'Daireler'), t));
     void colored;
