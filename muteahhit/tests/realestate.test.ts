@@ -71,3 +71,28 @@ describe('yenileme ve sat-tut analizi', () => {
     const a = holdAnalysis(s, portfolio(s).filter((r) => r.project.id === pr.id)); expect(Number.isFinite(a.net)).toBe(true); expect(['tut', 'sat']).toContain(a.advice); expect(a.saleCash).toBeLessThan(a.value); expect(checkInvariant(s)).toBe(true);
   });
 });
+
+describe('kira ilanı reklamı ve yenileme fırsatı', () => {
+  it('reklam düzeyi doğrulanır, boş kiralık dairelere aylık gider yazar; yenileme fırsatı düşük durumlu bina oluşturur', async () => {
+    const { dispatch } = await import('../src/core/commands'); const { newGameState } = await import('../src/core/state'); const { TL } = await import('../src/core/money'); const { advanceDays } = await import('../src/sim/engine'); const { checkInvariant } = await import('../src/sim/ledger');
+    const { condOf } = await import('../src/sim/realestate'); const { makeDeal } = await import('../src/sim/deals');
+    const s = newGameState(93); dispatch(s, 'CreateCompany', { name: 'Reklam Yapı', founderBackground: 'emlakci', startCity: 'ankara' }); const c = s.company!; c.cash = TL(900_000_000); c.level = 5; s.ledgerBase = c.cash - s.ledger.reduce((a, e) => a + e.amount, 0); s.macro.calmUntilDay = 99999;
+    const p = { id: s.nextId++, parcelId: 1, hood: 'T', name: 'Reklam Apt', type: 'apartman', quality: 'standart', designSeed: 1, status: 'tamamlandi', createdDay: 0, cityId: 'ankara', floors: 6, satilabilir: 800, matIndexAtPlan: 100, budget: { base: 1, soil: 0, soft: 0, total: 1, designFee: 0 }, expected: { revenue: 1, months: 1 }, result: { qualityScore: 80, cost: TL(20_000_000), days: 1, plannedDays: 1 } } as never; s.projects.push(p);
+    for (let i = 0; i < 4; i++) s.units.push({ id: s.nextId++, projectId: (p as { id: number }).id, area: 100, rooms: '2+1', floor: i, view: 1, facing: 'G', mult: 1, status: 'bos', listing: 'kira' } as never);
+    const pr = s.projects.at(-1)!; expect(dispatch(s, 'SetRentAd', { projectId: pr.id, level: 9 }).ok).toBe(false); expect(dispatch(s, 'SetRentAd', { projectId: pr.id, level: 3 }).ok).toBe(true); expect(pr.rentAd).toBe(3);
+    const l0 = s.ledger.length; advanceDays(s, 35); expect(s.ledger.slice(l0).some((e) => e.cat === 'reklam' && e.amount < 0 && e.memo?.includes('Kira ilanı'))).toBe(true); expect(checkInvariant(s)).toBe(true);
+    let found = false; for (let i = 0; i < 40 && !found; i++) { s.nextId = 3000 + i * 3; const d = makeDeal(s, 'harap'); if (d) { found = true; expect(d.kind).toBe('harap'); expect(d.qscore).toBeLessThan(55); expect(d.price).toBeLessThan(d.fair * 0.65); } }
+    expect(found).toBe(true); void condOf;
+  });
+});
+
+describe('yenileme fırsatı kabulü', () => {
+  it('harap bina devralınınca düşük durumlu tamamlanmış proje olur; yenileme durumu ve değeri yükseltir', async () => {
+    const { dispatch } = await import('../src/core/commands'); const { newGameState } = await import('../src/core/state'); const { TL } = await import('../src/core/money'); const { makeDeal } = await import('../src/sim/deals');
+    const { condOf, ownedValue } = await import('../src/sim/realestate'); const { checkInvariant } = await import('../src/sim/ledger');
+    const s = newGameState(94); dispatch(s, 'CreateCompany', { name: 'Harap Yapı', founderBackground: 'emlakci', startCity: 'ankara' }); const c = s.company!; c.cash = TL(2_000_000_000); c.level = 5; s.ledgerBase = c.cash - s.ledger.reduce((a, e) => a + e.amount, 0);
+    let d = null as ReturnType<typeof makeDeal>; for (let i = 0; i < 30 && !d; i++) { s.nextId = 5000 + i * 3; d = makeDeal(s, 'harap'); } expect(d).not.toBeNull(); (s.deals ??= []).push(d!);
+    const r = dispatch(s, 'AcceptDeal', { dealId: d!.id }); expect(r.ok, JSON.stringify(r)).toBe(true); const p = s.projects.at(-1)!; expect(p.status).toBe('tamamlandi'); expect(condOf(p)).toBeLessThan(55);
+    const v0 = ownedValue(s, p), c0 = condOf(p); for (const k of ['cephe', 'ic', 'tesisat']) expect(dispatch(s, 'RenovateBuilding', { projectId: p.id, kind: k }).ok, k).toBe(true); expect(condOf(p)).toBeGreaterThan(c0 + 15); expect(ownedValue(s, p)).toBeGreaterThan(v0); expect(checkInvariant(s)).toBe(true);
+  });
+});

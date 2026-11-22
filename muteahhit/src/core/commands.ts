@@ -5,7 +5,7 @@ import { dateOf } from './calendar';
 import { SERVICE, activeLeases, buyUsed, condM, endLease, isRentedOut, leaseDaily, leaseMachine, recallMachine, rentOutMachine, serviceCost, serviceMachine } from '../sim/machines';
 import { condOf, evictTenant, maintainBuilding, maintenanceCost, tenantOf , renovate, renovateError } from '../sim/realestate';
 import { WAREHOUSE, freeSpace, quoteOrder, whLevel } from '../sim/materials';
-import { closeDepot, closeDepotError, openDepot, openDepotError, cancelContract, contractError, contractValue, signContract, upgradeWarehouse } from '../sim/supply';
+import { setWarehouse, warehouseSetError, closeDepot, closeDepotError, openDepot, openDepotError, cancelContract, contractError, contractValue, signContract, upgradeWarehouse } from '../sim/supply';
 import { BUDGET_STEPS, decideAgenda, deptCandidates, deptDef, fireGM, getMgmt, hireDeptMgr, hireGM, openDept, refreshCands, setDeptStaff, setGoals } from '../sim/mgmt';
 import { isUnlocked } from '../sim/unlock';
 import { PROPOSALS } from '../sim/rivalLife';
@@ -377,6 +377,8 @@ const acquireCmd: CommandDef<{ rivalId: number; offer?: number }> = { validate: 
 const negotiateCmd: CommandDef<{ material: string; supplier: string; qty: number; kind: NegoKind }> = { validate: (s, p) => negoError(s, p.material, p.supplier, p.qty, p.kind), apply(s, p) { negotiate(s, p.material, p.supplier, p.kind); return [ev(s, 'NEGOTIATED', { supplier: p.supplier })]; } };
 const openDepotCmd: CommandDef<{ city: string; level: number }> = { validate: (s, p) => openDepotError(s, p.city, p.level), apply(s, p) { openDepot(s, p.city, p.level); return [ev(s, 'DEPOT_OPENED', { city: p.city })]; } };
 const closeDepotCmd: CommandDef<{ id: number }> = { validate: (s, p) => closeDepotError(s, p.id), apply(s, p) { closeDepot(s, p.id); return [ev(s, 'DEPOT_CLOSED', { id: p.id })]; } };
+const setWarehouseCmd: CommandDef<{ sec: number; staff: number }> = { validate: (s, p) => warehouseSetError(s, p.sec, p.staff), apply(s, p) { setWarehouse(s, p.sec, p.staff); return [ev(s, 'WAREHOUSE_SET', {})]; } };
+const rentAdCmd: CommandDef<{ projectId: number; level: number }> = { validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr || pr.status !== 'tamamlandi') return 'Bina bulunamadı.'; if (![0, 1, 2, 3].includes(p.level)) return 'Reklam düzeyi 0–3 olmalı.'; return null; }, apply(s, p) { s.projects.find((x) => x.id === p.projectId)!.rentAd = p.level; return [ev(s, 'RENT_AD', { projectId: p.projectId })]; } };
 const buyStakeCmd: CommandDef<{ rivalId: number; pct: number }> = { validate: (s, p) => buyStakeError(s, p.rivalId, p.pct), apply(s, p) { buyStake(s, p.rivalId, p.pct); return [ev(s, 'STAKE', { rivalId: p.rivalId })]; } };
 const sellStakeCmd: CommandDef<{ rivalId: number; pct: number }> = { validate: (s, p) => sellStakeError(s, p.rivalId, p.pct), apply(s, p) { sellStake(s, p.rivalId, p.pct); return [ev(s, 'STAKE', { rivalId: p.rivalId })]; } };
 const ddCmd: CommandDef<{ rivalId: number }> = { validate: (s, p) => ddError(s, p.rivalId), apply(s, p) { doDD(s, p.rivalId); return [ev(s, 'DUE_DILIGENCE', { rivalId: p.rivalId })]; } };
@@ -486,14 +488,14 @@ const hireDeptMgrCmd: CommandDef<{ dept: string; candId: number }> = { validate(
 const fireDeptMgrCmd: CommandDef<{ dept: string }> = { validate(s, p) { const d = getMgmt(s).depts[p.dept]; return d?.mgr ? null : 'Departman müdürü yok.'; }, apply(s, p) { const d = getMgmt(s).depts[p.dept]!; post(s, 'yonetim', -d.mgr!.salary * 3, { memo: `Tazminat: ${d.mgr!.name}` }); d.mgr = null; return [ev(s, 'MGMT_CHANGED', { what: 'dept' })]; } };
 const deptStaffCmd: CommandDef<{ dept: string; delta: number }> = { validate(s, p) { const d = getMgmt(s).depts[p.dept]; if (!d?.open) return 'Önce departmanı kurun.'; if (![1, -1].includes(p.delta)) return 'Geçersiz değişim.'; const n = d.staff + p.delta; return n < 0 || n > 12 ? 'Personel sayısı 0–12 arasında olmalı.' : null; }, apply(s, p) { setDeptStaff(s, p.dept, p.delta); return [ev(s, 'MGMT_CHANGED', { what: 'dept' })]; } };
 
-const placeOrderCmd2: CommandDef<PlaceOrderParams & { term?: 'pesin' | 'vade30' | 'vade60'; rush?: boolean; dest?: string }> = {
+const placeOrderCmd2: CommandDef<PlaceOrderParams & { tier?: number; term?: 'pesin' | 'vade30' | 'vade60'; rush?: boolean; dest?: string }> = {
   validate(s, p) {
     if (!s.company) return 'Önce şirket kurulmalı.'; if (!(p.qty > 0) || p.qty > 1e6) return 'Geçersiz miktar.';
-    const q = quoteOrder(s, p.material, p.supplier, p.qty, { term: p.term, rush: p.rush, dest: p.dest }); if (!q.ok) return q.error ?? 'Sipariş verilemedi.';
+    const q = quoteOrder(s, p.material, p.supplier, p.qty, { term: p.term, rush: p.rush, dest: p.dest, tier: p.tier }); if (!q.ok) return q.error ?? 'Sipariş verilemedi.';
     if (q.space > freeSpace(s) + 1e-9) return `Depo kapasitesi yetersiz: ${freeSpace(s).toFixed(0)} m³ boş, sipariş ${q.space.toFixed(0)} m³.`;
     if ((p.term ?? 'pesin') === 'pesin' && s.company.cash < q.total) return 'Sipariş için yeterli nakit yok.'; return null;
   },
-  apply(s, p) { const ev2: GameEvent[] = []; const r = placeOrder(s, p.material, p.qty, p.supplier, ev2, { term: p.term, rush: p.rush, dest: p.dest }); if (r.ok) ev2.push(ev(s, 'ORDER_PLACED', { orderId: r.order.id, arriveDay: r.order.arriveDay })); return ev2; },
+  apply(s, p) { const ev2: GameEvent[] = []; const r = placeOrder(s, p.material, p.qty, p.supplier, ev2, { term: p.term, rush: p.rush, dest: p.dest, tier: p.tier }); if (r.ok) ev2.push(ev(s, 'ORDER_PLACED', { orderId: r.order.id, arriveDay: r.order.arriveDay })); return ev2; },
 };
 const signContractCmd: CommandDef<{ material: string; supplier: string; qtyPerMonth: number; months: number }> = { validate: (s, p) => (!isUnlocked(s, 'tedarik') ? 'Satın Alma ve Tedarik henüz açılmadı.' : contractError(s, p.material, p.supplier, p.qtyPerMonth, p.months)), apply(s, p) { signContract(s, p.material, p.supplier, p.qtyPerMonth, p.months); return [ev(s, 'SUPPLY_CHANGED', {})]; } };
 const cancelContractCmd: CommandDef<{ id: number }> = { validate(s, p) { const c = (s.contracts ?? []).find((x) => x.id === p.id); if (!c) return 'Sözleşme bulunamadı.'; return s.company!.cash < contractValue(c) * 2 ? 'Fesih bedeli (2 aylık tutar) için yeterli nakit yok.' : null; }, apply(s, p) { cancelContract(s, p.id); return [ev(s, 'SUPPLY_CHANGED', {})]; } };
@@ -522,7 +524,7 @@ export const COMMANDS = {
   SetPace: setPaceCmd, PromoteUnit: promoteUnitCmd,
   AcceptOffer: acceptOfferCmd, CounterOffer: counterOfferCmd, RejectOffer: rejectOfferCmd, SetUnit: setUnitCmd, SetAutoSell: setAutoSellCmd, EndRent: endRentCmd,
   SetFocus: setFocusCmd, IssueOrder: issueOrderCmd, SetManager: setManagerCmd, BuyDecor: buyDecorCmd,
-  BuildVenture: buildVentureCmd, OperateProject: operateProjectCmd, SellVenture: sellVentureCmd, SetVentureOps: setVentureOpsCmd, HireVentureMgr: hireVentureMgrCmd, FireVentureMgr: fireVentureMgrCmd, SetPPA: setPPACmd, Negotiate: negotiateCmd, OpenDepot: openDepotCmd, CloseDepot: closeDepotCmd, BuyStake: buyStakeCmd, SellStake: sellStakeCmd, DueDiligence: ddCmd, BuildFactory: factoryCmd, SubTransfer: subTransferCmd, SetSubBudget: subBudgetCmd, ManageSite: manageSiteCmd, SetStrategy: setStrategyCmd, ToggleGM: toggleGmCmd, GoPublic: goPublicCmd, SecondaryOffering: secondaryCmd, Buyback: buybackCmd, AcquireRival: acquireCmd,
+  BuildVenture: buildVentureCmd, OperateProject: operateProjectCmd, SellVenture: sellVentureCmd, SetVentureOps: setVentureOpsCmd, HireVentureMgr: hireVentureMgrCmd, FireVentureMgr: fireVentureMgrCmd, SetPPA: setPPACmd, Negotiate: negotiateCmd, OpenDepot: openDepotCmd, SetWarehouse: setWarehouseCmd, SetRentAd: rentAdCmd, CloseDepot: closeDepotCmd, BuyStake: buyStakeCmd, SellStake: sellStakeCmd, DueDiligence: ddCmd, BuildFactory: factoryCmd, SubTransfer: subTransferCmd, SetSubBudget: subBudgetCmd, ManageSite: manageSiteCmd, SetStrategy: setStrategyCmd, ToggleGM: toggleGmCmd, GoPublic: goPublicCmd, SecondaryOffering: secondaryCmd, Buyback: buybackCmd, AcquireRival: acquireCmd,
   StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd2, BuyMachine: buyMachine, UpgradeOffice: upgradeOffice, ResolveEvent: resolveEventCmd, PlaceBid: placeBidCmd, TakeLoan: takeLoanCmd, TakeInvestor: takeInvestorCmd, SellEquity: sellEquityCmd, RepayLoan: repayLoanCmd, RestructureLoan: restructureCmd, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,
   CreateCompany: createCompany,

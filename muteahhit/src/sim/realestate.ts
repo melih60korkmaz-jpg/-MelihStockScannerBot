@@ -96,6 +96,7 @@ export function realestateMonthly(s: GameState, events: GameEvent[]): void {
   const day = s.clock.day;
   for (const p of s.projects) {
     if (p.status !== 'tamamlandi') continue; const owned = ownedUnits(s, p); if (!owned.length) continue;
+    if (p.rentAd) { const n = owned.filter((u) => u.listing === 'kira' && !u.rent && u.status === 'bos').length, ad = Math.round(TL([0, 2_000, 6_000, 15_000][p.rentAd]!) * n * s.costIndex); if (ad > 0) post(s, 'reklam', -ad, { projectId: p.id, memo: `Kira ilanı reklamı: ${p.name}` }); }
     // bina durumu: yavaş yıpranma; arıza olasılığı durum kötüleştikçe artar
     p.cond = clamp(condOf(p) - 0.2, 0, 100);
     const cnd = condOf(p), age = Math.min(1.5, 0.6 + (day - (p.build?.doneDay ?? p.createdDay)) / 1500);

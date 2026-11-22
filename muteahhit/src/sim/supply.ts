@@ -1,5 +1,5 @@
 import { incomingSpace } from './materials';
-import { logStock } from './supplyx';
+import { activeNego, logStock } from './supplyx';
 import { TL, type Money } from '../core/money';
 import type { GameEvent, GameState, SupplyContract } from '../core/types';
 import { material, supplier } from '../data';
@@ -12,7 +12,8 @@ import { WAREHOUSE, freeSpace, quoteOrder, spaceOf, unitPrice, usedSpace, whLeve
  */
 export const payablesTotal = (s: GameState): Money => (s.payables ?? []).reduce((a, p) => a + p.amount, 0);
 export const CONTRACT_DISCOUNT = 0.04, CONTRACT_BREAK_MONTHS = 2;
-export const warehouseRent = (s: GameState): Money => Math.round((TL(WAREHOUSE[whLevel(s)]!.rentTL) + (s.depots ?? []).reduce((a, d) => a + TL(WAREHOUSE[d.level]!.rentTL) * 1.15, 0)) * s.costIndex);
+export const SEC_COST_TL = [0, 30_000, 90_000], STAFF_COST_TL = 25_000, SEC_LABEL = ['Güvenlik yok', 'Kamera ve bekçi', 'Tam güvenlik'];
+export const warehouseRent = (s: GameState): Money => Math.round((TL(WAREHOUSE[whLevel(s)]!.rentTL) + (whLevel(s) > 0 ? TL(SEC_COST_TL[s.warehouse?.sec ?? 1]!) + TL(STAFF_COST_TL) * (s.warehouse?.staff ?? 0) : 0) + (s.depots ?? []).reduce((a, d) => a + TL(WAREHOUSE[d.level]!.rentTL) * 1.15, 0)) * s.costIndex);
 
 /** Her gün: vadesi gelen ödemeler. Nakit yetmezse 7 gün ertelenir (%1,5 gecikme faizi, itibar kaybı); üçüncü gecikmede zorunlu ödenir. */
 export function payablesDaily(s: GameState, events: GameEvent[]): void {
@@ -33,7 +34,7 @@ export function contractError(s: GameState, matId: string, supId: string, qtyPer
 }
 export function signContract(s: GameState, matId: string, supId: string, qtyPerMonth: number, months: number, dest?: string): string | null {
   const e = contractError(s, matId, supId, qtyPerMonth, months); if (e) return e;
-  const price = Math.round(unitPrice(s, matId, supId) * (1 - CONTRACT_DISCOUNT));
+  const ng = activeNego(s, matId, supId), price = Math.round(unitPrice(s, matId, supId) * (1 - CONTRACT_DISCOUNT - (ng?.cDisc ?? 0))); if (ng?.cDisc) ng.until = 0;
   (s.contracts ??= []).push({ id: s.nextId++, material: matId, supplier: supId, qtyPerMonth, price, startDay: s.clock.day, months, nextDay: s.clock.day + 30, taken: 0, missed: 0, dest: dest ?? s.company!.startCity }); return null;
 }
 export const contractValue = (c: SupplyContract): Money => Math.round(c.price * c.qtyPerMonth);
@@ -43,7 +44,7 @@ export function cancelContract(s: GameState, id: number): string | null {
 }
 export function upgradeWarehouse(s: GameState): string | null {
   const lv = whLevel(s), nx = WAREHOUSE[lv + 1]; if (!nx) return 'Depo zaten en büyük kademede.'; const cost = Math.round(TL(nx.upTL) * s.costIndex); if (!s.company || s.company.cash < cost) return 'Depo yatırımı için yeterli nakit yok.';
-  post(s, 'depo', -cost, { memo: `Depo yatırımı: ${nx.label}` }); s.warehouse = { level: lv + 1 }; return null;
+  post(s, 'depo', -cost, { memo: `Depo yatırımı: ${nx.label}` }); s.warehouse = { ...(s.warehouse ?? {}), level: lv + 1 }; return null;
 }
 
 /** Aylık: sözleşme teslimatları (al ya da öde), stok bozulması ve kaybı. */
@@ -59,7 +60,7 @@ export function supplyMonthly(s: GameState, events: GameEvent[]): void {
     if (day >= c.startDay + c.months * 30) { s.contracts = s.contracts!.filter((x) => x.id !== c.id); events.push({ type: 'CONTRACT_ENDED', day, data: { material: c.material } }); }
   }
   // bozulma ve kayıp: açık sahada iki kat, büyük depoda yarı
-  const lvl = whLevel(s), f = lvl === 0 ? 2 : lvl >= 2 ? 0.5 : 1; let lost: Money = 0;
+  const lvl = whLevel(s), f = (lvl === 0 ? 2 : lvl >= 2 ? 0.5 : 1) * [1.25, 1, 0.7][s.warehouse?.sec ?? 1]!; let lost: Money = 0;
   for (const [id, it] of Object.entries(s.stock)) { const m = material(id); if (!m || it.qty <= 0) continue; const q = it.qty * m.loss * f; it.qty = Math.max(0, it.qty - q); lost += Math.round(q * it.cost); logStock(s, id, q, 'fire', q * it.cost, 'depo kaybı'); }
   if (lost > 0) events.push({ type: 'STOCK_LOSS', day, data: { value: lost } });
 }
@@ -67,6 +68,8 @@ export const stockLossForecast = (s: GameState): Money => { const lvl = whLevel(
 export const supplyStatus = (s: GameState) => ({ used: usedSpace(s), cap: capacityOf(s), level: whLevel(s) });
 void quoteOrder;
 
+export function warehouseSetError(s: GameState, sec: number, staff: number): string | null { if (!s.company) return 'Şirket yok.'; if (![0, 1, 2].includes(sec)) return 'Güvenlik düzeyi 0–2 olmalı.'; if (!Number.isInteger(staff) || staff < 0 || staff > 3) return 'Depo personeli 0–3 olmalı.'; return null; }
+export function setWarehouse(s: GameState, sec: number, staff: number): void { s.warehouse = { ...(s.warehouse ?? { level: 0 }), sec, staff }; }
 export const MAX_DEPOTS = 4;
 export const depotCost = (s: GameState, level: number): Money => Math.round(TL(WAREHOUSE[level]!.upTL) * 0.8 * s.costIndex);
 export function openDepotError(s: GameState, city: string, level: number): string | null {

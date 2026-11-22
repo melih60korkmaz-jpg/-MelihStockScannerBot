@@ -127,7 +127,7 @@ export function salesDaily(s: GameState, events: GameEvent[]): void {
     for (const u of s.units) {
       if (u.projectId !== p.id || u.status !== 'bos' || u.hold || u.rent) continue;
       if (u.listing === 'kira' && p.status !== 'tamamlandi') continue; // kiracı yalnızca bitmiş binaya gelir
-      if (rand(s.rng, 'market') >= Math.min(0.4, (u.listing === 'kira' ? ch.p * 1.1 : ch.p) * paceOf(p.sales).flow * (promoActive(s, u) ? 2 : 1))) continue;
+      if (rand(s.rng, 'market') >= Math.min(0.4, (u.listing === 'kira' ? ch.p * 1.1 * (1 + 0.25 * (p.rentAd ?? 0)) : ch.p) * paceOf(p.sales).flow * (promoActive(s, u) ? 2 : 1))) continue;
       if ((s.offers ?? []).some((o) => o.unitId === u.id) || offersOf(s, p.id).length >= MAX_OFFERS) continue; // bir daire için tek teklif; ekranı boğmayız
       createOffer(s, p, u, u.listing === 'kira' ? 'kira' : 'satis', events);
     }

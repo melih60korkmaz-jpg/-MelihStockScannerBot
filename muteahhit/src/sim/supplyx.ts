@@ -13,7 +13,7 @@ const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 export const trustOf = (s: GameState, sup: string): number => s.supRel?.[sup]?.trust ?? 50;
 export const relOf = (s: GameState, sup: string) => s.supRel?.[sup] ?? { trust: 50, spent: 0, orders: 0 };
 export function addTrust(s: GameState, sup: string, d: number, spent = 0): void { const r = ((s.supRel ??= {})[sup] ??= { trust: 50, spent: 0, orders: 0 }); r.trust = clamp(r.trust + d, 0, 100); r.spent += spent; if (spent > 0) r.orders++; }
-export function logStock(s: GameState, mat: string, qty: number, kind: 'giris' | 'cikis' | 'fire' | 'hasar', value: Money, ref?: string): void {
+export function logStock(s: GameState, mat: string, qty: number, kind: 'giris' | 'cikis' | 'fire' | 'hasar' | 'sayim', value: Money, ref?: string): void {
   if (!(qty > 0)) return; const l = (s.stockLog ??= []); l.push({ day: s.clock.day, mat, qty: +qty.toFixed(2), kind, value: Math.round(value), ...(ref ? { ref } : {}) }); if (l.length > 400) l.splice(0, l.length - 400);
 }
 /** Tedarikçinin finansal durumu (0–100): sabit temel + iflas olayı; arayüzde Sağlam/Orta/Zayıf. */
@@ -33,14 +33,19 @@ export function supplyAdjust(s: GameState, mat: string, sup: string): { price: n
   return { price, lead, ...(blocked ? { blocked } : {}) };
 }
 
-export type NegoKind = 'fiyat' | 'toplu' | 'hizli';
+/** Aylık sayım: güvenlik ve depo personeli yoksa kayıt dışı fire (sayım farkı) oluşur. */
+export function stockCount(s: GameState, mi: number): void {
+  const sec = s.warehouse?.sec ?? 1, staff = s.warehouse?.staff ?? 0, frac = 0.003 * [1.8, 1, 0.5][sec]! * (staff > 0 ? 0.6 : 1) * (0.5 + hash01(mi * 41 + 9));
+  for (const [id, it] of Object.entries(s.stock)) { const q = it.qty * frac; if (q < 0.01) continue; it.qty -= q; logStock(s, id, q, 'sayim', q * it.cost, 'sayım farkı'); }
+}
+export type NegoKind = 'fiyat' | 'toplu' | 'hizli' | 'vade' | 'sozlesme';
 export const NEGO_INFO: Record<NegoKind, { label: string; disc: number; leadCut: number; note: string }> = {
-  fiyat: { label: 'İndirim iste', disc: 0.05, leadCut: 0, note: '%5 indirim, 14 gün geçerli' }, toplu: { label: 'Toplu alım indirimi', disc: 0.08, leadCut: 0, note: '%8 indirim (büyük miktar gerekir)' }, hizli: { label: 'Hızlı teslimat', disc: 0, leadCut: 2, note: '−2 gün teslimat' },
+  fiyat: { label: 'İndirim iste', disc: 0.05, leadCut: 0, note: '%5 indirim, 14 gün geçerli' }, toplu: { label: 'Toplu alım indirimi', disc: 0.08, leadCut: 0, note: '%8 indirim (büyük miktar gerekir)' }, hizli: { label: 'Hızlı teslimat', disc: 0, leadCut: 2, note: '−2 gün teslimat' }, vade: { label: 'Vade farkı kaldır', disc: 0, leadCut: 0, note: 'Vadeli alımda vade farkı yok (14 gün)' }, sozlesme: { label: 'Uzun sözleşme teklifi', disc: 0, leadCut: 0, note: 'Sözleşme fiyatına ek %3 indirim (14 gün)' },
 };
 /** Pazarlık kabul puanı: güven, itibar, sipariş büyüklüğü ve önceki ilişki; hafta bazında sabit eşik (aynı hafta aynı yanıt). */
 export function negoScore(s: GameState, mat: string, sup: string, qty: number, kind: NegoKind): { score: number; need: number } {
   const unit = material(mat)!.priceTL, size = clamp((unit * qty * s.costIndex) / 30_000_000, 0, 1), rel = relOf(s, sup);
-  const score = 0.25 + (rel.trust - 50) / 140 + ((s.company?.reputation ?? 50) - 50) / 300 + size * 0.3 + Math.min(0.1, rel.orders * 0.01) - (kind === 'toplu' ? 0.12 : kind === 'hizli' ? 0.05 : 0);
+  const score = 0.25 + (rel.trust - 50) / 140 + ((s.company?.reputation ?? 50) - 50) / 300 + size * 0.3 + Math.min(0.1, rel.orders * 0.01) - (kind === 'toplu' ? 0.12 : kind === 'hizli' ? 0.05 : kind === 'vade' ? 0.1 : kind === 'sozlesme' ? 0.08 : 0);
   return { score, need: hash01(hs(`${mat}|${sup}|${kind}`) + Math.floor(s.clock.day / 7)) * 0.6 + 0.2 };
 }
 export function negoError(s: GameState, mat: string, sup: string, qty: number, kind: NegoKind): string | null {
@@ -48,11 +53,11 @@ export function negoError(s: GameState, mat: string, sup: string, qty: number, k
   const adj = supplyAdjust(s, mat, sup); if (adj.blocked) return adj.blocked; if (activeNego(s, mat, sup)) return 'Bu ürün için zaten geçerli bir anlaşmanız var.';
   const { score, need } = negoScore(s, mat, sup, qty, kind); if (score < need) return `${supplier(sup)!.label} teklifi reddetti. Daha büyük sipariş ya da daha iyi ilişkiyle tekrar deneyin (haftalık).`; return null;
 }
-export function negotiate(s: GameState, mat: string, sup: string, kind: NegoKind): void { const i = NEGO_INFO[kind]; (s.negos ??= []).push({ mat, sup, disc: i.disc, leadCut: i.leadCut, until: s.clock.day + 14 }); }
+export function negotiate(s: GameState, mat: string, sup: string, kind: NegoKind): void { const i = NEGO_INFO[kind]; (s.negos ??= []).push({ mat, sup, disc: i.disc, leadCut: i.leadCut, until: s.clock.day + 14, ...(kind === 'vade' ? { freeTerm: true } : {}), ...(kind === 'sozlesme' ? { cDisc: 0.03 } : {}) }); }
 
 /** Aylık: olay çekilişi, süresi dolanları temizleme, ödenmeyen borca göre güven. */
 export function supplyEventsMonthly(s: GameState, events: GameEvent[]): void {
-  if (!s.company) return; const mi = Math.floor(s.clock.day / 30), day = s.clock.day;
+  if (!s.company) return; const mi = Math.floor(s.clock.day / 30), day = s.clock.day; stockCount(s, mi);
   s.supEvents = (s.supEvents ?? []).filter((e) => e.until > day); s.negos = (s.negos ?? []).filter((n) => n.until > day);
   for (const sp of SUPPLIERS) { const late = (s.payables ?? []).some((p) => p.late > 0 && p.memo.includes(sp.label)); addTrust(s, sp.id, late ? -6 : 0.5); }
   if (hash01(mi * 977 + 11) > 0.38) return;

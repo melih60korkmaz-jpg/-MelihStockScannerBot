@@ -7,7 +7,7 @@ import { checkInvariant } from '../src/sim/ledger';
 import { netWorth } from '../src/sim/finance';
 import { WAREHOUSE, capacityOf, freeSpace, quoteOrder, spaceOf, stockQty, usedSpace } from '../src/sim/materials';
 import { payablesTotal, stockLossForecast, warehouseRent } from '../src/sim/supply';
-import { negoError } from '../src/sim/supplyx';
+import { negoError, supplyEventsMonthly } from '../src/sim/supplyx';
 import { MATERIALS, SUPPLIERS } from '../src/data';
 import { regionRent } from '../src/sim/realestate';
 import { pack, unpack } from '../src/save/serialize';
@@ -117,5 +117,26 @@ describe('ek depolar, katalog, tedarikçi bilgisi', () => {
     const base = { id: 1, parcelId: 1, hood: 'T', designSeed: 1, status: 'tamamlandi', quality: 'standart', matIndexAtPlan: 100 };
     const u = { area: 80 } as never; expect(regionRent({ ...base, type: 'apartman', cityId: 'antalya' } as never, u)).toBeGreaterThan(1); expect(regionRent({ ...base, type: 'depo', cityId: 'kocaeli' } as never, u)).toBeGreaterThan(1);
     expect(regionRent({ ...base, type: 'ofis', cityId: 'istanbul' } as never, u)).toBeGreaterThan(1.1); expect(regionRent({ ...base, type: 'apartman', cityId: 'yok' } as never, u)).toBe(1);
+  });
+});
+
+describe('kalite seviyeleri, ek pazarlıklar, depo güvenliği, kira reklamı, yenileme fırsatı', () => {
+  const mk2 = () => { const s = setup(4, TL(500_000_000)); s.company!.reputation = 90; return s; };
+  it('kalite seviyesi fiyatı ve sipariş kalitesini değiştirir; ekonomik ucuz ama düşük kalite', () => {
+    const s = mk2(), e = quoteOrder(s, 'cimento', 'yerel', 100, { tier: 0 }), n = quoteOrder(s, 'cimento', 'yerel', 100, { tier: 1 }), p = quoteOrder(s, 'cimento', 'yerel', 100, { tier: 2 });
+    expect(e.goods).toBeLessThan(n.goods); expect(p.goods).toBeGreaterThan(n.goods); expect(Math.round(n.unit * 0.85)).toBeCloseTo(e.unit, -1);
+    expect(dispatch(s, 'PlaceOrder', { material: 'cimento', qty: 100, supplier: 'yerel', term: 'pesin', tier: 0 }).ok).toBe(true); const eco = s.orders[0]!.quality;
+    expect(dispatch(s, 'PlaceOrder', { material: 'kum', qty: 100, supplier: 'yerel', term: 'pesin', tier: 2 }).ok).toBe(true); expect(s.orders[1]!.quality).toBeGreaterThan(eco);
+  });
+  it('vade pazarlığı vade farkını kaldırır; sözleşme pazarlığı sözleşme fiyatını düşürür ve bir kez kullanılır', () => {
+    const s = mk2(); const prem0 = quoteOrder(s, 'cimento', 'bolge', 100, { term: 'vade30' }).premium; expect(prem0).toBeGreaterThan(0);
+    s.negos = [{ mat: 'cimento', sup: 'bolge', disc: 0, leadCut: 0, until: s.clock.day + 14, freeTerm: true }]; expect(quoteOrder(s, 'cimento', 'bolge', 100, { term: 'vade30' }).premium).toBe(0);
+    s.negos = []; expect(dispatch(s, 'SignContract', { material: 'cimento', supplier: 'bolge', qtyPerMonth: 30, months: 6 }).ok).toBe(true); const normal = s.contracts![0]!.price; dispatch(s, 'CancelContract', { id: s.contracts![0]!.id });
+    s.negos = [{ mat: 'cimento', sup: 'bolge', disc: 0, leadCut: 0, until: s.clock.day + 14, cDisc: 0.03 }]; expect(dispatch(s, 'SignContract', { material: 'cimento', supplier: 'bolge', qtyPerMonth: 30, months: 6 }).ok).toBe(true); expect(s.contracts!.at(-1)!.price).toBeLessThan(normal); expect(s.negos[0]!.until).toBe(0);
+  });
+  it('depo güvenliği/personeli: kira artar, sayım farkı azalır; yükseltme ayarı bozmaz; geçersiz değer reddedilir', () => {
+    const run = (sec: number, staff: number) => { const s = mk2(); dispatch(s, 'UpgradeWarehouse', {}); dispatch(s, 'SetWarehouse', { sec, staff }); s.stock.demir = { qty: 1000, qual: 0, cost: 100 }; for (let i = 0; i < 12; i++) { s.clock.day += 30; supplyEventsMonthly(s, []); } return { left: s.stock.demir!.qty, rent: warehouseRent(s), s }; };
+    const lo = run(0, 0), hi = run(2, 2); expect(hi.left).toBeGreaterThan(lo.left); expect(hi.rent).toBeGreaterThan(lo.rent); expect(hi.s.stockLog!.some((l) => l.kind === 'sayim')).toBe(true);
+    const s = mk2(); expect(dispatch(s, 'SetWarehouse', { sec: 5, staff: 0 }).ok).toBe(false); expect(dispatch(s, 'SetWarehouse', { sec: 1, staff: 9 }).ok).toBe(false); dispatch(s, 'SetWarehouse', { sec: 2, staff: 1 }); dispatch(s, 'UpgradeWarehouse', {}); expect(s.warehouse!.sec).toBe(2);
   });
 });

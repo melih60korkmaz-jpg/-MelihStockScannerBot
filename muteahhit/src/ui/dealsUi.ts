@@ -10,7 +10,7 @@ import { buyerSvg } from './salesScene';
 import type { App } from './app';
 
 type Filter = 'hepsi' | Deal['kind'];
-const FILTERS: [Filter, string][] = [['hepsi', 'Hepsi'], ['bina', '🏢 Bitmiş bina'], ['yarim', '🏗️ Yarım inşaat'], ['eski', '🏚️ Eski bina'], ['kat', '🤝 Kat karşılığı']];
+const FILTERS: [Filter, string][] = [['hepsi', 'Hepsi'], ['bina', '🏢 Bitmiş bina'], ['harap', '🛠️ Yenileme'], ['yarim', '🏗️ Yarım inşaat'], ['eski', '🏚️ Eski bina'], ['kat', '🤝 Kat karşılığı']];
 
 /** Fırsat ilanları: rakiplerden indirimli bina, yarım inşaat, eski bina arsası ve kat karşılığı teklifleri. */
 export function openDeals(app: App, onClose?: () => void): void {
@@ -30,7 +30,7 @@ export function openDeals(app: App, onClose?: () => void): void {
     (body as HTMLElement).scrollTop = keep;
     function dealCard(d: Deal): HTMLElement {
       const t = buildingType(d.type), rv = s.rivals.find((r) => r.name === d.seller), prof = dealProfit(s, d), cash = dealCash(d), left = Math.max(0, d.until - s.clock.day), disc = dealDiscount(d);
-      const art = d.kind === 'bina' ? buildingPhoto(d.type, d.parcel.maxFloors, 1, d.id, d.quality) : d.kind === 'yarim' ? buildingPhoto(d.type, d.parcel.maxFloors, STAGES.slice(1, d.stage).reduce((a, x) => a + x.cost, 0) / 100, d.id, d.quality) : buildingPhoto('apartman', 3, 1, d.id, 'ekonomik');
+      const art = d.kind === 'bina' || d.kind === 'harap' ? buildingPhoto(d.type, d.parcel.maxFloors, 1, d.id, d.quality) : d.kind === 'yarim' ? buildingPhoto(d.type, d.parcel.maxFloors, STAGES.slice(1, d.stage).reduce((a, x) => a + x.cost, 0) / 100, d.id, d.quality) : buildingPhoto('apartman', 3, 1, d.id, 'ekonomik');
       const who = rv ? (() => { const p = rivalProfile(s, rv); return h('span', { html: emblemSvg(p.shape, p.color, 26) }); })() : h('span', { html: buyerSvg(d.id, 'Emekli', 24) });
       const kp = (k: string, v: string, tone = '') => h('div', {}, k, h('b', { class: tone }, v));
       return h('div', { class: 'deal-card' },
@@ -43,7 +43,7 @@ export function openDeals(app: App, onClose?: () => void): void {
           h('div', { class: 'acts' },
             h('button', { class: 'btn gold', disabled: s.company!.cash < cash, onclick: async () => {
               const msg = d.kind === 'kat' ? `${d.title}\nYıkım masrafı ${fmt(d.demo)} ödenir. Yıkım ${DEMO_DAYS} gün sürer; sonra yeni bina yapılır ve daireler %${Math.round(d.share * 100)} arsa sahibine aittir.` : `${d.title}\n${fmt(cash)} (tapu harcı dahil) ödenecek.${d.kind === 'eski' ? ` Yıkım ${DEMO_DAYS} gün sürer.` : ''}`;
-              if (!(await askConfirm(msg, 'Kabul et'))) return; const r = app.store.run('AcceptDeal', { dealId: d.id }); if (r.ok) { app.audio.sfx('stamp'); toast(d.kind === 'bina' ? 'Bina devralındı: Projeler › Satış merkezi' : d.kind === 'yarim' ? 'Yarım inşaat devralındı, iş sürüyor' : d.kind === 'eski' ? 'Arsa alındı, yıkım başladı' : 'Anlaşma imzalandı, yıkım başladı'); } else { app.audio.sfx('error'); toast(r.error); }
+              if (!(await askConfirm(msg, 'Kabul et'))) return; const r = app.store.run('AcceptDeal', { dealId: d.id }); if (r.ok) { app.audio.sfx('stamp'); toast(d.kind === 'harap' ? 'Bina devralındı: Gayrimenkul Yönetimi › Bakım ve yenileme' : d.kind === 'bina' ? 'Bina devralındı: Projeler › Satış merkezi' : d.kind === 'yarim' ? 'Yarım inşaat devralındı, iş sürüyor' : d.kind === 'eski' ? 'Arsa alındı, yıkım başladı' : 'Anlaşma imzalandı, yıkım başladı'); } else { app.audio.sfx('error'); toast(r.error); }
             } }, d.kind === 'kat' ? '🤝 Anlaş' : '✅ Satın al'),
             h('button', { class: 'btn', onclick: () => { app.store.run('DeclineDeal', { dealId: d.id }); } }, 'Geç'), h('span', { class: 'mute', style: 'font-size:11px;align-self:center' }, `${left} gün · ${t?.label ?? d.type}`))));
     }

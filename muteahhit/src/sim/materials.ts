@@ -1,5 +1,5 @@
 import { factoryMatMult, freightMult } from './invest';
-import { addTrust, logStock, supplyAdjust } from './supplyx';
+import { activeNego, addTrust, logStock, supplyAdjust } from './supplyx';
 import { gauss, rand, randInt } from '../core/rng';
 import { ensureCash } from './loans';
 import { TL, type Money } from '../core/money';
@@ -44,7 +44,8 @@ export const usedSpace = (s: GameState) => Object.entries(s.stock).reduce((a, [i
 export const incomingSpace = (s: GameState) => s.orders.reduce((a, o) => a + spaceOf(o.material, o.qty), 0);
 export const freeSpace = (s: GameState) => Math.max(0, capacityOf(s) - usedSpace(s) - incomingSpace(s));
 export const TERM_PREMIUM = { pesin: 0, vade30: 0.025, vade60: 0.05 } as const, TERM_DAYS = { pesin: 0, vade30: 30, vade60: 60 } as const;
-export interface OrderOpts { term?: 'pesin' | 'vade30' | 'vade60'; rush?: boolean; dest?: string; contractId?: number; lockedUnit?: Money }
+export const TIER_PRICE = [0.85, 1, 1.25], TIER_LABEL = ['Ekonomik', 'Standart', 'Premium'];
+export interface OrderOpts { tier?: number; term?: 'pesin' | 'vade30' | 'vade60'; rush?: boolean; dest?: string; contractId?: number; lockedUnit?: Money }
 export interface OrderQuote { ok: boolean; error?: string; unit: Money; goods: Money; discount: Money; premium: Money; freight: Money; total: Money; lead: number; space: number; mismatch: boolean }
 const regionOf = (cityId: string) => cityData(cityId)?.province.region;
 /** Sipariş teklifi: birim fiyat, toplu indirim, vade farkı, nakliye (bölge uyumsuzluğu ve ekspres ek ücret), teslim süresi. Para hareketi yok. */
@@ -56,8 +57,8 @@ export function quoteOrder(s: GameState, matId: string, supId: string, qty: numb
   const dest = o.dest ?? s.company?.startCity ?? 'ankara', mismatch = !sp.regions.includes(regionOf(dest) ?? ''), space = spaceOf(matId, qty);
   if (space > sp.cap) return { ...empty, error: `${sp.label} tek seferde en çok ${sp.cap} m³ teslim eder (bu sipariş ${space.toFixed(0)} m³).`, space, mismatch };
   const adj = supplyAdjust(s, matId, supId); if (adj.blocked && o.contractId === undefined) return { ...empty, error: adj.blocked };
-  const unit = o.lockedUnit ?? Math.round(unitPrice(s, matId, supId) * adj.price * (supId === 'ithal' ? 1 + (s.macro.inflation / 100) * 0.15 : 1)), gross = Math.round(unit * qty);
-  const discount = o.lockedUnit !== undefined ? 0 : Math.round(gross * (gross >= TL(20_000_000) * s.costIndex ? 0.04 : gross >= TL(5_000_000) * s.costIndex ? 0.02 : 0)), goods = gross - discount, premium = Math.round(goods * TERM_PREMIUM[term]);
+  const unit = o.lockedUnit ?? Math.round(unitPrice(s, matId, supId) * adj.price * TIER_PRICE[o.tier ?? 1]! * (supId === 'ithal' ? 1 + (s.macro.inflation / 100) * 0.15 : 1)), gross = Math.round(unit * qty);
+  const discount = o.lockedUnit !== undefined ? 0 : Math.round(gross * (gross >= TL(20_000_000) * s.costIndex ? 0.04 : gross >= TL(5_000_000) * s.costIndex ? 0.02 : 0)), goods = gross - discount, premium = activeNego(s, matId, supId)?.freeTerm ? 0 : Math.round(goods * TERM_PREMIUM[term]);
   const freight = Math.round(goods * (0.03 + (mismatch ? 0.04 : 0) + (o.rush ? 0.06 : 0)) * freightMult(s) * (hasDepotIn(s, dest) ? 0.75 : 1)), lead = Math.max(1, leadDays(s, supId) + (mismatch ? 3 : 0) - (o.rush ? 2 : 0) + adj.lead);
   return { ok: true, unit, goods, discount, premium, freight, total: goods + premium + freight, lead, space, mismatch };
 }
@@ -69,7 +70,7 @@ export function placeOrder(s: GameState, matId: string, qty: number, supId: stri
   const sp = supplier(supId)!, delayed = rand(s.rng, 'construction') > sp.reliability, extra = delayed ? randInt(s.rng, 'construction', 3, 8) : 0, lbl = `${material(matId)!.label} · ${sp.label}`;
   if (term === 'pesin') { post(s, 'malzeme', -(q.goods + q.premium), { memo: lbl }); if (q.freight > 0) post(s, 'malzeme', -q.freight, { memo: `Nakliye: ${lbl}` }); }
   else (s.payables ??= []).push({ id: s.nextId++, amount: q.total, dueDay: s.clock.day + TERM_DAYS[term], memo: `${lbl} (${term === 'vade30' ? '30' : '60'} gün vadeli)`, late: 0 });
-  const o2: Order = { id: s.nextId++, material: matId, qty, unitPrice: Math.round(q.total / qty), supplier: supId, placedDay: s.clock.day, arriveDay: s.clock.day + q.lead + extra, delayed, quality: sp.quality, freight: q.freight, term, ...(o.dest ? { dest: o.dest } : {}), ...(o.rush ? { rush: true } : {}), ...(o.contractId !== undefined ? { contractId: o.contractId } : {}) };
+  const o2: Order = { id: s.nextId++, material: matId, qty, unitPrice: Math.round(q.total / qty), supplier: supId, placedDay: s.clock.day, arriveDay: s.clock.day + q.lead + extra, delayed, quality: sp.quality + ((o.tier ?? 1) - 1) * 0.5, tier: o.tier ?? 1, freight: q.freight, term, ...(o.dest ? { dest: o.dest } : {}), ...(o.rush ? { rush: true } : {}), ...(o.contractId !== undefined ? { contractId: o.contractId } : {}) };
   s.orders.push(o2); addTrust(s, supId, 0.4, q.goods);
   if (delayed) events.push({ type: 'SUPPLIER_DELAY', day: s.clock.day, data: { supplier: sp.label, material: matId, days: extra } });
   return { ok: true, order: o2 };

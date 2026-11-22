@@ -179,11 +179,12 @@ export interface Project {
   order?: { id: string; until: number };
   manager?: number;
   cond?: number;            // bina durumu 0–100 (bakım); piyasa değerini ve kiracı memnuniyetini etkiler
+  rentAd?: number; // kira ilanı reklam düzeyi (0–3): boş kiralık dairelerde kiracı gelme sıklığını artırır, aylık gider doğurur
   renov?: Record<string, number>; renovBonus?: number; // yenileme kayıtları (tür → gün) ve değer/kira çarpanı katkısı
   managedBy?: number;       // site yönetimi işletmesi (iş kolu kimliği)
   operatedBy?: number;       // işletmeye alındıysa iş kolu kimliği (satış merkezi kapanır, değer işletmeden gelir)
 }
-export interface Order { id: number; material: string; qty: number; unitPrice: Money; supplier: string; placedDay: number; arriveDay: number; delayed: boolean; quality: number; freight?: Money; term?: 'pesin' | 'vade30' | 'vade60'; dest?: string; contractId?: number; rush?: boolean }
+export interface Order { tier?: number; id: number; material: string; qty: number; unitPrice: Money; supplier: string; placedDay: number; arriveDay: number; delayed: boolean; quality: number; freight?: Money; term?: 'pesin' | 'vade30' | 'vade60'; dest?: string; contractId?: number; rush?: boolean }
 /** Vadeli alımların ödeme yükümlülüğü (net varlıktan düşülür). */
 export interface Payable { id: number; amount: Money; dueDay: number; memo: string; late: number }
 /** Düzenli tedarik sözleşmesi: fiyat kilitlidir, her ay miktar teslim alınır (al ya da öde). */
@@ -208,7 +209,7 @@ export interface Unit {
 }
 /** Fırsat ilanı: rakipten bina/yarım proje, eski bina arsası ya da kat karşılığı teklifi. `parcel` kabul edilene kadar pazarda değildir. */
 export interface Deal {
-  id: number; kind: 'bina' | 'yarim' | 'eski' | 'kat'; city: string; seller: string; title: string; story: string; day: number; until: number;
+  id: number; kind: 'bina' | 'harap' | 'yarim' | 'eski' | 'kat'; city: string; seller: string; title: string; story: string; day: number; until: number;
   price: Money; demo: Money; share: number; type: string; quality: string; qscore: number; stage: number; fair: Money; parcel: Parcel;
 }
 /** Alıcı/kiracı teklifi: oyuncu kabul eder, karşı teklif verir ya da reddeder. `maxRatio` alıcının gizli tavanıdır. */
@@ -281,12 +282,12 @@ export interface GameState {
   energy?: { price: number; hist: number[] };
   usedMarket?: UsedMachine[]; leases?: MachineLease[];
   estate?: { policy: 'enflasyon' | 'yuksek' | 'sabit' };
-  payables?: Payable[]; contracts?: SupplyContract[]; warehouse?: { level: number };
+  payables?: Payable[]; contracts?: SupplyContract[]; warehouse?: { level: number; sec?: number; staff?: number };
   /** Tedarikçi ilişkileri, pazarlık anlaşmaları, tedarik olayları ve stok hareket defteri (eski kayıtlarda yok). */
   supRel?: Record<string, { trust: number; spent: Money; orders: number }>;
-  negos?: { mat: string; sup: string; disc: number; leadCut: number; until: number }[];
+  negos?: { mat: string; sup: string; disc: number; leadCut: number; until: number; freeTerm?: boolean; cDisc?: number }[];
   supEvents?: { id: number; kind: 'fiyat' | 'grev' | 'iflas' | 'firsat' | 'uretim'; sup?: string; mat?: string; val: number; until: number; text: string }[];
-  stockLog?: { day: number; mat: string; qty: number; kind: 'giris' | 'cikis' | 'fire' | 'hasar'; value: Money; ref?: string }[];
+  stockLog?: { day: number; mat: string; qty: number; kind: 'giris' | 'cikis' | 'fire' | 'hasar' | 'sayim'; value: Money; ref?: string }[];
   /** Ek depolar (şehir bazlı; stok ortak havuzda tutulur, kapasite toplanır). */
   depots?: { id: number; city: string; level: number; since: number }[];
   stakes?: Stake[]; ic?: IcEntry[]; dd?: Record<number, { day: number; hidden: Money }>;
