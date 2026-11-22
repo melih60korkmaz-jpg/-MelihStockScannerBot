@@ -2,6 +2,7 @@ import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { dateOf } from './calendar';
+import { acceptOffer } from '../sim/buyers';
 import { post } from '../sim/ledger';
 import { checkProgress, officeStepFor, track } from '../sim/progress';
 import { resolveEvent } from '../sim/events';
@@ -367,7 +368,51 @@ const buyDecorCmd: CommandDef<{ id: string }> = {
   apply(s, p) { const d = decorDef(p.id)!; post(s, 'ofis', -decorCost(d), { memo: `Ofis: ${d.label}` }); (s.company!.decor ??= []).push(d.id); logDecision(s, 'ofis', `Ofis: ${d.label}`, d.desc); return [ev(s, 'DECOR_BOUGHT', { id: d.id })]; },
 };
 
+// ---- Satış merkezi: teklifler, daire bazlı kontrol, kira ----
+const offerErr = (s: GameState, id: number) => { const o = (s.offers ?? []).find((x) => x.id === id); if (!o) return 'Teklif artık geçerli değil.'; const u = s.units.find((x) => x.id === o.unitId), pr = s.projects.find((x) => x.id === o.projectId); if (!u || !pr || u.status === 'satildi') return 'Daire artık müsait değil.'; return null; };
+const acceptOfferCmd: CommandDef<{ offerId: number }> = {
+  validate: (s, p) => offerErr(s, p.offerId),
+  apply(s, p) { const o = s.offers!.find((x) => x.id === p.offerId)!, evs: GameEvent[] = []; acceptOffer(s, o, o.ratio, evs); return evs; },
+};
+const counterOfferCmd: CommandDef<{ offerId: number; ratio: number }> = {
+  validate(s, p) { const e = offerErr(s, p.offerId); if (e) return e; const o = s.offers!.find((x) => x.id === p.offerId)!; if (!(p.ratio >= o.ratio && p.ratio <= 1.2)) return 'Karşı teklif, mevcut tekliften yüksek ve en çok liste fiyatının %120\'si olmalı.'; return null; },
+  apply(s, p) {
+    const o = s.offers!.find((x) => x.id === p.offerId)!, evs: GameEvent[] = [];
+    if (p.ratio <= o.maxRatio + 1e-9) { acceptOffer(s, o, p.ratio, evs); evs.push(ev(s, 'COUNTER_RESULT', { offerId: o.id, ok: true })); }
+    else { s.offers = s.offers!.filter((x) => x.id !== o.id); evs.push(ev(s, 'OFFER_LOST', { projectId: o.projectId, offerId: o.id, reason: 'karsi' })); evs.push(ev(s, 'COUNTER_RESULT', { offerId: o.id, ok: false })); }
+    return evs;
+  },
+};
+const rejectOfferCmd: CommandDef<{ offerId: number }> = {
+  validate: (s, p) => ((s.offers ?? []).some((x) => x.id === p.offerId) ? null : 'Teklif artık geçerli değil.'),
+  apply(s, p) { const o = s.offers!.find((x) => x.id === p.offerId)!; s.offers = s.offers!.filter((x) => x.id !== o.id); return [ev(s, 'OFFER_LOST', { projectId: o.projectId, offerId: o.id, reason: 'red' })]; },
+};
+const setUnitCmd: CommandDef<{ unitId: number; adj?: number; hold?: boolean; listing?: 'sat' | 'kira' }> = {
+  validate(s, p) {
+    const u = s.units.find((x) => x.id === p.unitId); if (!u) return 'Daire bulunamadı.'; if (u.status === 'satildi') return 'Daire satıldı.';
+    if (p.adj !== undefined && !(p.adj >= 0.8 && p.adj <= 1.3)) return 'Özel fiyat %80–%130 arasında olmalı.';
+    if (p.listing === 'sat' && u.rent) return 'Önce kirayı sonlandırın.'; if (p.hold && u.rent) return 'Kiradaki daire rezerve edilemez.';
+    return null;
+  },
+  apply(s, p) {
+    const u = s.units.find((x) => x.id === p.unitId)!;
+    if (p.adj !== undefined) { if (Math.abs(p.adj - 1) < 0.005) delete u.adj; else u.adj = +p.adj.toFixed(3); }
+    if (p.hold !== undefined) { if (p.hold) { u.hold = true; s.offers = (s.offers ?? []).filter((x) => x.unitId !== u.id); } else delete u.hold; }
+    if (p.listing === 'kira') { u.listing = 'kira'; s.offers = (s.offers ?? []).filter((x) => x.unitId !== u.id); } else if (p.listing === 'sat') { delete u.listing; s.offers = (s.offers ?? []).filter((x) => x.unitId !== u.id); }
+    return [ev(s, 'UNIT_SET', { unitId: u.id })];
+  },
+};
+const setAutoSellCmd: CommandDef<{ projectId: number; min: number | null }> = {
+  validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr?.sales) return 'Proje bulunamadı.'; if (p.min !== null && !(p.min >= 0.9 && p.min <= 1.1)) return 'Eşik %90–%110 arasında olmalı.'; return null; },
+  apply(s, p) { const pol = s.projects.find((x) => x.id === p.projectId)!.sales!; if (p.min === null) delete pol.autoMin; else pol.autoMin = +p.min.toFixed(3); return [ev(s, 'SALES_POLICY', { projectId: p.projectId })]; },
+};
+const endRentCmd: CommandDef<{ unitId: number }> = {
+  validate(s, p) { const u = s.units.find((x) => x.id === p.unitId); return u?.rent ? null : 'Bu dairede kira sözleşmesi yok.'; },
+  apply(s, p) { const u = s.units.find((x) => x.id === p.unitId)!; delete u.rent; u.listing = 'kira'; return [ev(s, 'RENT_ENDED', { projectId: u.projectId, unitId: u.id, by: 'oyuncu' })]; },
+};
+
 export const COMMANDS = {
+  AcceptOffer: acceptOfferCmd, CounterOffer: counterOfferCmd, RejectOffer: rejectOfferCmd, SetUnit: setUnitCmd, SetAutoSell: setAutoSellCmd, EndRent: endRentCmd,
   SetFocus: setFocusCmd, IssueOrder: issueOrderCmd, SetManager: setManagerCmd, BuyDecor: buyDecorCmd,
   BuildVenture: buildVentureCmd, OperateProject: operateProjectCmd, SellVenture: sellVentureCmd, SetStrategy: setStrategyCmd, ToggleGM: toggleGmCmd, GoPublic: goPublicCmd, SecondaryOffering: secondaryCmd, Buyback: buybackCmd, AcquireRival: acquireCmd,
   StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, UpgradeOffice: upgradeOffice, ResolveEvent: resolveEventCmd, PlaceBid: placeBidCmd, TakeLoan: takeLoanCmd, TakeInvestor: takeInvestorCmd, SellEquity: sellEquityCmd, RepayLoan: repayLoanCmd, RestructureLoan: restructureCmd, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,

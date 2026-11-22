@@ -161,9 +161,16 @@ export interface Unit {
   price?: Money; payment?: 'pesin' | 'taksit' | 'onsatis'; soldDay?: number;
   kaporaUntil?: number; kaporaAmt?: Money;
   delivered?: boolean; sat?: number; warrantyUntil?: number;
+  /** Daire bazlı kontrol (eski kayıtlarda yok): özel fiyat çarpanı, rezerve, kiralık ilan, aktif kira sözleşmesi. */
+  adj?: number; hold?: boolean; listing?: 'kira'; rent?: { amount: Money; tenant: string; since: number; seed: number };
+}
+/** Alıcı/kiracı teklifi: oyuncu kabul eder, karşı teklif verir ya da reddeder. `maxRatio` alıcının gizli tavanıdır. */
+export interface Offer {
+  id: number; projectId: number; unitId: number; kind: 'satis' | 'kira'; buyer: string; profile: string; seed: number;
+  ratio: number; maxRatio: number; pay: 'pesin' | 'taksit' | 'onsatis'; day: number; until: number; note: string;
 }
 export interface Receivable { id: number; unitId: number; projectId: number; amount: Money; dueDay: number; kind: 'taksit' | 'teslim'; missed: number }
-export interface SalesPolicy { priceMult: number; agent: boolean; installments: boolean; presale: boolean; contract: Money; commission: Money; sold: number }
+export interface SalesPolicy { priceMult: number; agent: boolean; installments: boolean; presale: boolean; contract: Money; commission: Money; sold: number; /** otomatik kabul eşiği (liste fiyatına oran); yoksa tüm teklifler elle onaylanır */ autoMin?: number; /** satış/kira geçmişi */ log?: { d: number; p: Money; k: 's' | 'k' }[] }
 export interface Loan {
   id: number; kind: 'ticari' | 'insaat' | 'makine' | 'kisa'; bank: string; principal: Money; balance: Money; rate: number; term: number; remaining: number;
   payment: Money; schedule: 'annuity' | 'interest' | 'bullet'; start: number; nextDue: number; missed: number;
@@ -221,6 +228,7 @@ export interface GameState {
   evtQueue?: QueuedEvent[];
   reports?: YearReport[];
   decisions?: Decision[];
+  offers?: Offer[];
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;
   /** Malzeme fiyat geçmişi (aylık etkin çarpan; en çok 36 ay). Eski kayıtlarda yoktur. */

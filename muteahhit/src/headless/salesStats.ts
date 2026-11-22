@@ -15,7 +15,7 @@ function trial(seed: number, mult: number, agent: boolean, inst: boolean, presal
   s.company!.cash = TL(80e6); s.ledgerBase = s.company!.cash - s.ledger.reduce((a, e) => a + e.amount, 0);
   const p = mk(s); dispatch(s, 'CreateProject', { parcelId: p.id, type: 'apartman', quality: 'standart' }); const pr = s.projects[0]!; dispatch(s, 'StartConstruction', { projectId: pr.id }); dispatch(s, 'SetSalesPolicy', { projectId: pr.id, priceMult: mult, agent, installments: inst, presale });
   const nw0 = netWorth(s), d0 = s.clock.day; let done = 0;
-  for (let d = 0; d < 1800 && pr.status !== 'satildi'; d++) { advanceDays(s, 1); if (!done && pr.status === 'tamamlandi') done = s.clock.day; if (pr.status === 'tamamlandi' && s.clock.day - done > 540) { dispatch(s, 'SellProjectBulk', { projectId: pr.id }); } }
+  for (let d = 0; d < 1800 && pr.status !== 'satildi'; d++) { if (pr.sales && pr.sales.autoMin === undefined) pr.sales.autoMin = 0; advanceDays(s, 1); if (!done && pr.status === 'tamamlandi') done = s.clock.day; if (pr.status === 'tamamlandi' && s.clock.day - done > 540) { dispatch(s, 'SellProjectBulk', { projectId: pr.id }); } }
   const us = unitsOf(s, pr.id); const soldDays = us.map((u) => (u.soldDay ?? s.clock.day) - done).sort((a, b) => a - b);
   return { total: s.clock.day - d0, afterBuild: done ? s.clock.day - done : NaN, med: soldDays[Math.floor(soldDays.length / 2)]!, gain: (netWorth(s) - nw0) / nw0, n: us.length, profit: (pr.result?.profit ?? 0) };
 }

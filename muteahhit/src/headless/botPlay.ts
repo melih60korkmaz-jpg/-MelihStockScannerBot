@@ -28,6 +28,7 @@ function crew(s: GameState) {
 }
 const NEGO = new Map<number, number>();
 function act(s: GameState) {
+  for (const p of s.projects) if (p.sales && p.sales.autoMin === undefined) p.sales.autoMin = 0; // bot: tüm teklifleri kabul eder
   const c = s.company!; if (c.bankrupt) return;
   if (s.pending) { const d = eventDef(s.pending.id); dispatch(s, 'ResolveEvent', { choice: d ? (d.def ?? 0) : 0 }); }
   crew(s);

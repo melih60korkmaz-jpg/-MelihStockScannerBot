@@ -2,13 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { dispatch } from '../src/core/commands';
 import { newGameState } from '../src/core/state';
 import { TL } from '../src/core/money';
-import { advanceDays } from '../src/sim/engine';
+import { advanceDays as advanceRaw } from '../src/sim/engine';
 import { checkInvariant } from '../src/sim/ledger';
 import { advancesTotal, fairPerM2, listPrice, receivablesTotal, saleChance, unitFair, unitsOf, unsoldValue, demandIndex } from '../src/sim/sales';
 import { netWorth } from '../src/sim/finance';
 import { pack, unpack } from '../src/save/serialize';
 import type { GameEvent, GameState, Parcel } from '../src/core/types';
 
+/** Bu testler satış mekaniğini ölçer: teklifler otomatik kabul edilir (danışmana tam yetki). */
+const advanceDays = (s: GameState, n: number): GameEvent[] => { const all: GameEvent[] = []; for (let i = 0; i < n; i++) { for (const p of s.projects) if (p.sales && p.sales.autoMin === undefined) p.sales.autoMin = 0; all.push(...advanceRaw(s, 1)); } return all; };
 const mk = (s: GameState, o: Partial<Parcel> = {}): Parcel => { const p: Parcel = { id: s.nextId++, city: 'ankara', district: 'cankaya', hood: 'Test', area: 500, zoning: 'konut', taks: 0.4, kaks: 1.6, maxFloors: 5, soil: 'saglam', soilKnown: true, roads: 2, corner: false, infra: 80, growth: 0.04, growthKnown: false, unitBase: TL(2500), askMult: 1.05, reserveMult: 1, negoLockUntil: 0, owner: 'player', costBasis: TL(1_000_000), ...o }; s.parcels.push(p); return p; };
 function setup(o: { cash?: number; type?: string; seed?: number; staff?: string[] } = {}) {
   const s = newGameState(o.seed ?? 6); dispatch(s, 'CreateCompany', { name: 'Satış Yapı', founderBackground: 'emlakci', startCity: 'ankara' });
@@ -70,10 +72,9 @@ describe('satış mekaniği', () => {
     const t = (agent: boolean) => { let tot = 0, n = 0; for (let seed = 0; seed < 12; seed++) { const { s, project: p } = built({ seed: 700 + seed }); dispatch(s, 'SetSalesPolicy', { projectId: p.id, agent }); const d0 = s.clock.day; run(s, () => unitsOf(s, p.id).filter((u) => u.status === 'satildi').length >= 3, 900); tot += s.clock.day - d0; n++; if (agent) expect(p.sales!.commission).toBeGreaterThan(0); } return tot / n; };
     expect(t(true)).toBeLessThan(t(false));
   });
-  it('kapora: %5 alınır, 14 gün sonra %75 satışa döner, aksi halde yarısı iade edilir', () => {
-    let kap = 0, conv = 0, cancel = 0;
-    for (let seed = 0; seed < 14; seed++) { const { s, project: p } = built({ seed: 800 + seed }); const evs = run(s, () => s.clock.day > 600 + p.build!.doneDay!, 900); kap += evs.filter((e) => e.type === 'KAPORA').length; cancel += evs.filter((e) => e.type === 'KAPORA_CANCELLED').length; conv += 0; expect(checkInvariant(s)).toBe(true); }
-    expect(kap).toBeGreaterThan(0); expect(cancel).toBeGreaterThanOrEqual(0); void conv;
+  it('eski kayıtlardaki kapora 14 gün sonunda sonuçlanır (satışa döner ya da yarısı iade edilir)', () => {
+    const { s, project: p } = built({ seed: 801 }); const u = unitsOf(s, p.id)[0]!; Object.assign(u, { status: 'kapora', kaporaAmt: 1000000, kaporaUntil: s.clock.day + 2 });
+    advanceDays(s, 4); expect(u.status).not.toBe('kapora'); expect(checkInvariant(s)).toBe(true);
   });
   it('fiyat stratejisi: indirim hızlı satar, zam yavaş (süre)', () => {
     const days = (m: number) => { let tot = 0, n = 0; for (let seed = 0; seed < 10; seed++) { const { s, project: p } = built({ seed: 900 + seed }); dispatch(s, 'SetSalesPolicy', { projectId: p.id, priceMult: m }); const d0 = s.clock.day; run(s, () => unitsOf(s, p.id).filter((u) => u.status === 'satildi').length >= 3, 1200); tot += s.clock.day - d0; n++; } return tot / n; };

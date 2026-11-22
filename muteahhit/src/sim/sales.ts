@@ -7,6 +7,7 @@ import type { GameEvent, GameState, Project, Receivable, SalesPolicy, Unit } fro
 import { districtData } from '../data';
 import { post } from './ledger';
 import { planProject } from './projects';
+import { MAX_OFFERS, createOffer, offersDaily, offersOf, rentMonthly } from './buyers';
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 function seeded(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -46,7 +47,7 @@ export function fairPerM2(s: GameState, p: Project): Money {
   return Math.round(planProject(s, parcel, p.type, p.quality, 0).salePerM2 * qm);
 }
 export const unitFair = (u: Unit, perM2: Money): Money => Math.round(u.area * perM2 * u.mult);
-export const listPrice = (u: Unit, perM2: Money, pol: SalesPolicy): Money => Math.round(unitFair(u, perM2) * pol.priceMult);
+export const listPrice = (u: Unit, perM2: Money, pol: SalesPolicy): Money => Math.round(unitFair(u, perM2) * pol.priceMult * (u.adj ?? 1));
 export const salesOpen = (p: Project) => p.status === 'tamamlandi' || (p.status === 'insaat' && !!p.sales?.presale && !!p.build && p.build.stage >= 8);
 export const isPresale = (p: Project) => p.status === 'insaat';
 
@@ -65,27 +66,38 @@ export function saleChance(s: GameState, p: Project, pol: SalesPolicy): { p: num
 function addReceivable(s: GameState, u: Unit, amount: Money, dueDay: number, kind: Receivable['kind']) { if (amount > 0) s.receivables.push({ id: s.nextId++, unitId: u.id, projectId: u.projectId, amount, dueDay, kind, missed: 0 }); }
 
 /** Satışı kesinleştirir: ödeme türüne göre nakit ve alacaklar. */
-function closeSale(s: GameState, p: Project, u: Unit, events: GameEvent[]) {
+const PAY_MULT = { pesin: CASH_DISCOUNT, taksit: INSTALLMENT_MARKUP, onsatis: PRESALE_DISCOUNT } as const;
+/** Teklif oranı ve ödeme türüne göre toplam bedel (odak bonusu dahil). */
+export function quotePrice(s: GameState, p: Project, u: Unit, ratio: number, pay: 'pesin' | 'taksit' | 'onsatis'): Money {
+  return Math.round(listPrice(u, fairPerM2(s, p), p.sales!) * ratio * PAY_MULT[pay] * focusPrice(s, p));
+}
+/** Kabul edilen teklifle satış (alıcı adı kayda geçer). */
+export function closeSaleAt(s: GameState, p: Project, u: Unit, events: GameEvent[], ratio: number, pay: 'pesin' | 'taksit' | 'onsatis', buyer?: string): void { closeSale(s, p, u, events, { ratio, pay, buyer }); }
+function closeSale(s: GameState, p: Project, u: Unit, events: GameEvent[], ov?: { ratio: number; pay: 'pesin' | 'taksit' | 'onsatis'; buyer?: string }) {
   const pol = p.sales!, perM2 = fairPerM2(s, p), pres = isPresale(p), base = listPrice(u, perM2, pol), dep = u.kaporaAmt ?? 0;
-  const inst = pol.installments && rand(s.rng, 'market') < 0.5;
+  const inst = ov ? ov.pay === 'taksit' : pol.installments && rand(s.rng, 'market') < 0.5;
   let price: Money, payment: Unit['payment'];
-  if (pres) { price = Math.round(base * PRESALE_DISCOUNT); payment = 'onsatis'; }
-  else if (inst) { price = Math.round(base * INSTALLMENT_MARKUP); payment = 'taksit'; }
-  else { price = Math.round(base * CASH_DISCOUNT); payment = 'pesin'; }
-  price = Math.round(price * focusPrice(s, p));
+  if (ov) { payment = ov.pay; price = quotePrice(s, p, u, ov.ratio, ov.pay); }
+  else {
+    if (pres) { price = Math.round(base * PRESALE_DISCOUNT); payment = 'onsatis'; }
+    else if (inst) { price = Math.round(base * INSTALLMENT_MARKUP); payment = 'taksit'; }
+    else { price = Math.round(base * CASH_DISCOUNT); payment = 'pesin'; }
+    price = Math.round(price * focusPrice(s, p));
+  }
   const down = payment === 'pesin' ? price : Math.round(price * (payment === 'onsatis' ? DOWN_PRESALE : DOWN_TAKSIT));
   const cashNow = down - dep; if (cashNow > 0) post(s, 'satis', cashNow, { projectId: p.id, memo: `${p.name} · ${u.rooms} (${u.floor}. kat)` });
   if (payment === 'taksit') { const rest = price - down, each = Math.floor(rest / 12); for (let k = 1; k <= 12; k++) addReceivable(s, u, k === 12 ? rest - each * 11 : each, s.clock.day + 30 * k, 'taksit'); }
   if (payment === 'onsatis') addReceivable(s, u, price - down, 1e9, 'teslim'); // teslimde vadesi belirlenir
   if (pol.agent) { const fee = Math.round(price * AGENT_FEE); post(s, 'komisyon', -fee, { projectId: p.id, memo: 'Emlakçı komisyonu' }); pol.commission += fee; }
-  Object.assign(u, { status: 'satildi' as const, price, payment, soldDay: s.clock.day }); delete u.kaporaUntil; delete u.kaporaAmt;
-  pol.contract += price; pol.sold++;
-  events.push({ type: 'UNIT_SOLD', day: s.clock.day, data: { projectId: p.id, unitId: u.id, price, payment } });
+  Object.assign(u, { status: 'satildi' as const, price, payment, soldDay: s.clock.day }); delete u.kaporaUntil; delete u.kaporaAmt; delete u.rent; delete u.listing;
+  pol.contract += price; pol.sold++; (pol.log ??= []).push({ d: s.clock.day, p: price, k: 's' }); if (pol.log.length > 80) pol.log.shift();
+  events.push({ type: 'UNIT_SOLD', day: s.clock.day, data: { projectId: p.id, unitId: u.id, price, payment, ...(ov?.buyer ? { buyer: ov.buyer } : {}) } });
 }
 
 /** Her gün: tamamlanan ya da ön satışa açık projelerde boş dairelere alıcı gelir; kaporalar sonuçlanır; vadesi gelen alacaklar tahsil edilir. */
 export function salesDaily(s: GameState, events: GameEvent[]): void {
   if (!s.company) return;
+  offersDaily(s, events);
   for (const p of s.projects) {
     if (!p.sales) continue;
     for (const u of s.units) {
@@ -96,14 +108,12 @@ export function salesDaily(s: GameState, events: GameEvent[]): void {
       }
     }
     if (!salesOpen(p)) continue;
-    const ch = saleChance(s, p, p.sales), perM2 = fairPerM2(s, p);
+    const ch = saleChance(s, p, p.sales);
     for (const u of s.units) {
-      if (u.projectId !== p.id || u.status !== 'bos') continue;
-      if (rand(s.rng, 'market') >= ch.p) continue;
-      if (!isPresale(p) && rand(s.rng, 'market') < 0.3) { // kapora bırakır
-        const amt = Math.round(listPrice(u, perM2, p.sales) * KAPORA); post(s, 'satis', amt, { projectId: p.id, memo: 'Kapora' }); Object.assign(u, { status: 'kapora' as const, kaporaAmt: amt, kaporaUntil: s.clock.day + 14 });
-        events.push({ type: 'KAPORA', day: s.clock.day, data: { projectId: p.id, unitId: u.id } });
-      } else closeSale(s, p, u, events);
+      if (u.projectId !== p.id || u.status !== 'bos' || u.hold || u.rent) continue;
+      if (rand(s.rng, 'market') >= (u.listing === 'kira' ? Math.min(0.25, ch.p * 1.1) : ch.p)) continue;
+      if ((s.offers ?? []).some((o) => o.unitId === u.id) || offersOf(s, p.id).length >= MAX_OFFERS) continue; // bir daire için tek teklif; ekranı boğmayız
+      createOffer(s, p, u, u.listing === 'kira' ? 'kira' : 'satis', events);
     }
     checkAllSold(s, p, events);
   }
@@ -150,6 +160,7 @@ export function deliverUnits(s: GameState, p: Project, events: GameEvent[]): voi
 
 /** Aylık: garanti talepleri (kalite düşükse sık ve pahalı), satılmamış daire gideri. */
 export function salesMonthly(s: GameState, events: GameEvent[]): void {
+  rentMonthly(s, events);
   for (const u of s.units) {
     const p = s.projects.find((x) => x.id === u.projectId); if (!p) continue;
     if (u.delivered && u.warrantyUntil !== undefined && u.warrantyUntil > s.clock.day) {
@@ -180,9 +191,10 @@ export function bulkSellRemaining(s: GameState, p: Project, events: GameEvent[])
     if (u.status === 'satildi') continue;
     const dep = u.kaporaAmt ?? 0, price = Math.round(unitFair(u, perM2) * BULK);
     post(s, 'satis', price - dep, { projectId: p.id, memo: `${p.name} toplu satış` });
-    Object.assign(u, { status: 'satildi' as const, price, payment: 'pesin' as const, soldDay: s.clock.day, delivered: true, sat: 60, warrantyUntil: s.clock.day + WARRANTY_DAYS }); delete u.kaporaUntil; delete u.kaporaAmt;
+    Object.assign(u, { status: 'satildi' as const, price, payment: 'pesin' as const, soldDay: s.clock.day, delivered: true, sat: 60, warrantyUntil: s.clock.day + WARRANTY_DAYS }); delete u.kaporaUntil; delete u.kaporaAmt; delete u.rent; delete u.listing;
     p.sales!.contract += price; p.sales!.sold++; total += price;
   }
+  s.offers = (s.offers ?? []).filter((o) => o.projectId !== p.id);
   if (total > 0) { const comm = Math.round(total * 0.01); post(s, 'komisyon', -comm, { projectId: p.id, memo: 'Toplu satış komisyonu' }); p.sales!.commission += comm; }
   checkAllSold(s, p, events); return total;
 }
