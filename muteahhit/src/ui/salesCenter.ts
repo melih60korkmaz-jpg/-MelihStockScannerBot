@@ -1,7 +1,7 @@
 import { dateOf, formatDate, monthKey } from '../core/calendar';
 import type { Offer, Unit } from '../core/types';
 import { flexLabel, monthlyRent, offerPrice, offersOf, rentOf } from '../sim/buyers';
-import { AGENT_FEE, BULK, PRESALE_DISCOUNT, fairPerM2, listPrice, receivablesTotal, saleChance, unitFair, unitsOf } from '../sim/sales';
+import { AGENT_FEE, BULK, PACES, PRESALE_DISCOUNT, fairPerM2, listPrice, paceOf, promoActive, promoCost, receivablesTotal, saleChance, unitFair, unitsOf } from '../sim/sales';
 import { donut, lineChart } from './charts';
 import { fmt, fmtM2, nf, pct } from './components';
 import { askConfirm, h, press, toast } from './dom';
@@ -11,15 +11,15 @@ import type { App } from './app';
 const FACE: Record<string, string> = { K: 'Kuzey', G: 'Güney', D: 'Doğu', B: 'Batı' };
 const PAY: Record<string, string> = { pesin: 'Peşin', taksit: 'Taksit (12 ay)', onsatis: 'Ön satış' };
 const ST_LABEL: Record<string, string> = { bos: 'Boş', satildi: 'Satıldı', kirada: 'Kirada', hold: 'Rezerve', kapora: 'Kaporalı' };
-const TABS: [string, string][] = [['bina', '🏢 Bina'], ['teklif', '📨 Teklifler'], ['daire', '📋 Daireler'], ['grafik', '📊 Grafik'], ['politika', '⚙️ Politika']];
-type Tab = 'bina' | 'teklif' | 'daire' | 'grafik' | 'politika';
+const TABS: [string, string][] = [['bina', '🏢 Bina'], ['teklif', '📨 Teklifler'], ['ilan', '📢 İlan'], ['daire', '📋 Daireler'], ['grafik', '📊 Grafik'], ['politika', '⚙️ Politika']];
+type Tab = 'bina' | 'teklif' | 'ilan' | 'daire' | 'grafik' | 'politika';
 
 /**
  * Satış merkezi: bina kesiti, alıcı/kiracı teklifleri, daire bazlı kontrol, satış grafikleri ve politika.
  * Satış kendiliğinden kapanmaz: alıcılar teklifle gelir; oyuncu kabul eder, karşı teklif verir ya da reddeder (isterse danışmana otomatik kabul yetkisi verir).
  */
 export function openSales(app: App, projectId: number, onClose?: () => void): void {
-  const mem = { tab: 'bina' as Tab, sel: null as number | null, counter: null as number | null };
+  const mem = { tab: 'bina' as Tab, sel: null as number | null, counter: null as number | null, angle: -90 };
   const seen = new Set<number>(), just = new Set<number>(); let scroll = 0;
   const card = h('div', { class: 'card sc' });
   const modal = h('div', { class: 'modal', role: 'dialog', 'aria-label': 'Satış merkezi' }, card);
@@ -58,6 +58,31 @@ export function openSales(app: App, projectId: number, onClose?: () => void): vo
     else if (mem.tab === 'teklif') {
       if (!offers.length) body.append(h('div', { class: 'card emptyfx', style: 'text-align:center;padding:18px' }, h('div', { style: 'font-size:34px' }, '🚶'), h('b', {}, 'Şu an bekleyen teklif yok'), h('div', { class: 'mute', style: 'font-size:13px' }, open ? `Alıcılar geldikçe burada görünür. Tahmini: ${ch.p > 0 ? `daire başına ~${Math.round(1 / ch.p)} günde bir ilgi` : 'ilgi yok'}. Fiyatı düşürmek, emlakçı tutmak ya da danışman çalıştırmak ilgiyi artırır.` : 'Satış başlayınca alıcılar gelir.')));
       for (const o of offers) body.append(offerCard(o));
+    }
+    // ---------- İlan ----------
+    else if (mem.tab === 'ilan') {
+      const pace = paceOf(pol), listed = us.filter((u) => u.status !== 'satildi' && !u.rent && !u.hold), unsold = us.filter((u) => u.status !== 'satildi' && !u.hold).reduce((a, u) => a + unitFair(u, perM2), 0);
+      const perDay = ch.p * pace.flow * listed.length, wk = perDay * 7, ad = Math.round(unsold * pace.cost), target = -90 + pace.id * 45;
+      const gauge = h('div', { class: 'gauge', html: `<svg viewBox="-70 -62 140 84" width="100%" role="img" aria-label="İlan hızı göstergesi"><path d="M-56 0 A56 56 0 0 1 56 0" fill="none" stroke="#ffffff1c" stroke-width="10" stroke-linecap="round"/><path d="M-56 0 A56 56 0 0 1 56 0" fill="none" stroke="url(#gg)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(pace.id / 4) * 176 + 0.1} 400"/><defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#3FBF8A"/><stop offset=".5" stop-color="#E8B93A"/><stop offset="1" stop-color="#FF5A4A"/></linearGradient></defs>${PACES.map((x) => `<text x="${Math.cos(((-180 + x.id * 45) * Math.PI) / 180) * 66}" y="${Math.sin(((-180 + x.id * 45) * Math.PI) / 180) * 66 + 3}" text-anchor="middle" font-size="9">${x.ico}</text>`).join('')}<path class="gneedle" d="M-3 0 L0 -50 L3 0 Z" fill="#f5f5f3" style="transform:rotate(${mem.angle}deg)"/><circle r="5" fill="#f5f5f3"/></svg>` });
+      const nd = gauge.querySelector('.gneedle') as SVGElement | null;
+      if (nd) { requestAnimationFrame(() => requestAnimationFrame(() => { nd.style.transform = `rotate(${target}deg)`; })); mem.angle = target; }
+      body.append(h('div', { class: 'cols' },
+        h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'İlan hızı'), gauge,
+          h('div', { style: 'text-align:center;font-weight:800;font-size:18px' }, `${pace.ico} ${pace.label}`), h('div', { class: 'mute', style: 'font-size:12px;text-align:center;margin-bottom:8px' }, pace.desc),
+          h('div', { class: 'seg', style: 'flex-wrap:wrap' }, ...PACES.map((x) => h('button', { class: pace.id === x.id ? 'on' : '', onclick: () => { act('SetPace', { projectId, pace: x.id }, 'toggle'); } }, `${x.ico} ${x.label}`))),
+          h('div', { class: 'kpis', style: 'margin-top:10px' }, k('Alıcı akışı', listed.length && open ? (wk >= 1 ? `haftada ~${wk.toFixed(1)}` : `~${Math.round(1 / Math.max(perDay, 1e-6))} günde 1`) : '—'), k('Teklif düzeyi', `${pace.ratio >= 0 ? '+' : ''}%${Math.round(pace.ratio * 100)}`), k('Aylık reklam', ad ? fmt(ad) : 'yok'))),
+        h('div', { class: 'card' }, h('div', { style: 'display:flex;align-items:center;gap:6px;flex-wrap:wrap' }, h('div', { class: 'lbl-s', style: 'margin:0;flex:1' }, `İlandaki daireler (${listed.length}/${us.filter((u) => u.status !== 'satildi' && !u.rent).length})`),
+          h('button', { class: 'btn', style: 'min-height:32px;font-size:12px', onclick: () => { let n = 0; for (const u of us) if (u.status !== 'satildi' && !u.rent && u.hold) if (app.store.run('SetUnit', { unitId: u.id, hold: false } as never).ok) n++; if (n) app.audio.sfx('confirm'); } }, 'Hepsini ilana koy'),
+          h('button', { class: 'btn', style: 'min-height:32px;font-size:12px', onclick: () => { for (const u of us) if (u.status !== 'satildi' && !u.rent && !u.hold) app.store.run('SetUnit', { unitId: u.id, hold: true } as never); app.audio.sfx('toggle'); } }, 'Hepsini kaldır')),
+          ...us.filter((u) => u.status !== 'satildi').map((u) => {
+            const on = !u.hold && !u.rent, pr = promoActive(s, u), cost = promoCost(s, p, u);
+            return h('div', { class: 'row', style: 'min-height:50px;gap:8px' },
+              h('div', { class: 'lbl' }, `${u.floor}. kat · ${u.rooms} · ${nf(u.area, 0)} m²`, h('small', {}, u.rent ? `Kirada · ${fmt(u.rent.amount)}/ay` : `${u.hold ? 'İlanda değil' : u.listing === 'kira' ? 'Kiralık ilan' : 'Satılık ilan'} · ${fmt(listPrice(u, perM2, pol))}${pr ? ` · ⭐ ${Math.max(0, (u.promo ?? 0) - s.clock.day)} gün öne çıkıyor` : ''}`)),
+              u.rent ? h('span', { class: 'sc-chip' }, 'Kirada') : h('div', { style: 'display:flex;gap:6px;align-items:center' },
+                on && !pr ? h('button', { class: 'btn', style: 'min-height:32px;font-size:12px', title: 'Bu daireye 30 gün boyunca 2 kat alıcı', disabled: s.company!.cash < cost, onclick: () => { act('PromoteUnit', { unitId: u.id }, 'coin'); } }, `⭐ ${fmt(cost)}`) : null,
+                h('button', { class: 'tog', role: 'switch', 'aria-label': 'İlanda', 'aria-checked': String(on), onclick: () => { act('SetUnit', { unitId: u.id, hold: on }, 'toggle'); } })));
+          })),
+      ));
     }
     // ---------- Daireler ----------
     else if (mem.tab === 'daire') {

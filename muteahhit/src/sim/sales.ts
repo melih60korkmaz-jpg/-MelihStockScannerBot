@@ -16,6 +16,19 @@ export const AVG_AREA: Record<string, number> = { mustakil: 0, apartman: 95, sit
 const SPEED: Record<string, number> = { mustakil: 0.8, apartman: 1, site: 1.05, villa: 0.5, rezidans: 0.9, luks: 0.55, ofis: 0.7, is_merkezi: 0.6, otel: 0.35, avm: 0.3, fabrika: 0.3, depo: 0.35 };
 export const PRESALE_DISCOUNT = 0.9, CASH_DISCOUNT = 0.96, INSTALLMENT_MARKUP = 1.06, DOWN_TAKSIT = 0.25, DOWN_PRESALE = 0.4, KAPORA = 0.05, AGENT_FEE = 0.025, BULK = 0.92;
 export const WARRANTY_DAYS = 730;
+/** İlan hızı: alıcı akışı çarpanı, teklif oranına etkisi ve aylık ilan gideri (satılmamış daire değerinin oranı). */
+export interface Pace { id: number; label: string; ico: string; flow: number; ratio: number; cost: number; desc: string }
+export const PACES: Pace[] = [
+  { id: 0, label: 'Çok yavaş', ico: '🐢', flow: 0.4, ratio: 0.04, cost: 0, desc: 'Seçici ilan: çok az alıcı gelir ama teklifler daha yüksektir. Gider yok.' },
+  { id: 1, label: 'Yavaş', ico: '🚶', flow: 0.7, ratio: 0.02, cost: 0, desc: 'Sakin ilan: biraz az alıcı, biraz yüksek teklif. Gider yok.' },
+  { id: 2, label: 'Normal', ico: '⚖️', flow: 1, ratio: 0, cost: 0, desc: 'Dengeli ilan. Gider yok.' },
+  { id: 3, label: 'Hızlı', ico: '🏃', flow: 1.6, ratio: -0.02, cost: 0.0015, desc: 'Reklamlı ilan: %60 daha çok alıcı, teklifler biraz düşük. Aylık reklam gideri.' },
+  { id: 4, label: 'Çok hızlı', ico: '🚀', flow: 2.4, ratio: -0.04, cost: 0.003, desc: 'Yoğun reklam: 2,4 kat alıcı, pazarlıkçı teklifler. Yüksek reklam gideri.' },
+];
+export const paceOf = (pol: SalesPolicy): Pace => PACES[Math.min(4, Math.max(0, pol.pace ?? 2))]!;
+/** Öne çıkan ilan: 30 gün boyunca o daireye alıcı akışı ×2; bedel adil değerin binde biri. */
+export const promoCost = (s: GameState, p: Project, u: Unit): Money => Math.round(unitFair(u, fairPerM2(s, p)) * 0.001);
+export const promoActive = (s: GameState, u: Unit): boolean => (u.promo ?? 0) > s.clock.day;
 export const defaultSales = (): SalesPolicy => ({ priceMult: 1, agent: false, installments: true, presale: false, contract: 0, commission: 0, sold: 0 });
 
 const rooms = (a: number, use: string) => (use !== 'konut' ? 'işyeri' : a < 55 ? '1+1' : a < 80 ? '2+1' : a < 110 ? '3+1' : a < 150 ? '4+1' : '5+1');
@@ -111,7 +124,7 @@ export function salesDaily(s: GameState, events: GameEvent[]): void {
     const ch = saleChance(s, p, p.sales);
     for (const u of s.units) {
       if (u.projectId !== p.id || u.status !== 'bos' || u.hold || u.rent) continue;
-      if (rand(s.rng, 'market') >= (u.listing === 'kira' ? Math.min(0.25, ch.p * 1.1) : ch.p)) continue;
+      if (rand(s.rng, 'market') >= Math.min(0.4, (u.listing === 'kira' ? ch.p * 1.1 : ch.p) * paceOf(p.sales).flow * (promoActive(s, u) ? 2 : 1))) continue;
       if ((s.offers ?? []).some((o) => o.unitId === u.id) || offersOf(s, p.id).length >= MAX_OFFERS) continue; // bir daire için tek teklif; ekranı boğmayız
       createOffer(s, p, u, u.listing === 'kira' ? 'kira' : 'satis', events);
     }
@@ -168,9 +181,10 @@ export function salesMonthly(s: GameState, events: GameEvent[]): void {
       if (rand(s.rng, 'market') < prob) { const cost = Math.round((u.price ?? 0) * (0.003 + rnd(s.rng, 'market') * 0.012)); post(s, 'garanti', -cost, { projectId: p.id, memo: `Garanti: ${p.name}` }); u.sat = Math.max(0, (u.sat ?? 60) - 4); events.push({ type: 'COMPLAINT', day: s.clock.day, data: { projectId: p.id, cost } }); }
     }
   }
-  // satılmamış dairelerin bakım/aidat gideri (aylık %0,05)
+  // satılmamış dairelerin bakım/aidat gideri (aylık %0,05) ve ilan/reklam gideri
   for (const p of s.projects) {
     if (p.status !== 'tamamlandi') continue; const perM2 = fairPerM2(s, p);
+    { const ad = paceOf(p.sales ?? defaultSales()).cost, v = unitsOf(s, p.id).filter((u) => u.status !== 'satildi' && !u.hold).reduce((a, u) => a + unitFair(u, perM2), 0), cost = Math.round(v * ad); if (cost > 0) post(s, 'reklam', -cost, { projectId: p.id, memo: `${p.name}: ilan ve reklam` }); }
     const val = unitsOf(s, p.id).filter((u) => u.status !== 'satildi').reduce((a, u) => a + unitFair(u, perM2), 0), cost = Math.round(val * 0.0005);
     if (cost > 0) post(s, 'insaat', -cost, { projectId: p.id, memo: 'Satılmamış daire giderleri' });
   }

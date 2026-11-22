@@ -188,5 +188,10 @@
   "id": "hisse",
   "label": "Halka arz ve hisse işlemleri",
   "kind": "finansman"
+ },
+ {
+  "id": "reklam",
+  "label": "İlan ve reklam",
+  "kind": "gider"
  }
 ]

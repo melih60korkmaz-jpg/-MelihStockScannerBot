@@ -129,6 +129,8 @@ export const GUIDE: Topic[] = [
       { ul: ['Binanın kesiti: her pencere bir daire. Boş daireler ışıklı, satılanlar yeşil, kiradakiler mavi, rezerveler gri. Turuncu balon = o dairede teklif var.', 'Bir daireye dokun: özel fiyat ver (%80–130), "Satılık / Kiralık / Rezerve" seç. Rezerve daireye alıcı gelmez; en iyi daireyi sonraya saklayabilirsin.'] },
       { h: 'Teklifler' },
       { ul: ['Her teklifte alıcının adı, profili, bütçe ipucu (geniş / pazarlığa açık / sıkı), teklif oranı ve kalan süre var. Süre dolunca alıcı gider.', 'Kabul et, reddet ya da karşı teklif ver. Karşı teklif alıcının gizli tavanının altındaysa kabul edilir; üstündeyse alıcı vazgeçer.', 'Ödeme türü teklifle gelir: peşin %4 iskonto, taksit +%6 vade farkı (%25 peşin, 12 ay), ön satış %10 iskonto (%40 peşin).'] },
+      { h: 'İlan sekmesi' },
+      { ul: ['İlan hızı beş kademe: çok yavaş, yavaş, normal, hızlı, çok hızlı. Hızlandıkça daha çok alıcı gelir ama teklifler düşer ve hızlı kademelerde aylık reklam gideri çıkar. Yavaş kademeler daha az alıcı, daha yüksek teklif getirir.', 'Her dairenin yanındaki anahtar ilana koyar ya da kaldırır; ilanda olmayan daireye alıcı gelmez. ⭐ düğmesi dairenin ilanını 30 gün öne çıkarır (alıcı akışı 2 kat, bedel adil değerin binde biri).'] },
       { h: 'Kiralama' },
       { p: 'Daireyi "Kiralık" yaparsan kiracı teklifleri gelir. Kabul edince her ay kira geliri yatar (yıllık getiri yaklaşık %5,4). Kiracı ara sıra ayrılır; kirayı istediğin an sonlandırabilirsin. Kiradaki daire de satılabilir hâle gelir ama önce kira bitmelidir.' },
       { h: 'Politika' },

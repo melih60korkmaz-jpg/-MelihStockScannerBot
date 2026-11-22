@@ -162,7 +162,7 @@ export interface Unit {
   kaporaUntil?: number; kaporaAmt?: Money;
   delivered?: boolean; sat?: number; warrantyUntil?: number;
   /** Daire bazlı kontrol (eski kayıtlarda yok): özel fiyat çarpanı, rezerve, kiralık ilan, aktif kira sözleşmesi. */
-  adj?: number; hold?: boolean; listing?: 'kira'; rent?: { amount: Money; tenant: string; since: number; seed: number };
+  adj?: number; promo?: number; hold?: boolean; listing?: 'kira'; rent?: { amount: Money; tenant: string; since: number; seed: number };
 }
 /** Alıcı/kiracı teklifi: oyuncu kabul eder, karşı teklif verir ya da reddeder. `maxRatio` alıcının gizli tavanıdır. */
 export interface Offer {
@@ -170,7 +170,7 @@ export interface Offer {
   ratio: number; maxRatio: number; pay: 'pesin' | 'taksit' | 'onsatis'; day: number; until: number; note: string;
 }
 export interface Receivable { id: number; unitId: number; projectId: number; amount: Money; dueDay: number; kind: 'taksit' | 'teslim'; missed: number }
-export interface SalesPolicy { priceMult: number; agent: boolean; installments: boolean; presale: boolean; contract: Money; commission: Money; sold: number; /** otomatik kabul eşiği (liste fiyatına oran); yoksa tüm teklifler elle onaylanır */ autoMin?: number; /** satış/kira geçmişi */ log?: { d: number; p: Money; k: 's' | 'k' }[] }
+export interface SalesPolicy { priceMult: number; agent: boolean; installments: boolean; presale: boolean; contract: Money; commission: Money; sold: number; /** otomatik kabul eşiği (liste fiyatına oran); yoksa tüm teklifler elle onaylanır */ autoMin?: number; /** ilan hızı 0–4 (çok yavaş … çok hızlı); yoksa normal */ pace?: number; /** satış/kira geçmişi */ log?: { d: number; p: Money; k: 's' | 'k' }[] }
 export interface Loan {
   id: number; kind: 'ticari' | 'insaat' | 'makine' | 'kisa'; bank: string; principal: Money; balance: Money; rate: number; term: number; remaining: number;
   payment: Money; schedule: 'annuity' | 'interest' | 'bullet'; start: number; nextDue: number; missed: number;

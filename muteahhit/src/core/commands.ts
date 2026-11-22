@@ -15,7 +15,7 @@ import { acquireError, acquireRival, buyback, goPublic, ipoError, secondaryOffer
 import { DIFFICULTY_MACRO } from '../sim/macro';
 import { SURVEY_DAYS, TAPU_HARCI, QUICK_SALE_DISCOUNT, askPrice, fairValue, reservePrice, surveyCost } from '../sim/land';
 import { newDesignSeed, planProject, projectName } from '../sim/projects';
-import { bulkSellRemaining, unitsOf } from '../sim/sales';
+import { bulkSellRemaining, promoActive, promoCost, unitsOf } from '../sim/sales';
 import { canTrade, openCity } from '../sim/land';
 import { ORDER_DAYS, FOCI, MANAGER_TYPES, activeOrder, canChangeFocus, decorCost, decorDef, hasDecor, logDecision, orderDef } from '../sim/control';
 import { startConstruction, settle, activeProjects } from '../sim/construction';
@@ -411,7 +411,17 @@ const endRentCmd: CommandDef<{ unitId: number }> = {
   apply(s, p) { const u = s.units.find((x) => x.id === p.unitId)!; delete u.rent; u.listing = 'kira'; return [ev(s, 'RENT_ENDED', { projectId: u.projectId, unitId: u.id, by: 'oyuncu' })]; },
 };
 
+const setPaceCmd: CommandDef<{ projectId: number; pace: number }> = {
+  validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr?.sales) return 'Proje bulunamadı.'; if (!Number.isInteger(p.pace) || p.pace < 0 || p.pace > 4) return 'Geçersiz ilan hızı.'; return null; },
+  apply(s, p) { const pol = s.projects.find((x) => x.id === p.projectId)!.sales!; pol.pace = p.pace; return [ev(s, 'SALES_POLICY', { projectId: p.projectId, pace: p.pace })]; },
+};
+const promoteUnitCmd: CommandDef<{ unitId: number }> = {
+  validate(s, p) { const u = s.units.find((x) => x.id === p.unitId), pr = u && s.projects.find((x) => x.id === u.projectId); if (!u || !pr?.sales) return 'Daire bulunamadı.'; if (u.status === 'satildi' || u.rent) return 'Bu daire öne çıkarılamaz.'; if (u.hold) return 'Önce daireyi ilana koyun.'; if (promoActive(s, u)) return 'Bu daire zaten öne çıkarılmış.'; if (s.company!.cash < promoCost(s, pr, u)) return 'Yeterli nakit yok.'; return null; },
+  apply(s, p) { const u = s.units.find((x) => x.id === p.unitId)!, pr = s.projects.find((x) => x.id === u.projectId)!, c = promoCost(s, pr, u); post(s, 'reklam', -c, { projectId: pr.id, memo: `${pr.name}: öne çıkan ilan` }); u.promo = s.clock.day + 30; return [ev(s, 'UNIT_SET', { unitId: u.id })]; },
+};
+
 export const COMMANDS = {
+  SetPace: setPaceCmd, PromoteUnit: promoteUnitCmd,
   AcceptOffer: acceptOfferCmd, CounterOffer: counterOfferCmd, RejectOffer: rejectOfferCmd, SetUnit: setUnitCmd, SetAutoSell: setAutoSellCmd, EndRent: endRentCmd,
   SetFocus: setFocusCmd, IssueOrder: issueOrderCmd, SetManager: setManagerCmd, BuyDecor: buyDecorCmd,
   BuildVenture: buildVentureCmd, OperateProject: operateProjectCmd, SellVenture: sellVentureCmd, SetStrategy: setStrategyCmd, ToggleGM: toggleGmCmd, GoPublic: goPublicCmd, SecondaryOffering: secondaryCmd, Buyback: buybackCmd, AcquireRival: acquireCmd,

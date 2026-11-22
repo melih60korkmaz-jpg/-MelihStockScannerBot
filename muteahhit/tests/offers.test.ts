@@ -9,7 +9,7 @@ import { unitsOf, listPrice, fairPerM2 } from '../src/sim/sales';
 import { pack, unpack } from '../src/save/serialize';
 import type { GameEvent, GameState, Parcel } from '../src/core/types';
 
-const mk = (s: GameState): Parcel => { const p: Parcel = { id: s.nextId++, city: 'ankara', district: 'cankaya', hood: 'Test', area: 500, zoning: 'konut', taks: 0.4, kaks: 1.6, maxFloors: 5, soil: 'saglam', soilKnown: true, roads: 2, corner: false, owner: 'player', costBasis: 0 } as unknown as Parcel; s.parcels.push(p); return p; };
+const mk = (s: GameState): Parcel => { const p: Parcel = { id: s.nextId++, city: 'ankara', district: 'cankaya', hood: 'Test', area: 500, zoning: 'konut', taks: 0.4, kaks: 1.6, maxFloors: 5, soil: 'saglam', soilKnown: true, roads: 2, corner: false, infra: 80, growth: 0.04, growthKnown: false, unitBase: TL(2500), askMult: 1.05, reserveMult: 1, negoLockUntil: 0, owner: 'player', costBasis: TL(1_000_000) }; s.parcels.push(p); return p; };
 function built(seed = 7) {
   const s = newGameState(seed); dispatch(s, 'CreateCompany', { name: 'Teklif Yapı', founderBackground: 'emlakci', startCity: 'ankara' });
   s.staff.length = 0; for (const t of ['usta', 'isci', 'isci', 'isci', 'isci', 'santiye_sefi']) dispatch(s, 'HireStaff', { type: t });
@@ -61,5 +61,17 @@ describe('kiralama', () => {
     const cash0 = s.company!.cash; advanceDays(s, 35); expect(s.company!.cash).toBeGreaterThan(cash0 - TL(5_000_000)); expect(checkInvariant(s)).toBe(true);
     const r = unpack(pack(s)); expect(r.ok).toBe(true); if (r.ok) expect(r.state.units.find((x) => x.id === u.id)!.rent!.tenant).toBe(u.rent!.tenant);
     expect(dispatch(s, 'EndRent', { unitId: u.id }).ok).toBe(true); expect(u.rent).toBeUndefined(); expect(u.listing).toBe('kira');
+  });
+});
+
+describe('ilan hızı ve öne çıkan ilan', () => {
+  it('hızlı ilan daha çok teklif getirir, çok yavaş azaltır; hızlı ilan reklam gideri doğurur', () => {
+    const count = (pace: number) => { let n = 0; for (let seed = 21; seed < 25; seed++) { const { s, p } = built(seed); dispatch(s, 'SetPace', { projectId: p.id, pace }); const evs = advanceDays(s, 150); n += evs.filter((e) => e.type === 'OFFER_NEW').length; if (pace === 4) expect(s.ledger.some((e) => e.cat === 'reklam')).toBe(true); expect(checkInvariant(s)).toBe(true); } return n; };
+    const slow = count(0), mid = count(2), fast = count(4); expect(fast).toBeGreaterThan(mid); expect(mid).toBeGreaterThanOrEqual(slow);
+  });
+  it('geçersiz hız reddedilir; öne çıkarma bedel öder, 30 gün sürer, tekrarlanamaz', () => {
+    const { s, p } = built(); expect(dispatch(s, 'SetPace', { projectId: p.id, pace: 9 }).ok).toBe(false);
+    const u = unitsOf(s, p.id)[0]!, c0 = s.company!.cash; expect(dispatch(s, 'PromoteUnit', { unitId: u.id }).ok).toBe(true); expect(s.company!.cash).toBeLessThan(c0); expect(u.promo!).toBeGreaterThan(s.clock.day);
+    expect(dispatch(s, 'PromoteUnit', { unitId: u.id }).ok).toBe(false); dispatch(s, 'SetUnit', { unitId: unitsOf(s, p.id)[1]!.id, hold: true }); expect(dispatch(s, 'PromoteUnit', { unitId: unitsOf(s, p.id)[1]!.id }).ok).toBe(false);
   });
 });

@@ -2,7 +2,7 @@ import type { Money } from '../core/money';
 import { rand, randInt } from '../core/rng';
 import type { GameEvent, GameState, Offer, Project, Unit } from '../core/types';
 import { post } from './ledger';
-import { unitFair, listPrice, fairPerM2, unitsOf, closeSaleAt, quotePrice } from './sales';
+import { unitFair, listPrice, fairPerM2, unitsOf, closeSaleAt, quotePrice, paceOf } from './sales';
 
 /**
  * Alıcı ve kiracı teklifleri: satış artık otomatik kapanmaz. Her alıcı bir teklifle gelir; oyuncu kabul eder, karşı teklif verir ya da reddeder.
@@ -31,7 +31,7 @@ export const flexLabel = (o: Offer): string => { const g = o.maxRatio - o.ratio;
 export function createOffer(s: GameState, p: Project, u: Unit, kind: 'satis' | 'kira', events: GameEvent[]): void {
   const pol = p.sales!, ticari = isTicari(p), profs = ticari ? PROFILES_TICARI : PROFILES_KONUT;
   const buyer = `${FIRST[randInt(s.rng, 'market', 0, FIRST.length - 1)]} ${LAST[randInt(s.rng, 'market', 0, LAST.length - 1)]}`, profile = profs[randInt(s.rng, 'market', 0, profs.length - 1)]!;
-  const ratio = +(0.95 + rand(s.rng, 'market') * 0.1).toFixed(3), maxRatio = +clamp(ratio + 0.02 + rand(s.rng, 'market') * 0.07, 0.95, 1.14).toFixed(3);
+  const ratio = +clamp(0.95 + rand(s.rng, 'market') * 0.1 + paceOf(pol).ratio, 0.9, 1.12).toFixed(3), maxRatio = +clamp(ratio + 0.02 + rand(s.rng, 'market') * 0.07, 0.92, 1.16).toFixed(3);
   const pay: Offer['pay'] = kind === 'kira' ? 'pesin' : p.status === 'insaat' ? 'onsatis' : pol.installments && rand(s.rng, 'market') < 0.5 ? 'taksit' : 'pesin';
   const notes = kind === 'kira' ? NOTES_KIRA : NOTES_SAT, note = notes[randInt(s.rng, 'market', 0, notes.length - 1)]!;
   const o: Offer = { id: s.nextId++, projectId: p.id, unitId: u.id, kind, buyer, profile, seed: randInt(s.rng, 'market', 1, 9999), ratio, maxRatio, pay, day: s.clock.day, until: s.clock.day + OFFER_DAYS, note };
