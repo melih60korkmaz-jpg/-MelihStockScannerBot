@@ -8,7 +8,7 @@ import { DIV_INFO, divisionPL, type DivKey } from '../../sim/holding';
 import { INFRA_MIN_LEVEL, activeInfra, infraCapacity, infraKind } from '../../sim/infra';
 import { aliveRivals } from '../../sim/rivals';
 import { ACQ_MIN_LEVEL, IPO_MIN_LEVEL, IPO_MIN_NW, SHARES, acquisitionPrice, buybackCost, fairPrice, ipoPrice, marketCap, secondaryProceeds } from '../../sim/stock';
-import { ENERGY_TIERS, GM_COST_TL, VENTURE_INFO, energyCapex, ventureSalePrice, ventureValue } from '../../sim/ventures';
+import { ADS_LABEL, BUILD_TIERS, COAST_ONLY, SITE_TYPES, ENERGY_KINDS, GM_COST_TL, OPS_KINDS, PLANT_LIFE, SIZE_UNIT, STAFF_LABEL, VENTURE_INFO, buildCapex, energyPrice, maintMonth, opsOf, plantAge, plantEff, productionMWh, selfCoverage, soldUnitsOf, ventureCandidates, ventureSalePrice, ventureValue, type BuildKind } from '../../sim/ventures';
 import { C, ring } from '../art';
 import { stockChart } from '../stockChart';
 import { fmt, nf } from '../components';
@@ -28,7 +28,7 @@ export function holdingView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, c = s.company!;
   if (c.level < HOLDING_MIN_LEVEL) return h('div', { class: 'card emptyfx' }, h('b', {}, '🏛️ Holding'), h('span', { class: 'mute' }, `Otel, AVM, enerji ve altyapı işleri seviye ${HOLDING_MIN_LEVEL}'te (Bölge Firması) açılır. Şu an seviye ${c.level}.`));
   const seg = h('div', { class: 'seg', role: 'tablist', style: 'margin-bottom:10px;align-self:flex-start;max-width:100%;overflow-x:auto' });
-  for (const [id, l] of [['ozet', 'Özet'], ['isletme', 'Otel & AVM'], ['enerji', 'Enerji'], ['altyapi', 'Altyapı'], ['borsa', 'Borsa & Satın alma']] as [Sub, string][]) seg.append(h('button', { class: mem.sub === id ? 'on' : '', role: 'tab', onclick: () => { press(app); mem.sub = id; refresh(); } }, l));
+  for (const [id, l] of [['ozet', 'Özet'], ['isletme', 'İşletmeler'], ['enerji', 'Enerji'], ['altyapi', 'Altyapı'], ['borsa', 'Borsa & Satın alma']] as [Sub, string][]) seg.append(h('button', { class: mem.sub === id ? 'on' : '', role: 'tab', onclick: () => { press(app); mem.sub = id; refresh(); } }, l));
   const body = mem.sub === 'ozet' ? overview(app, refresh) : mem.sub === 'isletme' ? hotels(app, refresh) : mem.sub === 'enerji' ? energy(app, refresh) : mem.sub === 'altyapi' ? infra(app, refresh) : market(app, refresh);
   return h('div', { style: 'display:flex;flex-direction:column' }, seg, body);
 }
@@ -41,7 +41,7 @@ function overview(app: App, refresh: () => void): HTMLElement {
   const keys: DivKey[] = ['insaat', 'isletme', 'enerji', 'altyapi', 'bagli', 'merkez'];
   const max = Math.max(1, ...keys.map((k) => Math.abs(pl[k].profit)));
   const cards = keys.map((k) => {
-    const d = pl[k], info = DIV_INFO[k], count = k === 'isletme' ? s.ventures.filter((v) => v.kind === 'otel' || v.kind === 'avm').length : k === 'enerji' ? s.ventures.filter((v) => v.kind === 'gunes' || v.kind === 'ruzgar').length : k === 'bagli' ? s.ventures.filter((v) => v.kind === 'bagli').length : k === 'altyapi' ? activeInfra(s).length : 0;
+    const d = pl[k], info = DIV_INFO[k], count = k === 'isletme' ? s.ventures.filter(isOps).length : k === 'enerji' ? s.ventures.filter(isEnergy).length : k === 'bagli' ? s.ventures.filter((v) => v.kind === 'bagli').length : k === 'altyapi' ? activeInfra(s).length : 0;
     return h('div', { class: `card divc ${d.profit > 0 ? 'good' : d.profit < 0 ? 'bad' : ''}` }, h('div', { class: 'lbl-s' }, `${info.ico} ${info.label}${count ? ` · ${count}` : ''}`),
       h('b', { class: 'fkv', html: signed(d.profit) }), h('small', { class: 'mute' }, `Gelir ${fmt(d.revenue)} · Gider ${fmt(d.cost)}`),
       h('div', { class: 'meter' }, h('i', { style: `width:${Math.round((Math.abs(d.profit) / max) * 100)}%;background:${d.profit >= 0 ? 'var(--ok)' : 'var(--bad)'}` })));
@@ -58,23 +58,65 @@ function overview(app: App, refresh: () => void): HTMLElement {
     h('div', { class: 'divgrid' }, ...cards), h('div', { class: 'lbl-s', style: 'margin-top:12px' }, 'Bölüm yönetimi'), h('div', { class: 'cols' }, mgmt('isletme', 'Gayrimenkul işletmeleri'), mgmt('enerji', 'Enerji'), mgmt('altyapi', 'Altyapı işleri')));
 }
 
-// ---------------- Otel & AVM ----------------
+// ---------------- İşletmeler ----------------
+const OPS_TYPES = ['otel', 'avm', 'is_merkezi', 'ofis'];
+const isOps = (v: Venture) => OPS_KINDS.includes(v.kind), isEnergy = (v: Venture) => ENERGY_KINDS.includes(v.kind);
+const small = 'min-height:34px;font-size:12px';
+function opsPanel(app: App, v: Venture, refresh: () => void): HTMLElement {
+  const s = app.store.state, o = opsOf(v), cands = o.mgr ? [] : ventureCandidates(s, v);
+  const seg = (labels: string[], cur: number, cmd: (i: number) => object, off = 0) => h('div', { class: 'seg', style: 'flex-wrap:wrap' }, ...labels.map((l, i) => h('button', { class: cur === i + off ? 'on' : '', style: small, onclick: () => run(app, 'SetVentureOps', { id: v.id, ...cmd(i + off) }, 'Ayar kaydedildi', refresh) }, l)));
+  const priceRow = v.kind === 'site' ? null : h('div', { class: 'row', style: 'min-height:40px' }, h('div', { class: 'lbl' }, 'Fiyat', h('small', {}, 'Düşük fiyat doluluğu artırır, gelir/oda düşer')), seg(['%85', '%100', '%115', '%130'], [0.85, 1, 1.15, 1.3].findIndex((x) => Math.abs(x - o.price) < 0.01), (i) => ({ price: [0.85, 1, 1.15, 1.3][i] })));
+  return h('div', { class: 'opsp', style: 'margin-top:8px;border-top:1px solid var(--line);padding-top:8px' },
+    priceRow, h('div', { class: 'row', style: 'min-height:40px' }, h('div', { class: 'lbl' }, 'Personel', h('small', {}, 'Premium: kalite/memnuniyet ↑, gider ↑')), seg(STAFF_LABEL, o.staff - 1, (i) => ({ staff: i + 1 }))),
+    v.kind === 'site' ? null : h('div', { class: 'row', style: 'min-height:40px' }, h('div', { class: 'lbl' }, 'Reklam', h('small', {}, 'Talebi artırır; gelirin %0–4\'ü')), seg(ADS_LABEL, o.ads, (i) => ({ ads: i }))),
+    o.mgr ? h('div', { class: 'row', style: 'min-height:40px' }, h('div', { class: 'lbl' }, `Müdür: ${o.mgr.name}`, h('small', {}, `Yetkinlik ${Math.round(o.mgr.skill)} · ${fmt(o.mgr.salary)}/ay`)), h('button', { class: 'btn danger', style: small, onclick: async () => { if (await askConfirm('Müdür görevden alınsın mı? (3 maaş tazminat)')) run(app, 'FireVentureMgr', { id: v.id }, 'Müdür görevden alındı', refresh); } }, 'Görevden al'))
+      : h('div', {}, h('div', { class: 'lbl-s' }, 'Müdür ata (verim ↑, gider ↓)'), h('div', { class: 'cols' }, ...cands.map((c) => h('button', { class: 'btn', style: 'flex-direction:column;align-items:flex-start;height:auto;padding:6px 8px;text-align:left;font-size:12px', onclick: () => run(app, 'HireVentureMgr', { id: v.id, candId: c.id }, `${c.name} atandı`, refresh, 'stamp') }, h('b', {}, c.name), h('small', {}, `Yetkinlik ${Math.round(c.skill)} · ${fmt(c.salary)}/ay`))))));
+}
+function energyPanel(app: App, v: Venture, refresh: () => void): HTMLElement {
+  const s = app.store.state;
+  if (v.kind === 'depolama') return h('div', { class: 'mute', style: 'font-size:12px;margin-top:6px' }, 'Depolama: güneş/rüzgâr santrallerinin satış fiyatını yükseltir ve kendi tüketiminizi güvenceye alır.');
+  const age = plantAge(s, v), ppa = v.ppa && v.ppa.until > s.clock.day ? v.ppa : null, mm = maintMonth(v);
+  return h('div', { style: 'margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:12px' },
+    h('div', { class: 'mute' }, `Yaş ${nf(age, 1)} / ${PLANT_LIFE} yıl · verim %${Math.round(plantEff(s, v) * 100)} · bu ay üretim ≈ ${nf(productionMWh(s, v), 0)} MWh · bakım ayı: ${mm}. ay`),
+    h('div', { class: 'row', style: 'min-height:40px' }, h('div', { class: 'lbl' }, 'Satış', h('small', {}, ppa ? `Sözleşmeli (PPA) ${nf(ppa.price, 2)}× · ${formatDate(ppa.until)}'e dek` : `Spot piyasa ${nf(energyPrice(s), 2)}× (dalgalı)`)),
+      ppa ? h('button', { class: 'btn', style: small, onclick: () => run(app, 'SetPPA', { id: v.id, months: 0 }, 'Sözleşme iptal edildi', refresh) }, 'İptal') : h('div', { class: 'seg' }, ...[12, 24].map((m) => h('button', { style: small, onclick: async () => { if (await askConfirm(`${m} ay sabit fiyatlı (spot −%3) sözleşme yapılsın mı?`)) run(app, 'SetPPA', { id: v.id, months: m }, `${m} aylık sözleşme yapıldı`, refresh, 'stamp'); } }, `${m} ay PPA`)))));
+}
 function ventureCard(app: App, v: Venture, refresh: () => void): HTMLElement {
   const s = app.store.state, info = VENTURE_INFO[v.kind], ready = s.clock.day >= v.readyDay, profit = v.last.revenue - v.last.cost, val = ventureValue(s, v);
-  const occ = v.kind === 'otel' || v.kind === 'avm' ? ring(v.last.occ, v.last.occ > 0.6 ? C.ok : v.last.occ > 0.4 ? C.warn : C.bad, `%${Math.round(v.last.occ * 100)}`, v.kind === 'otel' ? 'doluluk' : 'kiracı', 64) : v.kind === 'bagli' ? '' : ring(Math.min(1, v.last.occ / 1.5), v.brokenUntil ? C.bad : C.acc2, v.brokenUntil ? 'ARIZA' : `${nf(v.last.occ, 1)}×`, 'üretim', 64);
-  const size = v.kind === 'otel' ? `${v.size} oda` : v.kind === 'avm' ? `${nf(v.size)} m² kiralanabilir` : v.kind === 'bagli' ? '' : `${v.size} MW`;
-  return h('div', { class: 'card vcard' }, h('div', { class: 'vico' }, info.ico), h('div', { class: 'vbody' }, h('div', { style: 'display:flex;gap:8px;align-items:baseline;flex-wrap:wrap' }, h('b', {}, v.name), h('span', { class: 'chip' }, info.label), size ? h('span', { class: 'chip' }, size) : null, h('span', { class: 'chip' }, cityData(v.city)?.label ?? v.city)),
+  const en = v.kind === 'gunes' || v.kind === 'ruzgar';
+  const occ = isOps(v) ? ring(Math.min(1, v.last.occ), v.last.occ > 0.6 ? C.ok : v.last.occ > 0.4 ? C.warn : C.bad, `%${Math.round(v.last.occ * 100)}`, v.kind === 'otel' || v.kind === 'tatil' ? 'doluluk' : v.kind === 'site' ? 'tahsilat' : 'kullanım', 64) : v.kind === 'bagli' || v.kind === 'depolama' ? '' : ring(Math.min(1, v.last.occ / 1.5), v.brokenUntil ? C.bad : C.acc2, v.brokenUntil ? 'ARIZA' : `${nf(v.last.occ, 1)}×`, 'üretim', 64);
+  const size = v.kind === 'bagli' ? '' : `${nf(v.size)} ${SIZE_UNIT[v.kind] ?? ''}`;
+  const card = h('div', { class: 'card', style: 'margin-bottom:8px' }, h('div', { class: 'vcard', style: 'display:flex;gap:10px;align-items:center' }, h('div', { class: 'vico' }, info.ico), h('div', { class: 'vbody', style: 'flex:1;min-width:0' }, h('div', { style: 'display:flex;gap:8px;align-items:baseline;flex-wrap:wrap' }, h('b', {}, v.name), h('span', { class: 'chip' }, info.label), size ? h('span', { class: 'chip' }, size) : null, h('span', { class: 'chip' }, cityData(v.city)?.label ?? v.city), isOps(v) ? h('span', { class: `chip ${(v.sat ?? 65) >= 60 ? 'good' : 'bad'}` }, `Memnuniyet ${Math.round(v.sat ?? 65)}`) : null),
     ready ? h('div', { class: 'mute', style: 'font-size:12px;margin-top:2px', html: `Son ay: gelir ${fmt(v.last.revenue)} · gider ${fmt(v.last.cost)} · net ${signed(profit)}` }) : h('div', { class: 'mute', style: 'font-size:12px;margin-top:2px' }, `Yapım sürüyor · açılış ${formatDate(v.readyDay)}`),
     h('div', { class: 'mute', style: 'font-size:12px' }, `Yatırım ${fmt(v.capex)} · değer ${fmt(val)} · toplam net ${fmt(v.total.revenue - v.total.cost)}`)),
-    h('div', { html: occ }), h('button', { class: 'btn danger', style: 'min-height:36px;font-size:12px', onclick: async () => { if (await askConfirm(`${v.name} ${fmt(ventureSalePrice(s, v))} bedelle satılsın mı? (değerinin %92'si)`)) run(app, 'SellVenture', { id: v.id }, `${v.name} satıldı`, refresh, 'coin'); } }, 'Sat'));
+    h('div', { html: occ }), h('button', { class: 'btn danger', style: 'min-height:36px;font-size:12px', onclick: async () => { if (await askConfirm(`${v.name} ${fmt(ventureSalePrice(s, v))} bedelle satılsın mı? (değerinin %92'si)`)) run(app, 'SellVenture', { id: v.id }, `${v.name} satıldı`, refresh, 'coin'); } }, 'Sat')),
+    ready && isOps(v) ? opsPanel(app, v, refresh) : null, ready && isEnergy(v) ? energyPanel(app, v, refresh) : null);
+  return card;
 }
 function hotels(app: App, refresh: () => void): HTMLElement {
-  const s = app.store.state, list = s.ventures.filter((v) => v.kind === 'otel' || v.kind === 'avm');
-  const ready = s.projects.filter((p) => (p.type === 'otel' || p.type === 'avm') && p.status === 'tamamlandi' && p.operatedBy === undefined);
-  const waiting = s.projects.filter((p) => (p.type === 'otel' || p.type === 'avm') && p.status === 'insaat');
-  return h('div', {}, h('div', { class: 'card', style: 'margin-bottom:10px' }, h('div', { class: 'lbl-s' }, '🏨 Otel ve AVM işletmeciliği'), h('div', { class: 'mute', style: 'font-size:13px' }, 'Projeler sekmesinden Otel ya da AVM tipinde proje başlat (seviye 4). Bina bitince daireleri satmak yerine işletmeye al: her ay doluluğa, mevsime ve ekonomiye bağlı gelir, sabit giderler. Yıllık net getiri yaklaşık %12–14\'tür; sahil otelleri yazın çok kazanır, kışın düşer.')),
-    ...(ready.length ? [h('div', { class: 'lbl-s' }, 'İşletmeye hazır'), ...ready.map((p) => h('div', { class: 'card vcard' }, h('div', { class: 'vico' }, VENTURE_INFO[p.type as 'otel'].ico), h('div', { class: 'vbody' }, h('b', {}, p.name), h('div', { class: 'mute', style: 'font-size:12px' }, `${cityData(p.cityId)?.label} · maliyet ${fmt(p.result?.cost ?? p.budget.total)}`)),
+  const s = app.store.state, c = s.company!, list = s.ventures.filter(isOps);
+  const ready = s.projects.filter((p) => OPS_TYPES.includes(p.type) && p.status === 'tamamlandi' && p.operatedBy === undefined && !s.units.some((u) => u.projectId === p.id && u.status !== 'bos'));
+  const waiting = s.projects.filter((p) => OPS_TYPES.includes(p.type) && p.status === 'insaat');
+  const sites = s.projects.filter((p) => p.managedBy === undefined && p.operatedBy === undefined && SITE_TYPES.includes(p.type) && soldUnitsOf(s, p).length >= 8);
+  let kind: BuildKind = 'restoran', city = s.openCities[0] ?? 'ankara';
+  const form = h('div', { class: 'card', style: 'margin-bottom:10px' });
+  const draw = () => {
+    form.innerHTML = ''; const info = VENTURE_INFO[kind];
+    const kseg = h('div', { class: 'seg', style: 'margin-bottom:8px' }, ...(['restoran', 'otopark', 'tatil'] as const).map((k) => h('button', { class: kind === k ? 'on' : '', onclick: () => { kind = k; if (k === 'tatil' && !COAST_ONLY.has(city)) city = [...COAST_ONLY].find((x) => s.openCities.includes(x)) ?? city; draw(); } }, `${VENTURE_INFO[k].ico} ${VENTURE_INFO[k].label}`)));
+    const cities = kind === 'tatil' ? s.openCities.filter((x) => COAST_ONLY.has(x)) : s.openCities;
+    const sel = h('select', { class: 'input', 'aria-label': 'Şehir', style: 'max-width:200px', onchange: () => { city = (sel as HTMLSelectElement).value; } }, ...cities.map((id) => h('option', { value: id, ...(id === city ? { selected: true } : {}) }, cityData(id)?.label ?? id))) as HTMLSelectElement;
+    const tiers = h('div', { class: 'tiers' }, ...BUILD_TIERS[kind].map(([n], i) => { const cap = buildCapex(s, kind, i), net = cap * info.rev * (1 - info.opex);
+      return h('button', { class: 'btn', style: 'flex-direction:column;align-items:flex-start;height:auto;padding:8px 10px;text-align:left', disabled: c.cash < cap || c.level < info.minLevel || !cities.length, onclick: async () => { if (await askConfirm(`${n} ${SIZE_UNIT[kind]} ${info.label} için ${fmt(cap)} yatırım yapılsın mı?`)) run(app, 'BuildVenture', { kind, city, tier: i }, `${info.label} yapımına başlandı`, refresh, 'stamp'); } }, h('b', {}, `${n} ${SIZE_UNIT[kind]}`), h('small', {}, `Yatırım ${fmt(cap)}`), h('small', { class: 'mute' }, `Yıllık net ≈ ${fmt(Math.round(net))}`)); }));
+    form.append(h('div', { class: 'lbl-s' }, '🏗️ Yeni işletme kur'), kseg, h('div', { class: 'mute', style: 'font-size:12px' }, c.level < info.minLevel ? `🔒 ${info.label} seviye ${info.minLevel}'de açılır.` : ''), h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, 'Şehir', h('small', {}, kind === 'tatil' ? 'Tatil köyü yalnızca sahil illerinde kurulur; yaz yoğun, kış zayıf.' : kind === 'restoran' ? 'Nüfus ve kişi başı gelir yüksek şehirlerde daha iyi çalışır.' : 'Büyük şehirlerde talep yüksektir.')), sel), tiers);
+  };
+  draw();
+  return h('div', {}, h('div', { class: 'card', style: 'margin-bottom:10px' }, h('div', { class: 'lbl-s' }, '🏨 İşletmeler'), h('div', { class: 'mute', style: 'font-size:13px' }, 'Otel, AVM, iş merkezi ve ofis binalarını satmak yerine işletin; restoran, otopark ve tatil köyü kurun; satılmış sitelerin yönetimini üstlenin. Her işletmede fiyat, personel kalitesi, reklam ve müdür seçersiniz; doluluk mevsime, ekonomiye, fiyata ve memnuniyete bağlıdır. Elektrik giderini kendi enerji santralleriniz düşürür.')),
+    form,
+    ...(ready.length ? [h('div', { class: 'lbl-s' }, 'İşletmeye hazır'), ...ready.map((p) => h('div', { class: 'card vcard', style: 'display:flex;gap:10px;align-items:center;margin-bottom:6px' }, h('div', { class: 'vico' }, VENTURE_INFO[p.type as 'otel'].ico), h('div', { class: 'vbody', style: 'flex:1' }, h('b', {}, p.name), h('div', { class: 'mute', style: 'font-size:12px' }, `${cityData(p.cityId)?.label} · maliyet ${fmt(p.result?.cost ?? p.budget.total)}`)),
       h('button', { class: 'btn gold', style: 'min-height:40px', onclick: async () => { if (await askConfirm(`${p.name} işletmeye alınsın mı? (Birimler satışa çıkmaz; geri dönüş için ancak işletmeyi satabilirsiniz.)`)) run(app, 'OperateProject', { projectId: p.id }, `${p.name} işletmeye alındı`, refresh, 'stamp'); } }, 'İşletmeye al')))] : []),
+    ...(sites.length ? [h('div', { class: 'lbl-s', style: 'margin-top:8px' }, '🏘️ Site yönetimi (satılmış projeler)'), ...sites.map((p) => { const n = soldUnitsOf(s, p).length;
+      return h('div', { class: 'card vcard', style: 'display:flex;gap:10px;align-items:center;margin-bottom:6px' }, h('div', { class: 'vico' }, '🏘️'), h('div', { class: 'vbody', style: 'flex:1' }, h('b', {}, p.name), h('div', { class: 'mute', style: 'font-size:12px' }, `${n} satılmış daire · aylık aidat ve hizmet geliri · kurulum satış gelirinin %2'si`)),
+        h('button', { class: 'btn', style: 'min-height:40px', onclick: async () => { if (await askConfirm(`${p.name} sitesinin yönetimi üstlenilsin mi?`)) run(app, 'ManageSite', { projectId: p.id }, 'Site yönetimi üstlenildi', refresh, 'stamp'); } }, 'Üstlen')); })] : []),
     ...(waiting.length ? [h('div', { class: 'mute', style: 'font-size:12px;margin:6px 0' }, `Yapımı süren: ${waiting.map((p) => p.name).join(', ')}`)] : []),
     h('div', { class: 'lbl-s', style: 'margin-top:8px' }, `İşletmeler (${list.length})`), ...(list.length ? list.map((v) => ventureCard(app, v, refresh)) : [h('div', { class: 'card empty' }, 'Henüz işletmeniz yok.')]));
 }
@@ -82,20 +124,23 @@ function hotels(app: App, refresh: () => void): HTMLElement {
 // ---------------- Enerji ----------------
 function energy(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, c = s.company!; if (c.level < 5) return lock('Enerji yatırımları seviye 5\'te (Şehir Markası) açılır.');
-  let kind: 'gunes' | 'ruzgar' = 'gunes', city = s.openCities[0] ?? 'ankara';
-  const list = s.ventures.filter((v) => v.kind === 'gunes' || v.kind === 'ruzgar');
+  let kind: 'gunes' | 'ruzgar' | 'depolama' = 'gunes', city = s.openCities[0] ?? 'ankara';
+  const list = s.ventures.filter(isEnergy), cov = selfCoverage(s), price = energyPrice(s), hist = s.energy?.hist ?? [];
+  const spark = hist.length > 1 ? (() => { const lo = Math.min(...hist), hi = Math.max(...hist), w = 160, hh = 34; const pts = hist.map((x, i) => `${(i / (hist.length - 1) * w).toFixed(1)},${(hh - (x - lo) / Math.max(0.01, hi - lo) * hh).toFixed(1)}`).join(' '); return h('div', { html: `<svg viewBox="0 0 ${w} ${hh}" width="${w}" height="${hh}" aria-label="Elektrik fiyatı geçmişi"><polyline fill="none" stroke="var(--accent2)" stroke-width="2" points="${pts}"/></svg>` }); })() : null;
+  const market = h('div', { class: 'card', style: 'margin-bottom:10px' }, h('div', { class: 'lbl-s' }, '⚡ Enerji piyasası'), h('div', { style: 'display:flex;gap:14px;flex-wrap:wrap;align-items:center' }, h('div', { class: 'kpi', html: `<small>Spot fiyat</small><b>${nf(price, 2)}×</b>` }), spark,
+    h('div', { class: 'kpi', html: `<small>Kendi tüketim</small><b>${nf(cov.cons, 0)} MWh/ay</b>` }), h('div', { class: 'kpi', html: `<small>Üretimle karşılanan</small><b>%${Math.round(cov.coverage * 100)}</b>` })),
+    h('div', { class: 'mute', style: 'font-size:12px;margin-top:4px' }, 'Güneş yazın, rüzgâr kışın güçlü üretir; hava dalgalanır. Üretim önce kendi işletmelerinizin elektriğini karşılar (gider düşer), fazlası spot piyasada ya da sözleşmeyle satılır. Depolama satış fiyatını yükseltir; santraller 25 yıl ömürlüdür ve yıllık verim kaybeder.'));
   const form = h('div', { class: 'card', style: 'margin-bottom:10px' });
   const draw = () => {
     form.innerHTML = ''; const info = VENTURE_INFO[kind];
-    const kseg = h('div', { class: 'seg', style: 'margin-bottom:8px' }, ...(['gunes', 'ruzgar'] as const).map((k) => h('button', { class: kind === k ? 'on' : '', onclick: () => { kind = k; draw(); } }, `${VENTURE_INFO[k].ico} ${VENTURE_INFO[k].label}`)));
+    const kseg = h('div', { class: 'seg', style: 'margin-bottom:8px' }, ...(['gunes', 'ruzgar', 'depolama'] as const).map((k) => h('button', { class: kind === k ? 'on' : '', onclick: () => { kind = k; draw(); } }, `${VENTURE_INFO[k].ico} ${VENTURE_INFO[k].label}`)));
     const sel = h('select', { class: 'input', 'aria-label': 'Şehir', style: 'max-width:200px', onchange: () => { city = (sel as HTMLSelectElement).value; } }, ...s.openCities.map((id) => h('option', { value: id, ...(id === city ? { selected: true } : {}) }, cityData(id)?.label ?? id))) as HTMLSelectElement;
-    const tiers = h('div', { class: 'tiers' }, ...ENERGY_TIERS[kind].map(([mw], i) => { const cap = energyCapex(s, kind, i), net = cap * info.rev * (1 - info.opex);
-      return h('button', { class: 'btn', style: 'flex-direction:column;align-items:flex-start;height:auto;padding:8px 10px;text-align:left', disabled: c.cash < cap, onclick: async () => { if (await askConfirm(`${mw} MW ${info.label} için ${fmt(cap)} yatırım yapılsın mı? ${kind === 'gunes' ? 'Yaklaşık 2 ayda' : 'Yaklaşık 4 ayda'} devreye girer.`)) run(app, 'BuildVenture', { kind, city, tier: i }, `${mw} MW ${info.label} yapımına başlandı`, refresh, 'stamp'); } }, h('b', {}, `${mw} MW`), h('small', {}, `Yatırım ${fmt(cap)}`), h('small', { class: 'mute' }, `Yıllık net ≈ ${fmt(Math.round(net))}`)); }));
-    form.append(h('div', { class: 'lbl-s' }, '⚡ Yeni santral'), kseg, h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, 'Şehir', h('small', {}, kind === 'gunes' ? 'Güneşli iller (Antalya, Adana, Konya) daha çok üretir.' : 'Rüzgârlı iller (İzmir, İstanbul, Kocaeli) daha çok üretir.')), sel), tiers,
-      h('div', { class: 'mute', style: 'font-size:12px;margin-top:6px' }, kind === 'gunes' ? 'Yaz ayları güçlü, kış zayıf. Arıza ihtimali düşük.' : 'Kış ayları güçlü, yaz zayıf. Arıza ihtimali daha yüksek ve onarımı pahalı.'));
+    const tiers = h('div', { class: 'tiers' }, ...BUILD_TIERS[kind].map(([mw], i) => { const cap = buildCapex(s, kind, i), net = cap * info.rev * (1 - info.opex);
+      return h('button', { class: 'btn', style: 'flex-direction:column;align-items:flex-start;height:auto;padding:8px 10px;text-align:left', disabled: c.cash < cap, onclick: async () => { if (await askConfirm(`${mw} ${SIZE_UNIT[kind]} ${info.label} için ${fmt(cap)} yatırım yapılsın mı?`)) run(app, 'BuildVenture', { kind, city, tier: i }, `${info.label} yapımına başlandı`, refresh, 'stamp'); } }, h('b', {}, `${mw} ${SIZE_UNIT[kind]}`), h('small', {}, `Yatırım ${fmt(cap)}`), h('small', { class: 'mute' }, kind === 'depolama' ? 'Satış fiyatı ↑' : `Yıllık net ≈ ${fmt(Math.round(net))}`)); }));
+    form.append(h('div', { class: 'lbl-s' }, '⚡ Yeni tesis'), kseg, h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, 'Şehir', h('small', {}, kind === 'gunes' ? 'Güneşli iller (Antalya, Adana, Konya) daha çok üretir.' : kind === 'ruzgar' ? 'Rüzgârlı iller (İzmir, İstanbul, Kocaeli) daha çok üretir.' : 'Depolama şehirden bağımsızdır.')), sel), tiers);
   };
   draw();
-  return h('div', {}, form, h('div', { class: 'lbl-s' }, `Santraller (${list.length})`), ...(list.length ? list.map((v) => ventureCard(app, v, refresh)) : [h('div', { class: 'card empty' }, 'Henüz santraliniz yok.')]));
+  return h('div', {}, market, form, h('div', { class: 'lbl-s' }, `Tesisler (${list.length})`), ...(list.length ? list.map((v) => ventureCard(app, v, refresh)) : [h('div', { class: 'card empty' }, 'Henüz santraliniz yok.')]));
 }
 
 // ---------------- Altyapı ----------------

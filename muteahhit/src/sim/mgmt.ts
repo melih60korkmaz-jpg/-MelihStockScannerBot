@@ -35,7 +35,7 @@ export const DEPTS: DeptDef[] = [
 export const deptDef = (id: string) => DEPTS.find((d) => d.id === id);
 export const BUDGET_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
-function makeExec(seed: number, role: string, ci: number, day: number): Exec {
+export function makeExec(seed: number, role: string, ci: number, day: number): Exec {
   const h = hashStr(`${role}|${seed}`), skill = 35 + (h % 55), exp = (h >>> 8) % 70, style = STYLES[(h >>> 14) % 3]!;
   const salary = Math.round(TL(150_000 + skill * 5_500 + exp * 1_800) * ci);
   return { id: seed * 100 + (h % 97), name: `${FIRST[(h >>> 3) % FIRST.length]} ${LAST[(h >>> 11) % LAST.length]}`, role, skill, exp, salary, style, since: day, mistakes: 0 };

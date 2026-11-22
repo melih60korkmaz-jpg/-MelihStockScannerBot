@@ -19,7 +19,7 @@ import { bidError, placeBid } from '../sim/tenders';
 import { quoteInvestor, takeInvestor, equityQuote, sellEquity, refundInvestor } from '../sim/investors';
 import { quoteLoan, takeLoan, repayLoan, restructureLoan, type LoanKind } from '../sim/loans';
 import { createStaff } from '../sim/staff';
-import { buildEnergy, buildError, operateError, operateProject, sellError, sellVenture, strategyError } from '../sim/ventures';
+import { buildEnergy, buildError, fireVentureMgr, hireMgrError, hireVentureMgr, manageSite, manageSiteError, operateError, operateProject, opsError, ppaError, sellError, sellVenture, setOps, setPPA, strategyError, type BuildKind } from '../sim/ventures';
 import { acquireError, acquireRival, buyback, goPublic, ipoError, secondaryOffering, tradeError } from '../sim/stock';
 import { DIFFICULTY_MACRO } from '../sim/macro';
 import { SURVEY_DAYS, TAPU_HARCI, QUICK_SALE_DISCOUNT, askPrice, fairValue, reservePrice, surveyCost } from '../sim/land';
@@ -345,7 +345,7 @@ const setSalesPolicy: CommandDef<SalesPolicyParams> = {
 };
 
 // ---------------- Holding: iş kolları, altyapı, borsa ----------------
-const buildVentureCmd: CommandDef<{ kind: 'gunes' | 'ruzgar'; city: string; tier: number }> = {
+const buildVentureCmd: CommandDef<{ kind: BuildKind; city: string; tier: number }> = {
   validate: (s, p) => buildError(s, p.kind, p.city, p.tier),
   apply(s, p) { const ev0: GameEvent[] = []; buildEnergy(s, p.kind, p.city, p.tier, provinceData(p.city)?.name ?? p.city, ev0); return ev0; },
 };
@@ -353,6 +353,11 @@ const operateProjectCmd: CommandDef<{ projectId: number }> = {
   validate: (s, p) => operateError(s, s.projects.find((x) => x.id === p.projectId)),
   apply(s, p) { const e: GameEvent[] = []; operateProject(s, s.projects.find((x) => x.id === p.projectId)!, e); return e; },
 };
+const setVentureOpsCmd: CommandDef<{ id: number; price?: number; staff?: number; ads?: number }> = { validate: (s, p) => opsError(s, p.id, p), apply(s, p) { setOps(s, p.id, p); return [ev(s, 'VENTURE_OPS', { id: p.id })]; } };
+const hireVentureMgrCmd: CommandDef<{ id: number; candId: number }> = { validate: (s, p) => hireMgrError(s, p.id, p.candId), apply(s, p) { hireVentureMgr(s, p.id, p.candId); return [ev(s, 'VENTURE_OPS', { id: p.id })]; } };
+const fireVentureMgrCmd: CommandDef<{ id: number }> = { validate: (s, p) => { const v = s.ventures.find((x) => x.id === p.id); return v?.ops?.mgr ? null : 'Müdür yok.'; }, apply(s, p) { fireVentureMgr(s, p.id); return [ev(s, 'VENTURE_OPS', { id: p.id })]; } };
+const setPPACmd: CommandDef<{ id: number; months: number }> = { validate: (s, p) => ppaError(s, p.id, p.months), apply(s, p) { setPPA(s, p.id, p.months); return [ev(s, 'VENTURE_OPS', { id: p.id })]; } };
+const manageSiteCmd: CommandDef<{ projectId: number }> = { validate: (s, p) => manageSiteError(s, s.projects.find((x) => x.id === p.projectId)), apply(s, p) { const e: GameEvent[] = []; manageSite(s, s.projects.find((x) => x.id === p.projectId)!, e); return e; } };
 const sellVentureCmd: CommandDef<{ id: number }> = { validate: (s, p) => sellError(s, p.id), apply(s, p) { const e: GameEvent[] = []; sellVenture(s, p.id, e); return e; } };
 const setStrategyCmd: CommandDef<{ division: string; strategy: string }> = {
   validate: (s, p) => strategyError(s, p.division, p.strategy),
@@ -504,7 +509,7 @@ export const COMMANDS = {
   SetPace: setPaceCmd, PromoteUnit: promoteUnitCmd,
   AcceptOffer: acceptOfferCmd, CounterOffer: counterOfferCmd, RejectOffer: rejectOfferCmd, SetUnit: setUnitCmd, SetAutoSell: setAutoSellCmd, EndRent: endRentCmd,
   SetFocus: setFocusCmd, IssueOrder: issueOrderCmd, SetManager: setManagerCmd, BuyDecor: buyDecorCmd,
-  BuildVenture: buildVentureCmd, OperateProject: operateProjectCmd, SellVenture: sellVentureCmd, SetStrategy: setStrategyCmd, ToggleGM: toggleGmCmd, GoPublic: goPublicCmd, SecondaryOffering: secondaryCmd, Buyback: buybackCmd, AcquireRival: acquireCmd,
+  BuildVenture: buildVentureCmd, OperateProject: operateProjectCmd, SellVenture: sellVentureCmd, SetVentureOps: setVentureOpsCmd, HireVentureMgr: hireVentureMgrCmd, FireVentureMgr: fireVentureMgrCmd, SetPPA: setPPACmd, ManageSite: manageSiteCmd, SetStrategy: setStrategyCmd, ToggleGM: toggleGmCmd, GoPublic: goPublicCmd, SecondaryOffering: secondaryCmd, Buyback: buybackCmd, AcquireRival: acquireCmd,
   StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd2, BuyMachine: buyMachine, UpgradeOffice: upgradeOffice, ResolveEvent: resolveEventCmd, PlaceBid: placeBidCmd, TakeLoan: takeLoanCmd, TakeInvestor: takeInvestorCmd, SellEquity: sellEquityCmd, RepayLoan: repayLoanCmd, RestructureLoan: restructureCmd, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,
   CreateCompany: createCompany,

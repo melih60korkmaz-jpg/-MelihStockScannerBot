@@ -78,14 +78,16 @@ export interface Parcel {
 }
 export interface CityMarket { landIndex: number; housingIndex: number; supply?: number }
 /** İş kolları (Holding): gayrimenkul işletmeleri, enerji santralleri ve satın alınan bağlı şirketler. */
-export type VentureKind = 'otel' | 'avm' | 'gunes' | 'ruzgar' | 'bagli';
+export type VentureKind = 'otel' | 'avm' | 'gunes' | 'ruzgar' | 'bagli' | 'restoran' | 'otopark' | 'tatil' | 'is_merkezi' | 'ofis' | 'site' | 'depolama';
 export interface Venture {
   id: number; kind: VentureKind; name: string; city: string; openedDay: number; readyDay: number;
   capex: Money;            // yatırım bedeli (kayıt değeri)
   size: number;            // otel: oda · avm: kiralanabilir m² · gunes/ruzgar: MW · bagli: 0
   quality: number;         // 0 ekonomik … 3 lüks (otel/avm)
   ci0: number;             // açılıştaki maliyet endeksi (enflasyonla gelir/gider ölçeklenir)
-  projectId?: number; rivalName?: string; brokenUntil?: number;
+  projectId?: number; projectRef?: number; rivalName?: string; brokenUntil?: number;
+  /** İşletme yönetimi (eski kayıtlarda yok): fiyat çarpanı, personel düzeyi (1–3), reklam düzeyi (0–3), müdür; memnuniyet; sözleşmeli satış; son aylar. */
+  ops?: { price: number; staff: number; ads: number; mgr: Exec | null }; sat?: number; ppa?: { price: number; until: number }; hist?: { day: number; rev: Money; cost: Money; occ: number }[];
   last: { revenue: Money; cost: Money; occ: number; day: number };
   total: { revenue: Money; cost: Money };
 }
@@ -173,6 +175,7 @@ export interface Project {
   order?: { id: string; until: number };
   manager?: number;
   cond?: number;            // bina durumu 0–100 (bakım); piyasa değerini ve kiracı memnuniyetini etkiler
+  managedBy?: number;       // site yönetimi işletmesi (iş kolu kimliği)
   operatedBy?: number;       // işletmeye alındıysa iş kolu kimliği (satış merkezi kapanır, değer işletmeden gelir)
 }
 export interface Order { id: number; material: string; qty: number; unitPrice: Money; supplier: string; placedDay: number; arriveDay: number; delayed: boolean; quality: number; freight?: Money; term?: 'pesin' | 'vade30' | 'vade60'; dest?: string; contractId?: number; rush?: boolean }
@@ -270,6 +273,7 @@ export interface GameState {
   offers?: Offer[];
   deals?: Deal[];
   mgmt?: MgmtState;
+  energy?: { price: number; hist: number[] };
   usedMarket?: UsedMachine[]; leases?: MachineLease[];
   estate?: { policy: 'enflasyon' | 'yuksek' | 'sabit' };
   payables?: Payable[]; contracts?: SupplyContract[]; warehouse?: { level: number };
