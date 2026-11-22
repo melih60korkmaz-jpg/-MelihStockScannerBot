@@ -12,7 +12,7 @@ export type Block =
 
 export interface Topic { id: string; ico: string; title: string; blocks: Block[] }
 
-export const TAB_TOPIC: Record<string, string> = { tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
+export const TAB_TOPIC: Record<string, string> = { gayrimenkul: 'gayrimenkul', tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
 
 export const GUIDE: Topic[] = [
   {
@@ -160,6 +160,17 @@ export const GUIDE: Topic[] = [
       { h: 'Altyapı işleri (seviye 5)' },
       { ul: ['İhale sekmesinde yol, köprü, tünel, baraj ve kanalizasyon/su şebekesi ihaleleri açılır. Şartları sağlamak gerekir (itibar, kredi notu, tamamlanan proje, çalışan, makine).', 'Kazanınca iş Holding › Altyapı\'da başlar. İlerleme saha ekibine ve makine parkına bağlıdır; kapasite yetersizse iş ilerlemez, nakit yoksa durur. Kapasite aktif işler arasında bölünür.', 'Her %10 ilerleme bir hakediş doğurur (45 gün sonra tahsil). Bitişte kalan hakediş ve teminat gelir; gecikirse günde %0,1 ceza (en çok %10).'] },
       { tip: 'Altyapı işleri büyük sermaye ve çok makine ister. Önce makine parkını büyüt, ekibi güçlendir, sonra yola çık.' },
+    ],
+  },
+  {
+    id: 'gayrimenkul', ico: '🏘️', title: 'Gayrimenkul yönetimi', blocks: [
+      { p: 'Menü › Ticaret › Gayrimenkul Yönetimi (seviye 2). Bina yapıp satmak zorunda değilsin: dairelerini ve ticari birimlerini kiraya verip düzenli gelir elde edebilirsin.' },
+      { h: 'Kiralama' },
+      { ul: ['Satış merkezinde birimi "Kiralık" yap; kiracı teklifleri gelir. Teklifte kiracının ödeme düzeni, gelir düzeyi, sözleşme süresi ve depozitosu görünür; kabul et, karşı teklif ver ya da reddet.', 'Kabul edince 2 aylık depozito alınır (iade yükümlülüğü olarak net varlıktan düşülür). Her ay kira tahsil edilir; ödeme düzeni düşük kiracı geciktirir. 3 ay ödemeyen depozitodan mahsupla çıkarılır.', 'Sözleşme bitince kira artışıyla yenilenir ya da kiracı ayrılır; yüksek artış ve düşük memnuniyet ayrılma ihtimalini artırır. Kira artış politikasını Politika sekmesinden seç.'] },
+      { h: 'Bina durumu ve bakım' },
+      { ul: ['Her binanın durumu (0–100) zamanla düşer. Düşük durum arıza (asansör, çatı, tesisat, cephe, ortak alan) olasılığını, kiracı memnuniyetsizliğini ve değer kaybını artırır.', 'Bakım yatırımı durumu yükseltir. Arızalar gider olarak deftere işlenir.'] },
+      { h: 'Rapor' },
+      { p: 'Portföyde her birim için maliyet, piyasa değeri, aylık kira, net getiri ve yatırım geri dönüş süresi hesaplanır. Doluluk oranı ve toplamlar Rapor sekmesindedir; kira geliri konsolide gelir tablosuna ve Holding özetine yansır.' },
     ],
   },
   {

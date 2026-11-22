@@ -228,5 +228,10 @@
   "id": "fabrika_gider",
   "label": "Fabrika giderleri",
   "kind": "gider"
+ },
+ {
+  "id": "depozito",
+  "label": "Kiracı depozitosu",
+  "kind": "finansman"
  }
 ]

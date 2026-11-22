@@ -3,9 +3,10 @@ import { EMOJI } from './art';
 import type { App } from './app';
 import { openGuide, TAB_TOPIC } from './guide';
 
-export type TabId = 'tedarik' | 'yonetim' | 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
+export type TabId = 'gayrimenkul' | 'tedarik' | 'yonetim' | 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
 /** Her sekmenin tek satırlık tanıtımı ve "Ne yapılır?" yardımı. Oyuncu hangi ekranda ne bulacağını hep görsün. */
 export const TAB_INFO: Record<TabId, { ico: string; title: string; sub: string; help: string[] }> = {
+  gayrimenkul: { ico: '🏘️', title: 'Gayrimenkul Yönetimi', sub: 'Portföy, kiracılar, kira teklifleri, bakım ve getiri raporu.', help: ['Satış merkezinde bir daireyi "Kiralık" yaparsan kiracı teklifleri buraya düşer.', 'Kiracının ödeme düzeni, geliri ve sözleşme süresi görünür; depozito alınır.', 'Bakım yatırımı bina durumunu yükseltir; düşük durum arıza ve değer kaybı getirir.', 'Rapor: maliyet, değer, kira, bakım, net getiri ve geri dönüş süresi.'] },
   tedarik: { ico: '🧱', title: 'Satın Alma ve Tedarik', sub: 'Malzeme siparişi, tedarikçi karşılaştırma, sözleşme ve depo.', help: ['Sipariş: malzeme, miktar ve teslimat şehrini seç; tedarikçileri fiyat, kalite, teslim süresi ve güvenilirlikle karşılaştır.', 'Vadeli alımda nakit çıkmaz ama yükümlülük doğar.', 'Depo: kapasite dolarsa yeni sipariş alınmaz; çimento ve boya zamanla bozulur.', 'Sözleşme: fiyatı kilitler, her ay teslimat gelir.'] },
   yonetim: { ico: '🧭', title: 'Yönetim Merkezi', sub: 'Genel müdür, yönetim kurulu, yıllık hedefler ve departmanlar.', help: ['Genel Müdür: işe al; becerisi satış, şantiye ve ihale performansını etkiler.', 'Kurul: her çeyrek toplanır; üyelerin eğilimini görüp karar verirsin.', 'Hedefler: yılda bir belirlenir, yıl sonunda puanlanır.', 'Departmanlar: bütçe, müdür ve personel performansı belirler.'] },
   sirket: { ico: EMOJI.sirket, title: 'Şirket', sub: 'Genel durum: bugün ne yapmalı, paran ve projelerin.', help: ['Üstteki şehir resmine dokununca Genel Merkez açılır.', 'Görevler sana sıradaki adımı söyler; "Şimdi yap" ilgili sekmeye götürür.', 'Net varlık ve nakit yeterlilik, şirketin ne kadar dayanabileceğini gösterir.'] },

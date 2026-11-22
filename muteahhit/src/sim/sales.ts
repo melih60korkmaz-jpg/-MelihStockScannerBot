@@ -8,7 +8,8 @@ import type { GameEvent, GameState, Project, Receivable, SalesPolicy, Unit } fro
 import { districtData } from '../data';
 import { post } from './ledger';
 import { planProject } from './projects';
-import { MAX_OFFERS, createOffer, offersDaily, offersOf, rentMonthly } from './buyers';
+import { MAX_OFFERS, createOffer, offersDaily, offersOf } from './buyers';
+import { condFactor, realestateMonthly } from './realestate';
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 function seeded(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -57,7 +58,7 @@ export const unitsOf = (s: GameState, projectId: number) => s.units.filter((u) =
 /** Bugünkü piyasada m² satış fiyatı (kalite puanı varsa ona göre). */
 export function fairPerM2(s: GameState, p: Project): Money {
   const parcel = s.parcels.find((x) => x.id === p.parcelId); if (!parcel) return 0;
-  const qm = p.result ? 1 + (p.result.qualityScore - 74) * 0.004 : 1;
+  const qm = (p.result ? 1 + (p.result.qualityScore - 74) * 0.004 : 1) * (p.status === 'tamamlandi' ? condFactor(p) : 1);
   return Math.round(planProject(s, parcel, p.type, p.quality, 0).salePerM2 * qm);
 }
 export const unitFair = (u: Unit, perM2: Money): Money => Math.round(u.area * perM2 * u.mult);
@@ -175,7 +176,7 @@ export function deliverUnits(s: GameState, p: Project, events: GameEvent[]): voi
 
 /** Aylık: garanti talepleri (kalite düşükse sık ve pahalı), satılmamış daire gideri. */
 export function salesMonthly(s: GameState, events: GameEvent[]): void {
-  rentMonthly(s, events);
+  realestateMonthly(s, events);
   for (const u of s.units) {
     const p = s.projects.find((x) => x.id === u.projectId); if (!p) continue;
     if (u.delivered && u.warrantyUntil !== undefined && u.warrantyUntil > s.clock.day) {

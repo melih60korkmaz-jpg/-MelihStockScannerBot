@@ -2,6 +2,7 @@ import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { dateOf } from './calendar';
+import { condOf, evictTenant, maintainBuilding, maintenanceCost, tenantOf } from '../sim/realestate';
 import { WAREHOUSE, freeSpace, quoteOrder, whLevel } from '../sim/materials';
 import { cancelContract, contractError, contractValue, signContract, upgradeWarehouse } from '../sim/supply';
 import { BUDGET_STEPS, decideAgenda, deptCandidates, deptDef, fireGM, getMgmt, hireDeptMgr, hireGM, openDept, refreshCands, setDeptStaff, setGoals } from '../sim/mgmt';
@@ -480,7 +481,13 @@ const signContractCmd: CommandDef<{ material: string; supplier: string; qtyPerMo
 const cancelContractCmd: CommandDef<{ id: number }> = { validate(s, p) { const c = (s.contracts ?? []).find((x) => x.id === p.id); if (!c) return 'Sözleşme bulunamadı.'; return s.company!.cash < contractValue(c) * 2 ? 'Fesih bedeli (2 aylık tutar) için yeterli nakit yok.' : null; }, apply(s, p) { cancelContract(s, p.id); return [ev(s, 'SUPPLY_CHANGED', {})]; } };
 const upgradeWarehouseCmd: CommandDef<Record<string, never>> = { validate(s) { const nx = WAREHOUSE[whLevel(s) + 1]; if (!nx) return 'Depo zaten en büyük kademede.'; if (!isUnlocked(s, 'tedarik')) return 'Satın Alma ve Tedarik henüz açılmadı.'; return s.company!.cash < Math.round(TL(nx.upTL) * s.costIndex) ? 'Depo yatırımı için yeterli nakit yok.' : null; }, apply(s) { upgradeWarehouse(s); return [ev(s, 'SUPPLY_CHANGED', {})]; } };
 
+const evictCmd: CommandDef<{ unitId: number }> = { validate(s, p) { const u = s.units.find((x) => x.id === p.unitId); if (!u?.rent) return 'Bu dairede kiracı yok.'; const r = tenantOf(s, u)!; return s.company!.cash < Math.round(r.amount * (r.arrears ? 1.5 : 3)) ? 'Tahliye masrafı için yeterli nakit yok.' : null; }, apply(s, p) { const evs: GameEvent[] = []; evictTenant(s, p.unitId, evs); return evs; } };
+const maintainCmd: CommandDef<{ projectId: number }> = { validate(s, p) { const pr = s.projects.find((x) => x.id === p.projectId); if (!pr || pr.status === 'satildi' || pr.status === 'taslak') return 'Bina bulunamadı.'; const c = maintenanceCost(s, pr); if (c <= 0) return 'Bu binada şirkete ait birim yok.'; if (condOf(pr) >= 99) return 'Bina zaten çok iyi durumda.'; return s.company!.cash < c ? 'Bakım yatırımı için yeterli nakit yok.' : null; }, apply(s, p) { maintainBuilding(s, p.projectId); return [ev(s, 'ESTATE_CHANGED', {})]; } };
+const rentPolicyCmd: CommandDef<{ policy: 'enflasyon' | 'yuksek' | 'sabit' }> = { validate: (s, p) => (['enflasyon', 'yuksek', 'sabit'].includes(p.policy) ? (isUnlocked(s, 'gayrimenkul') ? null : 'Gayrimenkul Yönetimi henüz açılmadı.') : 'Geçersiz politika.'), apply(s, p) { s.estate = { policy: p.policy }; return [ev(s, 'ESTATE_CHANGED', {})]; } };
+const rentAdjCmd: CommandDef<{ unitId: number; radj: number }> = { validate(s, p) { const u = s.units.find((x) => x.id === p.unitId); if (!u || u.status === 'satildi') return 'Daire bulunamadı.'; if (u.rent) return 'Kiradaki dairenin kirası sözleşme yenilemesinde güncellenir.'; return p.radj >= 0.8 && p.radj <= 1.3 ? null : 'Kira çarpanı %80–%130 arasında olmalı.'; }, apply(s, p) { const u = s.units.find((x) => x.id === p.unitId)!; if (Math.abs(p.radj - 1) < 0.005) delete u.radj; else u.radj = +p.radj.toFixed(3); s.offers = (s.offers ?? []).filter((o) => !(o.unitId === u.id && o.kind === 'kira')); return [ev(s, 'ESTATE_CHANGED', {})]; } };
+
 export const COMMANDS = {
+  EvictTenant: evictCmd, MaintainBuilding: maintainCmd, SetRentPolicy: rentPolicyCmd, SetRentAdj: rentAdjCmd,
   SignContract: signContractCmd, CancelContract: cancelContractCmd, UpgradeWarehouse: upgradeWarehouseCmd,
   HireGM: hireGmCmd, FireGM: fireGmCmd, DecideAgenda: decideAgendaCmd, SetGoals: setGoalsCmd, OpenDept: openDeptCmd, SetDeptBudget: deptBudgetCmd, HireDeptMgr: hireDeptMgrCmd, FireDeptMgr: fireDeptMgrCmd, DeptStaff: deptStaffCmd,
   ProposeToRival: proposeCmd,

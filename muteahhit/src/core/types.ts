@@ -170,6 +170,7 @@ export interface Project {
   /** Yönetim emri (süreli) ve proje müdürü; eski kayıtlarda yok. */
   order?: { id: string; until: number };
   manager?: number;
+  cond?: number;            // bina durumu 0–100 (bakım); piyasa değerini ve kiracı memnuniyetini etkiler
   operatedBy?: number;       // işletmeye alındıysa iş kolu kimliği (satış merkezi kapanır, değer işletmeden gelir)
 }
 export interface Order { id: number; material: string; qty: number; unitPrice: Money; supplier: string; placedDay: number; arriveDay: number; delayed: boolean; quality: number; freight?: Money; term?: 'pesin' | 'vade30' | 'vade60'; dest?: string; contractId?: number; rush?: boolean }
@@ -185,7 +186,8 @@ export interface Unit {
   kaporaUntil?: number; kaporaAmt?: Money;
   delivered?: boolean; sat?: number; warrantyUntil?: number;
   /** Daire bazlı kontrol (eski kayıtlarda yok): özel fiyat çarpanı, rezerve, kiralık ilan, aktif kira sözleşmesi. */
-  adj?: number; promo?: number; landlord?: boolean; hold?: boolean; listing?: 'kira'; rent?: { amount: Money; tenant: string; since: number; seed: number };
+  adj?: number; radj?: number; promo?: number; landlord?: boolean; hold?: boolean; listing?: 'kira';
+  rent?: { amount: Money; tenant: string; since: number; seed: number; pay?: number; income?: number; sat?: number; endDay?: number; deposit?: Money; arrears?: Money; lateMonths?: number; renewals?: number };
 }
 /** Fırsat ilanı: rakipten bina/yarım proje, eski bina arsası ya da kat karşılığı teklifi. `parcel` kabul edilene kadar pazarda değildir. */
 export interface Deal {
@@ -259,6 +261,7 @@ export interface GameState {
   offers?: Offer[];
   deals?: Deal[];
   mgmt?: MgmtState;
+  estate?: { policy: 'enflasyon' | 'yuksek' | 'sabit' };
   payables?: Payable[]; contracts?: SupplyContract[]; warehouse?: { level: number };
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;
