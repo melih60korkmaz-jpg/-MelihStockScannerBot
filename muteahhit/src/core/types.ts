@@ -78,14 +78,14 @@ export interface Parcel {
 }
 export interface CityMarket { landIndex: number; housingIndex: number; supply?: number }
 /** İş kolları (Holding): gayrimenkul işletmeleri, enerji santralleri ve satın alınan bağlı şirketler. */
-export type VentureKind = 'otel' | 'avm' | 'gunes' | 'ruzgar' | 'bagli' | 'restoran' | 'otopark' | 'tatil' | 'is_merkezi' | 'ofis' | 'site' | 'depolama';
+export type VentureKind = 'otel' | 'avm' | 'gunes' | 'ruzgar' | 'bagli' | 'restoran' | 'otopark' | 'tatil' | 'is_merkezi' | 'ofis' | 'site' | 'depolama' | 'fabrika';
 export interface Venture {
   id: number; kind: VentureKind; name: string; city: string; openedDay: number; readyDay: number;
   capex: Money;            // yatırım bedeli (kayıt değeri)
   size: number;            // otel: oda · avm: kiralanabilir m² · gunes/ruzgar: MW · bagli: 0
   quality: number;         // 0 ekonomik … 3 lüks (otel/avm)
   ci0: number;             // açılıştaki maliyet endeksi (enflasyonla gelir/gider ölçeklenir)
-  projectId?: number; projectRef?: number; rivalName?: string; brokenUntil?: number;
+  projectId?: number; projectRef?: number; rivalName?: string; brokenUntil?: number; prod?: string; assumedDebt?: Money;
   /** İşletme yönetimi (eski kayıtlarda yok): fiyat çarpanı, personel düzeyi (1–3), reklam düzeyi (0–3), müdür; memnuniyet; sözleşmeli satış; son aylar. */
   ops?: { price: number; staff: number; ads: number; mgr: Exec | null }; sat?: number; ppa?: { price: number; until: number }; hist?: { day: number; rev: Money; cost: Money; occ: number }[];
   last: { revenue: Money; cost: Money; occ: number; day: number };
@@ -93,7 +93,11 @@ export interface Venture {
 }
 export type Division = 'insaat' | 'isletme' | 'enerji' | 'altyapi' | 'bagli';
 export type Strategy = 'buyume' | 'dengeli' | 'temkinli';
-export interface HoldingState { strategy: Record<'isletme' | 'enerji' | 'altyapi', Strategy>; gm: Record<'isletme' | 'enerji' | 'altyapi', boolean> }
+/** Rakip şirketteki hisse payı (yüzde). */
+export interface Stake { rivalId: number; pct: number; cost: Money; since: number }
+/** Şirketler arası (iştirak) işlem: konsolidasyonda elenir. from/to: 'merkez' ya da bölüm anahtarı. */
+export interface IcEntry { day: number; from: string; to: string; amount: Money; kind: 'sermaye' | 'borc' | 'borc_odeme' | 'temettu'; memo: string }
+export interface HoldingState { strategy: Record<'isletme' | 'enerji' | 'altyapi', Strategy>; gm: Record<'isletme' | 'enerji' | 'altyapi', boolean>; budget?: Record<string, Money> }
 export interface StockState { listed: boolean; ipoDay: number; shares: number; price: Money; ipoPrice: Money; hist: number[]; fair?: Money }   // hist: günlük kapanışlar (en çok 240)
 /** Altyapı işi (yol, köprü, tünel, baraj…): ihaleyle kazanılır; ilerleme makine ve ekip kapasitesine bağlıdır; hakediş 45 gün vadelidir. */
 export interface InfraJob {
@@ -216,7 +220,7 @@ export interface SalesPolicy { priceMult: number; agent: boolean; installments: 
 export interface Loan {
   id: number; kind: 'ticari' | 'insaat' | 'makine' | 'kisa'; bank: string; principal: Money; balance: Money; rate: number; term: number; remaining: number;
   payment: Money; schedule: 'annuity' | 'interest' | 'bullet'; start: number; nextDue: number; missed: number;
-  projectId?: number; machineId?: number; limit?: Money;
+  projectId?: number; machineId?: number; limit?: Money; sub?: string;
 }
 export interface Investment { id: number; projectId: number; amount: Money; share: number; day: number; paidOut?: boolean }
 export interface TenderReq { rep: number; score: number; completed: number; staff: number; machines: number }
@@ -277,6 +281,7 @@ export interface GameState {
   usedMarket?: UsedMachine[]; leases?: MachineLease[];
   estate?: { policy: 'enflasyon' | 'yuksek' | 'sabit' };
   payables?: Payable[]; contracts?: SupplyContract[]; warehouse?: { level: number };
+  stakes?: Stake[]; ic?: IcEntry[]; dd?: Record<number, { day: number; hidden: Money }>;
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;
   /** Malzeme fiyat geçmişi (aylık etkin çarpan; en çok 36 ay). Eski kayıtlarda yoktur. */

@@ -1,3 +1,4 @@
+import { factoryMatMult, freightMult } from './invest';
 import { gauss, rand, randInt } from '../core/rng';
 import { ensureCash } from './loans';
 import { TL, type Money } from '../core/money';
@@ -16,7 +17,7 @@ const hasRole = (s: GameState, role: string) => s.staff.some((x) => x.type === r
 /** Birim fiyat (kuruş): temel fiyat × makro malzeme endeksi × malzemeye özgü sapma × tedarikçi çarpanı (satın alma sorumlusu %3 indirim). */
 export function unitPrice(s: GameState, matId: string, supId: string): Money {
   const m = material(matId)!, sp = supplier(supId)!;
-  return Math.round(TL(m.priceTL) * (s.macro.materialIndex / 100) * (s.matPrice[matId] ?? 1) * sp.price * (hasRole(s, 'satin_alma') ? 0.97 : 1) * mgmtMatMult(s));
+  return Math.round(TL(m.priceTL) * (s.macro.materialIndex / 100) * (s.matPrice[matId] ?? 1) * sp.price * (hasRole(s, 'satin_alma') ? 0.97 : 1) * mgmtMatMult(s) * factoryMatMult(s, matId));
 }
 export const leadDays = (s: GameState, supId: string) => Math.max(1, supplier(supId)!.lead - (hasRole(s, 'satin_alma') ? 1 : 0));
 export const stockQty = (s: GameState, id: string) => s.stock[id]?.qty ?? 0;
@@ -53,7 +54,7 @@ export function quoteOrder(s: GameState, matId: string, supId: string, qty: numb
   if (space > sp.cap) return { ...empty, error: `${sp.label} tek seferde en çok ${sp.cap} m³ teslim eder (bu sipariş ${space.toFixed(0)} m³).`, space, mismatch };
   const unit = o.lockedUnit ?? Math.round(unitPrice(s, matId, supId) * (supId === 'ithal' ? 1 + (s.macro.inflation / 100) * 0.15 : 1)), gross = Math.round(unit * qty);
   const discount = o.lockedUnit !== undefined ? 0 : Math.round(gross * (gross >= TL(20_000_000) * s.costIndex ? 0.04 : gross >= TL(5_000_000) * s.costIndex ? 0.02 : 0)), goods = gross - discount, premium = Math.round(goods * TERM_PREMIUM[term]);
-  const freight = Math.round(goods * (0.03 + (mismatch ? 0.04 : 0) + (o.rush ? 0.06 : 0))), lead = Math.max(1, leadDays(s, supId) + (mismatch ? 3 : 0) - (o.rush ? 2 : 0));
+  const freight = Math.round(goods * (0.03 + (mismatch ? 0.04 : 0) + (o.rush ? 0.06 : 0)) * freightMult(s)), lead = Math.max(1, leadDays(s, supId) + (mismatch ? 3 : 0) - (o.rush ? 2 : 0));
   return { ok: true, unit, goods, discount, premium, freight, total: goods + premium + freight, lead, space, mismatch };
 }
 

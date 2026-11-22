@@ -1,6 +1,6 @@
 import { TL, type Money } from '../core/money';
 import type { GameEvent, GameState } from '../core/types';
-import { netWorth } from './finance';
+import { monthlyRows, netWorth } from './finance';
 import { post } from './ledger';
 import { aliveRivals } from './rivals';
 import { VENTURE_INFO, MAX_VENTURES } from './ventures';
@@ -13,10 +13,17 @@ export const SHARES = 100_000_000, IPO_MIN_LEVEL = 7, IPO_MIN_NW = TL(1_000_000_
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 const hash01 = (n: number): number => { let a = (n | 0) >>> 0; a = Math.imul(a ^ (a >>> 16), 0x45d9f3b); a = Math.imul(a ^ (a >>> 16), 0x45d9f3b); a ^= a >>> 16; return (a >>> 0) / 4294967296; };
 
+/** Hisse fiyatını belirleyen etkenler (çarpana eklenen paylar): kâr, borç yükü, devam eden projeler, sektör/kriz ve yatırımcı güveni. */
+export function priceDrivers(s: GameState): { profit: number; debt: number; projects: number; sector: number; trust: number } {
+  const rows = monthlyRows(s).slice(-4, -1), profit3 = rows.reduce((a, r) => a + r.net, 0), nw = Math.max(1, netWorth(s)), debt = s.loans.reduce((a, l) => a + l.balance, 0);
+  const reg = s.macro.regime, sector = reg === 'kriz' ? -0.12 : reg === 'daralma' ? -0.06 : reg === 'asiri_isinma' ? 0.05 : 0.02;
+  const trust = clamp(((s.company?.reputation ?? 50) - 50) / 400 + (s.macro.confidence - 50) / 400, -0.2, 0.2);
+  return { profit: clamp((profit3 * 4) / nw, -0.15, 0.25), debt: -clamp(debt / (nw + debt), 0, 1) * 0.18, projects: Math.min(0.08, s.projects.filter((p) => p.status === 'insaat').length * 0.012), sector, trust };
+}
 export const fairPrice = (s: GameState): Money => {
   const c = s.company!, h = s.history, past = h.length >= 7 ? h[h.length - 7]!.netWorth : h[0]?.netWorth ?? 0, nw = Math.max(1, netWorth(s));
   const growth = past > 0 ? clamp((nw / past - 1) * 0.5, -0.3, 0.3) : 0;
-  const mult = clamp(0.9 + (s.macro.confidence - 50) / 200 + (c.reputation - 50) / 300 + growth, 0.7, 1.8);
+  const d = priceDrivers(s), mult = clamp(0.9 + (s.macro.confidence - 50) / 200 + (c.reputation - 50) / 300 + growth + d.profit + d.debt + d.projects + d.sector, 0.6, 1.9);
   return Math.max(1, Math.round((nw * mult) / SHARES));
 };
 export const marketCap = (s: GameState): Money => (s.equity ? s.equity.price * SHARES : 0);
@@ -30,8 +37,11 @@ export function ipoError(s: GameState, pct: number): string | null {
   return null;
 }
 export const ipoPrice = (s: GameState): Money => Math.max(1, Math.round(fairPrice(s) * 0.92));
+/** Halka arz net geliri: brüt hasılat − aracı kurum/hazırlık (%3) − izahname ve denetim (sabit). Halka açık şirket ayrıca aylık uyum/denetim gideri öder. */
+export const IPO_FIXED_TL = 8_000_000, LISTED_MONTHLY_TL = 600_000;
+export const ipoProceeds = (s: GameState, pct: number): Money => Math.round(ipoPrice(s) * SHARES * pct / 100 * 0.97) - Math.round(TL(IPO_FIXED_TL) * s.costIndex);
 export function goPublic(s: GameState, pct: number, events: GameEvent[]): Money {
-  const c = s.company!, price = ipoPrice(s), proceeds = Math.round(price * SHARES * pct / 100 * 0.97);
+  const c = s.company!, price = ipoPrice(s), proceeds = ipoProceeds(s, pct);
   post(s, 'hisse', proceeds, { memo: `Halka arz (%${pct})` }); c.ownership -= pct; c.reputation = clamp(c.reputation + 3, 0, 100);
   s.equity = { listed: true, ipoDay: s.clock.day, shares: SHARES, price, ipoPrice: price, hist: [price], fair: fairPrice(s) };
   events.push({ type: 'IPO', day: s.clock.day, pause: true, data: { pct, price, proceeds } }); return proceeds;
@@ -59,6 +69,7 @@ export function buyback(s: GameState, pct: number): Money {
  */
 export function stockMonthly(s: GameState): void {
   const e = s.equity; if (!e?.listed || !s.company) return;
+  post(s, 'yonetim', -Math.round(TL(LISTED_MONTHLY_TL) * s.costIndex), { memo: 'Borsa uyum, denetim ve yatırımcı ilişkileri' });
   e.fair = fairPrice(s);
   const c = s.company; if (e.price > e.ipoPrice * 1.3) c.reputation = clamp(c.reputation + 0.5, 0, 100); else if (e.price < e.ipoPrice * 0.7) c.reputation = clamp(c.reputation - 0.5, 0, 100);
 }

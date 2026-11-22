@@ -24,6 +24,7 @@ export const VENTURE_INFO: Record<VentureKind, VInfo> = {
   gunes: { label: 'Güneş santrali', ico: '☀️', rev: 0.20, opex: 0.30, floor: 0.55, minLevel: 5, div: 'enerji' },
   ruzgar: { label: 'Rüzgâr santrali', ico: '🌬️', rev: 0.24, opex: 0.38, floor: 0.55, minLevel: 5, div: 'enerji' },
   depolama: { label: 'Enerji depolama', ico: '🔋', rev: 0.17, opex: 0.28, floor: 0.6, minLevel: 5, div: 'enerji' },
+  fabrika: { label: 'Fabrika', ico: '🏭', rev: 0.16, opex: 0.6, floor: 0.8, minLevel: 6, div: 'isletme' },
   bagli: { label: 'Bağlı şirket', ico: '🏛️', rev: 0.20, opex: 0.30, floor: 0.85, minLevel: 6, div: 'bagli' },
 };
 export const OPS_KINDS: VentureKind[] = ['otel', 'avm', 'is_merkezi', 'ofis', 'restoran', 'otopark', 'tatil', 'site'];
@@ -135,8 +136,8 @@ export function ventureMonth(s: GameState, v: Venture, day = s.clock.day): Month
   return { revenue: Math.round(revenue * infl * mod.rev), cost: Math.round(cost * infl), occ, broke };
 }
 
-const REV_CAT: Record<VentureKind, string> = { otel: 'isletme_gelir', avm: 'isletme_gelir', is_merkezi: 'isletme_gelir', ofis: 'isletme_gelir', restoran: 'isletme_gelir', otopark: 'isletme_gelir', tatil: 'isletme_gelir', site: 'isletme_gelir', gunes: 'enerji_gelir', ruzgar: 'enerji_gelir', depolama: 'enerji_gelir', bagli: 'bagli_gelir' };
-const COST_CAT: Record<VentureKind, string> = { otel: 'isletme_gider', avm: 'isletme_gider', is_merkezi: 'isletme_gider', ofis: 'isletme_gider', restoran: 'isletme_gider', otopark: 'isletme_gider', tatil: 'isletme_gider', site: 'isletme_gider', gunes: 'enerji_gider', ruzgar: 'enerji_gider', depolama: 'enerji_gider', bagli: 'isletme_gider' };
+const REV_CAT: Record<VentureKind, string> = { otel: 'isletme_gelir', avm: 'isletme_gelir', is_merkezi: 'isletme_gelir', ofis: 'isletme_gelir', restoran: 'isletme_gelir', otopark: 'isletme_gelir', tatil: 'isletme_gelir', site: 'isletme_gelir', gunes: 'enerji_gelir', ruzgar: 'enerji_gelir', depolama: 'enerji_gelir', fabrika: 'fabrika_gelir', bagli: 'bagli_gelir' };
+const COST_CAT: Record<VentureKind, string> = { otel: 'isletme_gider', avm: 'isletme_gider', is_merkezi: 'isletme_gider', ofis: 'isletme_gider', restoran: 'isletme_gider', otopark: 'isletme_gider', tatil: 'isletme_gider', site: 'isletme_gider', gunes: 'enerji_gider', ruzgar: 'enerji_gider', depolama: 'enerji_gider', fabrika: 'fabrika_gider', bagli: 'isletme_gider' };
 
 export function ventureValue(s: GameState, v: Venture): Money {
   const years = Math.max(0, (s.clock.day - v.openedDay) / 365), f = Math.max(VENTURE_INFO[v.kind].floor, 1 - 0.012 * years);
