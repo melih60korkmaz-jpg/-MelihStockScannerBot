@@ -594,3 +594,6 @@ html[data-motion=reduced] .sprog .sp-bar i { animation:none; transition:none; }
 .mitem { display:flex; align-items:center; gap:8px; text-align:left; min-height:46px; padding:6px 10px; border-radius:12px; border:1px solid var(--line); background:var(--s1); color:inherit; flex-wrap:wrap; } .mitem b { font-size:14px; font-weight:600; flex:1; } .mitem small { width:100%; color:var(--mute); font-size:11px; }
 .mitem.cur { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 16%, var(--s1)); } .mitem.locked { opacity:.55; } .mitem:active { transform:scale(.98); }
 html[data-motion=reduced] .menupanel { animation:none; }
+select { background:var(--s1); color:var(--text,#f5f5f3); border:1px solid var(--line); border-radius:10px; padding:0 10px; font-family:inherit; }
+select option { background:#23262b; color:#f5f5f3; }
+input[type=number] { background:var(--s1); color:var(--text,#f5f5f3); border:1px solid var(--line); border-radius:10px; padding:0 10px; font-family:inherit; }

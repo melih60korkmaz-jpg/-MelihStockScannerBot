@@ -1,0 +1,78 @@
+import { formatDate } from '../../core/calendar';
+import { MATERIALS, SUPPLIERS, cityData, material } from '../../data';
+import { WAREHOUSE, capacityOf, freeSpace, quoteOrder, spaceOf, stockQty, usedSpace, whLevel } from '../../sim/materials';
+import { CONTRACT_BREAK_MONTHS, contractValue, payablesTotal, stockLossForecast, warehouseRent } from '../../sim/supply';
+import { unlockState } from '../../sim/unlock';
+import { TL } from '../../core/money';
+import { fmt, nf } from '../components';
+import { askConfirm, h, press, toast } from '../dom';
+import { materials } from './ops';
+import type { App } from '../app';
+
+type Sub = 'siparis' | 'stok' | 'sozlesme' | 'depo' | 'siparislerim';
+const mem = { sub: 'siparis' as Sub, mat: 'demir', qty: 50, sup: '', term: 'pesin' as 'pesin' | 'vade30' | 'vade60', rush: false, dest: '', cqty: 30, cmonths: 6 as 6 | 12 };
+export const setTedarikSub = (s: string) => { if (['siparis', 'stok', 'sozlesme', 'depo', 'siparislerim'].includes(s)) mem.sub = s as Sub; };
+const TERM_TR = { pesin: 'Peşin', vade30: '30 gün vade (+%2,5)', vade60: '60 gün vade (+%5)' } as const;
+
+/** Satın Alma ve Tedarik: sipariş (tedarikçi karşılaştırmalı), stok ve fiyatlar, düzenli sözleşmeler, depo ve yoldaki siparişler/vadeli ödemeler. */
+export function tedarikView(app: App, refresh: () => void): HTMLElement {
+  const s = app.store.state, c = s.company!, ul = unlockState(s, 'tedarik');
+  if (!ul.open) return h('div', { class: 'card emptyfx', style: 'text-align:center;padding:20px' }, h('div', { style: 'font-size:36px' }, '🔒'), h('b', {}, 'Satın Alma ve Tedarik henüz kapalı'), h('div', { class: 'mute', style: 'font-size:13px;margin:6px 0' }, 'Açılma koşulları:'), ...ul.missing.map((x) => h('div', {}, '• ' + x)), h('div', { class: 'mute', style: 'font-size:12px;margin-top:8px' }, 'Bu arada Operasyon › Malzeme sekmesinden temel sipariş verebilirsiniz.'));
+  if (!mem.sup) mem.sup = c.procurement.supplier; if (!mem.dest) mem.dest = c.startCity;
+  const act = (cmd: string, params: object, ok: string, sfx: 'confirm' | 'stamp' | 'coin' = 'confirm') => { const r = app.store.run(cmd as never, params as never); if (r.ok) { app.audio.sfx(sfx); toast(ok); } else { app.audio.sfx('error'); toast(r.error); } refresh(); return r.ok; };
+  const seg = h('div', { class: 'seg', role: 'tablist', style: 'margin-bottom:10px;align-self:flex-start;max-width:100%;overflow-x:auto' });
+  for (const [id, l] of [['siparis', 'Sipariş'], ['stok', 'Stok ve fiyatlar'], ['sozlesme', 'Sözleşmeler'], ['depo', 'Depo'], ['siparislerim', `Siparişlerim${s.orders.length ? ` (${s.orders.length})` : ''}`]] as [Sub, string][]) seg.append(h('button', { class: mem.sub === id ? 'on' : '', onclick: () => { press(app); mem.sub = id; refresh(); } }, l));
+  const body = h('div', { style: 'display:flex;flex-direction:column;gap:10px' });
+  const used = usedSpace(s), cap = capacityOf(s), pct = Math.min(100, (used / cap) * 100);
+  const capBar = h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('div', { class: 'lbl-s', style: 'margin:0' }, `🏭 Depo: ${WAREHOUSE[whLevel(s)]!.label}`), h('b', {}, `${used.toFixed(0)} / ${cap} m³`)), h('div', { class: 'meter', style: 'margin-top:6px' }, h('i', { style: `width:${pct}%;background:${pct > 85 ? 'var(--bad)' : pct > 65 ? 'var(--warn)' : 'var(--accent2)'}` })));
+
+  if (mem.sub === 'siparis') {
+    const m = material(mem.mat)!, qty = Math.max(0, mem.qty);
+    const sel = h('select', { 'aria-label': 'Malzeme', style: 'min-height:44px;font-size:16px;width:100%' }, ...MATERIALS.map((x) => h('option', { value: x.id, ...(x.id === mem.mat ? { selected: true } : {}) }, `${x.label} (${x.unit})`))) as HTMLSelectElement; sel.onchange = () => { mem.mat = sel.value; refresh(); };
+    const q = h('input', { type: 'number', min: 1, value: String(mem.qty), 'aria-label': 'Miktar', style: 'min-height:44px;font-size:16px;width:100%' }) as HTMLInputElement; q.onchange = () => { mem.qty = Math.max(0, Number(q.value) || 0); refresh(); };
+    const dest = h('select', { 'aria-label': 'Teslimat şehri', style: 'min-height:44px;font-size:16px;width:100%' }, ...s.openCities.map((id) => h('option', { value: id, ...(id === mem.dest ? { selected: true } : {}) }, cityData(id)?.label ?? id))) as HTMLSelectElement; dest.onchange = () => { mem.dest = dest.value; refresh(); };
+    const rows = SUPPLIERS.map((sp) => ({ sp, q: quoteOrder(s, mem.mat, sp.id, qty || 1, { term: sp.terms.includes(mem.term) ? mem.term : 'pesin', rush: mem.rush, dest: mem.dest }) })), best = rows.filter((r) => r.q.ok).sort((a, b) => a.q.total - b.q.total)[0];
+    const tbl = h('table', { class: 'tbl' }, h('tr', {}, ...['Tedarikçi', 'Birim', 'Kalite', 'Teslim', 'Güven', 'Nakliye', 'Vade', 'Toplam'].map((x) => h('th', {}, x))));
+    for (const { sp, q: qq } of rows) {
+      const on = mem.sup === sp.id, isBest = best?.sp.id === sp.id;
+      tbl.append(h('tr', { style: `cursor:pointer;${on ? 'background:rgba(240,120,36,.14)' : ''}`, onclick: () => { press(app); mem.sup = sp.id; if (!sp.terms.includes(mem.term)) mem.term = 'pesin'; refresh(); } },
+        h('td', {}, `${on ? '● ' : ''}${sp.label}${isBest ? ' ⭐' : ''}`), h('td', {}, qq.ok ? fmt(Math.round(qq.goods / (qty || 1))) : '—'), h('td', {}, sp.quality > 0 ? 'Yüksek' : sp.quality < 0 ? 'Düşük' : 'Orta'), h('td', {}, qq.ok ? `${qq.lead} gün` : '—'), h('td', {}, `%${Math.round(sp.reliability * 100)}`), h('td', {}, qq.ok ? `${fmt(qq.freight)}${qq.mismatch ? ' ⚠' : ''}` : '—'), h('td', {}, sp.terms.map((t) => (t === 'pesin' ? 'P' : t === 'vade30' ? '30' : '60')).join('/')), h('td', {}, qq.ok ? h('b', {}, fmt(qq.total)) : h('span', { class: 'mute', title: qq.error }, 'yok'))));
+    }
+    const cur = quoteOrder(s, mem.mat, mem.sup, qty || 1, { term: mem.term, rush: mem.rush, dest: mem.dest }), spX = SUPPLIERS.find((x) => x.id === mem.sup)!;
+    body.append(capBar, h('div', { class: 'cols' },
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Sipariş'), h('div', { class: 'lbl-s' }, 'Malzeme'), sel, h('div', { class: 'lbl-s', style: 'margin-top:8px' }, `Miktar (${m.unit})`), q, h('div', { class: 'lbl-s', style: 'margin-top:8px' }, 'Teslimat şehri'), dest,
+        h('div', { class: 'seg', style: 'margin:10px 0;flex-wrap:wrap' }, ...(['pesin', 'vade30', 'vade60'] as const).map((t) => h('button', { class: mem.term === t ? 'on' : '', disabled: !spX.terms.includes(t), onclick: () => { mem.term = t; refresh(); } }, TERM_TR[t]))),
+        h('div', { class: 'row', style: 'min-height:40px' }, h('div', { class: 'lbl' }, '⚡ Ekspres teslimat', h('small', {}, '−2 gün, nakliye +%6')), h('button', { class: 'tog', role: 'switch', 'aria-checked': String(mem.rush), 'aria-label': 'Ekspres', onclick: () => { mem.rush = !mem.rush; refresh(); } })),
+        h('div', { class: 'kv' }, ...([['Seçili tedarikçi', spX.label], ['Mal bedeli', cur.ok ? fmt(cur.goods) : '—'], ['Toplu indirim', cur.ok && cur.discount ? '−' + fmt(cur.discount) : '—'], ['Vade farkı', cur.ok ? fmt(cur.premium) : '—'], ['Nakliye', cur.ok ? fmt(cur.freight) : '—'], ['Toplam', cur.ok ? fmt(cur.total) : '—'], ['Depo hacmi', cur.ok ? `${cur.space.toFixed(1)} m³ (boş ${freeSpace(s).toFixed(0)})` : '—']] as [string, string][]).map(([a, b]) => h('div', { class: 'row', style: 'min-height:30px' }, h('div', { class: 'lbl' }, a), h('b', {}, b)))),
+        cur.ok ? null : h('div', { class: 'bad-t', style: 'font-size:12px' }, cur.error ?? ''),
+        h('button', { class: 'btn gold block', style: 'margin-top:8px', disabled: !cur.ok, onclick: () => { if (act('PlaceOrder', { material: mem.mat, qty, supplier: mem.sup, term: mem.term, rush: mem.rush, dest: mem.dest }, 'Sipariş verildi', 'coin')) void 0; } }, 'Sipariş ver')),
+      h('div', { class: 'card', style: 'overflow:auto' }, h('div', { class: 'lbl-s' }, 'Tedarikçi karşılaştırması (aynı miktar)'), tbl, h('div', { class: 'mute', style: 'font-size:11px;margin-top:6px' }, '⭐ en ucuz toplam · ⚠ bölge dışı: +nakliye ve +3 gün · Vade: P=peşin, 30/60 gün. Güvenilirliği düşük tedarikçide eksik veya hatalı teslimat çıkabilir.'))));
+  }
+  else if (mem.sub === 'stok') body.append(capBar, materials(app, refresh));
+  else if (mem.sub === 'sozlesme') {
+    const list = s.contracts ?? [];
+    body.append(h('div', { class: 'cols' },
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Yeni düzenli tedarik sözleşmesi'), h('div', { class: 'mute', style: 'font-size:12px;margin-bottom:6px' }, 'Fiyat sözleşme günündeki fiyatın %4 altında kilitlenir; her ay miktar teslim alınır (al ya da öde). Depo doluysa teslimat reddedilir ve ceza ödenir. Erken fesih: 2 aylık tutar.'),
+        (() => { const sel = h('select', { 'aria-label': 'Sözleşme malzemesi', style: 'min-height:44px;font-size:16px;width:100%' }, ...MATERIALS.filter((x) => x.space > 0).map((x) => h('option', { value: x.id, ...(x.id === mem.mat ? { selected: true } : {}) }, x.label))) as HTMLSelectElement; sel.onchange = () => { mem.mat = sel.value; refresh(); }; return sel; })(),
+        h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, `Aylık miktar (${material(mem.mat)?.unit ?? ''})`), (() => { const q = h('input', { type: 'number', min: 1, value: String(mem.cqty), style: 'min-height:40px;width:110px;font-size:16px' }) as HTMLInputElement; q.onchange = () => { mem.cqty = Math.max(1, Number(q.value) || 1); refresh(); }; return q; })()),
+        h('div', { class: 'seg', style: 'margin:6px 0' }, ...([6, 12] as const).map((mo) => h('button', { class: mem.cmonths === mo ? 'on' : '', onclick: () => { mem.cmonths = mo; refresh(); } }, `${mo} ay`))),
+        h('div', { class: 'lbl-s' }, 'Tedarikçi'), h('div', { class: 'seg', style: 'flex-wrap:wrap' }, ...SUPPLIERS.map((sp) => h('button', { class: mem.sup === sp.id ? 'on' : '', onclick: () => { mem.sup = sp.id; refresh(); } }, sp.label))),
+        h('button', { class: 'btn gold block', style: 'margin-top:8px', onclick: () => act('SignContract', { material: mem.mat, supplier: mem.sup, qtyPerMonth: mem.cqty, months: mem.cmonths }, 'Sözleşme imzalandı', 'stamp') }, 'Sözleşme imzala')),
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `Aktif sözleşmeler (${list.length})`), ...(list.length ? list.map((k) => h('div', { class: 'row', style: 'min-height:56px' }, h('div', { class: 'lbl' }, `${material(k.material)?.label} · ${SUPPLIERS.find((x) => x.id === k.supplier)?.label}`, h('small', {}, `${k.qtyPerMonth} ${material(k.material)?.unit}/ay · birim ${fmt(k.price)} · aylık ${fmt(contractValue(k))} · teslim ${k.taken}${k.missed ? ` · kaçan ${k.missed}` : ''} · bitiş ${formatDate(k.startDay + k.months * 30)}`)),
+        h('button', { class: 'btn danger', style: 'min-height:34px;font-size:12px', onclick: async () => { if (await askConfirm(`Sözleşme feshedilsin mi?\nFesih bedeli ${CONTRACT_BREAK_MONTHS} aylık tutar: ${fmt(contractValue(k) * CONTRACT_BREAK_MONTHS)}.`)) act('CancelContract', { id: k.id }, 'Sözleşme feshedildi', 'stamp'); } }, 'Feshet'))) : [h('div', { class: 'empty' }, 'Sözleşme yok.')]))));
+  }
+  else if (mem.sub === 'depo') {
+    const lv = whLevel(s), nx = WAREHOUSE[lv + 1], rows = Object.entries(s.stock).filter(([, it]) => it.qty > 0.01);
+    body.append(capBar, h('div', { class: 'cols' },
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Depo yönetimi'), h('div', { class: 'row' }, h('div', { class: 'lbl' }, 'Aylık depo gideri'), h('b', {}, fmt(warehouseRent(s)))), h('div', { class: 'row' }, h('div', { class: 'lbl' }, 'Aylık bozulma ve kayıp tahmini', h('small', {}, lv === 0 ? 'Açık sahada iki kat; kapalı depoda normal, büyük depoda yarı' : 'Çimento ve boya en hızlı bozulur')), h('b', { class: 'neg' }, fmt(stockLossForecast(s)))), h('div', { class: 'row' }, h('div', { class: 'lbl' }, 'Vadeli ödeme yükümlülüğü'), h('b', {}, fmt(payablesTotal(s)))),
+        nx ? h('button', { class: 'btn gold block', style: 'margin-top:8px', disabled: c.cash < Math.round(TL(nx.upTL) * s.costIndex), onclick: () => act('UpgradeWarehouse', {}, `${nx.label} kuruldu`, 'stamp') }, `Yükselt: ${nx.label} (${nx.cap} m³) · ${fmt(Math.round(TL(nx.upTL) * s.costIndex))} · kira ${fmt(Math.round(TL(nx.rentTL) * s.costIndex))}/ay`) : h('div', { class: 'mute' }, 'En büyük depo kademesindesiniz.')),
+      h('div', { class: 'card', style: 'overflow:auto' }, h('div', { class: 'lbl-s' }, 'Stok ve hacim'), h('table', { class: 'tbl' }, h('tr', {}, ...['Malzeme', 'Miktar', 'Hacim', 'Maliyet'].map((x) => h('th', {}, x))), ...(rows.length ? rows.map(([id, it]) => h('tr', {}, h('td', {}, material(id)?.label ?? id), h('td', {}, `${nf(it.qty, 1)} ${material(id)?.unit}`), h('td', {}, `${spaceOf(id, it.qty).toFixed(1)} m³`), h('td', {}, fmt(Math.round(it.qty * it.cost))))) : [h('tr', {}, h('td', { colSpan: 4 }, 'Depo boş.'))])))));
+    void stockQty;
+  }
+  else {
+    body.append(h('div', { class: 'cols' },
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `Yoldaki siparişler (${s.orders.length})`), ...(s.orders.length ? s.orders.slice().sort((a, b) => a.arriveDay - b.arriveDay).map((o) => h('div', { class: 'row', style: 'min-height:46px' }, h('div', { class: 'lbl' }, `${material(o.material)?.label} · ${nf(o.qty, 1)} ${material(o.material)?.unit}`, h('small', {}, `${SUPPLIERS.find((x) => x.id === o.supplier)?.label}${o.delayed ? ' · gecikmeli' : ''}${o.rush ? ' · ekspres' : ''}${o.contractId ? ' · sözleşme' : ''}`)), h('b', {}, formatDate(o.arriveDay)))) : [h('div', { class: 'empty' }, 'Yolda sipariş yok.')])),
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `Vadeli ödemeler (${fmt(payablesTotal(s))})`), ...((s.payables ?? []).length ? s.payables!.slice().sort((a, b) => a.dueDay - b.dueDay).map((p) => h('div', { class: 'row', style: 'min-height:46px' }, h('div', { class: 'lbl' }, p.memo, h('small', {}, `Vade ${formatDate(p.dueDay)}${p.late ? ` · ${p.late}. gecikme` : ''}`)), h('b', {}, fmt(p.amount)))) : [h('div', { class: 'empty' }, 'Bekleyen vadeli ödeme yok.')]))));
+  }
+  return h('div', { style: 'display:flex;flex-direction:column' }, seg, body);
+}

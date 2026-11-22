@@ -8,6 +8,7 @@ import { macroMonthly } from './macro';
 import { listingsWeekly, marketMonthly } from './land';
 import { constructionDaily } from './construction';
 import { deliveries, materialsMonthly } from './materials';
+import { payablesDaily, supplyMonthly } from './supply';
 import { salesDaily, salesMonthly } from './sales';
 import { monthlyCosts, netWorth } from './finance';
 import { checkProgress, progressMonthly, track } from './progress';
@@ -39,7 +40,7 @@ export function advanceDay(s: GameState): GameEvent[] {
     if (isFirstOfMonth(day)) monthly(s, events);
     if (isMonday(day)) { listingsWeekly(s, events); events.push({ type: 'WEEK', day }); }
     processScheduled(s, events);
-    deliveries(s, events);
+    deliveries(s, events); payablesDaily(s, events);
     constructionDaily(s, events, isMonday(day));
     salesDaily(s, events);
     tendersDaily(s, events);
@@ -82,7 +83,7 @@ function monthly(s: GameState, events: GameEvent[]): void {
   mgmtMonthly(s, events);
   dealsMonthly(s, events);
   marketMonthly(s, events);
-  materialsMonthly(s, events);
+  materialsMonthly(s, events); supplyMonthly(s, events);
   moraleMonthly(s);
   salesMonthly(s, events);
   loansMonthly(s, events);

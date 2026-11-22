@@ -7,6 +7,7 @@ import { machineValue } from '../../sim/machines';
 import { h, press, toast, askConfirm } from '../dom';
 import { fmt, nf, pct } from '../components';
 import type { App } from '../app';
+import { isUnlocked } from '../../sim/unlock';
 import { EMOJI, machineArt, portrait } from '../art';
 
 type Sub = 'ekip' | 'malzeme' | 'makine' | 'politika';
@@ -21,7 +22,7 @@ export function opsView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state;
   const seg = h('div', { class: 'seg', role: 'tablist', style: 'margin-bottom:10px;align-self:flex-start' });
   for (const [id, l] of [['ekip', 'Ekip'], ['malzeme', 'Malzeme'], ['makine', 'Makine'], ['politika', 'Politika']] as const) seg.append(h('button', { class: mem.sub === id ? 'on' : '', role: 'tab', onclick: () => { press(app); mem.sub = id; refresh(); } }, l));
-  const body = mem.sub === 'ekip' ? team(app, refresh) : mem.sub === 'malzeme' ? materials(app, refresh) : mem.sub === 'makine' ? machines(app, refresh) : policy(app, refresh);
+  const body = mem.sub === 'ekip' ? team(app, refresh) : mem.sub === 'malzeme' ? matRedirect(app, refresh) : mem.sub === 'makine' ? machines(app, refresh) : policy(app, refresh);
   void s; return h('div', { style: 'display:flex;flex-direction:column' }, seg, body);
 }
 
@@ -84,7 +85,7 @@ function orderModal(app: App, matId: string, refresh: () => void) {
 }
 
 const MAT_ICON: Record<string, string> = { demir: '🔩', beton: '🚧', cimento: '📦', tugla: '🧱', gazbeton: '⬜', kum: '⏳', cakil: '🪨', cam: '🪟', aluminyum: '🥫', seramik: '🔲', parke: '🪵', boya: '🎨', yalitim: '🧶', kablo: '🔌', boru: '🚰', kapi_pencere: '🚪', cati: '🏠' };
-function materials(app: App, refresh: () => void): HTMLElement {
+export function materials(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, c = s.company!;
   const supSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Tercih edilen tedarikçi' });
   for (const sp of SUPPLIERS) supSeg.append(h('button', { class: c.procurement.supplier === sp.id ? 'on' : '', onclick: () => { press(app); app.store.run('SetPolicy', { supplier: sp.id }); } }, sp.label));
@@ -131,3 +132,9 @@ function policy(app: App, refresh: () => void): HTMLElement {
   return h('div', { class: 'col' }, h('div', { class: 'lbl-s' }, 'İş güvenliği politikası'), g, h('div', { class: 'card' }, kvPol(s)));
 }
 const kvPol = (s: App['store']['state']) => h('div', { class: 'hint' }, `Son kaza: ${s.company!.lastAccidentDay < 0 ? 'yok' : formatDate(s.company!.lastAccidentDay)} · Şantiye şefi varsa kaza riski ~%30 azalır.`);
+
+/** Malzeme yönetimi Satın Alma ve Tedarik sekmesine taşındı (ikinci bir sistem yok); açılmadıysa temel stok görünümü burada kalır. */
+function matRedirect(app: App, refresh: () => void): HTMLElement {
+  if (!isUnlocked(app.store.state, 'tedarik')) return materials(app, refresh);
+  return h('div', { class: 'card', style: 'text-align:center;padding:16px' }, h('div', { style: 'font-size:30px' }, '🧱'), h('b', {}, 'Malzeme yönetimi artık Satın Alma ve Tedarik sekmesinde'), h('div', { class: 'mute', style: 'font-size:13px;margin:6px 0' }, 'Tedarikçi karşılaştırma, vadeli alım, sözleşme ve depo orada.'), h('button', { class: 'btn gold', onclick: () => { press(app); app.openTab?.('tedarik', 'stok'); } }, 'Aç'));
+}

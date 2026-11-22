@@ -72,8 +72,9 @@ export const PLACES = placesRaw as { hoodPre: string[]; hoodSuf: string[]; proje
 for (const c of CITIES) if (!cityData(c.id)) throw new Error(`Veri hatası: şehir ${c.id} için ilçe verisi yok`);
 if (PROVINCES_COUNT() !== 81) throw new Error('Veri hatası: 81 il olmalı');
 { const sum = STAGE_SHARES.reduce((a, [, w]) => a + w, 0); if (Math.abs(sum - 100) > 0.001) throw new Error(`Veri hatası: aşama payları toplamı ${sum}`); if (STAGES.length !== 18) throw new Error('Veri hatası: 18 aşama olmalı'); }
-export interface MaterialDef { id: string; label: string; unit: string; priceTL: number; vol: number }
-export interface SupplierDef { id: string; label: string; price: number; lead: number; reliability: number; quality: number; blurb: string }
+export interface MaterialDef { id: string; label: string; unit: string; priceTL: number; vol: number; space: number; loss: number }
+export type PayTerm = 'pesin' | 'vade30' | 'vade60';
+export interface SupplierDef { id: string; label: string; price: number; lead: number; reliability: number; quality: number; blurb: string; cap: number; regions: string[]; terms: PayTerm[] }
 export interface MachineDef { id: string; label: string; priceTL: number; rentTL: number; fuelTL: number; maintTL: number; blurb: string }
 export const MATERIALS = (materialsRaw as any).materials as MaterialDef[];
 export const SUPPLIERS = (materialsRaw as any).suppliers as SupplierDef[];

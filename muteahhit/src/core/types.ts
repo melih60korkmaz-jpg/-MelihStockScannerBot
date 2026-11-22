@@ -172,7 +172,11 @@ export interface Project {
   manager?: number;
   operatedBy?: number;       // işletmeye alındıysa iş kolu kimliği (satış merkezi kapanır, değer işletmeden gelir)
 }
-export interface Order { id: number; material: string; qty: number; unitPrice: Money; supplier: string; placedDay: number; arriveDay: number; delayed: boolean; quality: number }
+export interface Order { id: number; material: string; qty: number; unitPrice: Money; supplier: string; placedDay: number; arriveDay: number; delayed: boolean; quality: number; freight?: Money; term?: 'pesin' | 'vade30' | 'vade60'; dest?: string; contractId?: number; rush?: boolean }
+/** Vadeli alımların ödeme yükümlülüğü (net varlıktan düşülür). */
+export interface Payable { id: number; amount: Money; dueDay: number; memo: string; late: number }
+/** Düzenli tedarik sözleşmesi: fiyat kilitlidir, her ay miktar teslim alınır (al ya da öde). */
+export interface SupplyContract { id: number; material: string; supplier: string; qtyPerMonth: number; price: Money; startDay: number; months: number; nextDay: number; taken: number; missed: number; dest: string }
 export interface Machine { id: number; type: string; boughtDay: number; price: Money; brokenUntil: number; uses: number; usedDay?: number }
 export interface Unit {
   id: number; projectId: number; area: number; rooms: string; floor: number; view: number; facing: 'K' | 'G' | 'D' | 'B'; mult: number;
@@ -255,6 +259,7 @@ export interface GameState {
   offers?: Offer[];
   deals?: Deal[];
   mgmt?: MgmtState;
+  payables?: Payable[]; contracts?: SupplyContract[]; warehouse?: { level: number };
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;
   /** Malzeme fiyat geçmişi (aylık etkin çarpan; en çok 36 ay). Eski kayıtlarda yoktur. */

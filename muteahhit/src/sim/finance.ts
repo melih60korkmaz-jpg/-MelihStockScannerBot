@@ -1,4 +1,5 @@
 import { mgmtMonthlyCosts } from './mgmt';
+import { payablesTotal, warehouseRent } from './supply';
 import { venturesValue } from './ventures';
 import { infraAssets } from './infra';
 import { monthKey } from '../core/calendar';
@@ -26,6 +27,7 @@ export function monthlyCosts(s: GameState): { cat: string; amount: Money; memo: 
   out.push({ cat: 'kira', amount: mul(TL(off.monthlyRentTL), ci), memo: off.label });
   out.push({ cat: 'ofis', amount: mul(TL(12000) + TL(1500) * s.staff.length, ci), memo: 'Elektrik, internet, kırtasiye' });
   out.push(...mgmtMonthlyCosts(s));
+  if (warehouseRent(s) > 0) out.push({ cat: 'depo', amount: warehouseRent(s), memo: 'Depo kirası ve işletme' });
   return out;
 }
 
@@ -64,7 +66,7 @@ export const projectAssetValue = (s: GameState): Money => s.projects.reduce((a, 
 export const stockValue = (s: GameState): Money => Object.entries(s.stock).reduce((a, [id, it]) => a + Math.round(it.qty * (MAT_BASE.get(id) ?? 0) * (s.macro.materialIndex / 100) * (s.matPrice[id] ?? 1)), 0);
 /** Yatırımcılara proje sonunda geri ödenecek anapara (kâr payı hariç). */
 export const investorLiability = (s: GameState): Money => s.investments.filter((i) => !i.paidOut).reduce((a, i) => a + i.amount, 0);
-export const netWorth = (s: GameState): Money => (s.company ? s.company.cash + landAssetValue(s) + projectAssetValue(s) + machineAssetValue(s) + stockValue(s) + receivablesTotal(s) + venturesValue(s) + infraAssets(s) - advancesTotal(s) - debtTotal(s) - investorLiability(s) + contractAssets(s) : 0);
+export const netWorth = (s: GameState): Money => (s.company ? s.company.cash + landAssetValue(s) + projectAssetValue(s) + machineAssetValue(s) + stockValue(s) + receivablesTotal(s) + venturesValue(s) + infraAssets(s) - advancesTotal(s) - payablesTotal(s) - debtTotal(s) - investorLiability(s) + contractAssets(s) : 0);
 
 /**
  * Nakit yeterlilik süresi (ay): kasa / aylık net yanma. Yanma = beklenen sabit gider − son 3 tam ayın ort. geliri.

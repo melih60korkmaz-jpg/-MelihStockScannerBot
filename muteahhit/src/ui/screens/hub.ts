@@ -27,6 +27,7 @@ import { openHQ } from '../hq';
 import { pageHead } from '../pagehead';
 import { holdingView, setHoldingSub } from './holding';
 import { yonetimView, setYonetimSub } from './yonetim';
+import { tedarikView, setTedarikSub } from './tedarik';
 import { openMenu } from '../menu';
 import { openDeals } from '../dealsUi';
 import { openGuide, TAB_TOPIC } from '../guide';
@@ -57,7 +58,7 @@ const ICON = {
   menu: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   hold: '<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V5h6v3M3 13h18M11 13v2h2v-2"/></svg>',
 };
-type Tab = 'yonetim' | 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
+type Tab = 'tedarik' | 'yonetim' | 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
 const TABS: [Tab, string, keyof typeof ICON][] = [['sirket', 'Şirket', 'home'], ['harita', 'Harita', 'pin'], ['projeler', 'Projeler', 'build'], ['yonetim', 'Yönetim', 'team'], ['finans', 'Finans', 'chart']];
 
 const monthLabel = (key: string) => { const [y, m] = key.split('-'); return `${['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][Number(m) - 1]} ${y!.slice(2)}`; };
@@ -233,12 +234,12 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   const drawView = () => {
     const vkey = `${tab}:${tab === 'harita' ? mapKey() : ''}`, keep = vkey === lastViewKey ? view.scrollTop : 0; lastViewKey = vkey; view.innerHTML = '';
     if (tab !== 'sirket') view.append(pageHead(app, tab));
-    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'holding' ? holdingView(app, drawView) : tab === 'yonetim' ? yonetimView(app, drawView) : tab === 'finans' ? finance() : marketView(app, drawView));
+    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'holding' ? holdingView(app, drawView) : tab === 'yonetim' ? yonetimView(app, drawView) : tab === 'tedarik' ? tedarikView(app, drawView) : tab === 'finans' ? finance() : marketView(app, drawView));
     view.scrollTop = keep;
   };
 
   // Olaylar: gün akışı yalnızca HUD'u günceller; ay/komut olayları sekmeyi yeniler
-  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED', 'QUEST_DONE', 'ACHIEVEMENT', 'LEVEL_UP', 'OFFICE_UPGRADED', 'VENTURE_OPENED', 'VENTURE_BROKE', 'VENTURE_SOLD', 'INFRA_DONE', 'IPO', 'ACQUIRED', 'STRATEGY_SET', 'GM_SET', 'BUYBACK', 'YEAR_REPORT', 'PROPOSED', 'DEAL_NEW', 'DEAL_DONE', 'DEAL_LOST', 'OFFER_NEW', 'OFFER_LOST', 'RENT_STARTED', 'RENT_ENDED', 'UNIT_SET', 'FOCUS_SET', 'ORDER_SET', 'MANAGER_SET', 'DECOR_BOUGHT']);
+  const REDRAW = new Set(['MONTH', 'STAFF_HIRED', 'STAFF_FIRED', 'MACRO_NEWS', 'TAX_PAID', 'YEAR', 'CASH_NEGATIVE', 'LAND_BOUGHT', 'LAND_SOLD', 'LAND_LISTED', 'LAND_UNLISTED', 'SURVEY_DONE', 'PROJECT_CREATED', 'PROJECT_CANCELLED', 'PROJECT_STARTED', 'STAGE_COMPLETED', 'PROJECT_COMPLETED', 'PROJECT_SOLD', 'CONSTRUCTION_STALLED', 'CONSTRUCTION_RESUMED', 'SOIL_REVEALED', 'ORDER_PLACED', 'MACHINE_BOUGHT', 'MACHINE_SOLD', 'MACHINE_BROKEN', 'STAFF_ASSIGNED', 'POLICY_CHANGED', 'ACCIDENT', 'SUPPLIER_DELAY', 'UNIT_SOLD', 'KAPORA', 'KAPORA_CANCELLED', 'SALES_POLICY', 'BULK_SOLD', 'DELIVERED', 'COMPLAINT', 'DEFAULT', 'RECEIVABLE_MISSED', 'BRANCH_OPENED', 'LOAN_TAKEN', 'LOAN_DRAWN', 'LOAN_REPAID', 'LOAN_RESTRUCTURED', 'LOAN_MISSED', 'LOAN_ROLLED', 'SEIZURE', 'INVESTOR_IN', 'INVESTOR_PAID', 'DIVIDEND', 'EQUITY_SOLD', 'TENDER_NEW', 'TENDER_WON', 'TENDER_LOST', 'BID_PLACED', 'HAKEDIS', 'CONTRACT_DONE', 'BANKRUPT', 'EVENT_DECISION', 'EVENT_RESOLVED', 'RIVAL_FAILED', 'QUEST_DONE', 'ACHIEVEMENT', 'LEVEL_UP', 'OFFICE_UPGRADED', 'VENTURE_OPENED', 'VENTURE_BROKE', 'VENTURE_SOLD', 'INFRA_DONE', 'IPO', 'ACQUIRED', 'STRATEGY_SET', 'GM_SET', 'BUYBACK', 'YEAR_REPORT', 'PROPOSED', 'SUPPLY_CHANGED', 'MATERIAL_ISSUE', 'PAYABLE_PAID', 'CONTRACT_MISSED', 'CONTRACT_ENDED', 'STOCK_LOSS', 'MEETING_NEW', 'MEETING_DONE', 'MGMT_CHANGED', 'GM_MISTAKE', 'DEAL_NEW', 'DEAL_DONE', 'DEAL_LOST', 'OFFER_NEW', 'OFFER_LOST', 'RENT_STARTED', 'RENT_ENDED', 'UNIT_SET', 'FOCUS_SET', 'ORDER_SET', 'MANAGER_SET', 'DECOR_BOUGHT']);
   const unsub = app.store.subscribe((evs) => {
     if (!root.isConnected) { unsub(); return; }
     let redraw = false;
@@ -251,6 +252,11 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
       if (e.type === 'LAND_SOLD') { app.audio.sfx('confirm'); if (!e.data!.quick) toast(`Arsanız satıldı: ${formatMoney(e.data!.price as number)}`, 4500); }
       if (e.type === 'CONSTRUCTION_STALLED') { app.audio.sfx('error'); toast('Bir şantiyede nakit bitti: inşaat durdu!', 5000); }
       if (e.type === 'UNIT_SOLD') { app.audio.sfx('coin'); toast(`Daire satıldı: ${formatMoney(e.data!.price as number)}`, 3200); }
+      if (e.type === 'MATERIAL_ISSUE') toast(`📦 ${e.data!.kind === 'eksik' ? 'Eksik teslimat' : 'Hatalı malzeme'}: ${e.data!.supplier as string} (iade/indirim işlendi)`, 4200);
+      if (e.type === 'PAYABLE_LATE') toast('⚠ Vadeli ödeme nakit yetersizliğinden ertelendi (gecikme faizi, itibar kaybı).', 4500);
+      if (e.type === 'CONTRACT_MISSED') toast('⚠ Tedarik sözleşmesi teslimatı alınamadı (depo dolu ya da sipariş reddedildi).', 4500);
+      if (e.type === 'MEETING_NEW') { app.audio.sfx('bell'); toast('🧭 Yönetim kurulu toplantısı: Menü › Yönetim Merkezi › Kurul', 4500); }
+      if (e.type === 'GM_MISTAKE') toast('Genel müdür hatalı bir karar verdi (maliyet kasadan düştü).', 4200);
       if (e.type === 'DEAL_NEW') { app.audio.sfx('bell'); toast('📢 Yeni fırsat ilanı: Şirket › Yönetim › Fırsat ilanları', 4200); }
       if (e.type === 'OFFER_NEW') { app.audio.sfx('bell'); const pn = app.store.state.projects.find((x) => x.id === e.data!.projectId)?.name ?? 'projenize'; toast(`📨 Yeni ${e.data!.kind === 'kira' ? 'kiracı' : 'alıcı'} teklifi: ${pn}. Projeler › Satış merkezi`, 3800); }
       if (e.type === 'RENT_STARTED') toast(`🔑 Kira sözleşmesi başladı: ${formatMoney(e.data!.amount as number)}/ay`, 3000);
@@ -309,7 +315,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   if (app.store.state.pending) setTimeout(() => openEventDecision(app), 0);
   // Yeni oyunda (gün ≤ 1) anlatıcı bir kez başlar; otomasyon tarayıcılarında (webdriver) kendiliğinden açılmaz.
   if (app.store.state.clock.day <= 1 && !tutorialDone() && !navigator.webdriver) setTimeout(() => { if (root.isConnected) startTutorial(app); }, 900);
-  app.openTab = (t, sb) => { if (t === 'holding' && sb) setHoldingSub(sb); if (t === 'yonetim' && sb) setYonetimSub(sb); tab = t; saveView({ company: app.store.state.company!.name, tab }); if (sb) sub = sb; drawTabs(); drawView(); };
+  app.openTab = (t, sb) => { if (t === 'holding' && sb) setHoldingSub(sb); if (t === 'yonetim' && sb) setYonetimSub(sb); if (t === 'tedarik' && sb) setTedarikSub(sb); tab = t; saveView({ company: app.store.state.company!.name, tab }); if (sb) sub = sb; drawTabs(); drawView(); };
   root.addEventListener('unmount', () => { unsub(); cancelAnimationFrame(tween); if (app.openTab) delete app.openTab; });
   buildHud(); drawHud(); drawTabs(); drawView(); app.audio.setMood(moodNow());
   return root;

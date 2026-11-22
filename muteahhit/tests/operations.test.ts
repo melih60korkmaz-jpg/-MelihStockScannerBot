@@ -5,7 +5,7 @@ import { TL } from '../src/core/money';
 import { advanceDays } from '../src/sim/engine';
 import { checkInvariant } from '../src/sim/ledger';
 import { crewCapacity, stageDays } from '../src/sim/construction';
-import { incomingQty, leadDays, stageNeeds, stockQty, unitPrice } from '../src/sim/materials';
+import { incomingQty, leadDays, quoteOrder, stageNeeds, stockQty, unitPrice } from '../src/sim/materials';
 import { machineValue } from '../src/sim/machines';
 import { monthlyCosts, netWorth } from '../src/sim/finance';
 import { MACHINES, MATERIALS, STAGES, SUPPLIERS } from '../src/data';
@@ -23,8 +23,8 @@ function setup(o: { cash?: number; staff?: string[]; seed?: number } = {}) {
 const run = (s: GameState, until: () => boolean, max = 1500) => { const all: GameEvent[] = []; for (let i = 0; i < max && !until(); i++) all.push(...advanceDays(s, 1)); return all; };
 
 describe('veri bütünlüğü', () => {
-  it('17 malzeme, 4 tedarikçi, 12 makine; aşama malzeme payları ≤ 1; her malzeme en az bir aşamada kullanılır', () => {
-    expect(MATERIALS).toHaveLength(17); expect(SUPPLIERS).toHaveLength(4); expect(MACHINES).toHaveLength(12);
+  it('17 malzeme, 6 tedarikçi, 12 makine; aşama malzeme payları ≤ 1; her malzeme en az bir aşamada kullanılır', () => {
+    expect(MATERIALS).toHaveLength(17); expect(SUPPLIERS).toHaveLength(6); expect(MACHINES).toHaveLength(12);
     const used = new Set<string>(); for (const st of STAGES) { const sum = (st.materials ?? []).reduce((a, [id, f]) => (used.add(id), a + f), 0); expect(sum).toBeLessThanOrEqual(1.0001); }
     for (const m of MATERIALS) expect(used.has(m.id), m.id).toBe(true);
   });
@@ -34,7 +34,7 @@ describe('malzeme ve tedarik', () => {
   it('sipariş: ücret hemen ödenir, tedarik süresi sonra stok olur; kasa=defter', () => {
     const { s } = setup(); const c0 = s.company!.cash; const price = unitPrice(s, 'beton', 'premium');
     const r = dispatch(s, 'PlaceOrder', { material: 'beton', qty: 10, supplier: 'premium' }); expect(r.ok).toBe(true);
-    expect(c0 - s.company!.cash).toBe(Math.round(price * 10)); expect(stockQty(s, 'beton')).toBe(0); expect(incomingQty(s, 'beton')).toBe(10);
+    expect(c0 - s.company!.cash).toBe(quoteOrder(s, 'beton', 'premium', 10).total); void price; expect(stockQty(s, 'beton')).toBe(0); expect(incomingQty(s, 'beton')).toBe(10);
     advanceDays(s, leadDays(s, 'premium') - 1); expect(stockQty(s, 'beton')).toBe(0);
     advanceDays(s, 12); expect(stockQty(s, 'beton')).toBeCloseTo(10, 6); expect(checkInvariant(s)).toBe(true);
   });

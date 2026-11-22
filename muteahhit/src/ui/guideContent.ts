@@ -12,7 +12,7 @@ export type Block =
 
 export interface Topic { id: string; ico: string; title: string; blocks: Block[] }
 
-export const TAB_TOPIC: Record<string, string> = { yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
+export const TAB_TOPIC: Record<string, string> = { tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
 
 export const GUIDE: Topic[] = [
   {
@@ -160,6 +160,17 @@ export const GUIDE: Topic[] = [
       { h: 'Altyapı işleri (seviye 5)' },
       { ul: ['İhale sekmesinde yol, köprü, tünel, baraj ve kanalizasyon/su şebekesi ihaleleri açılır. Şartları sağlamak gerekir (itibar, kredi notu, tamamlanan proje, çalışan, makine).', 'Kazanınca iş Holding › Altyapı\'da başlar. İlerleme saha ekibine ve makine parkına bağlıdır; kapasite yetersizse iş ilerlemez, nakit yoksa durur. Kapasite aktif işler arasında bölünür.', 'Her %10 ilerleme bir hakediş doğurur (45 gün sonra tahsil). Bitişte kalan hakediş ve teminat gelir; gecikirse günde %0,1 ceza (en çok %10).'] },
       { tip: 'Altyapı işleri büyük sermaye ve çok makine ister. Önce makine parkını büyüt, ekibi güçlendir, sonra yola çık.' },
+    ],
+  },
+  {
+    id: 'tedarik', ico: '🧱', title: 'Satın alma ve tedarik', blocks: [
+      { p: 'Menü › İnşaat › Satın Alma ve Tedarik (şirket seviye 3\'te açılır). Şantiyelerin tükettiği malzeme gerçekten bu stoktan düşer; stok biterse inşaat yavaşlar ya da durur.' },
+      { h: 'Sipariş' },
+      { ul: ['17 malzeme, 6 tedarikçi: yerel toptancı, ucuz tedarik, premium, fabrika, bölge üreticisi ve ithalat aracısı. Her birinin fiyatı, kalitesi, teslim süresi, güvenilirliği, tek seferde karşılayabileceği miktarı, hizmet bölgesi ve ödeme koşulu farklıdır.', 'Karşılaştırma tablosu aynı miktar için toplam bedeli gösterir (mal, toplu indirim, vade farkı, nakliye). Bölgesi dışındaki şehre teslimat +nakliye ve +3 gün; ekspres teslimat −2 gün, +%6 nakliye.', 'Vadeli alımda (30/60 gün) nakit çıkmaz, ödeme yükümlülüğü doğar ve net varlıktan düşer. Vadesinde nakit yoksa 7 gün ertelenir, %1,5 faiz ve itibar kaybı olur.', 'Güvenilirliği düşük tedarikçide eksik ya da hatalı teslimat çıkabilir; eksiğin bir kısmı iade edilir.'] },
+      { h: 'Depo' },
+      { ul: ['Açık saha 600 m³; kapalı depo, büyük depo ve lojistik merkezine yükseltebilirsin (yatırım + aylık kira). Dolu depoya sipariş verilemez.', 'Çimento ve boya zamanla bozulur; genel kayıp da vardır. Açık sahada kayıp iki kat, büyük depoda yarıdır.'] },
+      { h: 'Düzenli sözleşme' },
+      { p: '6 ya da 12 ay boyunca her ay belirli miktar teslim alırsın; fiyat %4 indirimle kilitlenir (fiyat düşerse zarar, yükselirse kâr). Depo doluysa teslimat reddedilir ve ceza ödenir; erken fesih 2 aylık tutardır.' },
     ],
   },
   {

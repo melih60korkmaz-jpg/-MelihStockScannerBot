@@ -2,6 +2,8 @@ import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { dateOf } from './calendar';
+import { WAREHOUSE, freeSpace, quoteOrder, whLevel } from '../sim/materials';
+import { cancelContract, contractError, contractValue, signContract, upgradeWarehouse } from '../sim/supply';
 import { BUDGET_STEPS, decideAgenda, deptCandidates, deptDef, fireGM, getMgmt, hireDeptMgr, hireGM, openDept, refreshCands, setDeptStaff, setGoals } from '../sim/mgmt';
 import { isUnlocked } from '../sim/unlock';
 import { PROPOSALS } from '../sim/rivalLife';
@@ -465,7 +467,21 @@ const hireDeptMgrCmd: CommandDef<{ dept: string; candId: number }> = { validate(
 const fireDeptMgrCmd: CommandDef<{ dept: string }> = { validate(s, p) { const d = getMgmt(s).depts[p.dept]; return d?.mgr ? null : 'Departman müdürü yok.'; }, apply(s, p) { const d = getMgmt(s).depts[p.dept]!; post(s, 'yonetim', -d.mgr!.salary * 3, { memo: `Tazminat: ${d.mgr!.name}` }); d.mgr = null; return [ev(s, 'MGMT_CHANGED', { what: 'dept' })]; } };
 const deptStaffCmd: CommandDef<{ dept: string; delta: number }> = { validate(s, p) { const d = getMgmt(s).depts[p.dept]; if (!d?.open) return 'Önce departmanı kurun.'; if (![1, -1].includes(p.delta)) return 'Geçersiz değişim.'; const n = d.staff + p.delta; return n < 0 || n > 12 ? 'Personel sayısı 0–12 arasında olmalı.' : null; }, apply(s, p) { setDeptStaff(s, p.dept, p.delta); return [ev(s, 'MGMT_CHANGED', { what: 'dept' })]; } };
 
+const placeOrderCmd2: CommandDef<PlaceOrderParams & { term?: 'pesin' | 'vade30' | 'vade60'; rush?: boolean; dest?: string }> = {
+  validate(s, p) {
+    if (!s.company) return 'Önce şirket kurulmalı.'; if (!(p.qty > 0) || p.qty > 1e6) return 'Geçersiz miktar.';
+    const q = quoteOrder(s, p.material, p.supplier, p.qty, { term: p.term, rush: p.rush, dest: p.dest }); if (!q.ok) return q.error ?? 'Sipariş verilemedi.';
+    if (q.space > freeSpace(s) + 1e-9) return `Depo kapasitesi yetersiz: ${freeSpace(s).toFixed(0)} m³ boş, sipariş ${q.space.toFixed(0)} m³.`;
+    if ((p.term ?? 'pesin') === 'pesin' && s.company.cash < q.total) return 'Sipariş için yeterli nakit yok.'; return null;
+  },
+  apply(s, p) { const ev2: GameEvent[] = []; const r = placeOrder(s, p.material, p.qty, p.supplier, ev2, { term: p.term, rush: p.rush, dest: p.dest }); if (r.ok) ev2.push(ev(s, 'ORDER_PLACED', { orderId: r.order.id, arriveDay: r.order.arriveDay })); return ev2; },
+};
+const signContractCmd: CommandDef<{ material: string; supplier: string; qtyPerMonth: number; months: number }> = { validate: (s, p) => (!isUnlocked(s, 'tedarik') ? 'Satın Alma ve Tedarik henüz açılmadı.' : contractError(s, p.material, p.supplier, p.qtyPerMonth, p.months)), apply(s, p) { signContract(s, p.material, p.supplier, p.qtyPerMonth, p.months); return [ev(s, 'SUPPLY_CHANGED', {})]; } };
+const cancelContractCmd: CommandDef<{ id: number }> = { validate(s, p) { const c = (s.contracts ?? []).find((x) => x.id === p.id); if (!c) return 'Sözleşme bulunamadı.'; return s.company!.cash < contractValue(c) * 2 ? 'Fesih bedeli (2 aylık tutar) için yeterli nakit yok.' : null; }, apply(s, p) { cancelContract(s, p.id); return [ev(s, 'SUPPLY_CHANGED', {})]; } };
+const upgradeWarehouseCmd: CommandDef<Record<string, never>> = { validate(s) { const nx = WAREHOUSE[whLevel(s) + 1]; if (!nx) return 'Depo zaten en büyük kademede.'; if (!isUnlocked(s, 'tedarik')) return 'Satın Alma ve Tedarik henüz açılmadı.'; return s.company!.cash < Math.round(TL(nx.upTL) * s.costIndex) ? 'Depo yatırımı için yeterli nakit yok.' : null; }, apply(s) { upgradeWarehouse(s); return [ev(s, 'SUPPLY_CHANGED', {})]; } };
+
 export const COMMANDS = {
+  SignContract: signContractCmd, CancelContract: cancelContractCmd, UpgradeWarehouse: upgradeWarehouseCmd,
   HireGM: hireGmCmd, FireGM: fireGmCmd, DecideAgenda: decideAgendaCmd, SetGoals: setGoalsCmd, OpenDept: openDeptCmd, SetDeptBudget: deptBudgetCmd, HireDeptMgr: hireDeptMgrCmd, FireDeptMgr: fireDeptMgrCmd, DeptStaff: deptStaffCmd,
   ProposeToRival: proposeCmd,
   AcceptDeal: acceptDealCmd, DeclineDeal: declineDealCmd,
@@ -473,7 +489,7 @@ export const COMMANDS = {
   AcceptOffer: acceptOfferCmd, CounterOffer: counterOfferCmd, RejectOffer: rejectOfferCmd, SetUnit: setUnitCmd, SetAutoSell: setAutoSellCmd, EndRent: endRentCmd,
   SetFocus: setFocusCmd, IssueOrder: issueOrderCmd, SetManager: setManagerCmd, BuyDecor: buyDecorCmd,
   BuildVenture: buildVentureCmd, OperateProject: operateProjectCmd, SellVenture: sellVentureCmd, SetStrategy: setStrategyCmd, ToggleGM: toggleGmCmd, GoPublic: goPublicCmd, SecondaryOffering: secondaryCmd, Buyback: buybackCmd, AcquireRival: acquireCmd,
-  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd, BuyMachine: buyMachine, UpgradeOffice: upgradeOffice, ResolveEvent: resolveEventCmd, PlaceBid: placeBidCmd, TakeLoan: takeLoanCmd, TakeInvestor: takeInvestorCmd, SellEquity: sellEquityCmd, RepayLoan: repayLoanCmd, RestructureLoan: restructureCmd, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
+  StartConstruction: startConstructionCmd, SellProjectBulk: sellProjectBulk, OpenBranch: openBranch, SetSalesPolicy: setSalesPolicy, PlaceOrder: placeOrderCmd2, BuyMachine: buyMachine, UpgradeOffice: upgradeOffice, ResolveEvent: resolveEventCmd, PlaceBid: placeBidCmd, TakeLoan: takeLoanCmd, TakeInvestor: takeInvestorCmd, SellEquity: sellEquityCmd, RepayLoan: repayLoanCmd, RestructureLoan: restructureCmd, SellMachine: sellMachine, AssignStaff: assignStaff, SetPolicy: setPolicy,
   OrderSurvey: orderSurvey, BuyLand: buyLand, SellLandQuick: sellLandQuick, ListLand: listLand, UnlistLand: unlistLand, CreateProject: createProject, CancelProject: cancelProject,
   CreateCompany: createCompany,
   HireStaff: hireStaff,

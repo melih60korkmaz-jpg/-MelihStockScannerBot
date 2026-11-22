@@ -19,7 +19,7 @@ export interface App extends UiCtx {
   menu(): void;
   openSite(projectId: number): void;
   /** Şirket kabuğundaki sekmeyi (ve alt sekmeyi) açar; kabuk yoksa tanımsızdır. */
-  openTab?: (tab: 'yonetim' | 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa', sub?: string) => void;
+  openTab?: (tab: 'tedarik' | 'yonetim' | 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa', sub?: string) => void;
 }
 
 /** Basit ekran yöneticisi: eski ekran söner, yenisi girer (hareket azaltma açıksa anında). */
