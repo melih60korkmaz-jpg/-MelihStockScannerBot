@@ -100,3 +100,15 @@ describe('kendi hissen: fiyat etkenleri ve halka arz maliyeti', () => {
     expect(fairPrice(s)).toBeLessThan(f0); expect(priceDrivers(s).debt).toBeLessThan(0); s.macro.regime = 'kriz'; expect(priceDrivers(s).sector).toBeLessThan(0);
   });
 });
+
+describe('eski kayıt uyumu', () => {
+  it('yeni alanları olmayan kayıt yüklenir, 3 yıl sorunsuz oynanır, konsolide tablo tutar', () => {
+    const s = setup(6); dispatch(s, 'BuildVenture', { kind: 'gunes', city: 'ankara', tier: 0 }); advanceDays(s, 90);
+    const raw = JSON.parse(JSON.stringify(s)) as Record<string, unknown>; for (const k of ['mgmt', 'payables', 'contracts', 'warehouse', 'usedMarket', 'leases', 'estate', 'energy', 'stakes', 'ic', 'dd', 'reports']) delete raw[k];
+    for (const v of raw.ventures as Record<string, unknown>[]) { delete v.ops; delete v.sat; delete v.ppa; delete v.hist; }
+    delete (raw.holding as Record<string, unknown>).budget;
+    const r = unpack(pack(raw as unknown as GameState)); expect(r.ok).toBe(true); if (!r.ok) return;
+    advanceDays(r.state, 1100); expect(checkInvariant(r.state)).toBe(true); expect(consolidate(r.state).ok).toBe(true); expect(Number.isFinite(netWorth(r.state))).toBe(true);
+    expect(dispatch(r.state, 'BuildVenture', { kind: 'restoran', city: 'ankara', tier: 0 }).ok).toBe(true); expect(dispatch(r.state, 'SubTransfer', { div: 'enerji', kind: 'sermaye', amount: 100 }).ok).toBe(true);
+  });
+});
