@@ -15,6 +15,7 @@ import { monthlyCosts, netWorth } from './finance';
 import { checkProgress, progressMonthly, track } from './progress';
 import { rivalsMonthly } from './rivals';
 import { investMonthly } from './invest';
+import { supplyEventsMonthly } from './supplyx';
 import { reportYearly } from './report';
 import { dealsMonthly } from './deals';
 import { decorBonus } from './control';
@@ -81,7 +82,7 @@ function yearly(s: GameState, events: GameEvent[]): void {
 function monthly(s: GameState, events: GameEvent[]): void {
   const c = s.company!;
   macroMonthly(s, events);
-  rivalsMonthly(s, events); investMonthly(s, events);
+  rivalsMonthly(s, events); investMonthly(s, events); supplyEventsMonthly(s, events);
   mgmtMonthly(s, events);
   dealsMonthly(s, events);
   marketMonthly(s, events);

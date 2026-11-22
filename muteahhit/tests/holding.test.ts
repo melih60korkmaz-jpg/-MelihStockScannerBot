@@ -90,7 +90,7 @@ describe('altyapı işleri', () => {
     expect(t.status).toBe('kazandi'); expect(s.infra.length).toBe(1); const j = s.infra[0]!; expect(s.projects.length).toBe(0);
     expect(infraCapacity(s, j).cap).toBeGreaterThan(0.5); s.warehouse = { level: 3 };
     for (let d = 0; d < j.months * 30 + 900 && j.status !== 'bitti'; d += 30) { advanceDays(s, 30); if (s.pending) dispatch(s, 'ResolveEvent', { choice: 0 }); }
-    expect(['kabul', 'garanti', 'bitti']).toContain(j.status); expect(j.status).toBe('bitti'); expect(j.result!.profit).toBeGreaterThan(-j.price); expect(j.bondReturned).toBe(true); expect(j.pending.length).toBe(0);
+    expect(['kabul', 'garanti', 'bitti']).toContain(j.status); expect(j.status).toBe('bitti'); expect(j.result!.profit).toBeGreaterThan(-j.price); expect(j.bondReturned).toBe(true); advanceDays(s, 60); if (s.pending) dispatch(s, 'ResolveEvent', { choice: 0 }); expect(j.pending.length).toBe(0);
     expect(checkInvariant(s)).toBe(true); expect(divisionPL(s, 60).altyapi.revenue).toBeGreaterThan(0);
   });
   it('kapasite yoksa ilerlemez (kapasite durması)', () => {

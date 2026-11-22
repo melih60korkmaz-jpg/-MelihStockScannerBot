@@ -1,4 +1,5 @@
 import { factoryMatMult, freightMult } from './invest';
+import { addTrust, logStock, supplyAdjust } from './supplyx';
 import { gauss, rand, randInt } from '../core/rng';
 import { ensureCash } from './loans';
 import { TL, type Money } from '../core/money';
@@ -52,9 +53,10 @@ export function quoteOrder(s: GameState, matId: string, supId: string, qty: numb
   const term = o.term ?? 'pesin'; if (!sp.terms.includes(term)) return { ...empty, error: `${sp.label} bu ödeme koşulunu sunmuyor.` };
   const dest = o.dest ?? s.company?.startCity ?? 'ankara', mismatch = !sp.regions.includes(regionOf(dest) ?? ''), space = spaceOf(matId, qty);
   if (space > sp.cap) return { ...empty, error: `${sp.label} tek seferde en çok ${sp.cap} m³ teslim eder (bu sipariş ${space.toFixed(0)} m³).`, space, mismatch };
-  const unit = o.lockedUnit ?? Math.round(unitPrice(s, matId, supId) * (supId === 'ithal' ? 1 + (s.macro.inflation / 100) * 0.15 : 1)), gross = Math.round(unit * qty);
+  const adj = supplyAdjust(s, matId, supId); if (adj.blocked && o.contractId === undefined) return { ...empty, error: adj.blocked };
+  const unit = o.lockedUnit ?? Math.round(unitPrice(s, matId, supId) * adj.price * (supId === 'ithal' ? 1 + (s.macro.inflation / 100) * 0.15 : 1)), gross = Math.round(unit * qty);
   const discount = o.lockedUnit !== undefined ? 0 : Math.round(gross * (gross >= TL(20_000_000) * s.costIndex ? 0.04 : gross >= TL(5_000_000) * s.costIndex ? 0.02 : 0)), goods = gross - discount, premium = Math.round(goods * TERM_PREMIUM[term]);
-  const freight = Math.round(goods * (0.03 + (mismatch ? 0.04 : 0) + (o.rush ? 0.06 : 0)) * freightMult(s)), lead = Math.max(1, leadDays(s, supId) + (mismatch ? 3 : 0) - (o.rush ? 2 : 0));
+  const freight = Math.round(goods * (0.03 + (mismatch ? 0.04 : 0) + (o.rush ? 0.06 : 0)) * freightMult(s)), lead = Math.max(1, leadDays(s, supId) + (mismatch ? 3 : 0) - (o.rush ? 2 : 0) + adj.lead);
   return { ok: true, unit, goods, discount, premium, freight, total: goods + premium + freight, lead, space, mismatch };
 }
 
@@ -66,7 +68,7 @@ export function placeOrder(s: GameState, matId: string, qty: number, supId: stri
   if (term === 'pesin') { post(s, 'malzeme', -(q.goods + q.premium), { memo: lbl }); if (q.freight > 0) post(s, 'malzeme', -q.freight, { memo: `Nakliye: ${lbl}` }); }
   else (s.payables ??= []).push({ id: s.nextId++, amount: q.total, dueDay: s.clock.day + TERM_DAYS[term], memo: `${lbl} (${term === 'vade30' ? '30' : '60'} gün vadeli)`, late: 0 });
   const o2: Order = { id: s.nextId++, material: matId, qty, unitPrice: Math.round(q.total / qty), supplier: supId, placedDay: s.clock.day, arriveDay: s.clock.day + q.lead + extra, delayed, quality: sp.quality, freight: q.freight, term, ...(o.dest ? { dest: o.dest } : {}), ...(o.rush ? { rush: true } : {}), ...(o.contractId !== undefined ? { contractId: o.contractId } : {}) };
-  s.orders.push(o2);
+  s.orders.push(o2); addTrust(s, supId, 0.4, q.goods);
   if (delayed) events.push({ type: 'SUPPLIER_DELAY', day: s.clock.day, data: { supplier: sp.label, material: matId, days: extra } });
   return { ok: true, order: o2 };
 }
@@ -87,6 +89,7 @@ export function deliveries(s: GameState, events: GameEvent[]): void {
     }
     const cur = (s.stock[o.material] ??= { qty: 0, qual: 0, cost: o.unitPrice }), tot = cur.qty + qty;
     cur.qual = tot > 0 ? (cur.qual * cur.qty + qual * qty) / tot : qual; cur.cost = tot > 0 ? (cur.cost * cur.qty + o.unitPrice * qty) / tot : o.unitPrice; cur.qty = tot;
+    logStock(s, o.material, qty, 'giris', qty * o.unitPrice, sp?.label); if (issue) addTrust(s, o.supplier, -1.5); else addTrust(s, o.supplier, 0.3);
     events.push({ type: 'MATERIAL_DELIVERED', day: s.clock.day, data: { material: o.material, qty } });
   }
 }

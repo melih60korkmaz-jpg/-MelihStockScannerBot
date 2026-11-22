@@ -57,3 +57,17 @@ describe('gayrimenkul yönetimi', () => {
     const st = buildingStats(s, p); expect(st.occupancy).toBeGreaterThan(0); expect(st.occupancy).toBeLessThanOrEqual(1); expect(st.income12).toBeGreaterThan(0); expect(Number.isFinite(netWorth(s))).toBe(true);
   });
 });
+
+describe('yenileme ve sat-tut analizi', () => {
+  it('yenileme parayı düşer, durumu ve değeri kalıcı yükseltir; 2 yıl içinde tekrar yapılamaz; analiz sonlu', async () => {
+    const { dispatch } = await import('../src/core/commands'); const { newGameState } = await import('../src/core/state'); const { TL } = await import('../src/core/money');
+    const { renovCost, holdAnalysis, portfolio, ownedValue, RENOVATIONS } = await import('../src/sim/realestate'); const { checkInvariant } = await import('../src/sim/ledger');
+    const s = newGameState(91); dispatch(s, 'CreateCompany', { name: 'Yenileme Yapı', founderBackground: 'emlakci', startCity: 'ankara' }); const c = s.company!; c.cash = TL(900_000_000); s.ledgerBase = c.cash - s.ledger.reduce((a, e) => a + e.amount, 0);
+    const p = { id: s.nextId++, parcelId: 1, hood: 'T', name: 'Eski Apt', type: 'apartman', quality: 'standart', designSeed: 1, status: 'tamamlandi', createdDay: 0, cityId: 'ankara', floors: 6, satilabilir: 800, matIndexAtPlan: 100, budget: { base: 1, soil: 0, soft: 0, total: 1, designFee: 0 }, expected: { revenue: 1, months: 1 }, result: { qualityScore: 60, cost: TL(20_000_000), days: 1, plannedDays: 1 } } as never;
+    s.projects.push(p); for (let i = 0; i < 6; i++) s.units.push({ id: s.nextId++, projectId: (p as { id: number }).id, area: 100, rooms: '2+1', floor: i, view: 1, facing: 'G', mult: 1, status: 'bos' } as never);
+    const pr = s.projects.at(-1)!; const v0 = ownedValue(s, pr), cash0 = c.cash, cond0 = pr.cond ?? 60; expect(RENOVATIONS.cephe).toBeDefined();
+    expect(dispatch(s, 'RenovateBuilding', { projectId: pr.id, kind: 'yok' }).ok).toBe(false); expect(dispatch(s, 'RenovateBuilding', { projectId: pr.id, kind: 'cephe' }).ok).toBe(true);
+    expect(cash0 - c.cash).toBe(Math.round(v0 * 0.035)); expect(pr.cond!).toBeGreaterThan(cond0); expect(ownedValue(s, pr)).toBeGreaterThan(v0); expect(dispatch(s, 'RenovateBuilding', { projectId: pr.id, kind: 'cephe' }).ok).toBe(false); expect(renovCost(s, pr, 'ic')).toBeGreaterThan(0);
+    const a = holdAnalysis(s, portfolio(s).filter((r) => r.project.id === pr.id)); expect(Number.isFinite(a.net)).toBe(true); expect(['tut', 'sat']).toContain(a.advice); expect(a.saleCash).toBeLessThan(a.value); expect(checkInvariant(s)).toBe(true);
+  });
+});

@@ -1,6 +1,7 @@
 import { formatDate } from '../../core/calendar';
 import { MATERIALS, SUPPLIERS, cityData, material } from '../../data';
 import { WAREHOUSE, capacityOf, freeSpace, quoteOrder, spaceOf, stockQty, usedSpace, whLevel } from '../../sim/materials';
+import { NEGO_INFO, activeEvents, activeNego, relOf, trustOf, type NegoKind } from '../../sim/supplyx';
 import { CONTRACT_BREAK_MONTHS, contractValue, payablesTotal, stockLossForecast, warehouseRent } from '../../sim/supply';
 import { unlockState } from '../../sim/unlock';
 import { TL } from '../../core/money';
@@ -9,9 +10,9 @@ import { askConfirm, h, press, toast } from '../dom';
 import { materials } from './ops';
 import type { App } from '../app';
 
-type Sub = 'siparis' | 'stok' | 'sozlesme' | 'depo' | 'siparislerim';
+type Sub = 'siparis' | 'stok' | 'sozlesme' | 'depo' | 'siparislerim' | 'hareket';
 const mem = { sub: 'siparis' as Sub, mat: 'demir', qty: 50, sup: '', term: 'pesin' as 'pesin' | 'vade30' | 'vade60', rush: false, dest: '', cqty: 30, cmonths: 6 as 6 | 12 };
-export const setTedarikSub = (s: string) => { if (['siparis', 'stok', 'sozlesme', 'depo', 'siparislerim'].includes(s)) mem.sub = s as Sub; };
+export const setTedarikSub = (s: string) => { if (['siparis', 'stok', 'sozlesme', 'depo', 'siparislerim', 'hareket'].includes(s)) mem.sub = s as Sub; };
 const TERM_TR = { pesin: 'Peşin', vade30: '30 gün vade (+%2,5)', vade60: '60 gün vade (+%5)' } as const;
 
 /** Satın Alma ve Tedarik: sipariş (tedarikçi karşılaştırmalı), stok ve fiyatlar, düzenli sözleşmeler, depo ve yoldaki siparişler/vadeli ödemeler. */
@@ -21,7 +22,7 @@ export function tedarikView(app: App, refresh: () => void): HTMLElement {
   if (!mem.sup) mem.sup = c.procurement.supplier; if (!mem.dest) mem.dest = c.startCity;
   const act = (cmd: string, params: object, ok: string, sfx: 'confirm' | 'stamp' | 'coin' = 'confirm') => { const r = app.store.run(cmd as never, params as never); if (r.ok) { app.audio.sfx(sfx); toast(ok); } else { app.audio.sfx('error'); toast(r.error); } refresh(); return r.ok; };
   const seg = h('div', { class: 'seg', role: 'tablist', style: 'margin-bottom:10px;align-self:flex-start;max-width:100%;overflow-x:auto' });
-  for (const [id, l] of [['siparis', 'Sipariş'], ['stok', 'Stok ve fiyatlar'], ['sozlesme', 'Sözleşmeler'], ['depo', 'Depo'], ['siparislerim', `Siparişlerim${s.orders.length ? ` (${s.orders.length})` : ''}`]] as [Sub, string][]) seg.append(h('button', { class: mem.sub === id ? 'on' : '', onclick: () => { press(app); mem.sub = id; refresh(); } }, l));
+  for (const [id, l] of [['siparis', 'Sipariş'], ['stok', 'Stok ve fiyatlar'], ['sozlesme', 'Sözleşmeler'], ['depo', 'Depo'], ['hareket', 'Güven ve hareketler'], ['siparislerim', `Siparişlerim${s.orders.length ? ` (${s.orders.length})` : ''}`]] as [Sub, string][]) seg.append(h('button', { class: mem.sub === id ? 'on' : '', onclick: () => { press(app); mem.sub = id; refresh(); } }, l));
   const body = h('div', { style: 'display:flex;flex-direction:column;gap:10px' });
   const used = usedSpace(s), cap = capacityOf(s), pct = Math.min(100, (used / cap) * 100);
   const capBar = h('div', { class: 'card' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('div', { class: 'lbl-s', style: 'margin:0' }, `🏭 Depo: ${WAREHOUSE[whLevel(s)]!.label}`), h('b', {}, `${used.toFixed(0)} / ${cap} m³`)), h('div', { class: 'meter', style: 'margin-top:6px' }, h('i', { style: `width:${pct}%;background:${pct > 85 ? 'var(--bad)' : pct > 65 ? 'var(--warn)' : 'var(--accent2)'}` })));
@@ -45,8 +46,15 @@ export function tedarikView(app: App, refresh: () => void): HTMLElement {
         h('div', { class: 'row', style: 'min-height:40px' }, h('div', { class: 'lbl' }, '⚡ Ekspres teslimat', h('small', {}, '−2 gün, nakliye +%6')), h('button', { class: 'tog', role: 'switch', 'aria-checked': String(mem.rush), 'aria-label': 'Ekspres', onclick: () => { mem.rush = !mem.rush; refresh(); } })),
         h('div', { class: 'kv' }, ...([['Seçili tedarikçi', spX.label], ['Mal bedeli', cur.ok ? fmt(cur.goods) : '—'], ['Toplu indirim', cur.ok && cur.discount ? '−' + fmt(cur.discount) : '—'], ['Vade farkı', cur.ok ? fmt(cur.premium) : '—'], ['Nakliye', cur.ok ? fmt(cur.freight) : '—'], ['Toplam', cur.ok ? fmt(cur.total) : '—'], ['Depo hacmi', cur.ok ? `${cur.space.toFixed(1)} m³ (boş ${freeSpace(s).toFixed(0)})` : '—']] as [string, string][]).map(([a, b]) => h('div', { class: 'row', style: 'min-height:30px' }, h('div', { class: 'lbl' }, a), h('b', {}, b)))),
         cur.ok ? null : h('div', { class: 'bad-t', style: 'font-size:12px' }, cur.error ?? ''),
+        h('div', { class: 'lbl-s', style: 'margin-top:8px' }, `Pazarlık · güven ${Math.round(trustOf(s, mem.sup))}`), h('div', { class: 'seg', style: 'flex-wrap:wrap' }, ...(Object.keys(NEGO_INFO) as NegoKind[]).map((k) => h('button', { title: NEGO_INFO[k].note, disabled: !!activeNego(s, mem.mat, mem.sup), onclick: () => act('Negotiate', { material: mem.mat, supplier: mem.sup, qty: qty || 1, kind: k }, `${NEGO_INFO[k].note}`, 'stamp') }, NEGO_INFO[k].label))), h('small', { class: 'mute' }, activeNego(s, mem.mat, mem.sup) ? 'Bu ürün için pazarlık anlaşması geçerli (14 gün).' : 'Tedarikçi kabul etmek zorunda değil: güven, itibar ve sipariş büyüklüğü belirler.'),
         h('button', { class: 'btn gold block', style: 'margin-top:8px', disabled: !cur.ok, onclick: () => { if (act('PlaceOrder', { material: mem.mat, qty, supplier: mem.sup, term: mem.term, rush: mem.rush, dest: mem.dest }, 'Sipariş verildi', 'coin')) void 0; } }, 'Sipariş ver')),
       h('div', { class: 'card', style: 'overflow:auto' }, h('div', { class: 'lbl-s' }, 'Tedarikçi karşılaştırması (aynı miktar)'), tbl, h('div', { class: 'mute', style: 'font-size:11px;margin-top:6px' }, '⭐ en ucuz toplam · ⚠ bölge dışı: +nakliye ve +3 gün · Vade: P=peşin, 30/60 gün. Güvenilirliği düşük tedarikçide eksik veya hatalı teslimat çıkabilir.'))));
+  }
+  else if (mem.sub === 'hareket') {
+    const evs = activeEvents(s), log = (s.stockLog ?? []).slice(-40).reverse();
+    body.append(h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Piyasa olayları'), ...(evs.length ? evs.map((e) => h('div', { class: 'row', style: 'min-height:34px' }, h('span', {}, `⚠ ${e.text}`), h('small', { class: 'mute' }, `${e.until - s.clock.day} gün`))) : [h('div', { class: 'mute', style: 'font-size:13px' }, 'Şu an aktif bir olay yok.')])),
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Tedarikçi güveni'), ...SUPPLIERS.map((sp) => { const r = relOf(s, sp.id); return h('div', { class: 'row', style: 'min-height:38px' }, h('div', { class: 'lbl' }, sp.label, h('small', {}, `${r.orders} sipariş · ${fmt(r.spent)} harcama`)), h('div', { style: 'width:120px' }, h('div', { class: 'meter' }, h('i', { style: `width:${Math.round(r.trust)}%;background:${r.trust < 30 ? 'var(--bad)' : 'var(--accent2)'}` })), h('small', { class: 'mute' }, `Güven ${Math.round(r.trust)}`))); })),
+      h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Stok hareketleri (son 40)'), ...(log.length ? log.map((l) => h('div', { class: 'row', style: 'min-height:30px;font-size:13px' }, h('span', {}, `${formatDate(l.day)} · ${({ giris: '⬇ Giriş', cikis: '⬆ Şantiye', fire: '🔥 Fire', hasar: '💥 Hasar' })[l.kind]} · ${material(l.mat)?.label ?? l.mat} ${nf(l.qty, 1)}`), h('small', { class: 'mute' }, `${l.ref ?? ''} · ${fmt(l.value)}`))) : [h('div', { class: 'mute', style: 'font-size:13px' }, 'Henüz hareket yok.')])));
   }
   else if (mem.sub === 'stok') body.append(capBar, materials(app, refresh));
   else if (mem.sub === 'sozlesme') {

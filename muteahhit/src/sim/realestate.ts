@@ -22,7 +22,7 @@ export function tenantProfile(seed: number): { pay: number; income: number; mont
 export const incomeLabel = (n: number) => ['', 'Düşük gelir', 'Orta-alt gelir', 'Orta gelir', 'Orta-üst gelir', 'Yüksek gelir'][clamp(n, 1, 5)]!;
 
 export const condOf = (p: Project): number => p.cond ?? clamp(p.result?.qualityScore ?? 75, 55, 100);
-export const condFactor = (p: Project): number => 0.88 + 0.12 * (condOf(p) / 100);
+export const condFactor = (p: Project): number => 0.88 + 0.12 * (condOf(p) / 100) + (p.renovBonus ?? 0);
 /** Kiracı memnuniyeti bina durumuna ve kiranın piyasaya göre yüksekliğine bağlıdır. */
 export function marketRent(s: GameState, p: Project, u: Unit): Money { return Math.round(unitFair(u, fairPerM2(s, p)) * RENT_YIELD); }
 
@@ -49,6 +49,27 @@ export function evictTenant(s: GameState, unitId: number, events: GameEvent[]): 
   const u = s.units.find((x) => x.id === unitId), r = u && tenantOf(s, u), p = u && s.projects.find((x) => x.id === u.projectId); if (!u || !r || !p) return 'Kiracı bulunamadı.';
   const legal = Math.round(r.amount * (r.arrears ? 1.5 : 3)); if (s.company!.cash < legal) return 'Tahliye masrafı için yeterli nakit yok.';
   post(s, 'emlak_bakim', -legal, { projectId: p.id, memo: `Tahliye masrafı: ${r.tenant}` }); endTenancy(s, p, u, 'tahliye', events); return null;
+}
+/** Yenileme: dış cephe, iç mekân, tesisat, asansör ekleme, ortak alan. Bina durumunu ve değer/kira çarpanını kalıcı yükseltir; her tür 2 yılda bir yapılabilir. */
+export const RENOVATIONS: Record<string, { label: string; pct: number; cond: number; bonus: number; minFloors?: number }> = {
+  cephe: { label: 'Dış cephe yenileme', pct: 0.035, cond: 8, bonus: 0.02 }, ic: { label: 'İç mekân yenileme', pct: 0.04, cond: 6, bonus: 0.03 }, tesisat: { label: 'Tesisat yenileme', pct: 0.03, cond: 10, bonus: 0.01 },
+  asansor: { label: 'Asansör ekleme', pct: 0.02, cond: 5, bonus: 0.02, minFloors: 4 }, ortak: { label: 'Ortak alan iyileştirme', pct: 0.015, cond: 4, bonus: 0.01 },
+};
+export const renovCost = (s: GameState, p: Project, kind: string): Money => Math.round(ownedValue(s, p) * (RENOVATIONS[kind]?.pct ?? 0));
+export function renovateError(s: GameState, projectId: number, kind: string): string | null {
+  const p = s.projects.find((x) => x.id === projectId), d = RENOVATIONS[kind]; if (!p || p.status !== 'tamamlandi') return 'Bina bulunamadı.'; if (!d) return 'Geçersiz yenileme.'; if (!ownedUnits(s, p).length) return 'Bu binada şirkete ait birim yok.';
+  if (d.minFloors && (p.floors ?? 0) < d.minFloors) return `Asansör için en az ${d.minFloors} katlı bina gerekir.`; if (p.renov?.[kind] !== undefined && s.clock.day - p.renov[kind]! < 730) return 'Bu yenileme son 2 yılda yapıldı.';
+  if (s.company!.cash < renovCost(s, p, kind)) return 'Yenileme için yeterli nakit yok.'; return null;
+}
+export function renovate(s: GameState, projectId: number, kind: string): void {
+  const p = s.projects.find((x) => x.id === projectId)!, d = RENOVATIONS[kind]!, cost = renovCost(s, p, kind);
+  post(s, 'emlak_bakim', -cost, { projectId: p.id, memo: `${d.label}: ${p.name}` }); p.cond = clamp(condOf(p) + d.cond, 0, 100); p.renovBonus = Math.min(0.12, (p.renovBonus ?? 0) + d.bonus); (p.renov ??= {})[kind] = s.clock.day;
+}
+/** Sat–tut analizi: boşluk (%8), bakım (%0,4) ve vergi (%15) sonrası net getiri + beklenen değer artışı, mevduat alternatifiyle karşılaştırılır. */
+export function holdAnalysis(s: GameState, rows: PortfolioRow[]): { value: Money; saleCash: Money; gross: number; net: number; growth: number; alt: number; payback: number | null; advice: 'tut' | 'sat' } {
+  const value = rows.reduce((a, r) => a + r.value, 0), cost = rows.reduce((a, r) => a + r.cost, 0), p = rows[0]?.project, parcel = p && s.parcels.find((x) => x.id === p.parcelId), growth = parcel?.growth ?? 0.04;
+  const potentialRent = rows.reduce((a, r) => a + (r.unit.rent ? r.rent : Math.round(r.value * RENT_YIELD)), 0) * 12, grossYield = value > 0 ? potentialRent / value : 0, netYield = (grossYield * 0.92 - 0.004) * 0.85, alt = (s.macro.policyRate / 100) * 0.8;
+  const netAnnual = value * netYield; return { value, saleCash: Math.round(value * 0.97), gross: grossYield, net: netYield, growth, alt, payback: netAnnual > 0 ? cost / netAnnual : null, advice: netYield + growth >= alt ? 'tut' : 'sat' };
 }
 export function maintainBuilding(s: GameState, projectId: number): string | null {
   const p = s.projects.find((x) => x.id === projectId); if (!p || p.status === 'satildi' || p.status === 'taslak') return 'Bina bulunamadı.'; const cost = maintenanceCost(s, p); if (cost <= 0) return 'Bu binada şirkete ait birim yok.';

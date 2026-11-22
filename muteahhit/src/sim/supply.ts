@@ -1,3 +1,4 @@
+import { logStock } from './supplyx';
 import { TL, type Money } from '../core/money';
 import type { GameEvent, GameState, SupplyContract } from '../core/types';
 import { material, supplier } from '../data';
@@ -58,7 +59,7 @@ export function supplyMonthly(s: GameState, events: GameEvent[]): void {
   }
   // bozulma ve kayıp: açık sahada iki kat, büyük depoda yarı
   const lvl = whLevel(s), f = lvl === 0 ? 2 : lvl >= 2 ? 0.5 : 1; let lost: Money = 0;
-  for (const [id, it] of Object.entries(s.stock)) { const m = material(id); if (!m || it.qty <= 0) continue; const q = it.qty * m.loss * f; it.qty = Math.max(0, it.qty - q); lost += Math.round(q * it.cost); }
+  for (const [id, it] of Object.entries(s.stock)) { const m = material(id); if (!m || it.qty <= 0) continue; const q = it.qty * m.loss * f; it.qty = Math.max(0, it.qty - q); lost += Math.round(q * it.cost); logStock(s, id, q, 'fire', q * it.cost, 'depo kaybı'); }
   if (lost > 0) events.push({ type: 'STOCK_LOSS', day, data: { value: lost } });
 }
 export const stockLossForecast = (s: GameState): Money => { const lvl = whLevel(s), f = lvl === 0 ? 2 : lvl >= 2 ? 0.5 : 1; return Object.entries(s.stock).reduce((a, [id, it]) => a + Math.round(it.qty * (material(id)?.loss ?? 0) * f * it.cost), 0); };

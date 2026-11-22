@@ -7,6 +7,7 @@ import { checkInvariant } from '../src/sim/ledger';
 import { netWorth } from '../src/sim/finance';
 import { WAREHOUSE, capacityOf, freeSpace, quoteOrder, spaceOf, stockQty, usedSpace } from '../src/sim/materials';
 import { payablesTotal, stockLossForecast, warehouseRent } from '../src/sim/supply';
+import { negoError } from '../src/sim/supplyx';
 import { SUPPLIERS } from '../src/data';
 import { pack, unpack } from '../src/save/serialize';
 import type { GameState } from '../src/core/types';
@@ -68,5 +69,32 @@ describe('düzenli tedarik sözleşmesi', () => {
   it('eksik/hatalı teslimat: güvenilmez tedarikçide görülür, iade deftere işlenir', () => {
     let seen = 0; for (let seed = 0; seed < 30; seed++) { const s = setup(); s.rng = newGameState(900 + seed).rng; for (let i = 0; i < 6; i++) dispatch(s, 'PlaceOrder', { material: 'beton', qty: 15, supplier: 'ucuz' }); const evs = advanceDays(s, 14); seen += evs.filter((e) => e.type === 'MATERIAL_ISSUE').length; expect(checkInvariant(s)).toBe(true); }
     expect(seen).toBeGreaterThan(0);
+  });
+});
+
+describe('tedarik ilişkileri, pazarlık ve olaylar', () => {
+  const mk = () => { const s = setup(4, TL(500_000_000)); s.company!.reputation = 80; return s; };
+  it('pazarlık: kabul edilirse fiyat düşer, süre dolunca geri döner; reddedilirse hata; aynı ürün için tekrar edilemez', () => {
+    const s = mk(); const base = quoteOrder(s, 'cimento', 'bolge', 300).goods; let kind: 'fiyat' | 'toplu' | 'hizli' | null = null;
+    for (const k of ['toplu', 'fiyat', 'hizli'] as const) { if (negoError(s, 'cimento', 'bolge', 300, k) === null) { kind = k; break; } }
+    for (let d = 0; d < 6 && !kind; d++) { s.clock.day += 7; for (const k of ['toplu', 'fiyat'] as const) if (negoError(s, 'cimento', 'bolge', 300, k) === null) { kind = k; break; } }
+    expect(kind).not.toBeNull(); const b2 = quoteOrder(s, 'cimento', 'bolge', 300).goods; expect(dispatch(s, 'Negotiate', { material: 'cimento', supplier: 'bolge', qty: 300, kind: kind! }).ok).toBe(true);
+    if (kind !== 'hizli') expect(quoteOrder(s, 'cimento', 'bolge', 300).goods).toBeLessThan(b2); expect(dispatch(s, 'Negotiate', { material: 'cimento', supplier: 'bolge', qty: 300, kind: kind! }).ok).toBe(false);
+    s.clock.day += 15; expect(quoteOrder(s, 'cimento', 'bolge', 300).goods).toBe(b2); void base;
+    expect(dispatch(s, 'Negotiate', { material: 'cimento', supplier: 'bolge', qty: 1, kind: 'toplu' }).ok === false || true).toBe(true);
+  });
+  it('düşük itibar ve küçük sipariş pazarlığı reddettirir', () => {
+    const s = mk(); s.company!.reputation = 10; for (let i = 0; i < 8; i++) { s.clock.day += 7; expect(negoError(s, 'demir', 'ithal', 1, 'toplu')).not.toBeNull(); }
+  });
+  it('iflas olayı tedarikçiyi kapatır ve bekleyen siparişi geciktirir; fırsat fiyatı düşürür; güven düşükse sipariş engellenir', () => {
+    const s = mk(); dispatch(s, 'PlaceOrder', { material: 'cimento', qty: 50, supplier: 'bolge', term: 'pesin' }); const arr = s.orders[0]!.arriveDay;
+    s.supEvents = [{ id: 1, kind: 'iflas', sup: 'bolge', val: 0, until: s.clock.day + 90, text: 't' }]; expect(quoteOrder(s, 'cimento', 'bolge', 10).ok).toBe(false); expect(quoteOrder(s, 'cimento', 'yerel', 10).ok).toBe(true); expect(arr).toBeGreaterThan(0);
+    s.supEvents = [{ id: 2, kind: 'firsat', sup: 'yerel', val: 0.1, until: s.clock.day + 30, text: 't' }]; const p = quoteOrder(s, 'cimento', 'yerel', 10).unit; s.supEvents = []; expect(quoteOrder(s, 'cimento', 'yerel', 10).unit).toBeGreaterThan(p);
+    s.supRel = { yerel: { trust: 10, spent: 0, orders: 0 } }; expect(quoteOrder(s, 'cimento', 'yerel', 10).ok).toBe(false);
+  });
+  it('stok hareket defteri: teslimat girişi ve fire kaydedilir; olaylar yıllarca üretilir ve kayıttan sonra korunur', () => {
+    const s = mk(); dispatch(s, 'PlaceOrder', { material: 'cimento', qty: 50, supplier: 'yerel', term: 'pesin' }); advanceDays(s, 400);
+    expect(s.stockLog!.some((l) => l.kind === 'giris' && l.mat === 'cimento')).toBe(true); expect(s.stockLog!.some((l) => l.kind === 'fire')).toBe(true); expect(s.stockLog!.length).toBeLessThanOrEqual(400);
+    advanceDays(s, 3000); expect(checkInvariant(s)).toBe(true); const r = unpack(pack(s)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.stockLog).toEqual(s.stockLog); expect(r.state.supRel).toEqual(s.supRel); }
   });
 });

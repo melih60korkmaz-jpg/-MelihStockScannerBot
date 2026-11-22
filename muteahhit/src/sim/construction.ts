@@ -1,3 +1,4 @@
+import { logStock } from './supplyx';
 import { projectMods } from './control';
 import { markLandlord } from './deals';
 import { traitEff, traitOf } from './staff';
@@ -160,7 +161,7 @@ export function advanceConstruction(s: GameState, p: Project, events: GameEvent[
     if (b.stalled) { b.stalled = null; if ((b.stallStreak ?? 0) >= 3) events.push({ type: 'CONSTRUCTION_RESUMED', day: s.clock.day, data: { projectId: p.id } }); b.stallStreak = 0; }
     if (hasMach && !st.prepaid) { const u = useMachines(s, st.machines!, events); b.machCover = u.cover; }
     // stok tüket + malzeme kalitesi
-    let qa = 0; for (const [id, q] of needs) { const it = s.stock[id]; if (it) { b.matCost = (b.matCost ?? 0) + Math.round(q * dp * it.cost); it.qty = Math.max(0, it.qty - q * dp); qa += (q > 0 ? (st.materials!.find((m) => m[0] === id)![1]) : 0) * it.qual; } }
+    let qa = 0; for (const [id, q] of needs) { const it = s.stock[id]; if (it) { b.matCost = (b.matCost ?? 0) + Math.round(q * dp * it.cost); logStock(s, id, Math.min(it.qty, q * dp), 'cikis', Math.min(it.qty, q * dp) * it.cost, p.name); it.qty = Math.max(0, it.qty - q * dp); qa += (q > 0 ? (st.materials!.find((m) => m[0] === id)![1]) : 0) * it.qual; } }
     if (needs.length) b.qAdj = (b.qAdj ?? 0) + (qa / Math.max(0.0001, fracSum)) * dp;
     b.progress += dp; remaining -= use;
     if (cost > 0) { b.unpaid += cost; b.unpaidParts.malzeme += partMal; b.unpaidParts.insaat += partIns; b.unpaidParts.makine += partMak0 + mDay; }

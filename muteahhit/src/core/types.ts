@@ -179,6 +179,7 @@ export interface Project {
   order?: { id: string; until: number };
   manager?: number;
   cond?: number;            // bina durumu 0–100 (bakım); piyasa değerini ve kiracı memnuniyetini etkiler
+  renov?: Record<string, number>; renovBonus?: number; // yenileme kayıtları (tür → gün) ve değer/kira çarpanı katkısı
   managedBy?: number;       // site yönetimi işletmesi (iş kolu kimliği)
   operatedBy?: number;       // işletmeye alındıysa iş kolu kimliği (satış merkezi kapanır, değer işletmeden gelir)
 }
@@ -281,6 +282,11 @@ export interface GameState {
   usedMarket?: UsedMachine[]; leases?: MachineLease[];
   estate?: { policy: 'enflasyon' | 'yuksek' | 'sabit' };
   payables?: Payable[]; contracts?: SupplyContract[]; warehouse?: { level: number };
+  /** Tedarikçi ilişkileri, pazarlık anlaşmaları, tedarik olayları ve stok hareket defteri (eski kayıtlarda yok). */
+  supRel?: Record<string, { trust: number; spent: Money; orders: number }>;
+  negos?: { mat: string; sup: string; disc: number; leadCut: number; until: number }[];
+  supEvents?: { id: number; kind: 'fiyat' | 'grev' | 'iflas' | 'firsat' | 'uretim'; sup?: string; mat?: string; val: number; until: number; text: string }[];
+  stockLog?: { day: number; mat: string; qty: number; kind: 'giris' | 'cikis' | 'fire' | 'hasar'; value: Money; ref?: string }[];
   stakes?: Stake[]; ic?: IcEntry[]; dd?: Record<number, { day: number; hidden: Money }>;
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;
