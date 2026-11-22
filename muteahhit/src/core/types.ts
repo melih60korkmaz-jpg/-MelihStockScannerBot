@@ -290,6 +290,7 @@ export interface GameState {
   supEvents?: { id: number; kind: 'fiyat' | 'grev' | 'iflas' | 'firsat' | 'uretim'; sup?: string; mat?: string; val: number; until: number; text: string }[];
   stockLog?: { day: number; mat: string; qty: number; kind: 'giris' | 'cikis' | 'fire' | 'hasar' | 'sayim'; value: Money; ref?: string }[];
   /** Premium para birimi "Altın" (eski kayıtlarda yok; ilk erişimde başlangıç bakiyesi verilir) ve satın alma geçmişi (test modu). */
+  taxSaved?: Money; audits?: { year: number; penalty: Money; clean: boolean }[]; ad?: { day: number; n: number };
   gold?: number; goldLog?: { day: number; kind: 'baslangic' | 'seviye' | 'paket' | 'hizlandirma'; amount: number; memo: string }[];
   /** Ek depolar (şehir bazlı; stok ortak havuzda tutulur, kapasite toplanır). */
   depots?: { id: number; city: string; level: number; since: number }[];

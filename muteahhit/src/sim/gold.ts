@@ -6,6 +6,10 @@ import { stageDays } from './construction';
  * Gerçek ödeme altyapısı bağlanana kadar paketler TEST modunda ücretsiz verilir (IAP_ENABLED=false).
  */
 export const IAP_ENABLED = false, START_GOLD = 30, LEVEL_GOLD = 10;
+export const AD_GOLD = 5, AD_DAILY = 3;
+export const adsLeft = (s: GameState): number => (s.ad && s.ad.day === s.clock.day ? Math.max(0, AD_DAILY - s.ad.n) : AD_DAILY);
+export function watchAdError(s: GameState): string | null { if (!s.company) return 'Şirket yok.'; return adsLeft(s) > 0 ? null : 'Bugünkü reklam hakkın doldu; yarın tekrar dene.'; }
+export function watchAd(s: GameState): void { const n = s.ad && s.ad.day === s.clock.day ? s.ad.n : 0; s.ad = { day: s.clock.day, n: n + 1 }; addGold(s, AD_GOLD, 'paket', 'Ödüllü reklam (test modu)'); }
 export const GOLD_PACKS = [
   { id: 'g50', gold: 50, price: '₺29,99', label: 'Küçük kese' }, { id: 'g150', gold: 150, price: '₺79,99', label: 'Altın çanta', best: false },
   { id: 'g400', gold: 400, price: '₺179,99', label: 'Altın sandık', best: true }, { id: 'g1000', gold: 1000, price: '₺399,99', label: 'Altın kasa' },

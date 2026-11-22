@@ -1,3 +1,4 @@
+import { ACCT_TAX_CUT, hasAccountant, taxAuditYearly } from './accounting';
 import { traitOf } from './staff';
 import { dateOf, isFirstOfMonth, isMonday, isNewYear } from '../core/calendar';
 import type { GameEvent, GameState } from '../core/types';
@@ -74,7 +75,7 @@ function processScheduled(s: GameState, events: GameEvent[]): void {
 /** Yıllık maaş artışı: enflasyonun %90'ı kadar (işçi kaybetmemek için). */
 function yearly(s: GameState, events: GameEvent[]): void {
   const k = 1 + (s.macro.inflation / 100) * 0.9;
-  for (const p of s.staff) p.salary = Math.round(p.salary * k); mgmtYearly(s);
+  for (const p of s.staff) p.salary = Math.round(p.salary * k); mgmtYearly(s); taxAuditYearly(s, events);
   compactLedger(s, s.clock.day - 730); // 2 yıldan eski kayıtlar aylık toplamlara indirgenir (kayıt boyutu/performans)
   events.push({ type: 'YEAR', day: s.clock.day, data: { year: dateOf(s.clock.day).year, raise: k - 1 } });
 }
@@ -135,7 +136,7 @@ function quarterlyTax(s: GameState, events: GameEvent[]): void {
   if (result <= 0) { s.taxLossCarry += -result; return; }
   const taxable = Math.max(0, result - s.taxLossCarry);
   s.taxLossCarry = Math.max(0, s.taxLossCarry - result);
-  const tax = Math.round(taxable * CORPORATE_TAX * (s.staff.some((x) => x.type === 'muhasebeci') ? 0.94 : 1)); // muhasebeci vergi planlamasıyla %6 tasarruf sağlar
+  const full = Math.round(taxable * CORPORATE_TAX), tax = Math.round(full * (hasAccountant(s) ? 1 - ACCT_TAX_CUT : 1)); if (tax < full) s.taxSaved = (s.taxSaved ?? 0) + (full - tax); // muhasebeci vergi planlamasıyla tasarruf sağlar
   if (tax > 0) { post(s, 'vergi', -tax, { memo: 'Çeyreklik geçici vergi' }); events.push({ type: 'TAX_PAID', day, data: { amount: tax } }); }
 }
 

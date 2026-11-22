@@ -1,5 +1,5 @@
 import { formatDate } from '../../core/calendar';
-import { GOLD_PACKS, IAP_ENABLED, RUSH_DAYS, goldOf, projectRemainingDays, rushActive, rushCost, stageRemainingDays } from '../../sim/gold';
+import { AD_DAILY, AD_GOLD, adsLeft, GOLD_PACKS, IAP_ENABLED, RUSH_DAYS, goldOf, projectRemainingDays, rushActive, rushCost, stageRemainingDays } from '../../sim/gold';
 import { STAGES } from '../../data';
 import { fmt, nf } from '../components';
 import { askConfirm, h, press, toast } from '../dom';
@@ -24,6 +24,7 @@ export function altinView(app: App, refresh: () => void): HTMLElement {
     h('div', { class: 'card' }, h('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap' }, h('div', { style: 'font-size:36px' }, '🪙'), h('div', {}, h('div', { class: 'lbl-s', style: 'margin:0' }, 'Altın bakiyesi'), h('b', { style: 'font-size:26px' }, nf(gold, 0))),
       h('div', { class: 'mute', style: 'font-size:12px;flex:1;min-width:200px' }, 'Altın yalnızca inşaatı hızlandırmak için harcanır; nakit ya da rekabet avantajı vermez. Seviye atlayınca +10 altın kazanırsın.'))),
     h('div', { class: 'lbl-s' }, '⚡ İnşaat hızlandırma'), ...(rushCards.length ? rushCards : [h('div', { class: 'card empty' }, 'Şu an inşaatı süren proje yok. Bir projeyi başlatınca burada hızlandırabilirsin.')]),
+    h('div', { class: 'card' }, h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, '🎬 Ödüllü reklam izle', h('small', {}, `+${AD_GOLD} altın · bugün ${adsLeft(s)}/${AD_DAILY} hak kaldı · TEST MODU: gerçek reklam bağlanana kadar doğrudan verilir`)), h('button', { class: 'btn gold', style: 'min-height:38px', disabled: adsLeft(s) <= 0, onclick: () => act('WatchAdTest', {}, `+${AD_GOLD} altın`, 'coin') }, 'İzle'))),
     h('div', { class: 'lbl-s' }, '🛒 Altın paketleri'), h('div', { class: 'mute', style: 'font-size:12px' }, IAP_ENABLED ? 'Satın alma mağaza üzerinden yapılır.' : 'TEST MODU: gerçek ödeme bağlanana kadar paketler ücretsiz verilir; fiyatlar örnektir.'), packs,
     h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Hareketler'), ...(log.length ? log.map((l) => h('div', { class: 'row', style: 'min-height:30px;font-size:13px' }, h('span', {}, `${formatDate(l.day)} · ${l.memo}`), h('b', { class: l.amount < 0 ? 'neg' : 'pos' }, `${l.amount > 0 ? '+' : ''}${l.amount} 🪙`))) : [h('div', { class: 'mute', style: 'font-size:13px' }, 'Henüz hareket yok.')])), h('span', { style: 'display:none' }, fmt(0)));
 }

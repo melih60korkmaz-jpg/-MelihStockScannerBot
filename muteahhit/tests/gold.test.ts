@@ -5,6 +5,7 @@ import { TL } from '../src/core/money';
 import { advanceDays } from '../src/sim/engine';
 import { checkInvariant } from '../src/sim/ledger';
 import { GOLD_PACKS, goldOf, projectRemainingDays, rushCost, rushActive, stageRemainingDays } from '../src/sim/gold';
+import { auditChance, hasAccountant, taxAuditYearly } from '../src/sim/accounting';
 import { Store } from '../src/core/store';
 import { pack, unpack } from '../src/save/serialize';
 import type { GameState, Parcel } from '../src/core/types';
@@ -35,8 +36,14 @@ describe('altın ve hızlandırma', () => {
   it('seviye atlayınca altın kazanılır; kayıt-yükleme altını korur', () => {
     const { s } = setup(); goldOf(s); const g = s.gold!; const r = unpack(pack(s)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.gold).toBe(g); expect(r.state.goldLog).toEqual(s.goldLog); }
   });
-  it('muhasebeci çeyreklik vergiyi %6 düşürür', async () => {
-    const { s } = setup(); expect(s.staff.some((x) => x.type === 'muhasebeci')).toBe(true);
+  it('muhasebeci: vergi %6 düşer, tasarruf kaydedilir; denetim riski muhasebeciyle düşer; ceza deftere vergi olarak yazılır', () => {
+    const run = (acct: boolean) => { const { s } = setup(); if (!acct) s.staff = s.staff.filter((x) => x.type !== 'muhasebeci'); s.company!.cash = TL(500_000_000); s.ledgerBase = s.company!.cash - s.ledger.reduce((a, e) => a + e.amount, 0); for (let i = 0; i < 6; i++) { s.clock.day += 30; s.ledger.push({ day: s.clock.day, cat: 'satis', amount: TL(30_000_000), memo: 't' } as never); s.company!.cash += TL(30_000_000); } return s; };
+    expect(auditChance(run(true))).toBeLessThan(auditChance(run(false))); expect(hasAccountant(run(true))).toBe(true); expect(hasAccountant(run(false))).toBe(false);
+    const hits = (acct: boolean) => { let n = 0; for (let y = 0; y < 60; y++) { const s = run(acct); s.clock.day = 365 * (y + 2) + 10; s.nextId += y * 3; s.ledger.push({ day: 365 * (y + 1) + 5, cat: 'satis', amount: TL(50_000_000), memo: 't' } as never); const ev: never[] = []; taxAuditYearly(s, ev); n += s.audits?.filter((a) => !a.clean).length ?? 0; } return n; };
+    const without = hits(false), withA = hits(true); expect(without).toBeGreaterThan(0); expect(withA).toBeLessThan(without);
+  });
+  it('ödüllü reklam (test): altın verir, günlük hak sınırlıdır, ertesi gün yenilenir', () => {
+    const { s } = setup(); const g = goldOf(s); for (let i = 0; i < 3; i++) expect(dispatch(s, 'WatchAdTest', {}).ok).toBe(true); expect(dispatch(s, 'WatchAdTest', {}).ok).toBe(false); expect(s.gold).toBe(g + 15); s.clock.day += 1; expect(dispatch(s, 'WatchAdTest', {}).ok).toBe(true);
   });
   it('otomatik akış: olay duraklaması pencere kapanınca kendiliğinden devam eder; oyuncu duraklatması korunur', () => {
     const { s } = setup(); const st = new Store(s); st.setSpeed(1); const d0 = s.clock.day; (st as unknown as { speed: number; autoPaused: boolean }).speed = 0; (st as unknown as { autoPaused: boolean }).autoPaused = true; st.frame(1100); expect(st.speed).toBe(1); expect(s.clock.day).toBeGreaterThan(d0);

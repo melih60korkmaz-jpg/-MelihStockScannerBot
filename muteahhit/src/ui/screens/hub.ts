@@ -29,6 +29,7 @@ import { holdingView, setHoldingSub } from './holding';
 import { yonetimView, setYonetimSub } from './yonetim';
 import { tedarikView, setTedarikSub } from './tedarik';
 import { altinView } from './altin';
+import { auditChance, hasAccountant, taxSavedTotal } from '../../sim/accounting';
 import { goldOf } from '../../sim/gold';
 import { gayrimenkulView, setEstateSub } from './gayrimenkul';
 import { makineView, setMakineSub } from './makine';
@@ -176,7 +177,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
     const seg = h('div', { class: 'seg', role: 'group', style: 'margin-bottom:10px;align-self:flex-start' });
     for (const [id, label] of [['ozet', 'Gelir-Gider'], ['nakit', 'Nakit akışı'], ['gider', 'Gider dağılımı'], ['bilanco', 'Bilanço'], ['krediler', 'Krediler'], ['ortaklar', 'Ortaklar']] as const)
       seg.append(h('button', { class: sub === id ? 'on' : '', 'aria-pressed': String(sub === id), onclick: () => { press(app); sub = id; drawView(); } }, label));
-    const body = h('div', {});
+    const body = h('div', {}); if (sub === 'ozet') { const acc = hasAccountant(s), last = (s.audits ?? []).slice(-1)[0]; body.append(h('div', { class: 'card', style: 'margin-bottom:10px' }, h('div', { class: 'lbl-s' }, '🧮 Muhasebe'), h('div', { class: 'mute', style: 'font-size:13px' }, acc ? `Muhasebeci çalışıyor: çeyreklik vergi −%6 (şimdiye dek ${formatMoney(taxSavedTotal(s))} tasarruf), denetim riski %${Math.round(auditChance(s) * 100)}.` : `Muhasebeci yok: vergi indirimi yok, yıllık denetim riski %${Math.round(auditChance(s) * 100)}. Operasyon › Ekip bölümünden muhasebeci işe al.`), last ? h('div', { class: 'mute', style: 'font-size:12px;margin-top:4px' }, `Son denetim (${last.year}): ${last.clean ? 'temiz' : `ceza ${formatMoney(last.penalty)}`}`) : null)); }
     if (sub === 'krediler') body.append(loansView(app, drawView));
     else if (sub === 'ortaklar') body.append(partnersView(app, drawView));
     else if (sub === 'ozet') {
