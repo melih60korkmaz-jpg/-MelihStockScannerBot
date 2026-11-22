@@ -12,7 +12,7 @@ export type Block =
 
 export interface Topic { id: string; ico: string; title: string; blocks: Block[] }
 
-export const TAB_TOPIC: Record<string, string> = { altyapi: 'altyapi', makine: 'makine', gayrimenkul: 'gayrimenkul', tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
+export const TAB_TOPIC: Record<string, string> = { altin: 'sirket', altyapi: 'altyapi', makine: 'makine', gayrimenkul: 'gayrimenkul', tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
 
 export const GUIDE: Topic[] = [
   {
@@ -27,7 +27,7 @@ export const GUIDE: Topic[] = [
   },
   {
     id: 'zaman', ico: '⏱️', title: 'Zaman, kasa ve hız', blocks: [
-      { p: 'Oyun gerçek zamanlıdır: zaman sen durdurmadıkça akar. Bir oyun günü 1× hızda yaklaşık 2 saniyedir; 2× yaklaşık 0,8, 4× yaklaşık 0,3 saniye. ⏭30 düğmesi 30 günü hızlıca atlar.' },
+      { p: 'Oyun gerçek zamanlıdır: zaman kendiliğinden akar (bir oyun günü yaklaşık 1 saniye). ⏸ ile durdurabilir, ▶ ile devam ettirebilirsin; olay çıkınca oyun durur, karar verince kendiliğinden devam eder. İnşaatı hızlandırmak için Altın sekmesini kullan.' },
       { h: 'Zaman ne zaman durur?' },
       { ul: ['⏸ ile sen durdurunca.', 'Herhangi bir pencere (satış merkezi, sipariş, kredi, genel merkez…) açıkken: değerler kaymasın diye zaman bekler.', 'Önemli bir gelişmede oyun kendiliğinden durur ve "⏸ Oyun duraklatıldı" bildirimi çıkar: karar gerektiren olay, seviye atlama, proje teslimi, ihale kazanma, iş kazası, kredi taksidi kaçırma, haciz, ekonomik kriz haberi, kasanın eksiye düşmesi, iflas.', 'Uygulamadan çıkınca / ekran kilitlenince oyun otomatik durur ve kaydeder.'] },
       { h: 'Kasa' },

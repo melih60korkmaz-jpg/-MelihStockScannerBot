@@ -10,6 +10,8 @@ export const SPEED_MS: Record<Speed, number> = { 0: 0, 1: 1000, 2: 400, 4: 150 }
 /** UI/render/audio'nun konuştuğu tek nesne: durum + olay yayını + zaman döngüsü. */
 export class Store {
   speed: Speed = 0;
+  /** Otomatik akış: olay/arka plan duraklatmaları pencere kapanınca kendiliğinden devam eder; oyuncunun kendi duraklatması korunur. */
+  private autoPaused = false;
   private listeners = new Set<Listener>();
   private acc = 0;
   /** Komut günlüğü (hata ayıklama / yeniden oynatma testleri için). */
@@ -20,7 +22,7 @@ export class Store {
   subscribe(fn: Listener): () => void { this.listeners.add(fn); return () => this.listeners.delete(fn); }
   private emit(events: GameEvent[]) { if (events.length) for (const l of this.listeners) l(events); }
 
-  replaceState(s: GameState) { this.state = s; this.speed = 0; this.acc = 0; this.emit([{ type: 'STATE_REPLACED', day: s.clock.day }]); }
+  replaceState(s: GameState) { this.state = s; this.speed = 0; this.autoPaused = true; this.acc = 0; this.emit([{ type: 'STATE_REPLACED', day: s.clock.day }]); }
 
   run<N extends CommandName>(name: N, params: Parameters<(typeof COMMANDS)[N]['validate']>[1]): CommandResult {
     const r = dispatch(this.state, name, params);
@@ -44,12 +46,13 @@ export class Store {
   }
   private setSpeedSilent(sp: Speed) { this.speed = sp; this.acc = 0; }
 
-  setSpeed(sp: Speed) { this.speed = sp; this.acc = 0; this.emit([{ type: 'SPEED', day: this.state.clock.day, data: { speed: sp } }]); }
+  setSpeed(sp: Speed) { this.speed = sp; this.autoPaused = false; this.acc = 0; this.emit([{ type: 'SPEED', day: this.state.clock.day, data: { speed: sp } }]); }
 
   /** requestAnimationFrame'den çağrılır. Büyük dt (arka plandan dönüş) sınırlanır. */
   /** Arayüz: açık bir pencere (modal) varken zaman akmasın. main.ts atar; testlerde tanımsızdır. */
   static hold: (() => boolean) | null = null;
   frame(dtMs: number): void {
+    if (this.speed === 0 && this.autoPaused && this.state.company && !this.state.pending && !Store.hold?.()) { this.speed = 1; this.autoPaused = false; this.acc = 0; this.emit([{ type: 'SPEED', day: this.state.clock.day, data: { speed: 1 } }]); }
     if (this.speed === 0 || !this.state.company) return;
     if (Store.hold?.()) { this.acc = 0; return; }
     this.acc += Math.min(dtMs, 1000);
@@ -58,10 +61,10 @@ export class Store {
       this.acc -= per;
       const evs = advanceDay(this.state);
       this.emit(evs);
-      if (evs.some((e) => e.pause)) { this.setSpeed(0); break; }
+      if (evs.some((e) => e.pause)) { this.speed = 0; this.autoPaused = true; this.acc = 0; this.emit([{ type: 'SPEED', day: this.state.clock.day, data: { speed: 0 } }]); break; }
     }
   }
 
   /** Arka plana alma: duraklat (süre atlaması yok). */
-  pauseForBackground() { if (this.speed !== 0) this.setSpeed(0); }
+  pauseForBackground() { if (this.speed !== 0) { this.speed = 0; this.autoPaused = true; this.acc = 0; this.emit([{ type: 'SPEED', day: this.state.clock.day, data: { speed: 0 } }]); } }
 }

@@ -135,7 +135,7 @@ function quarterlyTax(s: GameState, events: GameEvent[]): void {
   if (result <= 0) { s.taxLossCarry += -result; return; }
   const taxable = Math.max(0, result - s.taxLossCarry);
   s.taxLossCarry = Math.max(0, s.taxLossCarry - result);
-  const tax = Math.round(taxable * CORPORATE_TAX);
+  const tax = Math.round(taxable * CORPORATE_TAX * (s.staff.some((x) => x.type === 'muhasebeci') ? 0.94 : 1)); // muhasebeci vergi planlamasıyla %6 tasarruf sağlar
   if (tax > 0) { post(s, 'vergi', -tax, { memo: 'Çeyreklik geçici vergi' }); events.push({ type: 'TAX_PAID', day, data: { amount: tax } }); }
 }
 

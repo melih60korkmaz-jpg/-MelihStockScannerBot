@@ -179,6 +179,7 @@ export interface Project {
   order?: { id: string; until: number };
   manager?: number;
   cond?: number;            // bina durumu 0–100 (bakım); piyasa değerini ve kiracı memnuniyetini etkiler
+  rush?: { kind: 'gun' | 'asama'; until: number; stage: number; mult: number }; // altınla inşaat hızlandırma
   rentAd?: number; // kira ilanı reklam düzeyi (0–3): boş kiralık dairelerde kiracı gelme sıklığını artırır, aylık gider doğurur
   renov?: Record<string, number>; renovBonus?: number; // yenileme kayıtları (tür → gün) ve değer/kira çarpanı katkısı
   managedBy?: number;       // site yönetimi işletmesi (iş kolu kimliği)
@@ -288,6 +289,8 @@ export interface GameState {
   negos?: { mat: string; sup: string; disc: number; leadCut: number; until: number; freeTerm?: boolean; cDisc?: number }[];
   supEvents?: { id: number; kind: 'fiyat' | 'grev' | 'iflas' | 'firsat' | 'uretim'; sup?: string; mat?: string; val: number; until: number; text: string }[];
   stockLog?: { day: number; mat: string; qty: number; kind: 'giris' | 'cikis' | 'fire' | 'hasar' | 'sayim'; value: Money; ref?: string }[];
+  /** Premium para birimi "Altın" (eski kayıtlarda yok; ilk erişimde başlangıç bakiyesi verilir) ve satın alma geçmişi (test modu). */
+  gold?: number; goldLog?: { day: number; kind: 'baslangic' | 'seviye' | 'paket' | 'hizlandirma'; amount: number; memo: string }[];
   /** Ek depolar (şehir bazlı; stok ortak havuzda tutulur, kapasite toplanır). */
   depots?: { id: number; city: string; level: number; since: number }[];
   stakes?: Stake[]; ic?: IcEntry[]; dd?: Record<number, { day: number; hidden: Money }>;

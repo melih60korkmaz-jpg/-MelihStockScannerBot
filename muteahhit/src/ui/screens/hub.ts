@@ -28,6 +28,8 @@ import { pageHead } from '../pagehead';
 import { holdingView, setHoldingSub } from './holding';
 import { yonetimView, setYonetimSub } from './yonetim';
 import { tedarikView, setTedarikSub } from './tedarik';
+import { altinView } from './altin';
+import { goldOf } from '../../sim/gold';
 import { gayrimenkulView, setEstateSub } from './gayrimenkul';
 import { makineView, setMakineSub } from './makine';
 import { altyapiView, setInfraSub } from './altyapi';
@@ -61,7 +63,7 @@ const ICON = {
   menu: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   hold: '<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V5h6v3M3 13h18M11 13v2h2v-2"/></svg>',
 };
-type Tab = 'altyapi' | 'makine' | 'gayrimenkul' | 'tedarik' | 'yonetim' | 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
+type Tab = 'altin' | 'altyapi' | 'makine' | 'gayrimenkul' | 'tedarik' | 'yonetim' | 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
 const TABS: [Tab, string, keyof typeof ICON][] = [['sirket', 'Şirket', 'home'], ['harita', 'Harita', 'pin'], ['projeler', 'Projeler', 'build'], ['yonetim', 'Yönetim', 'team'], ['finans', 'Finans', 'chart']];
 
 const monthLabel = (key: string) => { const [y, m] = key.split('-'); return `${['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][Number(m) - 1]} ${y!.slice(2)}`; };
@@ -77,20 +79,19 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   root.append(hud, view, tabs);
 
   // HUD bir kez kurulur, olaylarda yerinde güncellenir (hızlı akışta dokunma kaybolmasın)
-  const ref: { cash?: HTMLElement; cashPill?: HTMLElement; date?: HTMLElement; sub?: HTMLElement; speed?: HTMLButtonElement[] } = {};
+  const ref: { cash?: HTMLElement; cashPill?: HTMLElement; date?: HTMLElement; sub?: HTMLElement; speed?: HTMLButtonElement[]; gold?: HTMLElement } = {};
   const buildHud = () => {
     const c = app.store.state.company!;
-    const speeds: [Speed, string][] = [[0, ''], [1, '1×'], [2, '2×'], [4, '4×']];
+    const speeds: [Speed, string][] = [[0, ''], [1, '▶']];
     const seg = h('div', { class: 'seg speeds', role: 'group', 'aria-label': 'Oyun hızı' });
     ref.speed = [];
     for (const [v, l] of speeds) { const b = h('button', { 'aria-label': v === 0 ? 'Duraklat' : `Hız ${l}`, ...(v === 0 ? { html: ICON.pause } : {}), onclick: () => { press(app); app.store.setSpeed(v); } }, v === 0 ? null : l) as HTMLButtonElement; b.dataset.v = String(v); ref.speed.push(b); seg.append(b); }
-    seg.append(h('button', { 'aria-label': 'Olay çıkana kadar en çok 30 gün atla', onclick: () => { press(app); app.store.skip(30); } }, '⏭30'));
     ref.cash = h('b', {}); ref.cashPill = h('div', { class: 'pill cash' }, h('small', {}, 'KASA'), ref.cash);
     ref.date = h('b', { style: 'font-size:17px' }); ref.sub = h('small', {});
     hud.innerHTML = '';
     hud.append(
       h('div', { class: 'id' }, h('span', { html: emblemSvg(c.emblem.shape, c.emblem.color, 38) }), h('div', { style: 'min-width:0' }, h('b', {}, c.name), ref.sub)),
-      ref.cashPill, h('div', { class: 'sp' }), h('div', { class: 'pill' }, h('small', {}, 'TARİH'), ref.date), seg,
+      ref.cashPill, h('button', { class: 'pill goldpill', 'aria-label': 'Altın', style: 'cursor:pointer', onclick: () => { press(app); app.openTab?.('altin'); } }, h('small', {}, '🪙'), ref.gold = h('b', {})), h('div', { class: 'sp' }), h('div', { class: 'pill' }, h('small', {}, 'TARİH'), ref.date), seg,
       h('button', { class: 'btn ibtn guidebtn', 'aria-label': 'Rehber: oyun nasıl oynanır', title: 'Rehber', onclick: () => { press(app); openGuide(app, TAB_TOPIC[tab]); } }, '?'),
       h('button', { class: 'btn ibtn', 'aria-label': 'Ayarlar', html: ICON.gear, onclick: () => { press(app); openSettings({ ...app, activeTier: () => app.scene?.activeTier ?? 'mid' }); } }),
       h('button', { class: 'btn ibtn', 'aria-label': 'Ana menü', html: ICON.menu, onclick: async () => { press(app); app.store.setSpeed(0); try { await app.saves.autosave(app.store.state); } catch { /* menü yine açılır */ } app.menu(); } }),
@@ -108,7 +109,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   };
   const moodNow = () => { const s = app.store.state, c = s.company; return c && (s.macro.regime === 'kriz' || c.cash < 0 || s.loans.some((l) => l.missed > 0)) ? 'tense' as const : 'game' as const; };
   const drawHud = () => {
-    const s = app.store.state, c = s.company; if (!c || !ref.cash) return;
+    const s = app.store.state, c = s.company; if (!c || !ref.cash) return; if (ref.gold) ref.gold.textContent = String(goldOf(s));
     setCash(c.cash); ref.cashPill!.classList.toggle('neg', c.cash < 0);
     ref.date!.textContent = formatDate(s.clock.day); ref.sub!.textContent = `${LEVELS[c.level - 1]} · İtibar ${c.reputation}`;
     for (const b of ref.speed!) { const on = Number(b.dataset.v) === app.store.speed; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }
@@ -237,7 +238,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   const drawView = () => {
     const vkey = `${tab}:${tab === 'harita' ? mapKey() : ''}`, keep = vkey === lastViewKey ? view.scrollTop : 0; lastViewKey = vkey; view.innerHTML = '';
     if (tab !== 'sirket') view.append(pageHead(app, tab));
-    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'holding' ? holdingView(app, drawView) : tab === 'yonetim' ? yonetimView(app, drawView) : tab === 'tedarik' ? tedarikView(app, drawView) : tab === 'gayrimenkul' ? gayrimenkulView(app, drawView) : tab === 'makine' ? makineView(app, drawView) : tab === 'altyapi' ? altyapiView(app, drawView) : tab === 'finans' ? finance() : marketView(app, drawView));
+    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'holding' ? holdingView(app, drawView) : tab === 'yonetim' ? yonetimView(app, drawView) : tab === 'tedarik' ? tedarikView(app, drawView) : tab === 'gayrimenkul' ? gayrimenkulView(app, drawView) : tab === 'makine' ? makineView(app, drawView) : tab === 'altyapi' ? altyapiView(app, drawView) : tab === 'finans' ? finance() : tab === 'altin' ? altinView(app, drawView) : marketView(app, drawView));
     view.scrollTop = keep;
   };
 
