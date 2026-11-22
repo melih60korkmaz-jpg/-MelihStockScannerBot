@@ -12,7 +12,7 @@ export type Block =
 
 export interface Topic { id: string; ico: string; title: string; blocks: Block[] }
 
-export const TAB_TOPIC: Record<string, string> = { gayrimenkul: 'gayrimenkul', tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
+export const TAB_TOPIC: Record<string, string> = { makine: 'makine', gayrimenkul: 'gayrimenkul', tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
 
 export const GUIDE: Topic[] = [
   {
@@ -160,6 +160,15 @@ export const GUIDE: Topic[] = [
       { h: 'Altyapı işleri (seviye 5)' },
       { ul: ['İhale sekmesinde yol, köprü, tünel, baraj ve kanalizasyon/su şebekesi ihaleleri açılır. Şartları sağlamak gerekir (itibar, kredi notu, tamamlanan proje, çalışan, makine).', 'Kazanınca iş Holding › Altyapı\'da başlar. İlerleme saha ekibine ve makine parkına bağlıdır; kapasite yetersizse iş ilerlemez, nakit yoksa durur. Kapasite aktif işler arasında bölünür.', 'Her %10 ilerleme bir hakediş doğurur (45 gün sonra tahsil). Bitişte kalan hakediş ve teminat gelir; gecikirse günde %0,1 ceza (en çok %10).'] },
       { tip: 'Altyapı işleri büyük sermaye ve çok makine ister. Önce makine parkını büyüt, ekibi güçlendir, sonra yola çık.' },
+    ],
+  },
+  {
+    id: 'makine', ico: '🚜', title: 'Makine parkı', blocks: [
+      { p: 'Menü › İnşaat › Makine Parkı (seviye 3). 14 makine: kule vinç, mobil vinç, ekskavatör, yükleyici, dozer, beton pompası, mikser, kamyon, damperli kamyon, forklift, silindir, jeneratör, iskele, kompresör.' },
+      { h: 'Sahip olmak ve kullanmak' },
+      { ul: ['Şantiye aşaması bir makine gerektirir: sahip olduğun boşta ve sağlam makine kullanılır (yalnızca yakıt ödenir), yoksa günlük kiralanır.', 'Her makinenin çalışma saati, durumu (0–100), yakıt ve bakım harcaması tutulur. Durum her kullanım gününde düşer, aylık rutin bakımla biraz toparlanır; düşük durumda arıza olasılığı artar. Bakım ve büyük bakım durumu yükseltir.', 'Operatör: makine parkı açıldıktan sonra operatör gerektiren makineyi operatör çalıştırır; bir operatör aynı gün tek makine kullanır. Operatörsüz makine o gün kiralanır.'] },
+      { h: 'Alım, kiralama, kiraya verme' },
+      { ul: ['Yeni alım peşin ya da %20 peşinat + 36 ay krediyle. İkinci el ilanları ucuzdur ama yaşlı ve yıpranmıştır.', 'Uzun dönem kiralama günlük kiranın %75\'i, operatör dahil; fesih bedeli 1 aylık kira.', 'Kendi makinen boştaysa 30–90 gün başka firmalara kiraya verebilirsin (günlük kiranın %60\'ı); bu sürede kullanamazsın, makine yıpranır ve hasar riski vardır.', 'Rapor: kendi makinenin kullanım günü başına maliyeti ile dışarıdan kira karşılaştırılır; amortisman, bakım, yakıt ve operatör payı hesaba katılır.'] },
     ],
   },
   {

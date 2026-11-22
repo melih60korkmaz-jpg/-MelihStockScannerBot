@@ -24,7 +24,7 @@ export function monthlyCosts(s: GameState): { cat: string; amount: Money; memo: 
   const sp = c.safety === 'dusuk' ? 0.005 : c.safety === 'yuksek' ? 0.06 : 0.02;
   out.push({ cat: 'sigorta', amount: Math.round(wages * sp) + mul(TL(4000), ci), memo: `İş güvenliği (${c.safety})` });
   const branches = s.openCities.filter((id) => id !== c.startCity); if (branches.length) out.push({ cat: 'ofis', amount: Math.round(branches.reduce((a, id) => a + TL(branchCost(id)) * 0.012, 0) * ci), memo: `${branches.length} şube giderleri` });
-  const maint = machineMonthlyMaint(s); if (maint > 0) out.push({ cat: 'makine', amount: maint, memo: `${s.machines.length} makine bakımı` });
+  const maint = machineMonthlyMaint(s); if (maint > 0) out.push({ cat: 'makine_bakim', amount: maint, memo: `${s.machines.length} makine bakımı` });
   out.push({ cat: 'kira', amount: mul(TL(off.monthlyRentTL), ci), memo: off.label });
   out.push({ cat: 'ofis', amount: mul(TL(12000) + TL(1500) * s.staff.length, ci), memo: 'Elektrik, internet, kırtasiye' });
   out.push(...mgmtMonthlyCosts(s));

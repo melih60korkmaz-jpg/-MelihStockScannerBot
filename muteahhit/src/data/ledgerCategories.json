@@ -233,5 +233,10 @@
   "id": "depozito",
   "label": "Kiracı depozitosu",
   "kind": "finansman"
+ },
+ {
+  "id": "makine_bakim",
+  "label": "Makine bakım ve onarım",
+  "kind": "gider"
  }
 ]

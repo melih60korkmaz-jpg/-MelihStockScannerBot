@@ -23,8 +23,8 @@ function setup(o: { cash?: number; staff?: string[]; seed?: number } = {}) {
 const run = (s: GameState, until: () => boolean, max = 1500) => { const all: GameEvent[] = []; for (let i = 0; i < max && !until(); i++) all.push(...advanceDays(s, 1)); return all; };
 
 describe('veri bütünlüğü', () => {
-  it('17 malzeme, 6 tedarikçi, 12 makine; aşama malzeme payları ≤ 1; her malzeme en az bir aşamada kullanılır', () => {
-    expect(MATERIALS).toHaveLength(17); expect(SUPPLIERS).toHaveLength(6); expect(MACHINES).toHaveLength(12);
+  it('17 malzeme, 6 tedarikçi, 14 makine; aşama malzeme payları ≤ 1; her malzeme en az bir aşamada kullanılır', () => {
+    expect(MATERIALS).toHaveLength(17); expect(SUPPLIERS).toHaveLength(6); expect(MACHINES).toHaveLength(14);
     const used = new Set<string>(); for (const st of STAGES) { const sum = (st.materials ?? []).reduce((a, [id, f]) => (used.add(id), a + f), 0); expect(sum).toBeLessThanOrEqual(1.0001); }
     for (const m of MATERIALS) expect(used.has(m.id), m.id).toBe(true);
   });
@@ -77,16 +77,16 @@ describe('malzeme ve tedarik', () => {
 });
 
 describe('makine', () => {
-  it('satın alma: nakit düşer, makine eklenir; satış %90×değer; değer yıllık %12 düşer (en az %25)', () => {
+  it('satın alma: nakit düşer, makine eklenir; satış %90×değer; değer yıllık %13 düşer (forklift) (en az %25)', () => {
     const { s } = setup({ cash: TL(900_000_000) }); const c0 = s.company!.cash; expect(dispatch(s, 'BuyMachine', { type: 'forklift' }).ok).toBe(true);
     expect(c0 - s.company!.cash).toBe(TL(650000)); const m = s.machines[0]!; expect(machineValue(s, m)).toBe(TL(650000));
-    advanceDays(s, 365); expect(machineValue(s, m)).toBe(Math.round(TL(650000) * 0.88)); advanceDays(s, 365 * 10); expect(machineValue(s, m)).toBe(Math.round(TL(650000) * 0.25));
+    advanceDays(s, 365); expect(machineValue(s, m)).toBe(Math.round(TL(650000) * 0.87)); advanceDays(s, 365 * 10); expect(machineValue(s, m)).toBe(Math.round(TL(650000) * 0.25));
     const c1 = s.company!.cash; dispatch(s, 'SellMachine', { machineId: m.id }); expect(s.company!.cash - c1).toBe(Math.round(Math.round(TL(650000) * 0.25) * 0.9)); expect(s.machines).toHaveLength(0);
     expect(checkInvariant(s)).toBe(true);
   });
   it('aylık bakım gideri eklenir; yetersiz nakitte alım reddedilir', () => {
-    const { s } = setup(); const before = monthlyCosts(s).find((x) => x.cat === 'makine'); expect(before).toBeUndefined();
-    dispatch(s, 'BuyMachine', { type: 'iskele' }); expect(monthlyCosts(s).find((x) => x.cat === 'makine')!.amount).toBeGreaterThanOrEqual(TL(3500));
+    const { s } = setup(); const before = monthlyCosts(s).find((x) => x.cat === 'makine_bakim'); expect(before).toBeUndefined();
+    dispatch(s, 'BuyMachine', { type: 'iskele' }); expect(monthlyCosts(s).find((x) => x.cat === 'makine_bakim')!.amount).toBeGreaterThanOrEqual(TL(3500));
     s.company!.cash = TL(1000); s.ledgerBase = s.company!.cash - s.ledger.reduce((a, e) => a + e.amount, 0); expect(dispatch(s, 'BuyMachine', { type: 'kule_vinc' }).ok).toBe(false); expect(dispatch(s, 'BuyMachine', { type: 'yok' }).ok).toBe(false);
   });
   it('sahip olunan makine kira yerine yakıt ödetir: aynı inşaat daha ucuz (makine gideri)', () => {

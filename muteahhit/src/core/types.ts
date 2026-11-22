@@ -178,7 +178,14 @@ export interface Order { id: number; material: string; qty: number; unitPrice: M
 export interface Payable { id: number; amount: Money; dueDay: number; memo: string; late: number }
 /** Düzenli tedarik sözleşmesi: fiyat kilitlidir, her ay miktar teslim alınır (al ya da öde). */
 export interface SupplyContract { id: number; material: string; supplier: string; qtyPerMonth: number; price: Money; startDay: number; months: number; nextDay: number; taken: number; missed: number; dest: string }
-export interface Machine { id: number; type: string; boughtDay: number; price: Money; brokenUntil: number; uses: number; usedDay?: number }
+export interface Machine {
+  id: number; type: string; boughtDay: number; price: Money; brokenUntil: number; uses: number; usedDay?: number;
+  /** Çalışma saati, durum (0–100), harcanan yakıt/bakım, kiraya verme geliri; ikinci el ve kiraya verilmişlik (eski kayıtlarda yok). */
+  hours?: number; cond?: number; fuelSpent?: Money; maintSpent?: Money; income?: Money; used?: boolean; rentedOut?: { until: number; daily: Money };
+}
+/** İkinci el makine ilanı ve uzun dönem kiralama sözleşmesi. */
+export interface UsedMachine { id: number; type: string; age: number; hours: number; cond: number; price: Money; expires: number }
+export interface MachineLease { id: number; type: string; startDay: number; endDay: number; daily: Money; usedDay?: number }
 export interface Unit {
   id: number; projectId: number; area: number; rooms: string; floor: number; view: number; facing: 'K' | 'G' | 'D' | 'B'; mult: number;
   status: 'bos' | 'kapora' | 'satildi';
@@ -261,6 +268,7 @@ export interface GameState {
   offers?: Offer[];
   deals?: Deal[];
   mgmt?: MgmtState;
+  usedMarket?: UsedMachine[]; leases?: MachineLease[];
   estate?: { policy: 'enflasyon' | 'yuksek' | 'sabit' };
   payables?: Payable[]; contracts?: SupplyContract[]; warehouse?: { level: number };
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu

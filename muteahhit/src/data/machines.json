@@ -6,7 +6,10 @@
   "rentTL": 9000,
   "fuelTL": 900,
   "maintTL": 30000,
-  "blurb": "Yüksek katlı yapılarda şart."
+  "blurb": "Yüksek katlı yapılarda şart.",
+  "cap": "Yük 10 t · menzil 50 m",
+  "op": 1,
+  "dep": 0.09
  },
  {
   "id": "mobil_vinc",
@@ -15,7 +18,10 @@
   "rentTL": 6500,
   "fuelTL": 1200,
   "maintTL": 22000,
-  "blurb": "Pencere/cephe ve kısa işler."
+  "blurb": "Pencere/cephe ve kısa işler.",
+  "cap": "Yük 40 t",
+  "op": 1,
+  "dep": 0.1
  },
  {
   "id": "ekskavator",
@@ -24,7 +30,10 @@
   "rentTL": 4500,
   "fuelTL": 1800,
   "maintTL": 18000,
-  "blurb": "Hafriyat ve kazı."
+  "blurb": "Hafriyat ve kazı.",
+  "cap": "Kepçe 1,2 m³",
+  "op": 1,
+  "dep": 0.12
  },
  {
   "id": "kepce",
@@ -33,7 +42,10 @@
   "rentTL": 3500,
   "fuelTL": 1400,
   "maintTL": 14000,
-  "blurb": "Yükleme, peyzaj."
+  "blurb": "Yükleme, peyzaj.",
+  "cap": "Kepçe 2,5 m³",
+  "op": 1,
+  "dep": 0.12
  },
  {
   "id": "dozer",
@@ -42,7 +54,10 @@
   "rentTL": 5000,
   "fuelTL": 2000,
   "maintTL": 20000,
-  "blurb": "Arazi düzeltme."
+  "blurb": "Arazi düzeltme.",
+  "cap": "Kürek 4 m",
+  "op": 1,
+  "dep": 0.12
  },
  {
   "id": "beton_pompasi",
@@ -51,7 +66,10 @@
   "rentTL": 4200,
   "fuelTL": 1100,
   "maintTL": 16000,
-  "blurb": "Temel ve kat betonları."
+  "blurb": "Temel ve kat betonları.",
+  "cap": "60 m³/saat",
+  "op": 1,
+  "dep": 0.11
  },
  {
   "id": "beton_mikseri",
@@ -60,7 +78,10 @@
   "rentTL": 3200,
   "fuelTL": 1500,
   "maintTL": 14000,
-  "blurb": "Beton taşıma."
+  "blurb": "Beton taşıma.",
+  "cap": "9 m³ tambur",
+  "op": 1,
+  "dep": 0.11
  },
  {
   "id": "forklift",
@@ -69,7 +90,10 @@
   "rentTL": 1000,
   "fuelTL": 360,
   "maintTL": 5000,
-  "blurb": "Şantiye içi malzeme taşıma."
+  "blurb": "Şantiye içi malzeme taşıma.",
+  "cap": "3 t",
+  "op": 1,
+  "dep": 0.13
  },
  {
   "id": "kamyon",
@@ -78,7 +102,10 @@
   "rentTL": 2600,
   "fuelTL": 1700,
   "maintTL": 12000,
-  "blurb": "Hafriyat ve malzeme sevkiyatı."
+  "blurb": "Hafriyat ve malzeme sevkiyatı.",
+  "cap": "Yük 12 t",
+  "op": 1,
+  "dep": 0.14
  },
  {
   "id": "jenerator",
@@ -87,7 +114,10 @@
   "rentTL": 600,
   "fuelTL": 500,
   "maintTL": 3000,
-  "blurb": "Elektrik kesintisinde sürekli iş."
+  "blurb": "Elektrik kesintisinde sürekli iş.",
+  "cap": "250 kVA",
+  "op": 0,
+  "dep": 0.1
  },
  {
   "id": "iskele",
@@ -96,7 +126,10 @@
   "rentTL": 700,
   "fuelTL": 0,
   "maintTL": 3500,
-  "blurb": "Cephe, yalıtım ve dış işler."
+  "blurb": "Cephe, yalıtım ve dış işler.",
+  "cap": "1000 m²",
+  "op": 0,
+  "dep": 0.08
  },
  {
   "id": "kompresor",
@@ -105,6 +138,33 @@
   "rentTL": 350,
   "fuelTL": 280,
   "maintTL": 2000,
-  "blurb": "Tesisat ve kırma işleri."
+  "blurb": "Tesisat ve kırma işleri.",
+  "cap": "10 bar",
+  "op": 0,
+  "dep": 0.1
+ },
+ {
+  "id": "damperli_kamyon",
+  "label": "Damperli kamyon",
+  "priceTL": 3400000,
+  "rentTL": 4800,
+  "fuelTL": 2100,
+  "maintTL": 16000,
+  "blurb": "Hafriyat ve dolgu taşımacılığı.",
+  "cap": "Yük 25 t",
+  "op": 1,
+  "dep": 0.14
+ },
+ {
+  "id": "silindir",
+  "label": "Silindir",
+  "priceTL": 1900000,
+  "rentTL": 2800,
+  "fuelTL": 1300,
+  "maintTL": 11000,
+  "blurb": "Zemin sıkıştırma ve yol işleri.",
+  "cap": "Titreşimli 12 t",
+  "op": 1,
+  "dep": 0.12
  }
 ]

@@ -52,7 +52,8 @@
   "materials": [],
   "machines": [
    "ekskavator",
-   "kamyon"
+   "kamyon",
+   "damperli_kamyon"
   ]
  },
  {
@@ -281,7 +282,8 @@
   ],
   "machines": [
    "kepce",
-   "kamyon"
+   "kamyon",
+   "silindir"
   ]
  },
  {

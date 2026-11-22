@@ -9,6 +9,7 @@ import { listingsWeekly, marketMonthly } from './land';
 import { constructionDaily } from './construction';
 import { deliveries, materialsMonthly } from './materials';
 import { payablesDaily, supplyMonthly } from './supply';
+import { machinesMonthly } from './machines';
 import { salesDaily, salesMonthly } from './sales';
 import { monthlyCosts, netWorth } from './finance';
 import { checkProgress, progressMonthly, track } from './progress';
@@ -83,7 +84,7 @@ function monthly(s: GameState, events: GameEvent[]): void {
   mgmtMonthly(s, events);
   dealsMonthly(s, events);
   marketMonthly(s, events);
-  materialsMonthly(s, events); supplyMonthly(s, events);
+  materialsMonthly(s, events); supplyMonthly(s, events); machinesMonthly(s, events);
   moraleMonthly(s);
   salesMonthly(s, events);
   loansMonthly(s, events);

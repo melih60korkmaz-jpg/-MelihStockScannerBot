@@ -22,7 +22,7 @@ export function opsView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state;
   const seg = h('div', { class: 'seg', role: 'tablist', style: 'margin-bottom:10px;align-self:flex-start' });
   for (const [id, l] of [['ekip', 'Ekip'], ['malzeme', 'Malzeme'], ['makine', 'Makine'], ['politika', 'Politika']] as const) seg.append(h('button', { class: mem.sub === id ? 'on' : '', role: 'tab', onclick: () => { press(app); mem.sub = id; refresh(); } }, l));
-  const body = mem.sub === 'ekip' ? team(app, refresh) : mem.sub === 'malzeme' ? matRedirect(app, refresh) : mem.sub === 'makine' ? machines(app, refresh) : policy(app, refresh);
+  const body = mem.sub === 'ekip' ? team(app, refresh) : mem.sub === 'malzeme' ? matRedirect(app, refresh) : mem.sub === 'makine' ? machRedirect(app, refresh) : policy(app, refresh);
   void s; return h('div', { style: 'display:flex;flex-direction:column' }, seg, body);
 }
 
@@ -137,4 +137,9 @@ const kvPol = (s: App['store']['state']) => h('div', { class: 'hint' }, `Son kaz
 function matRedirect(app: App, refresh: () => void): HTMLElement {
   if (!isUnlocked(app.store.state, 'tedarik')) return materials(app, refresh);
   return h('div', { class: 'card', style: 'text-align:center;padding:16px' }, h('div', { style: 'font-size:30px' }, '🧱'), h('b', {}, 'Malzeme yönetimi artık Satın Alma ve Tedarik sekmesinde'), h('div', { class: 'mute', style: 'font-size:13px;margin:6px 0' }, 'Tedarikçi karşılaştırma, vadeli alım, sözleşme ve depo orada.'), h('button', { class: 'btn gold', onclick: () => { press(app); app.openTab?.('tedarik', 'stok'); } }, 'Aç'));
+}
+
+function machRedirect(app: App, refresh: () => void): HTMLElement {
+  if (!isUnlocked(app.store.state, 'makine')) return machines(app, refresh);
+  return h('div', { class: 'card', style: 'text-align:center;padding:16px' }, h('div', { style: 'font-size:30px' }, '🚜'), h('b', {}, 'Makine yönetimi artık Makine Parkı sekmesinde'), h('div', { class: 'mute', style: 'font-size:13px;margin:6px 0' }, 'Bakım, operatör, ikinci el, kiralama ve kiraya verme orada.'), h('button', { class: 'btn gold', onclick: () => { press(app); app.openTab?.('makine'); } }, 'Aç'));
 }

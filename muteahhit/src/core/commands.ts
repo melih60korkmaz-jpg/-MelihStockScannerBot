@@ -2,6 +2,7 @@ import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { dateOf } from './calendar';
+import { SERVICE, activeLeases, buyUsed, condM, endLease, isRentedOut, leaseDaily, leaseMachine, recallMachine, rentOutMachine, serviceCost, serviceMachine } from '../sim/machines';
 import { condOf, evictTenant, maintainBuilding, maintenanceCost, tenantOf } from '../sim/realestate';
 import { WAREHOUSE, freeSpace, quoteOrder, whLevel } from '../sim/materials';
 import { cancelContract, contractError, contractValue, signContract, upgradeWarehouse } from '../sim/supply';
@@ -251,7 +252,7 @@ const buyMachine: CommandDef<BuyMachineParams> = {
     if (s.company.cash < price) return 'Satın alma için yeterli nakit yok.'; return null; },
   apply(s, p) {
     const m = machine(p.type)!, price = TL(m.priceTL), out: GameEvent[] = [];
-    post(s, 'makine_alim', -price, { memo: m.label }); const id = s.nextId++; s.machines.push({ id, type: p.type, boughtDay: s.clock.day, price, brokenUntil: 0, uses: 0 });
+    post(s, 'makine_alim', -price, { memo: m.label }); const id = s.nextId++; s.machines.push({ id, type: p.type, boughtDay: s.clock.day, price, brokenUntil: 0, uses: 0, hours: 0, cond: 100 });
     if (p.financed) { const down = Math.round(price * 0.2); const r = takeLoan(s, { kind: 'makine', bank: p.bank ?? 'ozel', amount: price - down, term: 36, machineId: id }, out); void r; }
     out.push(ev(s, 'MACHINE_BOUGHT', { id, type: p.type })); return out;
   },
@@ -486,7 +487,15 @@ const maintainCmd: CommandDef<{ projectId: number }> = { validate(s, p) { const 
 const rentPolicyCmd: CommandDef<{ policy: 'enflasyon' | 'yuksek' | 'sabit' }> = { validate: (s, p) => (['enflasyon', 'yuksek', 'sabit'].includes(p.policy) ? (isUnlocked(s, 'gayrimenkul') ? null : 'Gayrimenkul Yönetimi henüz açılmadı.') : 'Geçersiz politika.'), apply(s, p) { s.estate = { policy: p.policy }; return [ev(s, 'ESTATE_CHANGED', {})]; } };
 const rentAdjCmd: CommandDef<{ unitId: number; radj: number }> = { validate(s, p) { const u = s.units.find((x) => x.id === p.unitId); if (!u || u.status === 'satildi') return 'Daire bulunamadı.'; if (u.rent) return 'Kiradaki dairenin kirası sözleşme yenilemesinde güncellenir.'; return p.radj >= 0.8 && p.radj <= 1.3 ? null : 'Kira çarpanı %80–%130 arasında olmalı.'; }, apply(s, p) { const u = s.units.find((x) => x.id === p.unitId)!; if (Math.abs(p.radj - 1) < 0.005) delete u.radj; else u.radj = +p.radj.toFixed(3); s.offers = (s.offers ?? []).filter((o) => !(o.unitId === u.id && o.kind === 'kira')); return [ev(s, 'ESTATE_CHANGED', {})]; } };
 
+const serviceMachineCmd: CommandDef<{ machineId: number; kind: 'bakim' | 'buyuk' }> = { validate(s, p) { const m = s.machines.find((x) => x.id === p.machineId); if (!m) return 'Makine bulunamadı.'; if (!(p.kind in SERVICE)) return 'Geçersiz bakım türü.'; if (isRentedOut(s, m)) return 'Kiradaki makineye bakım yapılamaz.'; if (condM(m) >= 99) return 'Makine zaten çok iyi durumda.'; return s.company!.cash < serviceCost(s, m, p.kind) ? 'Bakım için yeterli nakit yok.' : null; }, apply(s, p) { serviceMachine(s, p.machineId, p.kind); return [ev(s, 'MACHINE_CHANGED', {})]; } };
+const rentOutCmd: CommandDef<{ machineId: number; days: number }> = { validate(s, p) { const m = s.machines.find((x) => x.id === p.machineId); if (!m) return 'Makine bulunamadı.'; if (![30, 60, 90].includes(p.days)) return 'Süre 30, 60 ya da 90 gün olmalı.'; if (isRentedOut(s, m)) return 'Makine zaten kirada.'; if (m.brokenUntil > s.clock.day) return 'Arızalı makine kiralanamaz.'; return isUnlocked(s, 'makine') ? null : 'Makine Parkı henüz açılmadı.'; }, apply(s, p) { rentOutMachine(s, p.machineId, p.days); return [ev(s, 'MACHINE_CHANGED', {})]; } };
+const recallCmd: CommandDef<{ machineId: number }> = { validate(s, p) { const m = s.machines.find((x) => x.id === p.machineId); return m && isRentedOut(s, m) ? null : 'Makine kirada değil.'; }, apply(s, p) { recallMachine(s, p.machineId); return [ev(s, 'MACHINE_CHANGED', {})]; } };
+const leaseCmd: CommandDef<{ type: string; months: number }> = { validate(s, p) { if (!machine(p.type)) return 'Geçersiz makine.'; if (![3, 6, 12].includes(p.months)) return 'Süre 3, 6 ya da 12 ay olmalı.'; if (!isUnlocked(s, 'makine')) return 'Makine Parkı henüz açılmadı.'; if (activeLeases(s).some((l) => l.type === p.type)) return 'Bu makine için zaten kiralama var.'; return s.company!.cash < leaseDaily(s, p.type) * 30 ? 'İlk ay kirası için yeterli nakit yok.' : null; }, apply(s, p) { leaseMachine(s, p.type, p.months); return [ev(s, 'MACHINE_CHANGED', {})]; } };
+const endLeaseCmd: CommandDef<{ id: number }> = { validate(s, p) { const l = (s.leases ?? []).find((x) => x.id === p.id); if (!l) return 'Kiralama bulunamadı.'; return s.company!.cash < l.daily * 30 ? 'Fesih bedeli (1 aylık kira) için yeterli nakit yok.' : null; }, apply(s, p) { endLease(s, p.id); return [ev(s, 'MACHINE_CHANGED', {})]; } };
+const buyUsedCmd: CommandDef<{ offerId: number }> = { validate(s, p) { const o = (s.usedMarket ?? []).find((x) => x.id === p.offerId); if (!o) return 'İlan artık yok.'; if (!isUnlocked(s, 'makine')) return 'Makine Parkı henüz açılmadı.'; return s.company!.cash < o.price ? 'Satın alma için yeterli nakit yok.' : null; }, apply(s, p) { buyUsed(s, p.offerId); return [ev(s, 'MACHINE_CHANGED', {})]; } };
+
 export const COMMANDS = {
+  ServiceMachine: serviceMachineCmd, RentOutMachine: rentOutCmd, RecallMachine: recallCmd, LeaseMachine: leaseCmd, EndLease: endLeaseCmd, BuyUsed: buyUsedCmd,
   EvictTenant: evictCmd, MaintainBuilding: maintainCmd, SetRentPolicy: rentPolicyCmd, SetRentAdj: rentAdjCmd,
   SignContract: signContractCmd, CancelContract: cancelContractCmd, UpgradeWarehouse: upgradeWarehouseCmd,
   HireGM: hireGmCmd, FireGM: fireGmCmd, DecideAgenda: decideAgendaCmd, SetGoals: setGoalsCmd, OpenDept: openDeptCmd, SetDeptBudget: deptBudgetCmd, HireDeptMgr: hireDeptMgrCmd, FireDeptMgr: fireDeptMgrCmd, DeptStaff: deptStaffCmd,

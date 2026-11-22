@@ -4,13 +4,13 @@ import { ledgerCat } from '../data';
 import { monthlyRows } from './finance';
 
 /** Holding bölümleri: defter kategorilerinden bölüm bazlı gelir-gider-kâr (ortak merkez giderleri ayrı "Merkez" satırındadır). */
-export type DivKey = Division | 'merkez' | 'gayrimenkul';
+export type DivKey = Division | 'merkez' | 'gayrimenkul' | 'makine';
 export const DIV_INFO: Record<DivKey, { label: string; ico: string }> = {
   insaat: { label: 'İnşaat ve satış', ico: '🏗️' }, isletme: { label: 'Gayrimenkul işletmeleri', ico: '🏨' }, enerji: { label: 'Enerji', ico: '⚡' },
-  altyapi: { label: 'Altyapı işleri', ico: '🛣️' }, gayrimenkul: { label: 'Gayrimenkul (kira)', ico: '🏘️' }, bagli: { label: 'Bağlı şirketler', ico: '🏛️' }, merkez: { label: 'Merkez (ofis, maaş, faiz, vergi)', ico: '🏢' },
+  altyapi: { label: 'Altyapı işleri', ico: '🛣️' }, gayrimenkul: { label: 'Gayrimenkul (kira)', ico: '🏘️' }, makine: { label: 'Makine parkı ve lojistik', ico: '🚜' }, bagli: { label: 'Bağlı şirketler', ico: '🏛️' }, merkez: { label: 'Merkez (ofis, maaş, faiz, vergi)', ico: '🏢' },
 };
-const EXPLICIT: Record<string, DivKey> = { kira_geliri: 'gayrimenkul', emlak_bakim: 'gayrimenkul', isletme_gelir: 'isletme', isletme_gider: 'isletme', enerji_gelir: 'enerji', enerji_gider: 'enerji', altyapi_gelir: 'altyapi', altyapi_gider: 'altyapi', bagli_gelir: 'bagli' };
-const CONSTRUCTION = new Set(['satis', 'hakedis', 'kira_geliri', 'malzeme', 'tasarim', 'etut', 'insaat', 'makine', 'komisyon', 'garanti']);
+const EXPLICIT: Record<string, DivKey> = { makine_gelir: 'makine', makine_bakim: 'makine', kira_geliri: 'gayrimenkul', emlak_bakim: 'gayrimenkul', isletme_gelir: 'isletme', isletme_gider: 'isletme', enerji_gelir: 'enerji', enerji_gider: 'enerji', altyapi_gelir: 'altyapi', altyapi_gider: 'altyapi', bagli_gelir: 'bagli' };
+const CONSTRUCTION = new Set(['kira_gideri', 'depo', 'satis', 'hakedis', 'kira_geliri', 'malzeme', 'tasarim', 'etut', 'insaat', 'makine', 'komisyon', 'garanti']);
 export const divisionOf = (cat: string): DivKey => EXPLICIT[cat] ?? (CONSTRUCTION.has(cat) ? 'insaat' : 'merkez');
 
 export interface DivPL { revenue: Money; cost: Money; profit: Money }

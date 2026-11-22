@@ -75,7 +75,7 @@ if (PROVINCES_COUNT() !== 81) throw new Error('Veri hatası: 81 il olmalı');
 export interface MaterialDef { id: string; label: string; unit: string; priceTL: number; vol: number; space: number; loss: number }
 export type PayTerm = 'pesin' | 'vade30' | 'vade60';
 export interface SupplierDef { id: string; label: string; price: number; lead: number; reliability: number; quality: number; blurb: string; cap: number; regions: string[]; terms: PayTerm[] }
-export interface MachineDef { id: string; label: string; priceTL: number; rentTL: number; fuelTL: number; maintTL: number; blurb: string }
+export interface MachineDef { id: string; label: string; priceTL: number; rentTL: number; fuelTL: number; maintTL: number; blurb: string; cap: string; op: number; dep: number }
 export const MATERIALS = (materialsRaw as any).materials as MaterialDef[];
 export const SUPPLIERS = (materialsRaw as any).suppliers as SupplierDef[];
 export const MACHINES = machinesRaw as MachineDef[];
