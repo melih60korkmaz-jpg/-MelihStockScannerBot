@@ -18,7 +18,7 @@ function setup(): { s: GameState; id: number } {
 }
 describe('altın ve hızlandırma', () => {
   it('başlangıç altını verilir; paket (test) altın ekler; geçersiz paket reddedilir', () => {
-    const { s } = setup(); expect(goldOf(s)).toBe(30); expect(dispatch(s, 'BuyGoldTest', { pack: 'yok' }).ok).toBe(false); expect(dispatch(s, 'BuyGoldTest', { pack: GOLD_PACKS[0]!.id }).ok).toBe(true); expect(s.gold).toBe(30 + GOLD_PACKS[0]!.gold);
+    const { s } = setup(); expect(goldOf(s)).toBe(30); expect(dispatch(s, 'GrantGoldPack', { pack: 'yok' }).ok).toBe(false); expect(dispatch(s, 'GrantGoldPack', { pack: GOLD_PACKS[0]!.id }).ok).toBe(true); expect(s.gold).toBe(30 + GOLD_PACKS[0]!.gold);
   });
   it('fiyat kalan süreye göre değişir; yeterli altın yoksa reddedilir; erken aşamada (ruhsat öncesi) kullanılamaz', () => {
     const { s, id } = setup(); const p = s.projects[0]!; advanceDays(s, 2); expect(p.build!.stage).toBeLessThan(6); expect(dispatch(s, 'RushProject', { projectId: id, kind: 'gun', days: 10 }).ok).toBe(false);
@@ -43,7 +43,7 @@ describe('altın ve hızlandırma', () => {
     const without = hits(false), withA = hits(true); expect(without).toBeGreaterThan(0); expect(withA).toBeLessThan(without);
   });
   it('ödüllü reklam (test): altın verir, günlük hak sınırlıdır, ertesi gün yenilenir', () => {
-    const { s } = setup(); const g = goldOf(s); for (let i = 0; i < 3; i++) expect(dispatch(s, 'WatchAdTest', {}).ok).toBe(true); expect(dispatch(s, 'WatchAdTest', {}).ok).toBe(false); expect(s.gold).toBe(g + 15); s.clock.day += 1; expect(dispatch(s, 'WatchAdTest', {}).ok).toBe(true);
+    const { s } = setup(); const g = goldOf(s); for (let i = 0; i < 3; i++) expect(dispatch(s, 'GrantAdReward', {}).ok).toBe(true); expect(dispatch(s, 'GrantAdReward', {}).ok).toBe(false); expect(s.gold).toBe(g + 15); s.clock.day += 1; expect(dispatch(s, 'GrantAdReward', {}).ok).toBe(true);
   });
   it('otomatik akış: olay duraklaması pencere kapanınca kendiliğinden devam eder; oyuncu duraklatması korunur', () => {
     const { s } = setup(); const st = new Store(s); st.setSpeed(1); const d0 = s.clock.day; (st as unknown as { speed: number; autoPaused: boolean }).speed = 0; (st as unknown as { autoPaused: boolean }).autoPaused = true; st.frame(1100); expect(st.speed).toBe(1); expect(s.clock.day).toBeGreaterThan(d0);

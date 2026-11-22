@@ -2,16 +2,18 @@
   "expo": {
     "name": "Müteahhit",
     "slug": "muteahhit",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
+      "buildNumber": "1",
       "bundleIdentifier": "app.muteahhit.game",
       "requireFullScreen": true,
       "infoPlist": {
-        "UIRequiresFullScreen": true
+        "UIRequiresFullScreen": true,
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -34,13 +36,18 @@
         {
           "initialOrientation": "LANDSCAPE"
         }
-      ]
+      ],
+      ["react-native-google-mobile-ads", { "androidAppId": "ca-app-pub-3940256099942544~3347511713", "iosAppId": "ca-app-pub-3940256099942544~1458002511" }]
     ],
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "owner": "meeeellliiihh",
     "extra": {
+      "revenueCatIosKey": "",
+      "revenueCatAndroidKey": "",
+      "admobRewardedIos": "",
+      "admobRewardedAndroid": "",
       "eas": {
         "projectId": "51b08b2c-73bb-4aa7-b33c-074a3e65683a"
       }
