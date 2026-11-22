@@ -16,6 +16,8 @@ export function addTrust(s: GameState, sup: string, d: number, spent = 0): void 
 export function logStock(s: GameState, mat: string, qty: number, kind: 'giris' | 'cikis' | 'fire' | 'hasar', value: Money, ref?: string): void {
   if (!(qty > 0)) return; const l = (s.stockLog ??= []); l.push({ day: s.clock.day, mat, qty: +qty.toFixed(2), kind, value: Math.round(value), ...(ref ? { ref } : {}) }); if (l.length > 400) l.splice(0, l.length - 400);
 }
+/** Tedarikçinin finansal durumu (0–100): sabit temel + iflas olayı; arayüzde Sağlam/Orta/Zayıf. */
+export const supplierHealth = (s: GameState, sup: string): number => { const base = 55 + hash01(hs(sup)) * 40; return Math.round(activeEvents(s).some((e) => e.kind === 'iflas' && e.sup === sup) ? 5 : base); };
 export const activeEvents = (s: GameState) => (s.supEvents ?? []).filter((e) => e.until > s.clock.day);
 export const activeNego = (s: GameState, mat: string, sup: string) => (s.negos ?? []).find((n) => n.mat === mat && n.sup === sup && n.until > s.clock.day);
 

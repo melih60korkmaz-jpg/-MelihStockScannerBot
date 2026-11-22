@@ -287,6 +287,8 @@ export interface GameState {
   negos?: { mat: string; sup: string; disc: number; leadCut: number; until: number }[];
   supEvents?: { id: number; kind: 'fiyat' | 'grev' | 'iflas' | 'firsat' | 'uretim'; sup?: string; mat?: string; val: number; until: number; text: string }[];
   stockLog?: { day: number; mat: string; qty: number; kind: 'giris' | 'cikis' | 'fire' | 'hasar'; value: Money; ref?: string }[];
+  /** Ek depolar (şehir bazlı; stok ortak havuzda tutulur, kapasite toplanır). */
+  depots?: { id: number; city: string; level: number; since: number }[];
   stakes?: Stake[]; ic?: IcEntry[]; dd?: Record<number, { day: number; hidden: Money }>;
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;

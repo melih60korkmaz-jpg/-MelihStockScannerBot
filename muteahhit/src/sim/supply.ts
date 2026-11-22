@@ -1,3 +1,4 @@
+import { incomingSpace } from './materials';
 import { logStock } from './supplyx';
 import { TL, type Money } from '../core/money';
 import type { GameEvent, GameState, SupplyContract } from '../core/types';
@@ -11,7 +12,7 @@ import { WAREHOUSE, freeSpace, quoteOrder, spaceOf, unitPrice, usedSpace, whLeve
  */
 export const payablesTotal = (s: GameState): Money => (s.payables ?? []).reduce((a, p) => a + p.amount, 0);
 export const CONTRACT_DISCOUNT = 0.04, CONTRACT_BREAK_MONTHS = 2;
-export const warehouseRent = (s: GameState): Money => Math.round(TL(WAREHOUSE[whLevel(s)]!.rentTL) * s.costIndex);
+export const warehouseRent = (s: GameState): Money => Math.round((TL(WAREHOUSE[whLevel(s)]!.rentTL) + (s.depots ?? []).reduce((a, d) => a + TL(WAREHOUSE[d.level]!.rentTL) * 1.15, 0)) * s.costIndex);
 
 /** Her gün: vadesi gelen ödemeler. Nakit yetmezse 7 gün ertelenir (%1,5 gecikme faizi, itibar kaybı); üçüncü gecikmede zorunlu ödenir. */
 export function payablesDaily(s: GameState, events: GameEvent[]): void {
@@ -65,3 +66,15 @@ export function supplyMonthly(s: GameState, events: GameEvent[]): void {
 export const stockLossForecast = (s: GameState): Money => { const lvl = whLevel(s), f = lvl === 0 ? 2 : lvl >= 2 ? 0.5 : 1; return Object.entries(s.stock).reduce((a, [id, it]) => a + Math.round(it.qty * (material(id)?.loss ?? 0) * f * it.cost), 0); };
 export const supplyStatus = (s: GameState) => ({ used: usedSpace(s), cap: capacityOf(s), level: whLevel(s) });
 void quoteOrder;
+
+export const MAX_DEPOTS = 4;
+export const depotCost = (s: GameState, level: number): Money => Math.round(TL(WAREHOUSE[level]!.upTL) * 0.8 * s.costIndex);
+export function openDepotError(s: GameState, city: string, level: number): string | null {
+  if (!s.company) return 'Şirket yok.'; if (!s.openCities.includes(city)) return 'Bu ilde şubeniz yok.'; if (!(level >= 1 && level <= 3) || !Number.isInteger(level)) return 'Geçersiz depo kademesi.';
+  if ((s.depots ?? []).some((d) => d.city === city)) return 'Bu şehirde zaten ek depo var.'; if ((s.depots ?? []).length >= MAX_DEPOTS) return `En çok ${MAX_DEPOTS} ek depo açılabilir.`; if (s.company.cash < depotCost(s, level)) return 'Depo yatırımı için yeterli nakit yok.'; return null;
+}
+export function openDepot(s: GameState, city: string, level: number): void { post(s, 'depo', -depotCost(s, level), { memo: `Ek depo: ${city} (${WAREHOUSE[level]!.label})` }); (s.depots ??= []).push({ id: s.nextId++, city, level, since: s.clock.day }); }
+export function closeDepotError(s: GameState, id: number): string | null {
+  const d = (s.depots ?? []).find((x) => x.id === id); if (!d) return 'Depo bulunamadı.'; if (usedSpace(s) + incomingSpace(s) > capacityOf(s) - WAREHOUSE[d.level]!.cap) return 'Stok bu depo kapatılınca sığmaz; önce stoğu tüketin.'; return null;
+}
+export function closeDepot(s: GameState, id: number): void { s.depots = (s.depots ?? []).filter((d) => d.id !== id); }

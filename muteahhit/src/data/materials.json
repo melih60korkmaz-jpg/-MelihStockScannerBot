@@ -7,7 +7,11 @@
    "priceTL": 28000,
    "vol": 0.035,
    "space": 0.2,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Demir ve çelik",
+   "use": "Temel, kolon, kiriş",
+   "store": "Açık saha olur",
+   "minQty": 1
   },
   {
    "id": "beton",
@@ -16,7 +20,11 @@
    "priceTL": 3200,
    "vol": 0.03,
    "space": 0.0,
-   "loss": 0.0
+   "loss": 0.0,
+   "cat": "Beton ve temel",
+   "use": "Temel ve taşıyıcı sistem",
+   "store": "Depolanmaz (doğrudan şantiye)",
+   "minQty": 1
   },
   {
    "id": "cimento",
@@ -25,7 +33,11 @@
    "priceTL": 4200,
    "vol": 0.025,
    "space": 0.9,
-   "loss": 0.04
+   "loss": 0.04,
+   "cat": "Beton ve temel",
+   "use": "Duvar, sıva, cephe",
+   "store": "Kapalı, nemden korunmalı",
+   "minQty": 1
   },
   {
    "id": "tugla",
@@ -34,7 +46,11 @@
    "priceTL": 9000,
    "vol": 0.02,
    "space": 3.0,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Duvar ve cephe",
+   "use": "Duvar",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   },
   {
    "id": "gazbeton",
@@ -43,7 +59,11 @@
    "priceTL": 3400,
    "vol": 0.02,
    "space": 1.2,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Duvar ve cephe",
+   "use": "Duvar",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   },
   {
    "id": "kum",
@@ -52,7 +72,11 @@
    "priceTL": 450,
    "vol": 0.02,
    "space": 1.0,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Beton ve temel",
+   "use": "Sıva, peyzaj",
+   "store": "Açık saha olur",
+   "minQty": 1
   },
   {
    "id": "cakil",
@@ -61,7 +85,11 @@
    "priceTL": 520,
    "vol": 0.02,
    "space": 1.0,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Beton ve temel",
+   "use": "Peyzaj, temel",
+   "store": "Açık saha olur",
+   "minQty": 1
   },
   {
    "id": "cam",
@@ -70,7 +98,11 @@
    "priceTL": 1800,
    "vol": 0.03,
    "space": 0.01,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Duvar ve cephe",
+   "use": "Pencere",
+   "store": "Kapalı, kırılgan",
+   "minQty": 1
   },
   {
    "id": "aluminyum",
@@ -79,7 +111,11 @@
    "priceTL": 190,
    "vol": 0.04,
    "space": 0.0004,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Duvar ve cephe",
+   "use": "Doğrama",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   },
   {
    "id": "seramik",
@@ -88,7 +124,11 @@
    "priceTL": 650,
    "vol": 0.02,
    "space": 0.02,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "İç mekân",
+   "use": "İç mekân",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   },
   {
    "id": "parke",
@@ -97,7 +137,11 @@
    "priceTL": 900,
    "vol": 0.02,
    "space": 0.02,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "İç mekân",
+   "use": "İç mekân",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   },
   {
    "id": "boya",
@@ -106,7 +150,11 @@
    "priceTL": 220,
    "vol": 0.025,
    "space": 0.0012,
-   "loss": 0.02
+   "loss": 0.02,
+   "cat": "İç mekân",
+   "use": "İç ve dış boya",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   },
   {
    "id": "yalitim",
@@ -115,7 +163,11 @@
    "priceTL": 320,
    "vol": 0.025,
    "space": 0.06,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Beton ve temel",
+   "use": "Yalıtım",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   },
   {
    "id": "kablo",
@@ -124,7 +176,11 @@
    "priceTL": 40,
    "vol": 0.035,
    "space": 0.001,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Elektrik ve tesisat",
+   "use": "Elektrik",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   },
   {
    "id": "boru",
@@ -133,7 +189,11 @@
    "priceTL": 85,
    "vol": 0.03,
    "space": 0.003,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Elektrik ve tesisat",
+   "use": "Su tesisatı",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   },
   {
    "id": "kapi_pencere",
@@ -142,7 +202,11 @@
    "priceTL": 12000,
    "vol": 0.025,
    "space": 0.25,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "İç mekân",
+   "use": "Kapı ve pencere",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   },
   {
    "id": "cati",
@@ -151,7 +215,180 @@
    "priceTL": 1400,
    "vol": 0.025,
    "space": 0.03,
-   "loss": 0.004
+   "loss": 0.004,
+   "cat": "Duvar ve cephe",
+   "use": "Çatı kaplama",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "kalip",
+   "label": "Kalıp malzemesi",
+   "unit": "m²",
+   "priceTL": 450,
+   "vol": 0.03,
+   "space": 0.03,
+   "loss": 0.02,
+   "cat": "Makine ve sarf",
+   "use": "Temel ve betonarme kalıbı",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "hasir_celik",
+   "label": "Hasır çelik",
+   "unit": "ton",
+   "priceTL": 30000,
+   "vol": 0.03,
+   "space": 0.25,
+   "loss": 0.004,
+   "cat": "Demir ve çelik",
+   "use": "Temel ve döşeme",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "celik_profil",
+   "label": "Çelik profil",
+   "unit": "ton",
+   "priceTL": 36000,
+   "vol": 0.03,
+   "space": 0.25,
+   "loss": 0.004,
+   "cat": "Demir ve çelik",
+   "use": "Kat taşıyıcı sistemi",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "hazir_harc",
+   "label": "Hazır harç",
+   "unit": "ton",
+   "priceTL": 3800,
+   "vol": 0.03,
+   "space": 0.8,
+   "loss": 0.03,
+   "cat": "Beton ve temel",
+   "use": "Duvar ve sıva",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "alcipan",
+   "label": "Alçıpan",
+   "unit": "m²",
+   "priceTL": 180,
+   "vol": 0.03,
+   "space": 0.01,
+   "loss": 0.01,
+   "cat": "Duvar ve cephe",
+   "use": "Bölme duvar",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "mantolama",
+   "label": "Mantolama malzemesi",
+   "unit": "m²",
+   "priceTL": 650,
+   "vol": 0.03,
+   "space": 0.02,
+   "loss": 0.01,
+   "cat": "Duvar ve cephe",
+   "use": "Dış cephe ısı yalıtımı",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "cephe_kaplama",
+   "label": "Dış cephe kaplama",
+   "unit": "m²",
+   "priceTL": 1400,
+   "vol": 0.03,
+   "space": 0.02,
+   "loss": 0.01,
+   "cat": "Duvar ve cephe",
+   "use": "Cephe",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "pano",
+   "label": "Elektrik panosu",
+   "unit": "adet",
+   "priceTL": 12000,
+   "vol": 0.03,
+   "space": 0.05,
+   "loss": 0.005,
+   "cat": "Elektrik ve tesisat",
+   "use": "Elektrik tesisatı",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "pompa",
+   "label": "Pompa ve vana",
+   "unit": "adet",
+   "priceTL": 18000,
+   "vol": 0.03,
+   "space": 0.1,
+   "loss": 0.005,
+   "cat": "Elektrik ve tesisat",
+   "use": "Su tesisatı",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "mermer",
+   "label": "Mermer",
+   "unit": "m²",
+   "priceTL": 2200,
+   "vol": 0.03,
+   "space": 0.02,
+   "loss": 0.012,
+   "cat": "İç mekân",
+   "use": "Zemin ve banyo",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "mutfak_dolabi",
+   "label": "Mutfak dolabı",
+   "unit": "takım",
+   "priceTL": 85000,
+   "vol": 0.03,
+   "space": 0.5,
+   "loss": 0.006,
+   "cat": "İç mekân",
+   "use": "Mutfak ve banyo",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "iskele",
+   "label": "İskele ekipmanı",
+   "unit": "m²",
+   "priceTL": 250,
+   "vol": 0.03,
+   "space": 0.01,
+   "loss": 0.01,
+   "cat": "Makine ve sarf",
+   "use": "Cephe işleri",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
+  },
+  {
+   "id": "is_guvenligi",
+   "label": "İş güvenliği ekipmanı",
+   "unit": "set",
+   "priceTL": 4000,
+   "vol": 0.03,
+   "space": 0.02,
+   "loss": 0.008,
+   "cat": "Makine ve sarf",
+   "use": "Şantiye güvenliği",
+   "store": "Kapalı depo önerilir",
+   "minQty": 1
   }
  ],
  "suppliers": [
@@ -176,7 +413,9 @@
    "terms": [
     "pesin",
     "vade30"
-   ]
+   ],
+   "logo": "🏪",
+   "kind": "Yerel"
   },
   {
    "id": "ucuz",
@@ -193,7 +432,9 @@
    ],
    "terms": [
     "pesin"
-   ]
+   ],
+   "logo": "🏚️",
+   "kind": "Yerel"
   },
   {
    "id": "premium",
@@ -217,7 +458,9 @@
     "pesin",
     "vade30",
     "vade60"
-   ]
+   ],
+   "logo": "💎",
+   "kind": "Ulusal"
   },
   {
    "id": "fabrika",
@@ -237,7 +480,9 @@
     "pesin",
     "vade30",
     "vade60"
-   ]
+   ],
+   "logo": "🏭",
+   "kind": "Fabrika"
   },
   {
    "id": "bolge",
@@ -254,7 +499,9 @@
    "terms": [
     "pesin",
     "vade30"
-   ]
+   ],
+   "logo": "🏬",
+   "kind": "Bölgesel"
   },
   {
    "id": "ithal",
@@ -273,7 +520,9 @@
    "terms": [
     "pesin",
     "vade60"
-   ]
+   ],
+   "logo": "🚢",
+   "kind": "İthalat"
   }
  ]
 }

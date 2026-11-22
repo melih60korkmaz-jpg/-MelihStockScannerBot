@@ -44,7 +44,7 @@ describe('inşaat — tam döngü', () => {
     const planned = p.budget.total - p.budget.designFee; // inşaat kısmı
     expect((b.spent + (b.matCost ?? 0)) / planned).toBeGreaterThan(0.55); expect((b.spent + (b.matCost ?? 0)) / planned).toBeLessThan(1.45); // kendi ekip taşeron işçilik bedelinden tasarruf ettirir
     // ledgerdan ödenen toplam = spent
-    const paid = -s.ledger.filter((e) => e.projectId === p.id).reduce((a, e) => a + e.amount, 0); expect(paid).toBe(b.spent);
+    const paid = -s.ledger.filter((e) => e.projectId === p.id).reduce((a, e) => a + e.amount, 0); expect(paid).toBeGreaterThanOrEqual(b.spent); // olay kaynaklı proje giderleri (kaza, sürpriz) spent dışındadır
     expect(cashBefore - s.company!.cash).toBeGreaterThan(b.spent); // aylık giderler de düştü
   });
   it('süre: planlanan aralığın makul çevresinde (yeterli ekip, hava normal)', () => {

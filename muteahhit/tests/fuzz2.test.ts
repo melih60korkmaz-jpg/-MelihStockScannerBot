@@ -55,7 +55,7 @@ describe('genişleme fuzz', () => {
       else if (k === 13) ok(dispatch(s, 'SetSubBudget', { div: pc(DIVS), budget: Math.round(R() * 1e9) }));
       else if (k === 14) ok(dispatch(s, 'PlaceOrder', { material: pc(MATS), supplier: pc(SUPS), qty: 1 + Math.floor(R() * 200), term: pc(['pesin', 'vade30', 'vade60']) as 'pesin' } as never));
       else if (k === 15) ok(dispatch(s, 'SignContract', { material: pc(MATS), supplier: pc(SUPS), qtyPerMonth: 20 + Math.floor(R() * 200), months: pc(['6', '12']) === '6' ? 6 : 12 }));
-      else if (k === 16) ok(dispatch(s, 'UpgradeWarehouse', {}));
+      else if (k === 16) { const q = R(); if (q < 0.4) ok(dispatch(s, 'UpgradeWarehouse', {})); else if (q < 0.7) ok(dispatch(s, 'OpenDepot', { city: pc(['ankara', 'antalya', 'izmir']), level: 1 + Math.floor(R() * 3) })); else { const d = pick(s.depots ?? []); if (d) ok(dispatch(s, 'CloseDepot', { id: d.id })); else ok(dispatch(s, 'Negotiate', { material: pc(MATS), supplier: pc(SUPS), qty: 100, kind: pc(['fiyat', 'toplu', 'hizli']) as 'fiyat' })); } }
       else if (k === 17) ok(dispatch(s, 'BuyMachine', { type: pc(['ekskavator', 'kamyon', 'kule_vinc', 'damperli_kamyon', 'silindir']) }));
       else if (k === 18) { const m = pick(s.machines); if (m) { const q = R(); ok(q < 0.5 ? dispatch(s, 'ServiceMachine', { machineId: m.id, kind: R() < 0.5 ? 'bakim' : 'buyuk' }) : q < 0.8 ? dispatch(s, 'RentOutMachine', { machineId: m.id } as never) : dispatch(s, 'RecallMachine', { machineId: m.id } as never)); } }
       else if (k === 19) ok(dispatch(s, 'OpenDept', { dept: pc(['finans', 'insaat', 'satis', 'tedarik', 'ik', 'teknik', 'hukuk']) }));

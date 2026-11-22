@@ -36,7 +36,9 @@ export const WAREHOUSE = [
   { level: 2, label: 'Büyük depo', cap: 9000, upTL: 6_000_000, rentTL: 70_000 }, { level: 3, label: 'Lojistik merkezi', cap: 30000, upTL: 20_000_000, rentTL: 200_000 },
 ];
 export const whLevel = (s: GameState) => s.warehouse?.level ?? 0;
-export const capacityOf = (s: GameState) => WAREHOUSE[whLevel(s)]!.cap;
+export const depotCap = (s: GameState) => (s.depots ?? []).reduce((a, d) => a + WAREHOUSE[d.level]!.cap, 0);
+export const capacityOf = (s: GameState) => WAREHOUSE[whLevel(s)]!.cap + depotCap(s);
+export const hasDepotIn = (s: GameState, city: string) => (s.depots ?? []).some((d) => d.city === city);
 export const spaceOf = (matId: string, qty: number) => (material(matId)?.space ?? 0.05) * qty;
 export const usedSpace = (s: GameState) => Object.entries(s.stock).reduce((a, [id, it]) => a + spaceOf(id, it.qty), 0);
 export const incomingSpace = (s: GameState) => s.orders.reduce((a, o) => a + spaceOf(o.material, o.qty), 0);
@@ -56,7 +58,7 @@ export function quoteOrder(s: GameState, matId: string, supId: string, qty: numb
   const adj = supplyAdjust(s, matId, supId); if (adj.blocked && o.contractId === undefined) return { ...empty, error: adj.blocked };
   const unit = o.lockedUnit ?? Math.round(unitPrice(s, matId, supId) * adj.price * (supId === 'ithal' ? 1 + (s.macro.inflation / 100) * 0.15 : 1)), gross = Math.round(unit * qty);
   const discount = o.lockedUnit !== undefined ? 0 : Math.round(gross * (gross >= TL(20_000_000) * s.costIndex ? 0.04 : gross >= TL(5_000_000) * s.costIndex ? 0.02 : 0)), goods = gross - discount, premium = Math.round(goods * TERM_PREMIUM[term]);
-  const freight = Math.round(goods * (0.03 + (mismatch ? 0.04 : 0) + (o.rush ? 0.06 : 0)) * freightMult(s)), lead = Math.max(1, leadDays(s, supId) + (mismatch ? 3 : 0) - (o.rush ? 2 : 0) + adj.lead);
+  const freight = Math.round(goods * (0.03 + (mismatch ? 0.04 : 0) + (o.rush ? 0.06 : 0)) * freightMult(s) * (hasDepotIn(s, dest) ? 0.75 : 1)), lead = Math.max(1, leadDays(s, supId) + (mismatch ? 3 : 0) - (o.rush ? 2 : 0) + adj.lead);
   return { ok: true, unit, goods, discount, premium, freight, total: goods + premium + freight, lead, space, mismatch };
 }
 

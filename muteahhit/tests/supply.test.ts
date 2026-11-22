@@ -8,7 +8,8 @@ import { netWorth } from '../src/sim/finance';
 import { WAREHOUSE, capacityOf, freeSpace, quoteOrder, spaceOf, stockQty, usedSpace } from '../src/sim/materials';
 import { payablesTotal, stockLossForecast, warehouseRent } from '../src/sim/supply';
 import { negoError } from '../src/sim/supplyx';
-import { SUPPLIERS } from '../src/data';
+import { MATERIALS, SUPPLIERS } from '../src/data';
+import { regionRent } from '../src/sim/realestate';
 import { pack, unpack } from '../src/save/serialize';
 import type { GameState } from '../src/core/types';
 
@@ -96,5 +97,25 @@ describe('tedarik ilişkileri, pazarlık ve olaylar', () => {
     const s = mk(); dispatch(s, 'PlaceOrder', { material: 'cimento', qty: 50, supplier: 'yerel', term: 'pesin' }); advanceDays(s, 400);
     expect(s.stockLog!.some((l) => l.kind === 'giris' && l.mat === 'cimento')).toBe(true); expect(s.stockLog!.some((l) => l.kind === 'fire')).toBe(true); expect(s.stockLog!.length).toBeLessThanOrEqual(400);
     advanceDays(s, 3000); expect(checkInvariant(s)).toBe(true); const r = unpack(pack(s)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.stockLog).toEqual(s.stockLog); expect(r.state.supRel).toEqual(s.supRel); }
+  });
+});
+
+describe('ek depolar, katalog, tedarikçi bilgisi', () => {
+  it('ek depo kapasiteyi artırır, kira ekler, hedef şehirde nakliyeyi düşürür; yalnızca açık şehirde, şehir başına bir tane; stok sığmazsa kapatılamaz', () => {
+    const s = setup(4, TL(500_000_000)); s.openCities.push('izmir'); const cap0 = capacityOf(s), rent0 = warehouseRent(s), fr0 = quoteOrder(s, 'demir', 'yerel', 20, { dest: 'izmir' }).freight;
+    expect(dispatch(s, 'OpenDepot', { city: 'bursa', level: 1 }).ok).toBe(false); expect(dispatch(s, 'OpenDepot', { city: 'izmir', level: 0 }).ok).toBe(false);
+    const cash = s.company!.cash; expect(dispatch(s, 'OpenDepot', { city: 'izmir', level: 2 }).ok).toBe(true); expect(cash - s.company!.cash).toBeGreaterThan(0);
+    expect(capacityOf(s)).toBe(cap0 + WAREHOUSE[2]!.cap); expect(warehouseRent(s)).toBeGreaterThan(rent0); expect(quoteOrder(s, 'demir', 'yerel', 20, { dest: 'izmir' }).freight).toBeLessThan(fr0);
+    expect(dispatch(s, 'OpenDepot', { city: 'izmir', level: 1 }).ok).toBe(false); s.stock.demir = { qty: capacityOf(s) / 0.2 * 0.9, qual: 0, cost: 100 }; const id = s.depots![0]!.id; expect(dispatch(s, 'CloseDepot', { id }).ok).toBe(false);
+    s.stock.demir!.qty = 10; expect(dispatch(s, 'CloseDepot', { id }).ok).toBe(true); expect(capacityOf(s)).toBe(cap0); advanceDays(s, 60); expect(checkInvariant(s)).toBe(true);
+  });
+  it('katalog 30 ürün: kategori, kullanım alanı ve depolama bilgisi; tedarikçilerin logosu var', () => {
+    expect(MATERIALS.length).toBe(30); for (const m of MATERIALS) { expect(m.cat, m.id).toBeTruthy(); expect(m.use).toBeTruthy(); expect(m.store).toBeTruthy(); } for (const sp of SUPPLIERS) { expect(sp.logo, sp.id).toBeTruthy(); }
+    for (const id of ['mermer', 'mutfak_dolabi', 'kalip', 'mantolama', 'alcipan', 'pano', 'pompa', 'iskele', 'is_guvenligi', 'hasir_celik', 'celik_profil', 'hazir_harc', 'cephe_kaplama']) expect(MATERIALS.some((m) => m.id === id), id).toBe(true);
+  });
+  it('bölgesel kira: turizm şehrinde konut, sanayi şehrinde depo, metropolde ofis daha yüksek', () => {
+    const base = { id: 1, parcelId: 1, hood: 'T', designSeed: 1, status: 'tamamlandi', quality: 'standart', matIndexAtPlan: 100 };
+    const u = { area: 80 } as never; expect(regionRent({ ...base, type: 'apartman', cityId: 'antalya' } as never, u)).toBeGreaterThan(1); expect(regionRent({ ...base, type: 'depo', cityId: 'kocaeli' } as never, u)).toBeGreaterThan(1);
+    expect(regionRent({ ...base, type: 'ofis', cityId: 'istanbul' } as never, u)).toBeGreaterThan(1.1); expect(regionRent({ ...base, type: 'apartman', cityId: 'yok' } as never, u)).toBe(1);
   });
 });

@@ -24,7 +24,17 @@ export const incomeLabel = (n: number) => ['', 'Düşük gelir', 'Orta-alt gelir
 export const condOf = (p: Project): number => p.cond ?? clamp(p.result?.qualityScore ?? 75, 55, 100);
 export const condFactor = (p: Project): number => 0.88 + 0.12 * (condOf(p) / 100) + (p.renovBonus ?? 0);
 /** Kiracı memnuniyeti bina durumuna ve kiranın piyasaya göre yüksekliğine bağlıdır. */
-export function marketRent(s: GameState, p: Project, u: Unit): Money { return Math.round(unitFair(u, fairPerM2(s, p)) * RENT_YIELD); }
+/** Bölgesel talep: üniversite şehirlerinde küçük daireler, sanayi şehirlerinde işçi konutu ve depo, turizm şehirlerinde tüm konut, büyük şehirlerde ticari mülk daha yüksek kira getirir. */
+export const REGION_TAGS: Record<string, { label: string; small?: number; worker?: number; tourism?: number; commercial?: number }> = {
+  ankara: { label: 'Üniversite şehri', small: 1.08, commercial: 1.04 }, istanbul: { label: 'Metropol', small: 1.03, commercial: 1.12 }, izmir: { label: 'Üniversite ve turizm', small: 1.05, tourism: 1.04, commercial: 1.05 },
+  antalya: { label: 'Turizm', tourism: 1.09 }, bursa: { label: 'Sanayi ve üniversite', small: 1.04, worker: 1.05 }, kocaeli: { label: 'Sanayi', worker: 1.07 }, adana: { label: 'Sanayi', worker: 1.04 }, konya: { label: 'Üniversite', small: 1.04 },
+};
+export function regionRent(p: Project, u: Unit): number {
+  const t = REGION_TAGS[p.cityId]; if (!t) return 1; const comm = ['ofis', 'is_merkezi', 'avm', 'otel', 'fabrika', 'depo'].includes(p.type); let f = 1;
+  if (comm) { f *= t.commercial ?? 1; if (p.type === 'fabrika' || p.type === 'depo') f *= t.worker ?? 1; } else { if (u.area <= 85) f *= t.small ?? 1; if (['apartman', 'site'].includes(p.type) && u.area <= 100) f *= t.worker ?? 1; f *= t.tourism ?? 1; }
+  return f;
+}
+export function marketRent(s: GameState, p: Project, u: Unit): Money { return Math.round(unitFair(u, fairPerM2(s, p)) * RENT_YIELD * regionRent(p, u)); }
 
 export function newRent(s: GameState, p: Project, u: Unit, amount: Money, offer: Offer): NonNullable<Unit['rent']> {
   const t = tenantProfile(offer.seed), sat = clamp(60 + (condOf(p) - 70) / 2, 40, 85);

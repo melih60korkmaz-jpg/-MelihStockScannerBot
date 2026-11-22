@@ -65,11 +65,19 @@
   "materials": [
    [
     "beton",
-    0.55
+    0.5
    ],
    [
     "demir",
-    0.35
+    0.2
+   ],
+   [
+    "hasir_celik",
+    0.1
+   ],
+   [
+    "kalip",
+    0.1
    ]
   ],
   "machines": [
@@ -86,11 +94,15 @@
   "materials": [
    [
     "beton",
-    0.5
+    0.45
    ],
    [
     "demir",
-    0.4
+    0.35
+   ],
+   [
+    "kalip",
+    0.1
    ]
   ],
   "machines": [
@@ -108,11 +120,19 @@
   "materials": [
    [
     "beton",
-    0.5
+    0.45
    ],
    [
     "demir",
-    0.4
+    0.25
+   ],
+   [
+    "celik_profil",
+    0.1
+   ],
+   [
+    "kalip",
+    0.1
    ]
   ],
   "machines": [
@@ -130,7 +150,11 @@
   "materials": [
    [
     "tugla",
-    0.5
+    0.35
+   ],
+   [
+    "alcipan",
+    0.05
    ],
    [
     "gazbeton",
@@ -143,6 +167,10 @@
    [
     "kum",
     0.05
+   ],
+   [
+    "hazir_harc",
+    0.1
    ]
   ],
   "machines": [
@@ -157,11 +185,19 @@
   "materials": [
    [
     "kablo",
-    0.45
+    0.3
    ],
    [
     "boru",
-    0.45
+    0.3
+   ],
+   [
+    "pano",
+    0.15
+   ],
+   [
+    "pompa",
+    0.15
    ]
   ],
   "machines": [
@@ -178,7 +214,11 @@
   "materials": [
    [
     "yalitim",
-    0.9
+    0.6
+   ],
+   [
+    "mantolama",
+    0.3
    ]
   ],
   "machines": [
@@ -194,11 +234,11 @@
   "materials": [
    [
     "cimento",
-    0.25
+    0.2
    ],
    [
     "kum",
-    0.15
+    0.1
    ],
    [
     "boya",
@@ -206,7 +246,19 @@
    ],
    [
     "cati",
-    0.25
+    0.15
+   ],
+   [
+    "cephe_kaplama",
+    0.1
+   ],
+   [
+    "iskele",
+    0.05
+   ],
+   [
+    "is_guvenligi",
+    0.05
    ]
   ],
   "machines": [
@@ -245,11 +297,11 @@
   "materials": [
    [
     "seramik",
-    0.35
+    0.25
    ],
    [
     "parke",
-    0.25
+    0.15
    ],
    [
     "boya",
@@ -257,6 +309,14 @@
    ],
    [
     "kapi_pencere",
+    0.1
+   ],
+   [
+    "mermer",
+    0.1
+   ],
+   [
+    "mutfak_dolabi",
     0.1
    ]
   ],

@@ -23,8 +23,8 @@ function setup(o: { cash?: number; staff?: string[]; seed?: number } = {}) {
 const run = (s: GameState, until: () => boolean, max = 1500) => { const all: GameEvent[] = []; for (let i = 0; i < max && !until(); i++) all.push(...advanceDays(s, 1)); return all; };
 
 describe('veri bütünlüğü', () => {
-  it('17 malzeme, 6 tedarikçi, 14 makine; aşama malzeme payları ≤ 1; her malzeme en az bir aşamada kullanılır', () => {
-    expect(MATERIALS).toHaveLength(17); expect(SUPPLIERS).toHaveLength(6); expect(MACHINES).toHaveLength(14);
+  it('30 malzeme, 6 tedarikçi, 14 makine; aşama malzeme payları ≤ 1; her malzeme en az bir aşamada kullanılır', () => {
+    expect(MATERIALS).toHaveLength(30); expect(SUPPLIERS).toHaveLength(6); expect(MACHINES).toHaveLength(14);
     const used = new Set<string>(); for (const st of STAGES) { const sum = (st.materials ?? []).reduce((a, [id, f]) => (used.add(id), a + f), 0); expect(sum).toBeLessThanOrEqual(1.0001); }
     for (const m of MATERIALS) expect(used.has(m.id), m.id).toBe(true);
   });
