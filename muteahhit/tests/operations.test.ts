@@ -95,7 +95,7 @@ describe('makine', () => {
     expect(cost(true)).toBeLessThan(cost(false) * 0.6);
   });
   it('arıza çıkabilir: makine bir süre kullanılamaz ve onarım ücreti ödenir (istatistiksel)', () => {
-    let broke = 0; for (let seed = 0; seed < 25; seed++) { const { s, project: p } = setup({ seed: 300 + seed }); for (const t of ['ekskavator', 'beton_pompasi', 'kule_vinc']) { s.company!.cash += TL(8e6); s.ledgerBase += TL(8e6); dispatch(s, 'BuyMachine', { type: t }); }
+    let broke = 0; for (let seed = 0; seed < 90; seed++) { const { s, project: p } = setup({ seed: 300 + seed }); for (const t of ['ekskavator', 'beton_pompasi', 'kule_vinc']) { s.company!.cash += TL(8e6); s.ledgerBase += TL(8e6); dispatch(s, 'BuyMachine', { type: t }); }
       dispatch(s, 'StartConstruction', { projectId: p.id }); const evs = run(s, () => p.status !== 'insaat'); if (evs.some((e) => e.type === 'MACHINE_BROKEN')) broke++; }
     expect(broke).toBeGreaterThan(0);
   });

@@ -38,7 +38,7 @@ export function openSiteHelp(): void {
   const close = () => m.remove();
   const row = (k: string, v: string) => h('li', {}, h('b', {}, k + ' '), v);
   m.append(h('div', { class: 'card helpcard' }, h('h2', {}, '🏗️ Şantiye rehberi'), h('p', { class: 'mute' }, 'Bu ekran projenin 3B şantiyesi. Zaman burada da akar.'),
-    h('ul', {}, row('‹ (sol üst)', 'şirket ekranına döner.'), row('Üstteki noktalar:', 'inşaat aşamaları; dolu olan bitti, halkalı olan sürüyor.'), row('Sağ üst:', 'kasa, tarih ve oyun hızı (⏸ durdur, 1×, 2×, 4×).'), row('Sağdaki kamera düğmeleri:', 'Kuş, Yan, Ön, Yakın, Üst bakış; parmağınla da döndürüp yakınlaştırabilirsin.'), row('Alt panel (▲):', 'Genel durum, Aşamalar, Kaynak (malzeme/ekip), Maliyet sekmeleri.'), row('Taslak projede:', '"İnşaatı başlat" düğmesi inşaatı başlatır.')),
+    h('ul', {}, row('‹ (sol üst)', 'şirket ekranına döner.'), row('Üstteki ilerleme çubuğu:', 'genel ilerleme, süren aşama ve aşamanın kendi ilerlemesi.'), row('Sağ üst:', 'kasa, tarih ve oyun hızı (⏸ durdur, 1×, 2×, 4×).'), row('Sağdaki kamera düğmeleri:', 'Kuş, Yan, Ön, Yakın, Üst bakış; parmağınla da döndürüp yakınlaştırabilirsin.'), row('Alt panel (▲):', 'Genel durum, Aşamalar, Kaynak (malzeme/ekip), Maliyet sekmeleri.'), row('Taslak projede:', '"İnşaatı başlat" düğmesi inşaatı başlatır.')),
     h('button', { class: 'btn gold', onclick: close }, 'Anladım')));
   m.addEventListener('pointerdown', (e) => { if (e.target === m) close(); });
   document.body.append(m);

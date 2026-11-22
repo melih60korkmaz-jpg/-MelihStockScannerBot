@@ -20,7 +20,6 @@ import type { Project } from '../../core/types';
 
 const CAMS: [CamPreset, string][] = [['kus', 'Kuş'], ['yan', 'Yan'], ['on', 'Ön'], ['yakin', 'Yakın'], ['ust', 'Üst']];
 const FIELD = new Set(['isci', 'usta', 'kalipci', 'demirci', 'elektrikci', 'tesisatci', 'santiye_sefi']);
-const WORD: Record<string, string> = { acik: 'Açık', yagmur: 'Yağmurlu', kar: 'Karlı' };
 
 /** Aktif şantiye: sim durumundan üretilen 3D sahne + aşama şeridi + özet paneli. */
 export function siteScreen(app: App, projectId: number, backTo: () => void): HTMLElement {
@@ -44,7 +43,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
   };
 
   // ---- Üst çubuk ----
-  const top = h('div', { class: 'ov top' }), banner = h('div', { class: 'banner', style: 'display:none' }), stagesEl = h('div', { class: 'glass stages', role: 'img', title: 'İnşaat aşamaları: dolu nokta tamamlandı, halkalı olan sürüyor' }), sheet = h('div', { class: 'glass sheet2' });
+  const top = h('div', { class: 'ov top' }), banner = h('div', { class: 'banner', style: 'display:none' }), stagesEl = h('div', { class: 'glass stages', role: 'img', title: 'İnşaat ilerlemesi' }), sheet = h('div', { class: 'glass sheet2' });
   const titleBox = h('div', { class: 'glass title' }), cashB = h('b', {}), dateB = h('b', { style: 'font-size:15px' }), speedSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Oyun hızı' });
   const speedBtns: HTMLButtonElement[] = [];
   for (const [v, l] of [[0, ''], [1, '1×'], [2, '2×'], [4, '4×']] as [Speed, string][]) { const b = h('button', { 'aria-label': v === 0 ? 'Duraklat' : `Hız ${l}`, ...(v === 0 ? { html: '<svg viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" fill="none"/></svg>' } : {}), onclick: () => { press(app); app.store.setSpeed(v); } }, v === 0 ? null : l) as HTMLButtonElement; b.dataset.v = String(v); speedBtns.push(b); speedSeg.append(b); }
@@ -67,8 +66,17 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
     const t = buildingType(p.type)!, q = quality(p.quality)!;
     titleBox.innerHTML = ''; titleBox.append(h('b', {}, p.name), h('small', {}, `${t.label} · ${q.label} · ${p.floors} kat · ${p.hood}`));
     // aşama şeridi (18)
-    stagesEl.innerHTML = ''; const cur = p.status === 'insaat' && b ? b.stage : p.status === 'taslak' ? 0 : 99;
-    STAGES.forEach((sg, i) => stagesEl.append(h('i', { class: i < cur || p.status !== 'taslak' && p.status !== 'insaat' ? 'done' : i === cur ? 'cur' : '', title: sg.label })));
+    const prevW = (stagesEl.querySelector('.sp-bar > i') as HTMLElement | null)?.style.width ?? ''; stagesEl.innerHTML = ''; const cur = p.status === 'insaat' && b ? b.stage : p.status === 'taslak' ? 0 : 99;
+    { // ilerleme çubuğu: genel ilerleme (maliyet ağırlıklı), aşama sınırları ve içinde bulunulan aşamanın ilerlemesi
+      const done = p.status !== 'taslak' && p.status !== 'insaat', all = p.status === 'insaat' && b ? (STAGES.slice(1, b.stage).reduce((a, x) => a + x.cost, 0) + STAGES[b.stage]!.cost * b.progress) / 100 : done ? 1 : 0;
+      const total = STAGES.slice(1).reduce((a, x) => a + x.cost, 0); let acc = 0; const ticks = STAGES.slice(1, 17).map((sg) => { acc += sg.cost; return h('s', { style: `left:${(acc / total) * 100}%`, title: sg.label }); });
+      const label = done ? (p.status === 'satildi' ? 'Satıldı' : 'Teslim edildi') : p.status === 'taslak' ? 'Taslak' : st!.label, no = p.status === 'insaat' && b ? `Aşama ${Math.min(b.stage, 17)}/17` : '';
+      stagesEl.className = `glass stages sprog${b?.stalled ? ' stalled' : ''}`;
+      stagesEl.append(h('div', { class: 'sp-head' }, h('b', {}, label), h('span', {}, no), h('em', {}, `%${Math.round(all * 100)}`)),
+        h('div', { class: 'sp-bar' }, h('i', { style: `width:${Math.max(0, Math.min(100, all * 100)).toFixed(1)}%` }), ...ticks),
+        h('div', { class: 'sp-sub', style: p.status === 'insaat' && b ? '' : 'display:none' }, h('i', { style: `width:${Math.round((b?.progress ?? 0) * 100)}%` })));
+    }
+    { const bi = stagesEl.querySelector('.sp-bar > i') as HTMLElement | null; if (bi && prevW && prevW !== bi.style.width) { const tgt = bi.style.width; bi.style.width = prevW; requestAnimationFrame(() => requestAnimationFrame(() => { bi.style.width = tgt; })); } }
     stagesEl.setAttribute('aria-label', st ? `Aşama: ${st.label}` : 'Taslak');
     // durum bandı
     let msg = '', tone = '';
@@ -78,7 +86,6 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
     else if (b?.stalled === 'kaza') { msg = `İş kazası — şantiye ${Math.max(0, (b.accidentUntil ?? 0) - s.clock.day)} gün kapalı`; tone = ''; }
     else if (p.status === 'insaat' && b?.matShort) { msg = `Malzeme yetersiz (${MATERIALS.find((m) => m.id === b.matShort)?.label}): iş yavaşladı`; tone = 'warn'; }
     else if (p.status === 'insaat' && st?.permit) { msg = `Ruhsat bekleniyor (${Math.max(0, Math.round(b!.progress * 100))}%)`; tone = 'info'; }
-    else if (p.status === 'insaat' && st?.outdoor && s.weather[p.cityId] !== 'acik') { msg = `${WORD[s.weather[p.cityId]!]} hava: dış işler yavaşlıyor`; tone = 'warn'; }
     banner.style.display = msg ? 'block' : 'none'; banner.className = `banner ${tone}`; banner.textContent = msg;
     scene?.setState(stateOf(p)); scene?.setSpeed(app.store.speed); { const st2 = stateOf(p); app.audio.ambient({ on: p.status === 'insaat' || p.status === 'taslak', working: p.status === 'insaat' && !st2.stalled && app.store.speed > 0, weather: st2.weather, stage: p.build ? p.build.stage + p.build.progress : undefined }); }
     drawSheet(p);
@@ -100,7 +107,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
       const rows: [string, string | Node, boolean?][] = [['Durum', p.status === 'insaat' ? 'İnşaat sürüyor' : p.status === 'taslak' ? 'Taslak' : p.status === 'tamamlandi' ? 'Tamamlandı' : 'Satıldı'], ['Planlanan süre', `~${p.expected.months} ay`]];
       if (b && p.status === 'insaat') {
         const st = STAGES[b.stage]!, f = st.office ? 1 : crewFactor(s, p, st.id);
-        rows.push(['Geçen süre', `${s.clock.day - b.startDay} gün`], ['Tahmini kalan', `~${Math.round(remainingDays(p))} gün`], ['Tahmini bitiş', formatDate(s.clock.day + Math.round(remainingDays(p)))], ['Ekip etkinliği', `×${f.toFixed(2)}${f < 0.6 ? ' (ekip yetersiz)' : f > 1.1 ? ' (güçlü ekip)' : ''}`], ['Hava', WORD[s.weather[p.cityId]!]!], ['Durma günleri', String(b.stalledDays)]);
+        rows.push(['Geçen süre', `${s.clock.day - b.startDay} gün`], ['Tahmini kalan', `~${Math.round(remainingDays(p))} gün`], ['Tahmini bitiş', formatDate(s.clock.day + Math.round(remainingDays(p)))], ['Ekip etkinliği', `×${f.toFixed(2)}${f < 0.6 ? ' (ekip yetersiz)' : f > 1.1 ? ' (güçlü ekip)' : ''}`], ['Durma günleri', String(b.stalledDays)]);
       }
       if (p.status === 'tamamlandi' && p.result) rows.push(['Kalite puanı', String(p.result.qualityScore)], ['Süre', `${p.result.days} gün (plan ${p.result.plannedDays})`]);
       body.append(kv(rows));

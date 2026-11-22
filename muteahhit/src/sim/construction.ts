@@ -5,7 +5,7 @@ import { dateOf } from '../core/calendar';
 import { gauss, rand, randInt } from '../core/rng';
 import { TL, type Money } from '../core/money';
 import type { BuildState, GameEvent, GameState, Project } from '../core/types';
-import { CLIMATE, SOIL_COST, STAGES, cityData } from '../data';
+import { SOIL_COST, STAGES } from '../data';
 import { post } from './ledger';
 import { autoBuy, stageNeeds, stockQty } from './materials';
 import { useMachines } from './machines';
@@ -47,17 +47,8 @@ export function crewFactor(s: GameState, p: Project, stageId: string): number {
 }
 const hasRole = (s: GameState, role: string) => s.staff.some((x) => x.type === role);
 
-const RAIN = [0.28, 0.26, 0.24, 0.2, 0.16, 0.08, 0.03, 0.03, 0.08, 0.16, 0.24, 0.28];
-/** İl bazlı hava: bölge iklimi (yağış çarpanı, kar olasılığı) × mevsim. */
-export function updateWeather(s: GameState): void {
-  const m = dateOf(s.clock.day).month;
-  for (const city of Object.keys(s.weather)) {
-    const cl = CLIMATE[cityData(city)?.province.region ?? 'Marmara'];
-    const winter = m === 12 || m <= 2 ? 1 : m === 3 || m === 11 ? 0.3 : 0;
-    const wet = Math.min(0.6, RAIN[m - 1]! * cl.rain), snow = wet * cl.snow * winter, rain = wet - snow, r = rand(s.rng, 'construction');
-    s.weather[city] = r < snow ? 'kar' : r < snow + rain ? 'yagmur' : 'acik';
-  }
-}
+/** Hava durumu oyundan kaldırıldı: şantiyeler her zaman açık havada çalışır (kayıt uyumu için `weather` alanı 'acik' olarak tutulur). */
+export function updateWeather(s: GameState): void { for (const city of Object.keys(s.weather)) s.weather[city] = 'acik'; }
 
 export function startConstruction(s: GameState, p: Project): GameEvent[] {
   const parcel = s.parcels.find((x) => x.id === p.parcelId)!;
@@ -118,7 +109,7 @@ const SAFETY_MULT = { dusuk: 1.8, normal: 1, yuksek: 0.45 } as const;
 function maybeAccident(s: GameState, p: Project, b: BuildState, cap: number, weather: string, events: GameEvent[]): boolean {
   const c = s.company!, workers = Math.min(25, cap), chief = s.staff.some((x) => x.type === 'santiye_sefi');
   const careful = Math.min(1.6, Math.max(0.7, s.staff.reduce((m, x) => (FIELD.has(x.type) ? m * (traitOf(x).id === 'dikkatli' ? 0.96 : traitOf(x).id === 'dikkatsiz' ? 1.06 : 1) : m), 1)));
-  const prob = 0.0005 * Math.sqrt(workers + 1) * SAFETY_MULT[c.safety] * (weather === 'acik' ? 1 : 1.3) * (chief ? 0.7 : 1) * careful * projectMods(s, p).risk;
+  const prob = 0.0005 * Math.sqrt(workers + 1) * SAFETY_MULT[c.safety] * (chief ? 0.7 : 1) * careful * projectMods(s, p).risk;
   if (rand(s.rng, 'construction') >= prob) return false;
   const days = randInt(s.rng, 'construction', 3, 9), comp = Math.round(TL(randInt(s.rng, 'construction', 60, 260) * 1000) * s.costIndex);
   b.accidentUntil = s.clock.day + days; b.stalled = 'kaza';
@@ -145,7 +136,7 @@ export function advanceConstruction(s: GameState, p: Project, events: GameEvent[
     const cap = st.office ? 0 : crewCapacity(s, st.id, p.id);
     const crew = st.office ? (hasRole(s, st.office) ? 1.25 : 0.85) : crewFactor(s, p, st.id);
     if (!st.office && b.stage >= 6 && maybeAccident(s, p, b, cap, weather, events)) return;
-    const wm = st.outdoor ? (weather === 'kar' ? 0.2 : weather === 'yagmur' ? 0.5 : 1) : 1;
+    const wm = 1;
     const pm = projectMods(s, p), mult = Math.max(0.05, crew * wm * pm.speed), d = (days[b.stage]! * (st.permit ? b.permitMult : 1)) || 1;
     const need = ((1 - b.progress) * d) / mult;
     let use = Math.min(remaining, need), dp = (use * mult) / d;

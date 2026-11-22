@@ -65,16 +65,10 @@ describe('şube açma ve il pazarı', () => {
   });
 });
 
-describe('il bazlı iklim', () => {
-  it('kış: Doğu Anadolu\'da Akdeniz\'e göre çok daha fazla kar', () => {
-    const s = start(); const W = s.weather as Record<string, string>; W.van = 'acik'; W.antalya = 'acik'; const cnt = { van: 0, antalya: 0 };
-    for (let i = 0; i < 800; i++) { s.clock.day = 10; updateWeather(s); if (W.van === 'kar') cnt.van++; if (W.antalya === 'kar') cnt.antalya++; }
-    expect(cnt.van).toBeGreaterThan(cnt.antalya * 5 + 20);
-  });
-  it('Karadeniz daha yağışlı', () => {
-    const s = start(); const W = s.weather as Record<string, string>; W.rize = 'acik'; W.konya = 'acik'; const cnt = { rize: 0, konya: 0 };
-    for (let i = 0; i < 1500; i++) { s.clock.day = 300; updateWeather(s); if (W.rize !== 'acik') cnt.rize++; if (W.konya !== 'acik') cnt.konya++; }
-    expect(cnt.rize).toBeGreaterThan(cnt.konya);
+describe('hava durumu', () => {
+  it('kaldırıldı: kışın Doğu Anadolu\'da bile hava açık', () => {
+    const s = start(); const W = s.weather as Record<string, string>; W.van = 'kar'; W.rize = 'yagmur'; s.clock.day = 10; updateWeather(s);
+    expect(W.van).toBe('acik'); expect(W.rize).toBe('acik');
   });
 });
 

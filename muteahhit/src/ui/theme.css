@@ -579,3 +579,11 @@ body:has(.modal .sc) #moments { top:auto; bottom:calc(52px + var(--sb)); right:a
 body:has(.modal .sc) #moments .momcard { padding:6px 10px; } body:has(.modal .sc) #moments .momcard .mute { display:none; }
 body:has(.modal .sc) #toasts { right:auto; left:50%; transform:translateX(-50%); bottom:calc(6px + var(--sb)); align-items:center; width:min(420px,60vw); }
 .deal-card .art { align-self:flex-start; aspect-ratio:4/3; }
+/* Şantiye ilerleme çubuğu (eski nokta şeridinin yerine) */
+.stages.sprog { display:flex; flex-direction:column; align-items:stretch; gap:4px; padding:7px 12px 8px; width:min(380px,52vw); }
+.sprog .sp-head { display:flex; align-items:baseline; gap:8px; font-size:12px; } .sprog .sp-head b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; } .sprog .sp-head span { color:var(--mute); font-size:11px; } .sprog .sp-head em { font-style:normal; font-weight:800; color:var(--accent2); font-size:14px; }
+.sprog .sp-bar { position:relative; height:9px; border-radius:6px; background:#ffffff1f; overflow:hidden; } .sprog .sp-bar i { position:absolute; inset:0 auto 0 0; border-radius:6px; background:linear-gradient(90deg,var(--accent),var(--accent2)); background-size:200% 100%; transition:width .8s cubic-bezier(.3,.8,.3,1); animation:spshine 2.6s linear infinite; }
+.sprog .sp-bar s { position:absolute; top:0; bottom:0; width:1px; background:#17191C99; } .sprog.stalled .sp-bar i { background:#8a8f96; animation:none; }
+.sprog .sp-sub { height:3px; border-radius:2px; background:#ffffff14; overflow:hidden; } .sprog .sp-sub i { display:block; height:100%; background:#F5F5F3aa; transition:width .5s; }
+@keyframes spshine { from { background-position:200% 0; } to { background-position:-200% 0; } }
+html[data-motion=reduced] .sprog .sp-bar i { animation:none; transition:none; }

@@ -35,6 +35,8 @@ export function buildable(p: Parcel, typeId: string): { floors: number; emsal: n
  * Fizibilite: maliyet, süre, gelir aralığı, kâr. Fiyatlar BUGÜNÜN endeksleriyle hesaplanır (gelecek fiyat tahmini yok).
  * `landCost`: oyuncu sahibiyse maliyet esası, değilse (arsa dosyasında) istenen fiyat + tapu harcı.
  */
+/** İnşaat süresi çarpanı: 1 = eski (uzun) süreler. */
+export const BUILD_TIME = 0.7;
 export function planProject(s: GameState, p: Parcel, typeId: string, qualityId: string, landCost?: Money): Plan {
   const t = buildingType(typeId), q = quality(qualityId), city = cityData(p.city), d = districtData(p.city, p.district);
   if (!t || !q || !city || !d) throw new Error('planProject: geçersiz girdi');
@@ -50,7 +52,7 @@ export function planProject(s: GameState, p: Parcel, typeId: string, qualityId: 
   const soft = Math.round(total0 * SOFT_SHARE), designFee = Math.round(total0 * DESIGN_SHARE);
   const total = total0 + soil, totalLow = total0 + soilLow, totalHigh = total0 + soilHigh;
   const sizeF = Math.min(1, Math.max(0, (brut - 300) / 3000));
-  const mid = t.monthsMin + (t.monthsMax - t.monthsMin) * sizeF * (soilPlanned > 1.15 ? 1.1 : 1);
+  const mid = (t.monthsMin + (t.monthsMax - t.monthsMin) * sizeF * (soilPlanned > 1.15 ? 1.1 : 1)) * BUILD_TIME; // şantiye süresi (oyuncu şikâyeti üzerine %30 kısaltıldı)
   const months = { min: Math.max(2, Math.round(mid * 0.85)), max: Math.round(mid * 1.15) };
   const housing = s.cityMarket[p.city]?.housingIndex ?? 1;
   const fit = qualityFit(qualityId, d.income);

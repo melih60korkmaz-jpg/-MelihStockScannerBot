@@ -64,7 +64,7 @@ export function infraDaily(s: GameState, events: GameEvent[]): void {
   }
   for (const j of s.infra) {
     if (j.status !== 'devam') continue;
-    const { cap } = infraCapacity(s, j); const w = s.weather[j.city] === 'kar' ? 0.35 : s.weather[j.city] === 'yagmur' ? 0.6 : 1;
+    const { cap } = infraCapacity(s, j); const w = 1;
     if (cap < 0.3) { j.stalled = 'kapasite'; continue; }
     const dp = Math.min(1 - j.progress, (cap * w * (focusId(s) === 'altyapi' ? 1.08 : 1)) / (j.months * 30)), cost = Math.round(dp * j.trueCost);
     if (cost > 0 && c.cash < cost) { j.stalled = 'nakit'; continue; }

@@ -132,20 +132,21 @@ export class SiteProps {
 
 /** İşçiler: ekip büyüklüğüne göre; yatay yürür, durup çalışır; iş durursa grup halinde bekler. */
 export class Workers {
-  mesh: THREE.InstancedMesh; heads: THREE.InstancedMesh; private st: { x: number; z: number; y: number; tx: number; tz: number; ty: number; wait: number; top: boolean }[] = []; private max = 24; n = 0; private r = rng(99);
+  mesh: THREE.InstancedMesh; heads: THREE.InstancedMesh; tools: THREE.InstancedMesh; private st: { x: number; z: number; y: number; tx: number; tz: number; ty: number; wait: number; top: boolean; h: number }[] = []; private max = 24; n = 0; private r = rng(99);
   constructor() {
     this.mesh = new THREE.InstancedMesh(BOX, std('#ff7a1a'), this.max); this.heads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.2, 6, 5), std('#f5d90a'), this.max);
-    this.mesh.castShadow = this.heads.castShadow = true; this.mesh.frustumCulled = this.heads.frustumCulled = false; this.mesh.count = this.heads.count = 0;
-    for (let i = 0; i < this.max; i++) this.st.push({ x: 0, z: 0, y: 0, tx: 0, tz: 0, ty: 0, wait: 0, top: false });
+    this.tools = new THREE.InstancedMesh(BOX, std('#c9ccd2', { roughness: 0.4, metalness: 0.5 }), this.max);
+    this.mesh.castShadow = this.heads.castShadow = true; this.mesh.frustumCulled = this.heads.frustumCulled = this.tools.frustumCulled = false; this.mesh.count = this.heads.count = this.tools.count = 0;
+    for (let i = 0; i < this.max; i++) this.st.push({ x: 0, z: 0, y: 0, tx: 0, tz: 0, ty: 0, wait: 0, top: false, h: Math.random() * 6.28 });
   }
   /** Kask rengi: şirket marka rengi. */
   setBrand(hex?: string) { (this.heads.material as THREE.MeshStandardMaterial).color.set(hex ?? '#f5d90a'); }
-  setCount(n: number, hw: number, hd: number) { n = Math.max(0, Math.min(this.max, n)); if (n > this.n) for (let i = this.n; i < n; i++) { const s = this.st[i]!; s.x = s.tx = (this.r() - 0.5) * hw; s.z = s.tz = hd + 2; } this.n = n; this.mesh.count = this.heads.count = n; }
+  setCount(n: number, hw: number, hd: number) { n = Math.max(0, Math.min(this.max, n)); if (n > this.n) for (let i = this.n; i < n; i++) { const s = this.st[i]!; s.x = s.tx = (this.r() - 0.5) * hw; s.z = s.tz = hd + 2; } this.n = n; this.mesh.count = this.heads.count = this.tools.count = n; }
   /** `stage`: aktif aşama (u). Görev aşamaya göre değişir: kazıda çukurda, betonda pompa çevresinde, cephede binanın dibinde, peyzajda dış alanda. */
   update(dt: number, t: number, active: boolean, hw: number, hd: number, topY: number, working: boolean, stage = 9, focus?: { x: number; z: number }) {
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), q2 = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0), X = new THREE.Vector3(1, 0, 0);
     for (let i = 0; i < this.n; i++) {
-      const w = this.st[i]!;
+      const w = this.st[i]!; let moving = false, dxm = 0, dzm = 0;
       if (working && active) {
         w.wait -= dt;
         if (w.wait <= 0) {
@@ -156,16 +157,22 @@ export class Workers {
           else if (stage >= 16) { rx = hw * 0.9 + 2 + this.r() * 5; rz = hd * 0.9 + 2 + this.r() * 5; w.tx = Math.cos(a) * rx; w.tz = Math.sin(a) * rz; w.ty = 0; w.top = false; }  // peyzaj: dış alan
           else { w.tx = Math.cos(a) * rx; w.tz = Math.sin(a) * rz; w.ty = w.top ? topY : 0; }
         }
-        const dx = w.tx - w.x, dz = w.tz - w.z, dist = Math.hypot(dx, dz), sp = Math.min(dist, 1.3 * dt); if (dist > 0.05) { w.x += (dx / dist) * sp; w.z += (dz / dist) * sp; }
+        const dx = w.tx - w.x, dz = w.tz - w.z, dist = Math.hypot(dx, dz), sp = Math.min(dist, 1.3 * dt); if (dist > 0.05) { w.x += (dx / dist) * sp; w.z += (dz / dist) * sp; moving = true; dxm = dx; dzm = dz; }
         w.y += (w.ty - w.y) * Math.min(1, dt * 1.2);
       } else { // bekle: kapı yakınında dağıl
         const gx = -3 + (i % 6) * 1.2, gz = hd + 2.5 + Math.floor(i / 6) * 1.1; w.x += (gx - w.x) * Math.min(1, dt); w.z += (gz - w.z) * Math.min(1, dt); w.y += (0 - w.y) * Math.min(1, dt);
       }
-      const bob = working && active ? Math.abs(Math.sin(t * 5 + i)) * 0.08 : 0, sit = !working || !active ? 0.25 : 0;
-      this.mesh.setMatrixAt(i, m.compose(p.set(w.x, w.y + 0.5 - sit * 0.3 + bob, w.z), q.setFromAxisAngle(Y, i), s.set(0.5, 0.95 - sit, 0.32)));
+      // yön: yürürken hedefe döner, dururken binaya/işe bakar; yürüme sekmesi ve çekiç sallama
+      { const tgt = moving ? Math.atan2(dxm, dzm) : Math.atan2(-w.x, -w.z); let dh = tgt - w.h; while (dh > Math.PI) dh -= Math.PI * 2; while (dh < -Math.PI) dh += Math.PI * 2; w.h += dh * Math.min(1, dt * 6); }
+      const act = working && active, bob = act ? (moving ? Math.abs(Math.sin(t * 9 + i)) * 0.11 : Math.abs(Math.sin(t * 5 + i)) * 0.04) : 0, sit = !act ? 0.25 : 0, fx = Math.sin(w.h), fz = Math.cos(w.h), rx = Math.cos(w.h), rz = -Math.sin(w.h);
+      q.setFromAxisAngle(Y, w.h);
+      this.mesh.setMatrixAt(i, m.compose(p.set(w.x, w.y + 0.5 - sit * 0.3 + bob, w.z), q, s.set(0.5, 0.95 - sit, 0.32)));
+      if (act && moving) this.tools.setMatrixAt(i, m.compose(p.set(w.x + rx * 0.36, w.y + 0.62 + bob, w.z + rz * 0.36), q, s.set(0.07, 0.55, 0.07)));
+      else if (act) { const sw = Math.sin(t * 9 + i * 1.7); q2.setFromAxisAngle(X, -0.4 + sw * 0.9).premultiply(q); this.tools.setMatrixAt(i, m.compose(p.set(w.x + fx * 0.42 + rx * 0.2, w.y + 0.95 + Math.max(0, sw) * 0.12, w.z + fz * 0.42 + rz * 0.2), q2, s.set(0.09, 0.5, 0.09))); }
+      else this.tools.setMatrixAt(i, m.compose(p.set(w.x, w.y - 3, w.z), q, s.set(0.001, 0.001, 0.001)));
       this.heads.setMatrixAt(i, m.compose(p.set(w.x, w.y + 1.15 - sit * 0.6 + bob, w.z), q.identity(), s.set(1, 1, 1)));
     }
-    this.mesh.instanceMatrix.needsUpdate = true; this.heads.instanceMatrix.needsUpdate = true;
+    this.mesh.instanceMatrix.needsUpdate = true; this.heads.instanceMatrix.needsUpdate = true; this.tools.instanceMatrix.needsUpdate = true;
   }
 }
 

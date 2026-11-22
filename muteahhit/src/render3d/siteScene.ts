@@ -22,7 +22,7 @@ export class SiteScene {
   private building!: SiteBuilding; private props!: SiteProps; private crane!: TowerCrane; private crane2: TowerCrane | null = null; private excavator = new Excavator(); private workers = new Workers(); private weather = new Weather(); private dust = new Dust(90); private pump = new ConcretePump(); private glows: THREE.Sprite[] = []; private flood = [new THREE.SpotLight(0xfff0d0, 0, 120, 0.85, 0.7, 1.2), new THREE.SpotLight(0xfff0d0, 0, 120, 0.85, 0.7, 1.2)];
   private trucks: { g: THREE.Group; kind: string; off: number; speed: number; drum?: THREE.Mesh }[] = []; private ground!: THREE.Mesh; private world = new THREE.Group(); private surround: Surroundings | null = null;
   private nightGlow = { value: 0 }; private covers: THREE.Mesh[] = []; private spec!: SiteSpec; private disposed = false; private moon = new THREE.DirectionalLight(0x9aa6b8, 0); private plotW = 40; private plotD = 30;
-  private state: SiteState = { u: 1, stalled: false, weather: 'acik', workers: 3, done: false }; private u = 1; private time = 0; private tod = 0.6; private speed = 0; private reduced = false;
+  private state: SiteState = { u: 1, stalled: false, weather: 'acik', workers: 3, done: false }; private u = 1; private time = 0; private tph = 0; private tod = 0.6; private speed = 0; private reduced = false;
   private tierSetting: Quality = 'auto'; private tier: Tier = 'mid'; private raf = 0; private running = false; private last = 0;
   private cam = { yaw: 0.7, pitch: 0.55, dist: 80, tx: 0, ty: 12, tz: 0 }; private goal = { ...this.cam }; private idle = 0; private R = 40; private orbitAuto = false;
   private ptrs = new Map<number, { x: number; y: number }>(); private pinch = 0; private lastTap = 0;
@@ -58,10 +58,10 @@ export class SiteScene {
     const ext = this.building.extent, reach = Math.max(ext.w, ext.d) * 0.75 + 14;
     this.crane = new TowerCrane(reach, 0); this.crane.group.position.set(ext.w / 2 + 3.5, 0, -(ext.d / 2 + 3.5)); this.world.add(this.crane.group);
     this.crane2 = this.building.blocks.length > 1 ? new TowerCrane(reach * 0.8, 2) : null; if (this.crane2) { this.crane2.group.position.set(-(ext.w / 2 + 3.5), 0, ext.d / 2 + 3.5); this.world.add(this.crane2.group); }
-    this.excavator.group.position.set(ext.w / 2 + 6, 0, ext.d / 4); this.world.add(this.excavator.group, this.workers.mesh, this.workers.heads);
+    this.excavator.group.position.set(ext.w / 2 + 6, 0, ext.d / 4); this.world.add(this.excavator.group, this.workers.mesh, this.workers.heads, this.workers.tools);
     const kinds: ['dump' | 'mixer' | 'lorry', string][] = [['dump', '#d9d4c8'], ['dump', spec.brand?.hex ?? '#f08a24'], ['mixer', '#e8e8e4'], ['mixer', '#e8e8e4'], ['lorry', spec.brand?.hex ?? '#2f7f9f']];
     this.glows = [];
-    kinds.forEach(([k, c], i) => { const t = makeTruck(k, c); this.world.add(t.group); this.trucks.push({ g: t.group, kind: k, off: i / kinds.length, speed: 0.016 + (i % 2) * 0.004, ...(t.drum ? { drum: t.drum } : {}) });
+    kinds.forEach(([k, c], i) => { const t = makeTruck(k, c); this.world.add(t.group); this.trucks.push({ g: t.group, kind: k, off: i / kinds.length, speed: 0.026 + (i % 2) * 0.007, ...(t.drum ? { drum: t.drum } : {}) });
       for (const x of [-0.8, 0.8]) { const g = makeGlow('#ffe9b0', 5); g.position.set(x, 1.1, 5.2); t.group.add(g); this.glows.push(g); } });
     { const g = makeGlow('#ffe9b0', 9); g.position.set(-3, 3.2, 0); this.excavator.group.add(g); this.glows.push(g); }
     this.world.add(this.pump.group); { const ext2 = this.building.extent; this.pump.group.position.set(-(ext2.w / 2 + 9), 0, ext2.d / 2 + 2); this.pump.group.rotation.y = Math.PI / 2; }
@@ -148,10 +148,11 @@ export class SiteScene {
     // görsel ilerleme hedefe yumuşak yaklaşır (simülasyon günlük adım atar)
     const diff = st.u - this.u; this.u += Math.sign(diff) * Math.min(Math.abs(diff), Math.max(0.25, Math.abs(diff) * 2.5) * dt);
     const u = this.u;
+    const sf = this.speed >= 4 ? 2.2 : this.speed >= 2 ? 1.5 : 1; if (anim) this.tph += dt * sf; // oyun hızlandıkça şantiye de canlanır
     // gün/gece: oyun akarken döner (gerçek zamanlı 45 sn / tur), duraklayınca durur; hareket azaltmada sabit akşamüstü
     if (anim && this.speed > 0) this.tod = (this.tod + dt / 45) % 1; else if (!anim) this.tod = 0.62;
     const ang = (this.tod - 0.25) * Math.PI * 2, sunY = Math.sin(ang), day = clamp(sunY * 1.5 + 0.25, 0, 1), night = 1 - clamp(sunY * 3 + 0.5, 0, 1), gold = clamp(1 - Math.abs(sunY) * 2.6, 0, 1) * (sunY > -0.15 ? 1 : 0);
-    const w = st.weather, wd = w === 'yagmur' ? 0.62 : w === 'kar' ? 0.78 : 1;
+    const w = 'acik' as 'acik' | 'yagmur' | 'kar', wd = 1; // hava durumu kaldırıldı: her zaman açık
     this.sun.position.set(Math.cos(ang) * 90, Math.max(8, sunY * 90), 40); this.sun.target.position.set(0, 0, 0);
     this.sun.color.setRGB(1, 0.85 - gold * 0.25, 0.7 - gold * 0.35 + (1 - gold) * 0.2); this.sun.intensity = (0.1 + 3.2 * day) * wd; this.hemi.intensity = (0.62 + 0.55 * day) * (w === 'acik' ? 1 : 0.9); this.moon.intensity = 1.1 * night * (w === 'acik' ? 1 : 0.7);
     const top = new THREE.Color('#0d0f12').lerp(new THREE.Color(w === 'acik' ? '#4f8fd0' : '#7d8794'), day), hor = new THREE.Color('#1d2026').lerp(new THREE.Color(w === 'acik' ? '#cfe3f2' : '#a9b2ba'), day).lerp(new THREE.Color('#f2a35e'), gold * 0.7 * (w === 'acik' ? 1 : 0.3));
@@ -181,13 +182,13 @@ export class SiteScene {
     const L = this.plotW + 28, Dp = this.plotD + 28;
     for (const tr of this.trucks) {
       const on = tr.kind === 'dump' ? u >= 6 && u < 7.7 : tr.kind === 'mixer' ? u >= 7 && u < 10 : u >= 10 && u < 16.6; tr.g.visible = on && !st.stalled;
-      if (!tr.g.visible) continue; const p = ((this.time * tr.speed + tr.off) % 1) * 4, side = Math.floor(p), k = p - side; const pts: [number, number, number][] = [[-L / 2, Dp / 2, 0], [L / 2, Dp / 2, Math.PI / 2], [L / 2, -Dp / 2, Math.PI], [-L / 2, -Dp / 2, -Math.PI / 2]];
+      if (!tr.g.visible) continue; const p = ((this.tph * tr.speed + tr.off) % 1) * 4, side = Math.floor(p), k = p - side; const pts: [number, number, number][] = [[-L / 2, Dp / 2, 0], [L / 2, Dp / 2, Math.PI / 2], [L / 2, -Dp / 2, Math.PI], [-L / 2, -Dp / 2, -Math.PI / 2]];
       const a = pts[side % 4]!, b = pts[(side + 1) % 4]!; tr.g.position.set(lerp(a[0], b[0], k), 0, lerp(a[1], b[1], k)); tr.g.rotation.y = Math.atan2(b[0] - a[0], b[1] - a[1]); if (tr.drum) tr.drum.rotation.y += dt * 1.5;
     }
     // işçiler
     const wc = u < 1.5 ? 0 : Math.min(T.workers, Math.max(2, st.workers)); this.workers.setCount(st.done ? 0 : wc, hw * 1.6, hd * 1.6);
-    this.workers.update(dt, this.time, anim, hw * 1.6, hd * 1.6, Math.max(0, top2 - 1), !st.stalled && u >= 1.5 && u < 17.9, u, { x: this.pump.group.position.x, z: this.pump.group.position.z });
-    this.weather.update(dt, T.rain && anim ? w : 'acik', T.rain && anim, (w === 'yagmur' ? 1 : w === 'kar' ? 0.5 : 0) * (0.7 + 0.3 * Math.sin(this.time * 0.6)));
+    this.workers.update(dt * sf, this.time, anim, hw * 1.6, hd * 1.6, Math.max(0, top2 - 1), !st.stalled && u >= 1.5 && u < 17.9, u, { x: this.pump.group.position.x, z: this.pump.group.position.z });
+    this.weather.update(dt, 'acik', false, 0);
     this.dust.update(dt, anim && T.dust > 0 && !st.stalled && w === 'acik' && u >= 1.5 && u < 17.9, hw * 1.15, hd * 1.15);
     // kamera
     const g = this.goal, c = this.cam, k = 1 - Math.exp(-dt * 7);
