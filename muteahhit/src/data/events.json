@@ -3206,15 +3206,15 @@
     "e": [
      [
       "cash",
-      -1500000
+      -600000
      ],
      [
       "rep",
-      1
+      2
      ],
      [
       "morale",
-      2
+      3
      ]
     ]
    },
@@ -3232,11 +3232,15 @@
     "e": [
      [
       "cash",
-      -700000
+      -300000
+     ],
+     [
+      "rep",
+      1
      ],
      [
       "score",
-      2
+      3
      ]
     ]
    }
@@ -3257,7 +3261,7 @@
     "e": [
      [
       "cash",
-      -900000
+      -600000
      ],
      [
       "sat",
@@ -3303,7 +3307,7 @@
     "e": [
      [
       "cash",
-      -1200000
+      -900000
      ],
      [
       "machine",
@@ -3320,7 +3324,7 @@
     "e": [
      [
       "cash",
-      -800000
+      -600000
      ],
      [
       "morale",
@@ -3354,7 +3358,7 @@
     "e": [
      [
       "cash",
-      -1000000
+      -700000
      ],
      [
       "morale",
@@ -3371,7 +3375,7 @@
     "e": [
      [
       "cash",
-      -600000
+      -400000
      ],
      [
       "score",
@@ -3441,7 +3445,7 @@
     "s": [
      [
       "cash",
-      4500000
+      3500000
      ],
      [
       "rep",
@@ -3492,11 +3496,11 @@
    {
     "l": "Anlaşmayı kabul et (riskli)",
     "e": [],
-    "p": 0.7,
+    "p": 0.65,
     "s": [
      [
       "cash",
-      6000000
+      4000000
      ],
      [
       "rrel",
@@ -3596,7 +3600,7 @@
   "id": "rv_arsa",
   "c": "rakip",
   "t": "{rakip} arsanıza talip",
-  "x": "{rakip}, elinizdeki boş bir arsa için piyasa değerinin %12 üstünü veriyor. Pazarlık etmek de mümkün; ama fazla zorlarsanız vazgeçebilir.",
+  "x": "{rakip}, elinizde bir süredir duran boş bir arsa için piyasa değerinin %6 üstünü veriyor. Pazarlık etmek de mümkün; ama fazla zorlarsanız vazgeçebilir.",
   "w": 2,
   "need": [
    "rivals",
@@ -3604,11 +3608,11 @@
   ],
   "ch": [
    {
-    "l": "Teklifi kabul et (%12 prim)",
+    "l": "Teklifi kabul et (%6 prim)",
     "e": [
      [
       "landsale",
-      12
+      6
      ],
      [
       "rrel",
@@ -3617,13 +3621,13 @@
     ]
    },
    {
-    "l": "Pazarlık et (%28 iste)",
+    "l": "Pazarlık et (%15 iste)",
     "e": [],
     "p": 0.45,
     "s": [
      [
       "landsale",
-      28
+      15
      ],
      [
       "rrel",
@@ -3699,11 +3703,11 @@
    {
     "l": "Konsorsiyum kur",
     "e": [],
-    "p": 0.5,
+    "p": 0.45,
     "s": [
      [
       "cash",
-      9000000
+      6000000
      ],
      [
       "rep",

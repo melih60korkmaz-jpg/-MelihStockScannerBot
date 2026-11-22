@@ -47,6 +47,7 @@ export function rivalsMonthly(s: GameState, events: GameEvent[]): void {
     }
     if (r.cash < 0 && (r.projects > 2 || r.cash < -TL(30_000_000))) rivalFails(s, r, events);
   }
+  for (const r of s.rivals) if (r.rel && s.clock.day % 60 < 30) r.rel += r.rel > 0 ? -1 : 1;
   // yeni girişimci
   if (aliveRivals(s).length < ALIVE && rand(s.rng, 'rivals') < 0.12) { const n = spawn(s, randInt(s.rng, 'rivals', 0, 2)); s.rivals.push(n); news(s, events, `Yeni bir firma sektöre girdi: ${n.name}.`, 'info'); }
   // arz baskısı sönümlenir; fazla arz konut fiyatını hafifçe aşağı çeker

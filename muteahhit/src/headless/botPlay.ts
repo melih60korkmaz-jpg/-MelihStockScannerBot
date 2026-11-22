@@ -30,7 +30,10 @@ const NEGO = new Map<number, number>();
 function act(s: GameState) {
   for (const p of s.projects) if (p.sales && p.sales.autoMin === undefined) p.sales.autoMin = 0; // bot: tüm teklifleri kabul eder
   const c = s.company!; if (c.bankrupt) return;
-  if (s.pending) { const d = eventDef(s.pending.id); dispatch(s, 'ResolveEvent', { choice: d ? (d.def ?? 0) : 0 }); }
+  if (s.pending) { // bot: seçimlerin beklenen değerine bakar (nakit + itibar/moral/kredi notu ağırlıkları); eşitlikte varsayılan
+    const d = eventDef(s.pending.id); let best = d ? (d.def ?? 0) : 0;
+    if (d) { const val = (es: [string, ...(number | string)[]][] | undefined) => (es ?? []).reduce((a, e) => a + (e[0] === 'cash' ? Number(e[1]) * 1e6 / 1e6 : e[0] === 'rep' ? Number(e[1]) * 250_000 : e[0] === 'morale' ? Number(e[1]) * 60_000 : e[0] === 'score' ? Number(e[1]) * 15_000 : e[0] === 'sat' ? Number(e[1]) * 60_000 : e[0] === 'landsale' ? Number(e[1]) * 20_000 + 500_000 : 0), 0); let bv = -Infinity; d.ch.forEach((c, i) => { const v = val(c.e) + (c.p !== undefined ? c.p * val(c.s) + (1 - c.p) * val(c.f) : 0); if (v > bv + 1e-9) { bv = v; best = i; } }); }
+    dispatch(s, 'ResolveEvent', { choice: best }); }
   crew(s);
   const active = s.projects.filter((p) => p.status === 'insaat' || p.status === 'taslak').length;
   for (const p of s.projects) {

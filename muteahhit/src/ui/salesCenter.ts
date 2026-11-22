@@ -43,7 +43,7 @@ export function openSales(app: App, projectId: number, onClose?: () => void): vo
     card.append(h('div', { class: 'sck' }, k('Satılan', `${sold.length}/${mine.length}`), k('Boş', String(free.length)), k('Kirada', `${rented.length}`), k('Aylık kira', fmt(monthlyRent(s, p.id))), k('Bekleyen teklif', String(offers.length)), k('Sözleşme geliri', fmt(pol.contract)), k('Tahsil edilecek', fmt(receivablesTotal(s)))));
     card.append(h('div', { class: 'sct' }, ...TABS.map(([id, label]) => h('button', { class: `btn${mem.tab === id ? ' on' : ''}`, onclick: () => { press(app); mem.tab = id as Tab; mem.counter = null; render(); } }, id === 'teklif' && offers.length ? `${label} (${offers.length})` : label))));
     const body = h('div', { class: 'scb' }); card.append(body);
-    if (!open && !us.some((u) => u.status === 'satildi')) body.append(h('div', { class: 'card', style: 'margin-bottom:8px;padding:10px' }, h('b', {}, 'Satışa henüz açık değil. '), h('span', { class: 'mute' }, 'Bina bitince alıcılar gelmeye başlar; ön satışı Politika sekmesinden açarsanız betonarme aşamasından itibaren de gelirler.')));
+    if (!open && !us.some((u) => u.status === 'satildi' && !u.landlord)) body.append(h('div', { class: 'card', style: 'margin-bottom:8px;padding:10px' }, h('b', {}, 'Satışa henüz açık değil. '), h('span', { class: 'mute' }, 'Bina bitince alıcılar gelmeye başlar; ön satışı Politika sekmesinden açarsanız betonarme aşamasından itibaren de gelirler.')));
 
     // ---------- Bina ----------
     if (mem.tab === 'bina') {

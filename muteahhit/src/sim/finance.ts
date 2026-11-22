@@ -95,9 +95,15 @@ export function alerts(s: GameState, fmt: (m: Money) => string, fmtDate: (d: num
   for (const pr of s.projects) {
     if (pr.status === 'insaat' && pr.build?.stalled) out.push({ tone: 'bad', text: `${pr.name}: nakit yok, inşaat durdu!` });
     else if (pr.status === 'insaat' && pr.build) out.push({ tone: 'info', text: `${pr.name}: ${STAGES[pr.build.stage]?.label ?? ''} (%${Math.round(pr.build.progress * 100)})` });
-    if (pr.status === 'tamamlandi') { const left = s.units.filter((u) => u.projectId === pr.id && u.status !== 'satildi').length; out.push({ tone: left ? 'ok' : 'info', text: `${pr.name}: ${left} daire satışta.` }); }
+    if (pr.status === 'tamamlandi') {
+      const mine = s.units.filter((u) => u.projectId === pr.id), left = mine.filter((u) => u.status !== 'satildi' && !u.rent).length, rented = mine.filter((u) => u.rent).length, offs = (s.offers ?? []).filter((o) => o.projectId === pr.id).length;
+      if (offs) out.push({ tone: 'ok', text: `${pr.name}: ${offs} bekleyen alıcı/kiracı teklifi var. Projeler › Satış merkezi` });
+      else out.push({ tone: left ? 'ok' : 'info', text: `${pr.name}: ${left} daire satışta${rented ? `, ${rented} kirada` : ''}.` });
+    }
   }
-  const idle = s.parcels.filter((p) => p.owner === 'player' && p.projectId === undefined && !p.listed);
+  for (const p of s.parcels) if (p.owner === 'player' && p.projectId === undefined && (p.demolishUntil ?? 0) > s.clock.day) out.push({ tone: 'info', text: `${p.hood}: eski bina yıkılıyor, ${p.demolishUntil! - s.clock.day} gün sonra proje başlatabilirsiniz.` });
+  const nd = (s.deals ?? []).filter((d) => d.until > s.clock.day).length; if (nd) out.push({ tone: 'info', text: `${nd} fırsat ilanı açık (rakip binaları, eski bina arsaları, kat karşılığı). Şirket › Yönetim` });
+  const idle = s.parcels.filter((p) => p.owner === 'player' && p.projectId === undefined && !p.listed && !((p.demolishUntil ?? 0) > s.clock.day));
   if (idle.length) out.push({ tone: 'info', text: idle.length === 1 ? `Boş arsanız var (${idle[0]!.hood}): proje başlatın ya da satışa koyun.` : `${idle.length} boş arsanız var: proje başlatın ya da satışa koyun.` });
   if (s.staff.length === 0) out.push({ tone: 'info', text: 'Ekibiniz yok. Ekip sekmesinden personel alabilirsiniz.' });
   const cap = officeFor(c.office).capacity;

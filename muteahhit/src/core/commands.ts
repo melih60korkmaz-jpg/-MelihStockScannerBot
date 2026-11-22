@@ -3,6 +3,7 @@ import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { dateOf } from './calendar';
 import { PROPOSALS } from '../sim/rivalLife';
+import { sellableIdle } from '../sim/events';
 import { KIND_LABEL, acceptDeal, dealError } from '../sim/deals';
 import { acceptOffer } from '../sim/buyers';
 import { post } from '../sim/ledger';
@@ -160,8 +161,15 @@ const buyLand: CommandDef<BuyLandParams> = {
   },
 };
 
+/** Fırsat arsaları (eski bina, kat karşılığı) ucuza alındığı için hemen elden çıkarılamaz; kat karşılığı arsa zaten sahibine aittir. */
+const landLockError = (s: GameState, pc: GameState['parcels'][number]): string | null => {
+  if (pc.kat) return 'Kat karşılığı arsa satılamaz: mülkiyet arsa sahibinde kalır.';
+  if ((pc.demolishUntil ?? 0) > s.clock.day) return `Eski bina yıkılıyor (${pc.demolishUntil! - s.clock.day} gün).`;
+  if (pc.oldBuilding && s.clock.day - (pc.boughtDay ?? -999) < 180) return `Fırsat arsası ${180 - (s.clock.day - (pc.boughtDay ?? 0))} gün daha satılamaz.`;
+  return null;
+};
 const sellLandQuick: CommandDef<ParcelRef> = {
-  validate(s, p) { const pc = parcelOf(s, p.parcelId); if (!pc || pc.owner !== 'player') return 'Arsa bulunamadı.'; if (pc.projectId !== undefined) return 'Üzerinde proje olan arsa satılamaz; önce projeyi iptal edin.'; return null; },
+  validate(s, p) { const pc = parcelOf(s, p.parcelId); if (!pc || pc.owner !== 'player') return 'Arsa bulunamadı.'; if (pc.projectId !== undefined) return 'Üzerinde proje olan arsa satılamaz; önce projeyi iptal edin.'; { const e = landLockError(s, pc); if (e) return e; } return null; },
   apply(s, p) {
     const pc = parcelOf(s, p.parcelId)!; const price = Math.round(fairValue(s, pc) * QUICK_SALE_DISCOUNT);
     post(s, 'arsa', price, { memo: `Arsa hızlı satış (${pc.hood})` });
@@ -170,7 +178,7 @@ const sellLandQuick: CommandDef<ParcelRef> = {
   },
 };
 const listLand: CommandDef<ListLandParams> = {
-  validate(s, p) { const pc = parcelOf(s, p.parcelId); if (!pc || pc.owner !== 'player') return 'Arsa bulunamadı.'; if (pc.projectId !== undefined) return 'Üzerinde proje olan arsa satışa konamaz.'; if (!(p.askMult >= 0.9 && p.askMult <= 1.25)) return "İstenen fiyat, değerin %90–%125'i arasında olmalı."; return null; },
+  validate(s, p) { const pc = parcelOf(s, p.parcelId); if (!pc || pc.owner !== 'player') return 'Arsa bulunamadı.'; if (pc.projectId !== undefined) return 'Üzerinde proje olan arsa satışa konamaz.'; { const e = landLockError(s, pc); if (e) return e; } if (!(p.askMult >= 0.9 && p.askMult <= 1.25)) return "İstenen fiyat, değerin %90–%125'i arasında olmalı."; return null; },
   apply(s, p) { const pc = parcelOf(s, p.parcelId)!; pc.listed = { askMult: p.askMult, day: s.clock.day }; return [ev(s, 'LAND_LISTED', { parcelId: pc.id })]; },
 };
 const unlistLand: CommandDef<ParcelRef> = {
@@ -394,6 +402,7 @@ const setUnitCmd: CommandDef<{ unitId: number; adj?: number; hold?: boolean; lis
   validate(s, p) {
     const u = s.units.find((x) => x.id === p.unitId); if (!u) return 'Daire bulunamadı.'; if (u.status === 'satildi') return 'Daire satıldı.';
     if (p.adj !== undefined && !(p.adj >= 0.8 && p.adj <= 1.3)) return 'Özel fiyat %80–%130 arasında olmalı.';
+    if (p.listing === 'kira') { const pr = s.projects.find((x) => x.id === u.projectId); if (pr && !pr.contract) { const inv = s.investments.find((i) => i.projectId === pr.id && !i.paidOut); if (inv) return 'Yatırımcılı projede kiralama yapılamaz: yatırımcı satış kârıyla ödenir. Önce yatırımcı payı kapanmalı.'; } }
     if (p.listing === 'sat' && u.rent) return 'Önce kirayı sonlandırın.'; if (p.hold && u.rent) return 'Kiradaki daire rezerve edilemez.';
     return null;
   },
@@ -437,7 +446,7 @@ const proposeCmd: CommandDef<{ rivalId: number; kind: string }> = {
     const r = s.rivals.find((x) => x.id === p.rivalId), pr = PROPOSALS[p.kind]; if (!r || r.failed || r.last === 'satin_alindi') return 'Bu firma artık faaliyette değil.'; if (!pr) return 'Geçersiz teklif.';
     if ((r.rel ?? 0) <= -30) return `${r.name} sizinle görüşmek istemiyor (ilişki düşük).`; if (s.clock.day - (r.asked ?? -999) < 90) return 'Bu firmayla yakın zamanda görüştünüz; 90 gün bekleyin.';
     if ((s.evtQueue ?? []).some((x) => x.rivalId === r.id) || s.pending?.rivalId === r.id) return 'Bu firmayla görüşme sürüyor.';
-    if (p.kind === 'arsa' && !s.parcels.some((x) => x.owner === 'player' && !x.clientLand && x.projectId === undefined && !x.demolishUntil)) return 'Satılacak boş arsanız yok.';
+    if (p.kind === 'arsa' && !s.parcels.some((x) => sellableIdle(s, x))) return 'Satılabilecek boş arsanız yok (en az 120 gündür elinizde olmalı).';
     if (p.kind === 'makine' && !s.machines.length) return 'Kiralanacak makineniz yok.'; return null;
   },
   apply(s, p) { const r = s.rivals.find((x) => x.id === p.rivalId)!, pr = PROPOSALS[p.kind]!; r.asked = s.clock.day; (s.evtQueue ??= []).push({ id: pr.ev, day: s.clock.day + 3, rivalId: r.id }); logDecision(s, 'firsat', `${r.name}: ${pr.label}`, 'Görüşme başlatıldı; yanıt birkaç gün içinde gelir.'); return [ev(s, 'PROPOSED', { rivalId: r.id, kind: p.kind })]; },

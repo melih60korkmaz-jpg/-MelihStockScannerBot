@@ -75,3 +75,10 @@ describe('ilan hızı ve öne çıkan ilan', () => {
     expect(dispatch(s, 'PromoteUnit', { unitId: u.id }).ok).toBe(false); dispatch(s, 'SetUnit', { unitId: unitsOf(s, p.id)[1]!.id, hold: true }); expect(dispatch(s, 'PromoteUnit', { unitId: unitsOf(s, p.id)[1]!.id }).ok).toBe(false);
   });
 });
+
+describe('kira kısıtları', () => {
+  it('yatırımcılı projede kiralama reddedilir', () => {
+    const { s, p } = built(); s.investments.push({ id: s.nextId++, projectId: p.id, amount: TL(1_000_000), share: 0.2, day: 0 }); const u = unitsOf(s, p.id)[0]!;
+    expect(dispatch(s, 'SetUnit', { unitId: u.id, listing: 'kira' }).ok).toBe(false);
+  });
+});

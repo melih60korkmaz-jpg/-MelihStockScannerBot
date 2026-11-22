@@ -4,7 +4,7 @@ import { newGameState } from '../src/core/state';
 import { TL } from '../src/core/money';
 import { advanceDays } from '../src/sim/engine';
 import { checkInvariant } from '../src/sim/ledger';
-import { DEMO_DAYS, dealCash, dealDiscount, dealsOpen, makeDeal } from '../src/sim/deals';
+import { DEMO_DAYS, dealCash, dealDiscount, dealProfit, dealsOpen, makeDeal } from '../src/sim/deals';
 import { unitsOf } from '../src/sim/sales';
 import { planProject } from '../src/sim/projects';
 import { pack, unpack } from '../src/save/serialize';
@@ -52,5 +52,14 @@ describe('fırsat ilanları', () => {
     const s = setup(); const d = give(s, 'bina'), d2 = give(s, 'eski'); s.company!.cash = 100; s.ledgerBase = 100 - s.ledger.reduce((a, e) => a + e.amount, 0); expect(dispatch(s, 'AcceptDeal', { dealId: d.id }).ok).toBe(false);
     expect(dispatch(s, 'DeclineDeal', { dealId: d2.id }).ok).toBe(true); expect(s.deals!.some((x) => x.id === d2.id)).toBe(false);
     const r = unpack(pack(s)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.deals!.length).toBe(1); expect(r.state.deals![0]!.parcel.area).toBe(d.parcel.area); }
+  });
+  it('hemen al-sat engellenir: kat karşılığı arsa satılamaz, eski bina arsası yıkım ve 180 gün boyunca satılamaz', () => {
+    const s = setup(); const k = give(s, 'kat'); dispatch(s, 'AcceptDeal', { dealId: k.id }); const pk = s.parcels.find((x) => x.id === k.parcel.id)!;
+    expect(dispatch(s, 'SellLandQuick', { parcelId: pk.id }).ok).toBe(false); expect(dispatch(s, 'ListLand', { parcelId: pk.id, askMult: 1 }).ok).toBe(false);
+    const e = give(s, 'eski'); dispatch(s, 'AcceptDeal', { dealId: e.id }); const pe = s.parcels.find((x) => x.id === e.parcel.id)!; expect(dispatch(s, 'SellLandQuick', { parcelId: pe.id }).ok).toBe(false);
+    s.clock.day += 100; expect(dispatch(s, 'SellLandQuick', { parcelId: pe.id }).ok).toBe(false); s.clock.day += 90; expect(dispatch(s, 'SellLandQuick', { parcelId: pe.id }).ok).toBe(true);
+  });
+  it('bitmiş bina fırsatı mantıklı indirimli: kalite puanı değeri etkiler ve kaba kâr makul sınırda', () => {
+    const s = setup(); for (let i = 0; i < 12; i++) { const d = give(s, 'bina'); expect(dealDiscount(d)).toBeGreaterThan(0.04); expect(dealDiscount(d)).toBeLessThan(0.3); const pr = dealProfit(s, d); expect(pr).toBeLessThan(d.fair * 0.25); }
   });
 });

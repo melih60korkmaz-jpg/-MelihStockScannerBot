@@ -49,5 +49,5 @@ export const PROPOSALS: Record<string, { ev: string; label: string; ico: string;
   ortak: { ev: 'rv_ortak', label: 'Ortak girişim öner', ico: '🤝', desc: 'Sermaye ve işi paylaşın; kâr olursa bölüşülür.' },
   konsorsiyum: { ev: 'rv_konsorsiyum', label: 'Ortak ihale öner', ico: '📑', desc: 'Büyük bir ihaleye birlikte girin.' },
   makine: { ev: 'rv_makine', label: 'Makine kirala', ico: '🚜', desc: 'Makine parkından bir makineyi kiralayın.' },
-  arsa: { ev: 'rv_arsa', label: 'Arsa sat', ico: '📍', desc: 'Boş bir arsanızı bu firmaya satmayı deneyin.' },
+  arsa: { ev: 'rv_arsa', label: 'Arsa sat', ico: '📍', desc: 'En az 120 gündür elinizde duran boş bir arsanızı bu firmaya satmayı deneyin.' },
 };

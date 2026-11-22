@@ -180,14 +180,14 @@ export const GUIDE: Topic[] = [
       { h: 'İlan türleri' },
       { ul: ['🏢 Bitmiş bina: rakip nakit sıkışınca (ya da iflas edince) indirimle satar. Devralırsan Satış merkezinde satar ya da kiraya verirsin.', '🏗️ Yarım kalmış inşaat (seviye 3): rakibin bıraktığı aşamadan devralırsın. Yapılmış işin kalitesi binanın kalitesine yansır; kalan işi sen bitirirsin.', '🏚️ Eski bina arsası: ucuz arsa, ama yıkım masrafı ve 21 günlük yıkım süresi vardır; yıkım bitmeden proje açılamaz.', '🤝 Kat karşılığı: arsa sahibi arsayı satmaz, yerine yeni binanın belli bir payını (%30–50) ister. Arsa bedeli ödemezsin, sadece yıkım masrafı sende. Bina bitince o paydaki daireler sahibine ait kalır ve gelire yazılmaz.'] },
       { h: 'İpuçları' },
-      { ul: ['Tahmini kâr kabaca hesaplanır; yarım inşaatta ve kat karşılığında inşaat maliyeti ve zemin riski sende kalır.', 'Yarım inşaatı devralmadan önce ekibin ve makine parkın yeterli mi diye bak.'] },
+      { ul: ['Tahmini kâr kabaca hesaplanır; yarım inşaatta ve kat karşılığında inşaat maliyeti ve zemin riski sende kalır.', 'Yarım inşaatı devralmadan önce ekibin ve makine parkın yeterli mi diye bak.', 'Eski bina arsası 180 gün satılamaz (hemen al-sat yapılamaz); kat karşılığı arsa hiç satılamaz, çünkü mülkiyet arsa sahibindedir.'] },
     ],
   },
   {
     id: 'rakipler', ico: '🤝', title: 'Rakiplerle ilişkiler', blocks: [
       { p: 'Piyasa › Sektör sıralaması\'nda bir rakibe dokun: sahibi, hikâyesi, gücü ve sana karşı ilişkisi (Müttefik, Dost, Tarafsız, Soğuk, Düşman) görünür.' },
       { h: 'İş birliği öner' },
-      { ul: ['🤝 Ortak girişim: sermaye ve işi paylaşırsınız, birkaç ay sonra hesap kapanır (kâr ya da zarar).', '📑 Ortak ihale: iki firmanın referansıyla büyük ihaleye girersiniz.', '🚜 Makine kirala ve 📍 Arsa sat: rakibe makine kiralar ya da boş bir arsanı primle satmayı denersin (pazarlıkta fazla zorlarsan vazgeçer).', 'Aynı firmayla 90 günde bir görüşebilirsin; ilişkisi düşman seviyesindeyse görüşmez.'] },
+      { ul: ['🤝 Ortak girişim: sermaye ve işi paylaşırsınız, birkaç ay sonra hesap kapanır (kâr ya da zarar).', '📑 Ortak ihale: iki firmanın referansıyla büyük ihaleye girersiniz.', '🚜 Makine kirala ve 📍 Arsa sat: rakibe makine kiralar ya da boş bir arsanı primle satmayı denersin (arsa en az 120 gündür elinde olmalı; pazarlıkta fazla zorlarsan vazgeçer).', 'Aynı firmayla 90 günde bir görüşebilirsin; ilişkisi düşman seviyesindeyse görüşmez.'] },
       { h: 'Rakipler de gelir' },
       { ul: ['Rakipler zaman zaman sana teklif getirir: ortak proje, arsana talip olma, makine kiralama, ihale anlaşması.', 'İhale anlaşması kâğıt üstünde kârlıdır ama rekabet kurumu soruşturması riski taşır; yakalanırsan ceza ve itibar kaybı olur.', 'Dost rakipler ihalede fiyatı yüksek tutar (senin lehine), düşman rakipler fiyat kırar. Düşmanlar adını kötüleyebilir.'] },
     ],

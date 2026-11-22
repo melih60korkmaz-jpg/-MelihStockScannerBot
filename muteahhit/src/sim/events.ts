@@ -11,6 +11,8 @@ import { logDecision } from './control';
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 export const DECISION_TIMEOUT = 20, COOLDOWN = 300;
+/** Rakibe satılabilecek boş arsa: en az 120 gündür elde, projesiz, kat karşılığı/yıkım dışında. Hemen al-sat kârı engellenir. */
+export const sellableIdle = (s: GameState, p: GameState['parcels'][number]): boolean => p.owner === 'player' && !p.clientLand && p.projectId === undefined && !p.kat && !(p.demolishUntil && p.demolishUntil > s.clock.day) && s.clock.day - (p.boughtDay ?? -999) >= 120 && !(p.oldBuilding && s.clock.day - (p.boughtDay ?? 0) < 180);
 
 /** Olay tutarları 20 M₺'lik bir firma için yazılmıştır; firma büyüdükçe ölçeklenir. */
 export const eventScale = (s: GameState): number => clamp(Math.max(0, netWorth(s)) / TL(20_000_000), 0.4, 8) ** 0.8;
@@ -27,7 +29,7 @@ function eligible(s: GameState, d: EventDef): boolean {
     if (n === 'land' && !s.parcels.some((p) => p.owner === 'player' && !p.clientLand)) return false;
     if (n === 'open' && s.openCities.length === 0) return false;
     if (n === 'rivals' && aliveRivals(s).length === 0) return false;
-    if (n === 'idleland' && !s.parcels.some((p) => p.owner === 'player' && !p.clientLand && p.projectId === undefined && !p.demolishUntil)) return false;
+    if (n === 'idleland' && !s.parcels.some((p) => sellableIdle(s, p))) return false;
     if (n === 'ally' && !aliveRivals(s).some((r) => (r.rel ?? 0) >= 30)) return false;
     if (n === 'enemy' && !aliveRivals(s).some((r) => (r.rel ?? 0) <= -30)) return false;
     if (n === 'sold>0' && c.stats.sold <= 0) return false;
@@ -119,7 +121,7 @@ function apply(s: GameState, e: EffectTuple, p: PendingEvent, events: GameEvent[
     case 'stall': { const pr = s.projects.find((x) => x.id === p.projectId && x.status === 'insaat') ?? s.projects.find((x) => x.status === 'insaat'); if (pr?.build) { pr.build.accidentUntil = Math.max(pr.build.accidentUntil ?? 0, s.clock.day + v); pr.build.stalled = 'kaza'; } break; }
     case 'leave': { const pool = s.staff.filter((q) => traitOf(q).id !== 'sadik'), x = pool.length ? pick(s.rng, 'events', pool) : null; if (x) s.staff = s.staff.filter((q) => q.id !== x.id); break; }
     case 'rrel': { const r = s.rivals.find((q) => q.id === p.rivalId); if (r) r.rel = clamp((r.rel ?? 0) + v, -100, 100); break; }
-    case 'landsale': { const pc = s.parcels.find((x) => x.owner === 'player' && !x.clientLand && x.projectId === undefined && !x.demolishUntil); if (pc) { const amt = Math.round(fairValue(s, pc) * (1 + v / 100)); post(s, 'arsa', amt, { memo: `Arsa satışı (${pc.hood}): ${s.rivals.find((r) => r.id === p.rivalId)?.name ?? 'rakip'}` }); s.parcels = s.parcels.filter((x) => x.id !== pc.id); const r = s.rivals.find((q) => q.id === p.rivalId); if (r) { r.cash -= amt; } } break; }
+    case 'landsale': { const pc = s.parcels.filter((x) => sellableIdle(s, x)).sort((a, b) => (a.boughtDay ?? 0) - (b.boughtDay ?? 0))[0]; if (pc) { const amt = Math.round(fairValue(s, pc) * (1 + v / 100)); post(s, 'arsa', amt, { memo: `Arsa satışı (${pc.hood}): ${s.rivals.find((r) => r.id === p.rivalId)?.name ?? 'rakip'}` }); s.parcels = s.parcels.filter((x) => x.id !== pc.id); const r = s.rivals.find((q) => q.id === p.rivalId); if (r) { r.cash -= amt; } } break; }
     case 'tmorale': { const x = s.staff.find((q) => q.id === p.staffId); if (x) x.morale = clamp(x.morale + v, 0, 100); break; }
     case 'traise': { const x = s.staff.find((q) => q.id === p.staffId); if (x) x.salary = Math.round(x.salary * (1 + v / 100)); break; }
     case 'tleave': { s.staff = s.staff.filter((q) => q.id !== p.staffId); break; }

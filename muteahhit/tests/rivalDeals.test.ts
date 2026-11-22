@@ -31,8 +31,8 @@ describe('rakiple ortaklık ve pazarlık', () => {
     r.rel = 0; expect(dispatch(s, 'ProposeToRival', { rivalId: r.id, kind: 'yok' }).ok).toBe(false); expect(dispatch(s, 'ProposeToRival', { rivalId: r.id, kind: 'arsa' }).ok).toBe(false); // boş arsa yok
   });
   it('arsa satışı: rakip prim öder, arsa gider, nakit artar; boş arsa yoksa etki yok', () => {
-    const s = setup(); const r = aliveRivals(s)[0]!, pc: Parcel = { id: s.nextId++, city: 'ankara', district: 'cankaya', hood: 'Satılık', area: 500, zoning: 'konut', taks: 0.4, kaks: 1.6, maxFloors: 5, soil: 'saglam', soilKnown: true, roads: 2, corner: false, infra: 80, growth: 0.04, growthKnown: false, unitBase: TL(2500), askMult: 1.05, reserveMult: 1, negoLockUntil: 0, owner: 'player', costBasis: TL(1_000_000) }; s.parcels.push(pc);
-    expect(dispatch(s, 'ProposeToRival', { rivalId: r.id, kind: 'arsa' }).ok).toBe(true); for (let i = 0; i < 6 && !s.pending; i++) advanceDays(s, 1); expect(s.pending?.id).toBe('rv_arsa');
+    const s = setup(); const r = aliveRivals(s)[0]!, pc: Parcel = { id: s.nextId++, city: 'ankara', district: 'cankaya', hood: 'Satılık', area: 500, zoning: 'konut', taks: 0.4, kaks: 1.6, maxFloors: 5, soil: 'saglam', soilKnown: true, roads: 2, corner: false, infra: 80, growth: 0.04, growthKnown: false, unitBase: TL(2500), askMult: 1.05, reserveMult: 1, negoLockUntil: 0, owner: 'player', costBasis: TL(1_000_000) }; s.parcels.push(pc); pc.boughtDay = s.clock.day;
+    expect(dispatch(s, 'ProposeToRival', { rivalId: r.id, kind: 'arsa' }).ok).toBe(false); pc.boughtDay = s.clock.day - 130; expect(dispatch(s, 'ProposeToRival', { rivalId: r.id, kind: 'arsa' }).ok).toBe(true); for (let i = 0; i < 6 && !s.pending; i++) advanceDays(s, 1); expect(s.pending?.id).toBe('rv_arsa');
     const c0 = s.company!.cash; expect(dispatch(s, 'ResolveEvent', { choice: 0 }).ok).toBe(true); expect(s.parcels.some((x) => x.id === pc.id)).toBe(false); expect(s.company!.cash).toBeGreaterThan(c0); expect(relOf(r)).toBe(5); expect(checkInvariant(s)).toBe(true);
   });
   it('ilişki ihale fiyatını etkiler ve kayıttan sağ çıkar', () => {

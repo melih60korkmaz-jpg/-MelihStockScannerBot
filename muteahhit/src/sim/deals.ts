@@ -25,7 +25,7 @@ export const dealDiscount = (d: Deal): number => (d.fair > 0 ? 1 - (d.price + d.
 export function dealProfit(s: GameState, d: Deal): Money {
   const pc: Parcel = { ...d.parcel, ...(d.kind === 'kat' ? { kat: { share: d.share, owner: d.seller } } : {}) };
   const plan = planProject(s, pc, d.type, d.quality, 0);
-  if (d.kind === 'bina') return Math.round(d.fair * 0.97) - d.price;
+  if (d.kind === 'bina') return Math.round(d.fair * 0.96) - d.price - Math.round(d.fair * 0.02); // peşin iskonto + komisyon
   const doneFrac = d.kind === 'yarim' ? STAGES.slice(1, d.stage).reduce((a, x) => a + x.cost, 0) / 100 : 0;
   return plan.revenue.mid - Math.round(plan.cost.total * (1 - doneFrac)) - d.price - d.demo;
 }
@@ -48,12 +48,12 @@ export function makeDeal(s: GameState, kind: Deal['kind']): Deal | null {
   const base = { id, kind, city, day, until: day + DEAL_DAYS, type, quality, parcel, qscore: randInt(s.rng, 'misc', 62, 90), stage: 0, share: 0, demo: 0 as Money };
   const lbl = `${dist.label} · ${buildingType(type)?.label ?? type}`;
   if (kind === 'bina') {
-    const disc = sl.failed ? 0.62 + rand(s.rng, 'misc') * 0.12 : 0.74 + rand(s.rng, 'misc') * 0.14;
-    return { ...base, seller: sl.name, title: `${lbl} · bitmiş bina`, fair: fairRev, price: Math.round(fairRev * disc), story: sl.failed ? `${sl.name} iflas etti; bitmiş binasını tasfiye ediyor.` : `${sl.name} nakit sıkıştı ve bitmiş binasını acele satıyor.` };
+    const disc = sl.failed ? 0.72 + rand(s.rng, 'misc') * 0.12 : 0.84 + rand(s.rng, 'misc') * 0.11, fq = Math.round(fairRev * (1 + (base.qscore - 74) * 0.004)); // kalite puanı değeri etkiler
+    return { ...base, seller: sl.name, title: `${lbl} · bitmiş bina`, fair: fq, price: Math.round(fq * disc), story: sl.failed ? `${sl.name} iflas etti; bitmiş binasını tasfiye ediyor.` : `${sl.name} nakit sıkıştı ve bitmiş binasını acele satıyor.` };
   }
   if (kind === 'yarim') {
     const st = randInt(s.rng, 'misc', 7, 12), frac = STAGES.slice(1, st).reduce((a, x) => a + x.cost, 0) / 100, land = Math.round(fairValue(s, parcel) * 0.88);
-    const built = Math.round(plan.cost.total * frac), price = Math.round(built * (sl.failed ? 0.48 + rand(s.rng, 'misc') * 0.12 : 0.58 + rand(s.rng, 'misc') * 0.14)) + land;
+    const built = Math.round(plan.cost.total * frac), price = Math.round(built * (sl.failed ? 0.58 + rand(s.rng, 'misc') * 0.12 : 0.7 + rand(s.rng, 'misc') * 0.12)) + land;
     return { ...base, stage: st, seller: sl.name, title: `${lbl} · yarım inşaat`, fair: Math.round(fairValue(s, parcel) + built), price, story: `${sl.name} inşaatı ${STAGES[st]!.label} aşamasında bıraktı${sl.failed ? ' (iflas)' : ''}. Devralıp bitirirsen büyük kâr var, ama işi yarım kalmış ekibin devamı sende.` };
   }
   const fair = fairValue(s, parcel); parcel.oldBuilding = true;
@@ -109,10 +109,10 @@ export function acceptDeal(s: GameState, d: Deal, events: GameEvent[]): void {
   post(s, 'arsa', -d.price, { memo: `Devralma: ${d.title}` }); post(s, 'arsa', -harc, { memo: 'Tapu harcı' });
   s.parcels.push(pc); pc.projectId = id; s.projects.push(pr);
   if (d.kind === 'bina') {
-    pc.costBasis = 0; pr.status = 'tamamlandi'; pr.result = { qualityScore: d.qscore, cost: d.price + harc, days: 0, plannedDays: 0 }; pr.sales = defaultSales(); s.units.push(...generateUnits(s, pr));
+    pc.costBasis = 0; pr.status = 'tamamlandi'; pr.result = { qualityScore: d.qscore, cost: d.price + harc, days: 0, plannedDays: 0 }; pr.budget = { base: d.price + harc, soil: 0, soft: 0, total: d.price + harc, designFee: 0 }; pr.sales = defaultSales(); s.units.push(...generateUnits(s, pr));
   } else {
     pc.costBasis = d.price + harc; pr.budget.total = plan.cost.total - plan.cost.designFee; startConstruction(s, pr); const b = pr.build!;
-    b.stage = d.stage; b.stageStarted = false; const w = STAGES.slice(6, d.stage).reduce((a, x) => a + x.cost, 0); if (w > 0) { b.qualityW = w; b.qualitySum = w * d.qscore; }
+    b.stage = d.stage; b.stageStarted = false; pr.budget.total = b.stageBudget.slice(d.stage).reduce((a, x) => a + x, 0); const w = STAGES.slice(6, d.stage).reduce((a, x) => a + x.cost, 0); if (w > 0) { b.qualityW = w; b.qualitySum = w * d.qscore; }
   }
   events.push({ type: 'DEAL_DONE', day, data: { dealId: d.id, kind: d.kind, projectId: id } });
   void c;

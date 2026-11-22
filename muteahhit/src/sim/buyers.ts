@@ -2,7 +2,7 @@ import type { Money } from '../core/money';
 import { rand, randInt } from '../core/rng';
 import type { GameEvent, GameState, Offer, Project, Unit } from '../core/types';
 import { post } from './ledger';
-import { unitFair, listPrice, fairPerM2, unitsOf, closeSaleAt, quotePrice, paceOf } from './sales';
+import { unitFair, fairPerM2, unitsOf, closeSaleAt, quotePrice, paceOf } from './sales';
 
 /**
  * Alıcı ve kiracı teklifleri: satış artık otomatik kapanmaz. Her alıcı bir teklifle gelir; oyuncu kabul eder, karşı teklif verir ya da reddeder.
@@ -75,4 +75,3 @@ export function rentMonthly(s: GameState, events: GameEvent[]): void {
   }
 }
 export const monthlyRent = (s: GameState, projectId: number): Money => unitsOf(s, projectId).reduce((a, u) => a + (u.rent?.amount ?? 0), 0);
-void listPrice;

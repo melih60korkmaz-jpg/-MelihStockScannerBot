@@ -574,3 +574,8 @@ html[data-motion=reduced] .gneedle { transition:none; }
 .deal-card .acts { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; } .deal-card .acts .btn { min-height:38px; font-size:13px; }
 @media (max-width:560px) { .deal-card { flex-direction:column; } .deal-card .art { width:100%; max-height:150px; } }
 .deal-card .art .bphoto, .deal-card .art > svg { width:100%; } .deal-card .art.old .bphoto, .deal-card .art.old img { filter:grayscale(.75) sepia(.35) brightness(.8); }
+/* Satış merkezi / fırsat ilanları açıkken bildirimler içeriği örtmesin: alta ve daha küçük */
+body:has(.modal .sc) #moments { top:auto; bottom:calc(52px + var(--sb)); right:auto; left:50%; transform:translateX(-50%); max-width:min(380px,60vw); transform-origin:bottom center; }
+body:has(.modal .sc) #moments .momcard { padding:6px 10px; } body:has(.modal .sc) #moments .momcard .mute { display:none; }
+body:has(.modal .sc) #toasts { right:auto; left:50%; transform:translateX(-50%); bottom:calc(6px + var(--sb)); align-items:center; width:min(420px,60vw); }
+.deal-card .art { align-self:flex-start; aspect-ratio:4/3; }
