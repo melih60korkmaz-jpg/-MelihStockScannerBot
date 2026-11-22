@@ -175,6 +175,15 @@ export const GUIDE: Topic[] = [
     ],
   },
   {
+    id: 'firsat', ico: '📢', title: 'Fırsat ilanları', blocks: [
+      { p: 'Şirket › Yönetim › Fırsat ilanları ya da Projeler sekmesinin üstündeki düğme. Seviye 2\'den sonra her ay yeni ilanlar düşer; her ilan yaklaşık 75 gün açık kalır.' },
+      { h: 'İlan türleri' },
+      { ul: ['🏢 Bitmiş bina: rakip nakit sıkışınca (ya da iflas edince) indirimle satar. Devralırsan Satış merkezinde satar ya da kiraya verirsin.', '🏗️ Yarım kalmış inşaat (seviye 3): rakibin bıraktığı aşamadan devralırsın. Yapılmış işin kalitesi binanın kalitesine yansır; kalan işi sen bitirirsin.', '🏚️ Eski bina arsası: ucuz arsa, ama yıkım masrafı ve 21 günlük yıkım süresi vardır; yıkım bitmeden proje açılamaz.', '🤝 Kat karşılığı: arsa sahibi arsayı satmaz, yerine yeni binanın belli bir payını (%30–50) ister. Arsa bedeli ödemezsin, sadece yıkım masrafı sende. Bina bitince o paydaki daireler sahibine ait kalır ve gelire yazılmaz.'] },
+      { h: 'İpuçları' },
+      { ul: ['Tahmini kâr kabaca hesaplanır; yarım inşaatta ve kat karşılığında inşaat maliyeti ve zemin riski sende kalır.', 'Yarım inşaatı devralmadan önce ekibin ve makine parkın yeterli mi diye bak.'] },
+    ],
+  },
+  {
     id: 'borsa', ico: '📈', title: 'Borsa ve şirket satın alma', blocks: [
       { h: 'Halka arz (seviye 7)' },
       { ul: ['Şartlar: şirket seviyesi 7, net varlık en az 1 milyar ₺, itibar en az 55. Şirketin %10–25\'ini halka açarsın; fiyat adil değerin %92\'si, kaynağın %97\'si sana kalır.', 'Sahipliğin hiçbir zaman %60\'ın altına inemez (ortaklık ve yatırımcı satışları dahil).', 'Halka açık olunca her ay hisse fiyatı adil değere (net varlık × çarpan) yaklaşır; çarpan piyasa güveni, itibar ve büyümeyle artar. Fiyat halka arz fiyatının %30 üstündeyken itibar artar, %30 altındayken azalır.'] },

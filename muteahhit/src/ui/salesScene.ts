@@ -16,8 +16,8 @@ export function buyerInner(seed: number, profile: string): string {
 export const buyerSvg = (seed: number, profile: string, size = 40): string => `<svg viewBox="0 0 24 32" width="${size}" height="${Math.round(size * 1.33)}" aria-hidden="true">${buyerInner(seed, profile)}</svg>`;
 
 export interface SceneOpts { sel: number | null; seen: Set<number>; just: Set<number>; offers: Offer[] }
-const GLYPH: Record<string, string> = { satildi: '✓', kirada: '⌂', hold: '⛔', kapora: '◔' };
-export const unitState = (u: Unit): 'satildi' | 'kirada' | 'hold' | 'kapora' | 'bos' => (u.status === 'satildi' ? 'satildi' : u.rent ? 'kirada' : u.hold ? 'hold' : u.status === 'kapora' ? 'kapora' : 'bos');
+const GLYPH: Record<string, string> = { sahip: '◆', satildi: '✓', kirada: '⌂', hold: '⛔', kapora: '◔' };
+export const unitState = (u: Unit): 'sahip' | 'satildi' | 'kirada' | 'hold' | 'kapora' | 'bos' => (u.landlord ? 'sahip' : u.status === 'satildi' ? 'satildi' : u.rent ? 'kirada' : u.hold ? 'hold' : u.status === 'kapora' ? 'kapora' : 'bos');
 
 /**
  * Satış merkezi kesiti: katlar ve daireler gerçek `units` verisinden çizilir. Her daire durumuna göre renklenir (boş = ışıklı, satıldı = yeşil,

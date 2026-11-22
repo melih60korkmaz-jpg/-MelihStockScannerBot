@@ -13,6 +13,7 @@ import { monthlyCosts, netWorth } from './finance';
 import { checkProgress, progressMonthly, track } from './progress';
 import { rivalsMonthly } from './rivals';
 import { reportYearly } from './report';
+import { dealsMonthly } from './deals';
 import { boardMonthly, decorBonus } from './control';
 import { eventsDaily, eventsMonthly } from './events';
 import { tendersDaily, tendersMonthly } from './tenders';
@@ -78,6 +79,7 @@ function monthly(s: GameState, events: GameEvent[]): void {
   macroMonthly(s, events);
   rivalsMonthly(s, events);
   boardMonthly(s);
+  dealsMonthly(s, events);
   marketMonthly(s, events);
   materialsMonthly(s, events);
   moraleMonthly(s);

@@ -102,7 +102,7 @@ function closeSale(s: GameState, p: Project, u: Unit, events: GameEvent[], ov?: 
   if (payment === 'taksit') { const rest = price - down, each = Math.floor(rest / 12); for (let k = 1; k <= 12; k++) addReceivable(s, u, k === 12 ? rest - each * 11 : each, s.clock.day + 30 * k, 'taksit'); }
   if (payment === 'onsatis') addReceivable(s, u, price - down, 1e9, 'teslim'); // teslimde vadesi belirlenir
   if (pol.agent) { const fee = Math.round(price * AGENT_FEE); post(s, 'komisyon', -fee, { projectId: p.id, memo: 'Emlakçı komisyonu' }); pol.commission += fee; }
-  Object.assign(u, { status: 'satildi' as const, price, payment, soldDay: s.clock.day }); delete u.kaporaUntil; delete u.kaporaAmt; delete u.rent; delete u.listing;
+  Object.assign(u, { status: 'satildi' as const, price, payment, soldDay: s.clock.day, ...(!p.build ? { delivered: true, sat: 65 } : {}) }); delete u.kaporaUntil; delete u.kaporaAmt; delete u.rent; delete u.listing;
   pol.contract += price; pol.sold++; (pol.log ??= []).push({ d: s.clock.day, p: price, k: 's' }); if (pol.log.length > 80) pol.log.shift();
   events.push({ type: 'UNIT_SOLD', day: s.clock.day, data: { projectId: p.id, unitId: u.id, price, payment, ...(ov?.buyer ? { buyer: ov.buyer } : {}) } });
 }

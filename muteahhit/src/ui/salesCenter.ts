@@ -10,7 +10,7 @@ import type { App } from './app';
 
 const FACE: Record<string, string> = { K: 'Kuzey', G: 'Güney', D: 'Doğu', B: 'Batı' };
 const PAY: Record<string, string> = { pesin: 'Peşin', taksit: 'Taksit (12 ay)', onsatis: 'Ön satış' };
-const ST_LABEL: Record<string, string> = { bos: 'Boş', satildi: 'Satıldı', kirada: 'Kirada', hold: 'Rezerve', kapora: 'Kaporalı' };
+const ST_LABEL: Record<string, string> = { sahip: 'Arsa sahibi', bos: 'Boş', satildi: 'Satıldı', kirada: 'Kirada', hold: 'Rezerve', kapora: 'Kaporalı' };
 const TABS: [string, string][] = [['bina', '🏢 Bina'], ['teklif', '📨 Teklifler'], ['ilan', '📢 İlan'], ['daire', '📋 Daireler'], ['grafik', '📊 Grafik'], ['politika', '⚙️ Politika']];
 type Tab = 'bina' | 'teklif' | 'ilan' | 'daire' | 'grafik' | 'politika';
 
@@ -35,12 +35,12 @@ export function openSales(app: App, projectId: number, onClose?: () => void): vo
     const s = app.store.state, p = s.projects.find((x) => x.id === projectId);
     if (!p || !p.sales) { close(); return; }
     const pol = p.sales, us = unitsOf(s, p.id), perM2 = fairPerM2(s, p), offers = offersOf(s, p.id), ch = saleChance(s, p, pol);
-    const sold = us.filter((u) => u.status === 'satildi'), rented = us.filter((u) => u.rent), free = us.filter((u) => unitState(u) === 'bos');
+    const mine = us.filter((u) => !u.landlord), sold = us.filter((u) => u.status === 'satildi' && !u.landlord), rented = us.filter((u) => u.rent), free = us.filter((u) => unitState(u) === 'bos');
     const open = p.status === 'tamamlandi' || (p.status === 'insaat' && pol.presale && !!p.build && p.build.stage >= 8);
     scroll = card.querySelector('.scb')?.scrollTop ?? scroll; card.innerHTML = '';
-    card.append(h('div', { class: 'sch' }, h('h2', {}, `🏢 Satış merkezi · ${p.name}`), h('span', { class: 'sck-mini mute' }, `${sold.length}/${us.length} satıldı · ${free.length} boş · ${rented.length} kirada · ${fmt(monthlyRent(s, p.id))}/ay · ${offers.length} teklif`), h('button', { class: 'btn', style: 'margin-left:auto', onclick: () => { press(app); close(); } }, 'Kapat')));
+    card.append(h('div', { class: 'sch' }, h('h2', {}, `🏢 Satış merkezi · ${p.name}`), h('span', { class: 'sck-mini mute' }, `${sold.length}/${mine.length} satıldı · ${free.length} boş · ${rented.length} kirada · ${fmt(monthlyRent(s, p.id))}/ay · ${offers.length} teklif`), h('button', { class: 'btn', style: 'margin-left:auto', onclick: () => { press(app); close(); } }, 'Kapat')));
     const k = (l: string, v: string) => h('div', { class: 'kpi', html: `<small>${l}</small><b>${v}</b>` });
-    card.append(h('div', { class: 'sck' }, k('Satılan', `${sold.length}/${us.length}`), k('Boş', String(free.length)), k('Kirada', `${rented.length}`), k('Aylık kira', fmt(monthlyRent(s, p.id))), k('Bekleyen teklif', String(offers.length)), k('Sözleşme geliri', fmt(pol.contract)), k('Tahsil edilecek', fmt(receivablesTotal(s)))));
+    card.append(h('div', { class: 'sck' }, k('Satılan', `${sold.length}/${mine.length}`), k('Boş', String(free.length)), k('Kirada', `${rented.length}`), k('Aylık kira', fmt(monthlyRent(s, p.id))), k('Bekleyen teklif', String(offers.length)), k('Sözleşme geliri', fmt(pol.contract)), k('Tahsil edilecek', fmt(receivablesTotal(s)))));
     card.append(h('div', { class: 'sct' }, ...TABS.map(([id, label]) => h('button', { class: `btn${mem.tab === id ? ' on' : ''}`, onclick: () => { press(app); mem.tab = id as Tab; mem.counter = null; render(); } }, id === 'teklif' && offers.length ? `${label} (${offers.length})` : label))));
     const body = h('div', { class: 'scb' }); card.append(body);
     if (!open && !us.some((u) => u.status === 'satildi')) body.append(h('div', { class: 'card', style: 'margin-bottom:8px;padding:10px' }, h('b', {}, 'Satışa henüz açık değil. '), h('span', { class: 'mute' }, 'Bina bitince alıcılar gelmeye başlar; ön satışı Politika sekmesinden açarsanız betonarme aşamasından itibaren de gelirler.')));
@@ -50,7 +50,7 @@ export function openSales(app: App, projectId: number, onClose?: () => void): vo
       const scene = h('div', { class: 'sc-scene', html: sceneSvg(s, p, us, { sel: mem.sel, seen, just, offers }) });
       scene.addEventListener('click', (e) => { const g = (e.target as Element).closest('[data-u]'); if (g) { press(app); mem.sel = Number(g.getAttribute('data-u')); render(); } });
       scene.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && (e.target as Element).hasAttribute('data-u')) { mem.sel = Number((e.target as Element).getAttribute('data-u')); render(); } });
-      const legend = h('div', { class: 'sc-legend' }, ...([['#2a2e34', 'Boş'], ['#2ECC8F', 'Satıldı'], ['#3E7BFA', 'Kirada'], ['#6b7078', 'Rezerve'], ['#FF8C32', 'Teklif var']] as const).map(([c, t]) => h('span', { html: `<i style="background:${c}"></i>${t}` })));
+      const legend = h('div', { class: 'sc-legend' }, ...([['#2a2e34', 'Boş'], ['#2ECC8F', 'Satıldı'], ...(us.some((u) => u.landlord) ? [['#9b6bff', 'Arsa sahibi'] as const] : []), ['#3E7BFA', 'Kirada'], ['#6b7078', 'Rezerve'], ['#FF8C32', 'Teklif var']] as const).map(([c, t]) => h('span', { html: `<i style="background:${c}"></i>${t}` })));
       const left = h('div', {}, scene, legend), sel = us.find((u) => u.id === mem.sel);
       body.append(h('div', { class: 'sc-grid' }, left, sel ? unitPanel(sel) : overview()));
     }
@@ -88,7 +88,7 @@ export function openSales(app: App, projectId: number, onClose?: () => void): vo
     else if (mem.tab === 'daire') {
       const t = h('table', { class: 'tbl' }, h('tr', {}, ...['Kat', 'Oda', 'm²', 'Manzara', 'Cephe', 'Liste', 'Durum'].map((x) => h('th', {}, x))));
       for (const u of us) {
-        const st = unitState(u), cell = u.status === 'satildi' ? h('span', { class: 'pos-t' }, `${PAY[u.payment ?? 'pesin']} · ${fmt(u.price ?? 0)}`) : u.rent ? h('span', { style: 'color:#6ea0ff' }, `Kirada · ${fmt(u.rent.amount)}/ay`) : h('span', { class: st === 'hold' ? 'mute' : '' }, `${ST_LABEL[st]}${u.listing === 'kira' ? ' · kiralık' : ''}${offers.some((o) => o.unitId === u.id) ? ' · 📨' : ''}`);
+        const st = unitState(u), cell = u.landlord ? h('span', { style: 'color:#b79bff' }, 'Arsa sahibine ait') : u.status === 'satildi' ? h('span', { class: 'pos-t' }, `${PAY[u.payment ?? 'pesin']} · ${fmt(u.price ?? 0)}`) : u.rent ? h('span', { style: 'color:#6ea0ff' }, `Kirada · ${fmt(u.rent.amount)}/ay`) : h('span', { class: st === 'hold' ? 'mute' : '' }, `${ST_LABEL[st]}${u.listing === 'kira' ? ' · kiralık' : ''}${offers.some((o) => o.unitId === u.id) ? ' · 📨' : ''}`);
         const tr = h('tr', { style: 'cursor:pointer', onclick: () => { press(app); mem.sel = u.id; mem.tab = 'bina'; render(); } }, h('td', {}, String(u.floor)), h('td', {}, u.rooms), h('td', {}, nf(u.area, 0)), h('td', {}, String(u.view)), h('td', {}, FACE[u.facing]!), h('td', {}, fmt(listPrice(u, perM2, pol)) + (u.adj ? ` (${u.adj > 1 ? '+' : ''}${Math.round((u.adj - 1) * 100)}%)` : '')), h('td', {}, cell));
         t.append(tr);
       }
@@ -107,7 +107,7 @@ export function openSales(app: App, projectId: number, onClose?: () => void): vo
           return log.length ? countBars(months) : h('div', { class: 'empty' }, 'Henüz işlem yok.');
         })()),
       ), h('div', { class: 'cols', style: 'margin-top:10px' },
-        h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Daire durumu'), donut([{ label: 'Satıldı', value: sold.length }, { label: 'Kirada', value: rented.length }, { label: 'Boş', value: free.length }, { label: 'Rezerve', value: us.filter((u) => unitState(u) === 'hold').length }, { label: 'Kaporalı', value: us.filter((u) => u.status === 'kapora').length }], (n) => String(n))),
+        h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Daire durumu'), donut([{ label: 'Satıldı', value: sold.length }, { label: 'Arsa sahibi', value: us.filter((u) => u.landlord).length }, { label: 'Kirada', value: rented.length }, { label: 'Boş', value: free.length }, { label: 'Rezerve', value: us.filter((u) => unitState(u) === 'hold').length }, { label: 'Kaporalı', value: us.filter((u) => u.status === 'kapora').length }], (n) => String(n))),
         h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, 'Özet'), h('div', {}, ...([['Ortalama satış fiyatı', sold.length ? fmt(Math.round(sold.reduce((a, u) => a + (u.price ?? 0), 0) / sold.length)) : '—'], ['m² adil fiyat', fmtM2(perM2)], ['Aylık kira geliri', fmt(monthlyRent(s, p.id))], ['Kira getirisi', rented.length ? pct((monthlyRent(s, p.id) * 12) / Math.max(1, rented.reduce((a, u) => a + unitFair(u, perM2), 0)), 1) + ' / yıl' : '—'], ['Komisyon (emlakçı)', fmt(pol.commission)]] as [string, string][]).map(([a, b]) => h('div', { class: 'row', style: 'min-height:30px' }, h('div', { class: 'lbl' }, a), h('b', {}, b)))))));
     }
     // ---------- Politika ----------
@@ -147,6 +147,7 @@ export function openSales(app: App, projectId: number, onClose?: () => void): vo
       const box = h('div', { class: 'card sc-detail' },
         h('div', { style: 'display:flex;gap:8px;align-items:center' }, h('h3', { style: 'font-size:20px;flex:1' }, `${u.floor}. kat · ${u.rooms} · ${nf(u.area, 0)} m²`), h('span', { class: 'sc-chip' }, ST_LABEL[st]), h('button', { class: 'btn', style: 'min-height:32px;font-size:12px', onclick: () => { mem.sel = null; render(); } }, '✕')),
         h('div', { class: 'mute', style: 'font-size:12px;margin-bottom:6px' }, `Manzara ${u.view}/100 · ${FACE[u.facing]} cephe · adil değer ${fmt(unitFair(u, perM2))}`));
+      if (u.landlord) { box.append(h('div', { class: 'mute', style: 'font-size:13px;padding:6px 0' }, 'Kat karşılığı anlaşması gereği bu daire arsa sahibine ait: satılamaz, gelire yazılmaz.')); return box; }
       if (u.status === 'satildi') {
         box.append(h('div', { class: 'row' }, h('div', { class: 'lbl' }, 'Satış bedeli', h('small', {}, `${PAY[u.payment ?? 'pesin']} · ${formatDate(u.soldDay ?? 0)}`)), h('b', { class: 'pos-t' }, fmt(u.price ?? 0))), u.delivered ? h('div', { class: 'mute', style: 'font-size:12px' }, `Teslim edildi · memnuniyet ${u.sat ?? '-'}`) : h('span', {}));
         return box;

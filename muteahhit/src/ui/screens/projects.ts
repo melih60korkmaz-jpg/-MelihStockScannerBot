@@ -11,6 +11,8 @@ import { remainingDays } from '../../sim/construction';
 import { formatDate } from '../../core/calendar';
 import { openParcel } from './parcel';
 import { openManage } from '../manageUi';
+import { dealsOpen } from '../../sim/deals';
+import { openDeals } from '../dealsUi';
 import { openProjectWizard } from './projectWizard';
 import { openSales } from './sales';
 import { unitsOf } from '../../sim/sales';
@@ -18,7 +20,7 @@ import { unitsOf } from '../../sim/sales';
 /** Projeler sekmesi: taslak projeler ve sahip olunan arsalar. */
 export function projectsView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, parcels = ownedParcels(s);
-  const projs = h('div', {}); const lots = h('div', {});
+  const projs = h('div', {}); const lots = h('div', {}); projs.append(h('button', { class: dealsOpen(s).length ? 'btn gold' : 'btn', style: 'margin-bottom:8px', onclick: () => { press(app); openDeals(app, refresh); } }, `📢 Fırsat ilanları (${dealsOpen(s).length})`));
   if (!s.projects.length) projs.append(h('div', { class: 'card emptyfx' }, h('div', { html: emptyArt('proje') }), h('b', {}, 'Henüz projeniz yok'), h('span', { class: 'mute' }, 'Arsa dosyasından "Proje başlat" ile ilk projenizi oluşturun.'), h('button', { class: 'btn gold', onclick: () => app.openTab?.('harita') }, 'Haritaya git')));
   const STATUS: Record<string, [string, string]> = { taslak: ['Taslak', 'warn'], insaat: ['İnşaat', 'good'], tamamlandi: ['Teslim edildi', 'good'], satildi: ['Satıldı', ''] };
   for (const pr of s.projects) {
@@ -49,7 +51,7 @@ export function projectsView(app: App, refresh: () => void): HTMLElement {
   for (const p of parcels) {
     lots.append(h('div', { class: 'card pcard mine', role: 'button', tabindex: 0, onclick: () => { press(app); openParcel(app, p.id, refresh); } },
       h('div', { style: 'min-width:0' }, h('div', { class: 't' }, p.hood), h('div', { class: 's' }, `${cityData(p.city)?.label} · ${nf(p.area)} m² · ${ZONING_LABEL[p.zoning]} · maliyet ${fmt(p.costBasis ?? 0)}`),
-        h('div', { style: 'margin-top:4px;display:flex;gap:5px' }, p.projectId !== undefined ? h('span', { class: 'chip good' }, 'Projeli') : h('span', { class: 'chip warn' }, 'Boş arsa'), p.listed ? h('span', { class: 'chip' }, 'Satışta') : null)),
+        h('div', { style: 'margin-top:4px;display:flex;gap:5px' }, p.projectId !== undefined ? h('span', { class: 'chip good' }, 'Projeli') : h('span', { class: 'chip warn' }, 'Boş arsa'), (p.demolishUntil ?? 0) > s.clock.day ? h('span', { class: 'chip warn' }, `🏚️ yıkım ${p.demolishUntil! - s.clock.day} gün`) : null, p.kat ? h('span', { class: 'chip' }, `🤝 kat karşılığı %${Math.round(p.kat.share * 100)}`) : null, p.listed ? h('span', { class: 'chip' }, 'Satışta') : null)),
       h('div', { class: 'pr' }, fmt(fairValue(s, p)), h('small', {}, 'piyasa değeri')),
       p.projectId === undefined ? h('button', { class: 'btn gold', style: 'min-height:40px', onclick: (e: Event) => { e.stopPropagation(); press(app); openProjectWizard(app, p.id, refresh); } }, 'Proje başlat') : null));
   }

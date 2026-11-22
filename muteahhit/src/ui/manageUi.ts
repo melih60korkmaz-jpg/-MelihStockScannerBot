@@ -3,6 +3,8 @@ import { FOCI, MANAGER_TYPES, ORDERS, ORDER_DAYS, activeOrder, canChangeFocus, f
 import { traitOf } from '../sim/staff';
 import { staffType } from '../data';
 import { h, press, toast } from './dom';
+import { dealsOpen } from '../sim/deals';
+import { openDeals } from './dealsUi';
 import type { App } from './app';
 
 const modal = (label: string, card: HTMLElement): HTMLElement => {
@@ -46,7 +48,7 @@ export function openFocus(app: App): void {
 
 /** Karar günlüğü: verdiğiniz kararlar ve etkileri. */
 export function openDecisions(app: App): void {
-  const s = app.store.state, list = s.decisions ?? [], ICO: Record<string, string> = { odak: '🎯', emir: '🎛️', mudur: '👷', ofis: '🪑', kurul: '🏛️', olay: '📌' };
+  const s = app.store.state, list = s.decisions ?? [], ICO: Record<string, string> = { odak: '🎯', emir: '🎛️', mudur: '👷', ofis: '🪑', firsat: '📢', kurul: '🏛️', olay: '📌' };
   const card = h('div', { class: 'card helpcard' }, h('h2', {}, '📒 Karar günlüğü'), h('p', { class: 'mute', style: 'margin:0 0 6px' }, 'Verdiğiniz kararlar ve anlık etkileri (son 80).'),
     ...(list.length ? list.slice(0, 40).map((d) => h('div', { class: 'row', style: 'align-items:flex-start;padding:8px 0' }, h('span', { style: 'width:26px' }, ICO[d.kind] ?? '📌'), h('div', { class: 'lbl' }, d.title, h('small', {}, d.detail), h('small', { class: 'mute' }, formatDate(d.day))))) : [h('div', { class: 'empty' }, 'Henüz karar yok. Olaylar, kurul toplantıları ve emirleriniz burada birikir.')]));
   modal('Karar günlüğü', card);
@@ -57,5 +59,6 @@ export function mgmtCard(app: App): HTMLElement {
   const s = app.store.state, f = focusLabel(s), can = canChangeFocus(s), n = (s.decisions ?? []).length;
   return h('div', { class: 'card' },
     h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, `${f.ico} Yıllık odak: ${f.label}`, h('small', {}, can ? 'Bu yıl henüz seçmediniz' : f.desc)), h('button', { class: can ? 'btn gold' : 'btn', style: 'min-height:36px;font-size:12px', onclick: () => { press(app); openFocus(app); } }, can ? 'Seç' : 'Gör')),
+    h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, '📢 Fırsat ilanları', h('small', {}, s.company!.level >= 2 ? `${dealsOpen(s).length} açık fırsat: rakip binaları, eski bina arsaları, kat karşılığı` : 'Seviye 2\'de başlar')), h('button', { class: dealsOpen(s).length ? 'btn gold' : 'btn', style: 'min-height:36px;font-size:12px', onclick: () => { press(app); openDeals(app); } }, 'Aç')),
     h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, '🏛️ Yönetim kurulu', h('small', {}, s.company!.level >= 2 ? `Sonraki toplantı: ${nextBoardMonth(s)}` : 'Seviye 2\'de başlar')), h('button', { class: 'btn', style: 'min-height:36px;font-size:12px', onclick: () => { press(app); openDecisions(app); } }, `📒 Günlük (${n})`)));
 }

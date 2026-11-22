@@ -55,7 +55,7 @@ export function planProject(s: GameState, p: Parcel, typeId: string, qualityId: 
   const housing = s.cityMarket[p.city]?.housingIndex ?? 1;
   const fit = qualityFit(qualityId, d.income);
   const salePerM2 = Math.round(TL(refSale(d, t.use === 'konut' ? 'konut' : t.use === 'ticari' ? 'ticaret' : 'sanayi')) * t.saleMult * q.saleMult * fit * housing);
-  const revMid = Math.round(satilabilir * salePerM2);
+  const revMid = Math.round(satilabilir * salePerM2 * (1 - (p.kat?.share ?? 0))); // kat karşılığında arsa sahibinin payı düşer
   const band = 0.08 + (s.macro.regime === 'kriz' ? 0.12 : s.macro.regime === 'daralma' || s.macro.regime === 'asiri_isinma' ? 0.04 : 0);
   const land = landCost ?? Math.round(askPrice(s, p) * (1 + TAPU_HARCI));
   const commission = Math.round(revMid * COMMISSION);

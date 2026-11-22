@@ -1,4 +1,5 @@
 import { projectMods } from './control';
+import { markLandlord } from './deals';
 import { traitEff, traitOf } from './staff';
 import { dateOf } from '../core/calendar';
 import { gauss, rand, randInt } from '../core/rng';
@@ -69,7 +70,7 @@ export function startConstruction(s: GameState, p: Project): GameEvent[] {
     priceBase: { mat: s.macro.materialIndex, cost: s.costIndex }, spent: 0, unpaid: 0, unpaidParts: { malzeme: 0, insaat: 0, makine: 0 },
     qualitySum: 0, qualityW: 0, stalled: null, stalledDays: 0, soilExtra: 0,
   };
-  s.weather[p.cityId] ??= 'acik'; p.status = 'insaat'; p.build = b; p.sales = defaultSales(); if (!p.contract) s.units.push(...generateUnits(s, p));
+  s.weather[p.cityId] ??= 'acik'; p.status = 'insaat'; p.build = b; p.sales = defaultSales(); if (!p.contract) { s.units.push(...generateUnits(s, p)); markLandlord(s, p, parcel); }
   return [{ type: 'PROJECT_STARTED', day: s.clock.day, data: { projectId: p.id } }];
 }
 

@@ -2,6 +2,7 @@ import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { dateOf } from './calendar';
+import { KIND_LABEL, acceptDeal, dealError } from '../sim/deals';
 import { acceptOffer } from '../sim/buyers';
 import { post } from '../sim/ledger';
 import { checkProgress, officeStepFor, track } from '../sim/progress';
@@ -180,6 +181,7 @@ const createProject: CommandDef<CreateProjectParams> = {
   validate(s, p) {
     const pc = parcelOf(s, p.parcelId); if (!s.company) return 'Önce şirket kurulmalı.'; if (!pc || pc.owner !== 'player') return 'Önce arsayı satın almalısınız.';
     if (pc.projectId !== undefined) return 'Bu arsada zaten bir proje var.';
+    if ((pc.demolishUntil ?? 0) > s.clock.day) return `Eski bina yıkılıyor: ${pc.demolishUntil! - s.clock.day} gün sonra proje başlatabilirsiniz.`;
     if (!buildingType(p.type)) return 'Geçersiz yapı tipi.'; if (!quality(p.quality)) return 'Geçersiz kalite.';
     const plan = planProject(s, pc, p.type, p.quality, pc.costBasis);
     if (!plan.ok) return plan.reason ?? 'Bu arsada bu proje yapılamaz.';
@@ -420,7 +422,17 @@ const promoteUnitCmd: CommandDef<{ unitId: number }> = {
   apply(s, p) { const u = s.units.find((x) => x.id === p.unitId)!, pr = s.projects.find((x) => x.id === u.projectId)!, c = promoCost(s, pr, u); post(s, 'reklam', -c, { projectId: pr.id, memo: `${pr.name}: öne çıkan ilan` }); u.promo = s.clock.day + 30; return [ev(s, 'UNIT_SET', { unitId: u.id })]; },
 };
 
+const acceptDealCmd: CommandDef<{ dealId: number }> = {
+  validate: (s, p) => dealError(s, p.dealId),
+  apply(s, p) { const d = s.deals!.find((x) => x.id === p.dealId)!, evs: GameEvent[] = []; logDecision(s, 'firsat', `${KIND_LABEL[d.kind]}: ${d.title}`, d.kind === 'kat' ? `Kat karşılığı (%${Math.round(d.share * 100)} arsa sahibine)` : `Bedel ${(d.price / 100 / 1e6).toFixed(2).replace('.', ',')} M₺`); acceptDeal(s, d, evs); return evs; },
+};
+const declineDealCmd: CommandDef<{ dealId: number }> = {
+  validate: (s, p) => ((s.deals ?? []).some((x) => x.id === p.dealId) ? null : 'Bu fırsat artık yok.'),
+  apply(s, p) { s.deals = s.deals!.filter((x) => x.id !== p.dealId); return [ev(s, 'DEAL_LOST', { dealId: p.dealId })]; },
+};
+
 export const COMMANDS = {
+  AcceptDeal: acceptDealCmd, DeclineDeal: declineDealCmd,
   SetPace: setPaceCmd, PromoteUnit: promoteUnitCmd,
   AcceptOffer: acceptOfferCmd, CounterOffer: counterOfferCmd, RejectOffer: rejectOfferCmd, SetUnit: setUnitCmd, SetAutoSell: setAutoSellCmd, EndRent: endRentCmd,
   SetFocus: setFocusCmd, IssueOrder: issueOrderCmd, SetManager: setManagerCmd, BuyDecor: buyDecorCmd,

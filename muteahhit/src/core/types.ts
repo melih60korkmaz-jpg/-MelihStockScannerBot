@@ -70,6 +70,8 @@ export interface Parcel {
   negoLockUntil: number; lastOffer?: number;
   owner: 'market' | 'player';
   boughtDay?: number; costBasis?: Money;
+  /** Fırsat ilanlarından gelen arsalar (eski kayıtlarda yok): eski bina (yıkım bitene dek proje açılamaz) ve kat karşılığı pay oranı. */
+  oldBuilding?: boolean; demolishUntil?: number; kat?: { share: number; owner: string };
   clientLand?: boolean;                     // ihale sahası: işveren arsası, şirketin malı değil
   listed?: { askMult: number; day: number } // oyuncu satışa koyduysa
   projectId?: number;
@@ -162,7 +164,12 @@ export interface Unit {
   kaporaUntil?: number; kaporaAmt?: Money;
   delivered?: boolean; sat?: number; warrantyUntil?: number;
   /** Daire bazlı kontrol (eski kayıtlarda yok): özel fiyat çarpanı, rezerve, kiralık ilan, aktif kira sözleşmesi. */
-  adj?: number; promo?: number; hold?: boolean; listing?: 'kira'; rent?: { amount: Money; tenant: string; since: number; seed: number };
+  adj?: number; promo?: number; landlord?: boolean; hold?: boolean; listing?: 'kira'; rent?: { amount: Money; tenant: string; since: number; seed: number };
+}
+/** Fırsat ilanı: rakipten bina/yarım proje, eski bina arsası ya da kat karşılığı teklifi. `parcel` kabul edilene kadar pazarda değildir. */
+export interface Deal {
+  id: number; kind: 'bina' | 'yarim' | 'eski' | 'kat'; city: string; seller: string; title: string; story: string; day: number; until: number;
+  price: Money; demo: Money; share: number; type: string; quality: string; qscore: number; stage: number; fair: Money; parcel: Parcel;
 }
 /** Alıcı/kiracı teklifi: oyuncu kabul eder, karşı teklif verir ya da reddeder. `maxRatio` alıcının gizli tavanıdır. */
 export interface Offer {
@@ -229,6 +236,7 @@ export interface GameState {
   reports?: YearReport[];
   decisions?: Decision[];
   offers?: Offer[];
+  deals?: Deal[];
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;
   /** Malzeme fiyat geçmişi (aylık etkin çarpan; en çok 36 ay). Eski kayıtlarda yoktur. */
