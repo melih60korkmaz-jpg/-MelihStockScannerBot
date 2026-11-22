@@ -36,7 +36,7 @@ describe('rakip firmalar', () => {
 describe('olay kataloğu', () => {
   it('en az 40 olay; kimlikler benzersiz; her seçim geçerli ve etkileri tanımlı', () => {
     expect(EVENTS.length).toBeGreaterThanOrEqual(70); expect(new Set(EVENTS.map((e) => e.id)).size).toBe(EVENTS.length);
-    const kinds = new Set(['cash', 'rep', 'score', 'morale', 'sat', 'housing', 'land', 'mat', 'stall', 'leave', 'rate', 'machine', 'rival', 'tmorale', 'traise', 'tleave']);
+    const kinds = new Set(['cash', 'rep', 'score', 'morale', 'sat', 'housing', 'land', 'mat', 'stall', 'leave', 'rate', 'machine', 'rival', 'tmorale', 'traise', 'tleave', 'rrel', 'landsale']);
     for (const e of EVENTS) { expect(e.ch.length).toBeGreaterThanOrEqual(1); expect(e.w).toBeGreaterThan(0); for (const c of e.ch) for (const x of [...c.e, ...(c.s ?? []), ...(c.f ?? [])]) expect(kinds.has(x[0] as string)).toBe(true); if (e.def !== undefined) expect(e.ch[e.def]).toBeDefined(); }
   });
   it('olay çıkar ve oyunu duraklatır; karar uygulanır; kasa tutarlı', () => {

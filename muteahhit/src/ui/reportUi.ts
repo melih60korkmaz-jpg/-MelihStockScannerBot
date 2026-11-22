@@ -1,11 +1,11 @@
 import { cityData, ledgerCat } from '../data';
-import { rivalProfile, rivalWorth, standing } from '../sim/rivalLife';
+import { PROPOSALS, relLabel, relOf, rivalProfile, rivalWorth, standing } from '../sim/rivalLife';
 import { STYLE_LABEL } from '../sim/rivals';
 import type { Rival } from '../core/types';
 import { canChangeFocus } from '../sim/control';
 import { openFocus } from './manageUi';
 import { fmt } from './components';
-import { h } from './dom';
+import { h, toast } from './dom';
 import { emblemSvg } from './emblem';
 import type { App } from './app';
 
@@ -23,9 +23,10 @@ export function openRival(app: App, r: Rival): void {
   openModal(r.name, h('div', { class: 'card helpcard' },
     h('div', { style: 'display:flex;gap:12px;align-items:center' }, h('div', { html: emblemSvg(p.shape, p.color, 64) }), h('div', {}, h('h2', { style: 'margin:0' }, r.name), h('div', { class: 'mute', style: 'font-size:13px' }, `${p.owner} · ${cityData(r.home)?.label ?? r.home}`))),
     h('p', { style: 'font-style:italic;margin:10px 0 4px' }, `“${p.motto}”`), h('p', { class: 'mute', style: 'margin:0 0 8px;font-size:13px' }, p.story),
-    stat('Tarz', STYLE_LABEL[r.style]), stat('İtibar', String(Math.round(r.rep))), stat('Teknik güç', String(Math.round(r.tech))), stat('Aktif proje', String(r.projects)), stat('Kazandığı ihale', String(r.wins)),
+    stat('Tarz', STYLE_LABEL[r.style]), stat('İlişki', `${relLabel(r)} (${relOf(r) > 0 ? '+' : ''}${relOf(r)})`), stat('İtibar', String(Math.round(r.rep))), stat('Teknik güç', String(Math.round(r.tech))), stat('Aktif proje', String(r.projects)), stat('Kazandığı ihale', String(r.wins)),
     r.failed ? null : stat('Tahmini değer', fmt(rivalWorth(r))), r.failed ? null : stat('Sektör sırası', `${pos}. / ${st.total}`),
-    h('div', { class: 'mute', style: 'font-size:12px;margin-top:6px' }, p.status)));
+    h('div', { class: 'mute', style: 'font-size:12px;margin-top:6px' }, p.status),
+    r.failed || r.last === 'satin_alindi' ? null : h('div', { style: 'margin-top:8px' }, h('div', { class: 'lbl-s' }, 'İş birliği ve pazarlık'), ...Object.entries(PROPOSALS).map(([k, pr]) => h('button', { class: 'btn choice', style: 'display:block;width:100%;text-align:left;margin-top:6px;padding:8px 12px;height:auto', onclick: () => { const res = app.store.run('ProposeToRival', { rivalId: r.id, kind: k }); if (res.ok) { app.audio.sfx('confirm'); toast(`${r.name} ile görüşme başladı: yanıt birkaç gün içinde gelir`, 3200); document.querySelector('.modal[aria-label="' + r.name + '"]')?.remove(); } else { app.audio.sfx('error'); toast(res.error); } } }, h('b', {}, `${pr.ico} ${pr.label}`), h('div', { class: 'mute', style: 'font-size:12px' }, pr.desc))))));
 }
 
 /** Yıllık rapor penceresi: seçili yıl (varsayılan en yeni) ve önceki yıllar için sekmeler. */

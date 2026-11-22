@@ -8,7 +8,7 @@ import { h, press } from '../dom';
 import { fmt } from '../components';
 import { emblemSvg } from '../emblem';
 import { openRival, openYearReport } from '../reportUi';
-import { rivalProfile, standing } from '../../sim/rivalLife';
+import { relLabel, rivalProfile, standing } from '../../sim/rivalLife';
 import type { App } from '../app';
 
 const mem = { mat: 'demir' };
@@ -50,7 +50,7 @@ export function marketView(app: App, refresh: () => void): HTMLElement {
     ...st.list.slice(0, 8).map((x, i) => { const r = x.me ? null : s.rivals.find((q) => q.id === x.id)!; const p = r ? rivalProfile(s, r) : null;
       return h('div', { class: 'row', style: `min-height:46px;${r ? 'cursor:pointer' : 'background:rgba(240,120,36,.12)'}`, onclick: r ? () => openRival(app, r) : undefined },
         h('span', { style: 'width:22px;text-align:center;font-weight:700' }, String(i + 1)), h('span', { html: x.me ? emblemSvg(c.emblem.shape, c.emblem.color, 30) : emblemSvg(p!.shape, p!.color, 30) }),
-        h('div', { class: 'lbl' }, x.me ? `⭐ ${x.name}` : x.name, h('small', {}, x.me ? 'siz' : `${p!.owner} · ${STYLE_LABEL[r!.style]}${r!.last ? ' · ' + (r!.last === 'ihale' ? 'ihale kazandı' : r!.last) : ''}`)), h('b', {}, fmt(x.worth))); }),
+        h('div', { class: 'lbl' }, x.me ? `⭐ ${x.name}` : x.name, h('small', {}, x.me ? 'siz' : `${p!.owner} · ${STYLE_LABEL[r!.style]} · ${relLabel(r!)}${r!.last ? ' · ' + (r!.last === 'ihale' ? 'ihale kazandı' : r!.last) : ''}`)), h('b', {}, fmt(x.worth))); }),
     h('div', { class: 'mute', style: 'font-size:12px;margin-top:6px' }, 'Bir rakibe dokunun: sahibi, hikâyesi ve gücü.'));
   const news = h('div', { class: 'card' }, h('div', { class: 'lbl-s' }, `${EMOJI.haber} Ekonomi haberleri`), ...(s.news.length ? s.news.slice(0, 10).map((n) => h('div', { class: `ncard ${n.tone}` }, h('span', { class: 'nem' }, newsEmoji(n.text, n.tone)), h('div', {}, h('small', { class: 'mute' }, formatDate(n.day)), h('div', {}, n.text)))) : [h('div', { class: 'empty' }, 'Henüz haber yok. Piyasa değişimleri burada duyurulur.')]));
   return h('div', { style: 'display:flex;flex-direction:column;gap:12px' }, regime, metrics, h('div', { class: 'cols' }, housing, mats), board, h('div', { class: 'cols' }, rivals, news));

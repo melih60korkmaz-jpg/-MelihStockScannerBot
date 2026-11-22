@@ -65,7 +65,7 @@ function rivalFails(s: GameState, r: Rival, events: GameEvent[]): void {
 /** İhalelerde rakip havuzu: yaşayan rakipler (kalıcı kimlik, itibar ve teknik güç). */
 export function tenderRivals(s: GameState, n: number, ref: Money): { name: string; price: Money; tech: number; rep: number }[] {
   const pool = [...aliveRivals(s)]; const out: { name: string; price: Money; tech: number; rep: number }[] = [];
-  while (out.length < n && pool.length) { const r = pool.splice(randInt(s.rng, 'rivals', 0, pool.length - 1), 1)[0]!; const aggr = r.style === 'agresif' ? 0.04 : r.style === 'temkinli' ? -0.03 : 0; out.push({ name: r.name, price: Math.round(ref * clamp(0.93 - aggr + (rand(s.rng, 'rivals') - 0.5) * 0.14, 0.82, 1.0)), tech: r.tech, rep: r.rep }); }
+  while (out.length < n && pool.length) { const r = pool.splice(randInt(s.rng, 'rivals', 0, pool.length - 1), 1)[0]!; const aggr = (r.style === 'agresif' ? 0.04 : r.style === 'temkinli' ? -0.03 : 0) - ((r.rel ?? 0) >= 30 ? 0.03 : (r.rel ?? 0) <= -30 ? -0.03 : 0); out.push({ name: r.name, price: Math.round(ref * clamp(0.93 - aggr + (rand(s.rng, 'rivals') - 0.5) * 0.14, 0.82, 1.0)), tech: r.tech, rep: r.rep }); }
   return out;
 }
 /** Satış rekabeti: bölgedeki rakip arzı satış şansını azaltır (0.85–1). */

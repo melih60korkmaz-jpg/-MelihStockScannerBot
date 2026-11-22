@@ -99,7 +99,7 @@ export interface InfraJob {
   startDay: number; deadline: number; months: number; progress: number; spent: Money; doneShare: number; pending: { day: number; amount: Money }[];
   status: 'devam' | 'bitti'; stalled: 'nakit' | 'kapasite' | null; bondReturned?: boolean; result?: { profit: Money; late: number; day: number };
 }
-export interface Rival { id: number; name: string; style: 'agresif' | 'dengeli' | 'temkinli'; home: string; cash: Money; rep: number; tech: number; projects: number; wins: number; failed: boolean; since: number; last?: string }
+export interface Rival { rel?: number; asked?: number; id: number; name: string; style: 'agresif' | 'dengeli' | 'temkinli'; home: string; cash: Money; rep: number; tech: number; projects: number; wins: number; failed: boolean; since: number; last?: string }
 /** Yıllık rapor (isteğe bağlı dizi; eski kayıtlarda yok). */
 export interface YearReport {
   year: number; revenue: Money; expense: Money; profit: Money; netWorth: Money; netWorthChange: Money | null; cash: Money;
@@ -109,9 +109,9 @@ export interface YearReport {
 /** Karar günlüğü kaydı. */
 export interface Decision { day: number; kind: string; title: string; detail: string }
 export interface Progress { ach: Record<string, number>; quests: Record<string, number>; c: { loans: number; tendersWon: number; bids: number; events: number; unitsSold: number; started: number; bestQuality: number; crisisMonths: number; investors: number; equitySold: number } }
-export interface PendingEvent { id: string; day: number; projectId?: number; city?: string; staffId?: number }
+export interface PendingEvent { rivalId?: number; id: string; day: number; projectId?: number; city?: string; staffId?: number }
 /** Hikâye zinciri: seçimden N gün sonra çıkacak devam olayı (isteğe bağlı alan; eski kayıtlarda yok). */
-export interface QueuedEvent { id: string; day: number; projectId?: number; city?: string; staffId?: number }
+export interface QueuedEvent { rivalId?: number; id: string; day: number; projectId?: number; city?: string; staffId?: number }
 export interface BuildState {
   stage: number;               // STAGES indeksi (1–17); 18 = bitti
   progress: number;            // aşama ilerlemesi 0–1

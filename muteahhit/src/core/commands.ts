@@ -2,6 +2,7 @@ import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { dateOf } from './calendar';
+import { PROPOSALS } from '../sim/rivalLife';
 import { KIND_LABEL, acceptDeal, dealError } from '../sim/deals';
 import { acceptOffer } from '../sim/buyers';
 import { post } from '../sim/ledger';
@@ -431,7 +432,19 @@ const declineDealCmd: CommandDef<{ dealId: number }> = {
   apply(s, p) { s.deals = s.deals!.filter((x) => x.id !== p.dealId); return [ev(s, 'DEAL_LOST', { dealId: p.dealId })]; },
 };
 
+const proposeCmd: CommandDef<{ rivalId: number; kind: string }> = {
+  validate(s, p) {
+    const r = s.rivals.find((x) => x.id === p.rivalId), pr = PROPOSALS[p.kind]; if (!r || r.failed || r.last === 'satin_alindi') return 'Bu firma artık faaliyette değil.'; if (!pr) return 'Geçersiz teklif.';
+    if ((r.rel ?? 0) <= -30) return `${r.name} sizinle görüşmek istemiyor (ilişki düşük).`; if (s.clock.day - (r.asked ?? -999) < 90) return 'Bu firmayla yakın zamanda görüştünüz; 90 gün bekleyin.';
+    if ((s.evtQueue ?? []).some((x) => x.rivalId === r.id) || s.pending?.rivalId === r.id) return 'Bu firmayla görüşme sürüyor.';
+    if (p.kind === 'arsa' && !s.parcels.some((x) => x.owner === 'player' && !x.clientLand && x.projectId === undefined && !x.demolishUntil)) return 'Satılacak boş arsanız yok.';
+    if (p.kind === 'makine' && !s.machines.length) return 'Kiralanacak makineniz yok.'; return null;
+  },
+  apply(s, p) { const r = s.rivals.find((x) => x.id === p.rivalId)!, pr = PROPOSALS[p.kind]!; r.asked = s.clock.day; (s.evtQueue ??= []).push({ id: pr.ev, day: s.clock.day + 3, rivalId: r.id }); logDecision(s, 'firsat', `${r.name}: ${pr.label}`, 'Görüşme başlatıldı; yanıt birkaç gün içinde gelir.'); return [ev(s, 'PROPOSED', { rivalId: r.id, kind: p.kind })]; },
+};
+
 export const COMMANDS = {
+  ProposeToRival: proposeCmd,
   AcceptDeal: acceptDealCmd, DeclineDeal: declineDealCmd,
   SetPace: setPaceCmd, PromoteUnit: promoteUnitCmd,
   AcceptOffer: acceptOfferCmd, CounterOffer: counterOfferCmd, RejectOffer: rejectOfferCmd, SetUnit: setUnitCmd, SetAutoSell: setAutoSellCmd, EndRent: endRentCmd,

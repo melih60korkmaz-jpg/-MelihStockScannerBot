@@ -41,3 +41,13 @@ export function standing(s: GameState): { rank: number; total: number; list: { n
   const list = [me, ...s.rivals.filter((r) => !r.failed && r.last !== 'satin_alindi').map((r) => ({ id: r.id, name: r.name, worth: rivalWorth(r), me: false }))].sort((a, b) => b.worth - a.worth);
   return { rank: list.findIndex((x) => x.me) + 1, total: list.length, list };
 }
+
+/** Rakiple ilişki (-100…100): ≥30 dost, ≤-30 düşman. Dost rakip ihalede fiyatı yüksek tutar, düşman kırar. */
+export const relOf = (r: Rival): number => r.rel ?? 0;
+export const relLabel = (r: Rival): string => { const v = relOf(r); return v >= 60 ? 'Müttefik' : v >= 30 ? 'Dost' : v > -30 ? 'Tarafsız' : v > -60 ? 'Soğuk' : 'Düşman'; };
+export const PROPOSALS: Record<string, { ev: string; label: string; ico: string; desc: string }> = {
+  ortak: { ev: 'rv_ortak', label: 'Ortak girişim öner', ico: '🤝', desc: 'Sermaye ve işi paylaşın; kâr olursa bölüşülür.' },
+  konsorsiyum: { ev: 'rv_konsorsiyum', label: 'Ortak ihale öner', ico: '📑', desc: 'Büyük bir ihaleye birlikte girin.' },
+  makine: { ev: 'rv_makine', label: 'Makine kirala', ico: '🚜', desc: 'Makine parkından bir makineyi kiralayın.' },
+  arsa: { ev: 'rv_arsa', label: 'Arsa sat', ico: '📍', desc: 'Boş bir arsanızı bu firmaya satmayı deneyin.' },
+};

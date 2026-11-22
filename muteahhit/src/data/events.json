@@ -3384,5 +3384,494 @@
     "e": []
    }
   ]
+ },
+ {
+  "id": "rv_ortak",
+  "c": "rakip",
+  "t": "{rakip} ortak proje öneriyor",
+  "x": "{rakip} sizinle ortak girişim kurmak istiyor: sermayeyi ve işi paylaşacaksınız. Kâr olursa bölüşülür, ama ortaklık her zaman iyi bitmez.",
+  "w": 2,
+  "need": [
+   "rivals",
+   "month:3"
+  ],
+  "ch": [
+   {
+    "l": "Ortak girişim kur",
+    "e": [
+     [
+      "cash",
+      -1000000
+     ],
+     [
+      "rrel",
+      20
+     ]
+    ],
+    "n": [
+     "rv_ortak_son",
+     120
+    ]
+   },
+   {
+    "l": "Nazikçe reddet",
+    "e": [
+     [
+      "rrel",
+      -3
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "rv_ortak_son",
+  "c": "rakip",
+  "t": "Ortaklık sonuçlandı: {rakip}",
+  "x": "{rakip} ile kurduğunuz ortak girişimin hesapları görüşülüyor. Sonuç, işin nasıl gittiğine ve iki tarafın iyi niyetine bağlı.",
+  "w": 1,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Hesapları kapat, payını al",
+    "e": [],
+    "p": 0.65,
+    "s": [
+     [
+      "cash",
+      4500000
+     ],
+     [
+      "rep",
+      2
+     ],
+     [
+      "rrel",
+      10
+     ]
+    ],
+    "f": [
+     [
+      "cash",
+      -1500000
+     ],
+     [
+      "rrel",
+      -15
+     ]
+    ]
+   },
+   {
+    "l": "Ortaklığı sessizce bitir",
+    "e": [
+     [
+      "cash",
+      500000
+     ],
+     [
+      "rrel",
+      -8
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "rv_ihale",
+  "c": "rakip",
+  "t": "{rakip} ihale konusunda anlaşma öneriyor",
+  "x": "{rakip} bir sonraki ihalede birbirinize rakip olmamayı, fiyatları yüksek tutmayı öneriyor. Kâğıt üstünde kimse bilmez; ama rekabet kurumu bu tür anlaşmalara göz açtırmaz.",
+  "w": 2,
+  "need": [
+   "rivals",
+   "month:6"
+  ],
+  "ch": [
+   {
+    "l": "Anlaşmayı kabul et (riskli)",
+    "e": [],
+    "p": 0.7,
+    "s": [
+     [
+      "cash",
+      6000000
+     ],
+     [
+      "rrel",
+      15
+     ]
+    ],
+    "f": [
+     [
+      "cash",
+      -8000000
+     ],
+     [
+      "rep",
+      -10
+     ],
+     [
+      "score",
+      -40
+     ],
+     [
+      "rrel",
+      -20
+     ]
+    ],
+    "nf": [
+     "rv_sorusturma",
+     30
+    ]
+   },
+   {
+    "l": "Reddet ve temiz kal",
+    "e": [
+     [
+      "rep",
+      1
+     ],
+     [
+      "rrel",
+      -5
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "rv_sorusturma",
+  "c": "rakip",
+  "t": "Rekabet kurumu soruşturması",
+  "x": "Anlaşma ortaya çıktı: rekabet kurumu {rakip} ile aranızdaki görüşmeleri soruşturuyor.",
+  "w": 1,
+  "need": [
+   "chain"
+  ],
+  "ch": [
+   {
+    "l": "Avukat tut ve savun",
+    "e": [
+     [
+      "cash",
+      -2000000
+     ]
+    ],
+    "p": 0.55,
+    "s": [
+     [
+      "rep",
+      3
+     ]
+    ],
+    "f": [
+     [
+      "cash",
+      -5000000
+     ],
+     [
+      "rep",
+      -5
+     ]
+    ]
+   },
+   {
+    "l": "Suçu kabul et, cezayı öde",
+    "e": [
+     [
+      "cash",
+      -4000000
+     ],
+     [
+      "rep",
+      -3
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "rv_arsa",
+  "c": "rakip",
+  "t": "{rakip} arsanıza talip",
+  "x": "{rakip}, elinizdeki boş bir arsa için piyasa değerinin %12 üstünü veriyor. Pazarlık etmek de mümkün; ama fazla zorlarsanız vazgeçebilir.",
+  "w": 2,
+  "need": [
+   "rivals",
+   "idleland"
+  ],
+  "ch": [
+   {
+    "l": "Teklifi kabul et (%12 prim)",
+    "e": [
+     [
+      "landsale",
+      12
+     ],
+     [
+      "rrel",
+      5
+     ]
+    ]
+   },
+   {
+    "l": "Pazarlık et (%28 iste)",
+    "e": [],
+    "p": 0.45,
+    "s": [
+     [
+      "landsale",
+      28
+     ],
+     [
+      "rrel",
+      5
+     ]
+    ],
+    "f": [
+     [
+      "rrel",
+      -10
+     ]
+    ]
+   },
+   {
+    "l": "Arsayı satma",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "rv_makine",
+  "c": "rakip",
+  "t": "{rakip} makinenizi kiralamak istiyor",
+  "x": "{rakip}'ın makinesi arızalandı; sizin makine parkınızdan bir iş makinesini birkaç haftalığına kiralamak istiyor.",
+  "w": 2,
+  "need": [
+   "rivals",
+   "machines>0"
+  ],
+  "ch": [
+   {
+    "l": "Kirala",
+    "e": [],
+    "p": 0.85,
+    "s": [
+     [
+      "cash",
+      700000
+     ],
+     [
+      "rrel",
+      8
+     ]
+    ],
+    "f": [
+     [
+      "cash",
+      -400000
+     ],
+     [
+      "rrel",
+      -5
+     ]
+    ]
+   },
+   {
+    "l": "Reddet",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "rv_konsorsiyum",
+  "c": "rakip",
+  "t": "{rakip} ile ortak ihale",
+  "x": "{rakip}, büyük bir ihaleye birlikte girmeyi öneriyor: iki firmanın referansı ve kapasitesi birleşirse kazanma şansı yükselir.",
+  "w": 2,
+  "need": [
+   "rivals",
+   "month:6"
+  ],
+  "ch": [
+   {
+    "l": "Konsorsiyum kur",
+    "e": [],
+    "p": 0.5,
+    "s": [
+     [
+      "cash",
+      9000000
+     ],
+     [
+      "rep",
+      3
+     ],
+     [
+      "rrel",
+      15
+     ]
+    ],
+    "f": [
+     [
+      "cash",
+      -2000000
+     ],
+     [
+      "rrel",
+      -5
+     ]
+    ]
+   },
+   {
+    "l": "Tek başına gir",
+    "e": []
+   }
+  ]
+ },
+ {
+  "id": "rv_fiyat",
+  "c": "rakip",
+  "t": "{rakip} fiyat kırıyor",
+  "x": "{rakip}, bölgedeki projelerinde fiyat indirimine gitti. Alıcılar sizin dairelerinizi de kıyaslıyor.",
+  "w": 2,
+  "need": [
+   "rivals",
+   "open"
+  ],
+  "ch": [
+   {
+    "l": "Kampanya yap (fiyat kır)",
+    "e": [
+     [
+      "cash",
+      -1500000
+     ],
+     [
+      "sat",
+      3
+     ],
+     [
+      "housing",
+      -1
+     ]
+    ]
+   },
+   {
+    "l": "Kaliteyi öne çıkar",
+    "e": [
+     [
+      "cash",
+      -600000
+     ],
+     [
+      "rep",
+      2
+     ]
+    ]
+   },
+   {
+    "l": "Görmezden gel",
+    "e": [
+     [
+      "sat",
+      -2
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "rv_dost",
+  "c": "rakip",
+  "t": "Dost firma: {rakip}",
+  "x": "{rakip} sizi dost firmalar arasında sayıyor ve bir iş ipucu paylaştı: belediyede yakında yeni bir imar planı çıkacak.",
+  "w": 1,
+  "need": [
+   "rivals",
+   "ally"
+  ],
+  "ch": [
+   {
+    "l": "İpucunu değerlendir",
+    "e": [
+     [
+      "cash",
+      -500000
+     ],
+     [
+      "land",
+      3
+     ]
+    ]
+   },
+   {
+    "l": "Teşekkür et",
+    "e": [
+     [
+      "rep",
+      1
+     ],
+     [
+      "rrel",
+      3
+     ]
+    ]
+   }
+  ]
+ },
+ {
+  "id": "rv_dusman",
+  "c": "rakip",
+  "t": "{rakip} adınızı kötülüyor",
+  "x": "{rakip} sektörde aleyhinizde konuşuyor, bazı müşteriler tereddüt etmeye başladı.",
+  "w": 1,
+  "need": [
+   "rivals",
+   "enemy"
+  ],
+  "ch": [
+   {
+    "l": "Kamuoyuna açıklama yap",
+    "e": [
+     [
+      "cash",
+      -800000
+     ],
+     [
+      "rep",
+      1
+     ],
+     [
+      "rrel",
+      5
+     ]
+    ]
+   },
+   {
+    "l": "Karşılık verme",
+    "e": [
+     [
+      "rep",
+      -2
+     ]
+    ]
+   },
+   {
+    "l": "Barışmak için görüş",
+    "e": [
+     [
+      "cash",
+      -300000
+     ],
+     [
+      "rrel",
+      15
+     ]
+    ]
+   }
+  ]
  }
 ]

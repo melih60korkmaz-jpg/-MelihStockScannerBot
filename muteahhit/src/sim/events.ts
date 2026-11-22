@@ -6,6 +6,7 @@ import { createStaff, traitOf } from './staff';
 import { netWorth } from './finance';
 import { post } from './ledger';
 import { aliveRivals } from './rivals';
+import { fairValue } from './land';
 import { logDecision } from './control';
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
@@ -26,6 +27,9 @@ function eligible(s: GameState, d: EventDef): boolean {
     if (n === 'land' && !s.parcels.some((p) => p.owner === 'player' && !p.clientLand)) return false;
     if (n === 'open' && s.openCities.length === 0) return false;
     if (n === 'rivals' && aliveRivals(s).length === 0) return false;
+    if (n === 'idleland' && !s.parcels.some((p) => p.owner === 'player' && !p.clientLand && p.projectId === undefined && !p.demolishUntil)) return false;
+    if (n === 'ally' && !aliveRivals(s).some((r) => (r.rel ?? 0) >= 30)) return false;
+    if (n === 'enemy' && !aliveRivals(s).some((r) => (r.rel ?? 0) <= -30)) return false;
     if (n === 'sold>0' && c.stats.sold <= 0) return false;
     if (k === 'trait' && !s.staff.some((x) => traitOf(x).id === v)) return false;
     if (n.startsWith('staff>') && s.staff.length <= num) return false;
@@ -49,6 +53,7 @@ export function eventsMonthly(s: GameState, events: GameEvent[]): void {
   const pend: PendingEvent = { id: d.id, day: s.clock.day };
   if (d.need.includes('project') || d.x.includes('{proje}')) { const act = s.projects.filter((p) => p.status === 'insaat'); if (act.length) { const p = pick(s.rng, 'events', act); pend.projectId = p.id; pend.city = p.cityId; } }
   if (!pend.city) pend.city = pick(s.rng, 'events', s.openCities.length ? s.openCities : ['istanbul']);
+  if (d.x.includes('{rakip}') || d.t.includes('{rakip}')) { const al = aliveRivals(s), pool = d.need.includes('ally') ? al.filter((r) => (r.rel ?? 0) >= 30) : d.need.includes('enemy') ? al.filter((r) => (r.rel ?? 0) <= -30) : al; if (pool.length) pend.rivalId = pick(s.rng, 'events', pool).id; }
   const tn = d.need.find((n) => n.startsWith('trait:'));
   if (tn) { const ts = s.staff.filter((x) => traitOf(x).id === tn.slice(6)); if (ts.length) pend.staffId = pick(s.rng, 'events', ts).id; }
   else if (d.x.includes('{kisi}') && s.staff.length) pend.staffId = pick(s.rng, 'events', s.staff).id;
@@ -75,7 +80,7 @@ export function eventsDaily(s: GameState, events: GameEvent[]): void {
     if (i >= 0) {
       const [it] = q.splice(i, 1) as [NonNullable<GameState['evtQueue']>[number]]; const d = eventDef(it.id);
       if (d && (it.staffId === undefined || s.staff.some((x) => x.id === it.staffId))) {
-        s.pending = { id: it.id, day: s.clock.day, ...(it.projectId !== undefined ? { projectId: it.projectId } : {}), ...(it.city ? { city: it.city } : {}), ...(it.staffId !== undefined ? { staffId: it.staffId } : {}) };
+        s.pending = { id: it.id, day: s.clock.day, ...(it.projectId !== undefined ? { projectId: it.projectId } : {}), ...(it.city ? { city: it.city } : {}), ...(it.staffId !== undefined ? { staffId: it.staffId } : {}), ...(it.rivalId !== undefined ? { rivalId: it.rivalId } : {}) };
         s.evtLast[it.id] = s.clock.day; events.push({ type: 'EVENT_DECISION', day: s.clock.day, pause: true, data: { id: it.id } });
       }
     }
@@ -84,7 +89,7 @@ export function eventsDaily(s: GameState, events: GameEvent[]): void {
   resolveEvent(s, d ? (d.def ?? d.ch.length - 1) : 0, events, true);
 }
 
-export const fill = (s: GameState, text: string, p: PendingEvent): string => text.replace(/\{kisi\}/g, s.staff.find((x) => x.id === p.staffId)?.name ?? 'Bir çalışanınız').replace('{proje}', s.projects.find((x) => x.id === p.projectId)?.name ?? 'şantiyeniz').replace('{sehir}', cityData(p.city ?? '')?.label ?? 'bir ilde');
+export const fill = (s: GameState, text: string, p: PendingEvent): string => text.replace(/\{kisi\}/g, s.staff.find((x) => x.id === p.staffId)?.name ?? 'Bir çalışanınız').replace('{proje}', s.projects.find((x) => x.id === p.projectId)?.name ?? 'şantiyeniz').replace('{sehir}', cityData(p.city ?? '')?.label ?? 'bir ilde').replace(/\{rakip\}/g, s.rivals.find((r) => r.id === p.rivalId)?.name ?? 'Bir rakip firma');
 
 export function describeEffect(s: GameState, e: EffectTuple): string {
   const k = e[0], v = Number(e[1] ?? 0), f = eventScale(s), m = (x: Money) => `${(Math.abs(x) / 100 / 1e6).toFixed(2).replace('.', ',')} M₺`;
@@ -93,6 +98,7 @@ export function describeEffect(s: GameState, e: EffectTuple): string {
     case 'rep': return v ? `İtibar ${v > 0 ? '+' : ''}${v}` : ''; case 'score': return v ? `Kredi notu ${v > 0 ? '+' : ''}${v}` : '';
     case 'morale': return `Moral ${v > 0 ? '+' : ''}${v}`; case 'sat': return `Müşteri memnuniyeti ${v > 0 ? '+' : ''}${v}`;
     case 'housing': return `Konut fiyatları ${v > 0 ? '+' : ''}%${v}`; case 'land': return `Arsa fiyatları ${v > 0 ? '+' : ''}%${v}`; case 'mat': return `Malzeme fiyatı ${v > 0 ? '+' : ''}%${v}`;
+    case 'rrel': return `Rakiple ilişki ${v > 0 ? '+' : ''}${v}`; case 'landsale': return `Boş bir arsanız %${v} primle satılır`;
     case 'tmorale': return `Kişinin morali ${v > 0 ? '+' : ''}${v}`; case 'traise': return `Maaşı %${v} artar`; case 'tleave': return 'Çalışan ayrılır';
     case 'stall': return `Şantiye ${v} gün durur`; case 'leave': return 'Bir çalışan ayrılır'; case 'rate': return `Faiz ${v > 0 ? '+' : ''}${v} puan`; case 'machine': return 'Makine kazanılır'; case 'rival': return 'Rakip zayıflar';
     default: return '';
@@ -112,6 +118,8 @@ function apply(s: GameState, e: EffectTuple, p: PendingEvent, events: GameEvent[
     case 'mat': for (const id of Object.keys(s.matPrice)) s.matPrice[id] = clamp(+(s.matPrice[id]! * (1 + v / 100)).toFixed(4), 0.7, 1.7); break;
     case 'stall': { const pr = s.projects.find((x) => x.id === p.projectId && x.status === 'insaat') ?? s.projects.find((x) => x.status === 'insaat'); if (pr?.build) { pr.build.accidentUntil = Math.max(pr.build.accidentUntil ?? 0, s.clock.day + v); pr.build.stalled = 'kaza'; } break; }
     case 'leave': { const pool = s.staff.filter((q) => traitOf(q).id !== 'sadik'), x = pool.length ? pick(s.rng, 'events', pool) : null; if (x) s.staff = s.staff.filter((q) => q.id !== x.id); break; }
+    case 'rrel': { const r = s.rivals.find((q) => q.id === p.rivalId); if (r) r.rel = clamp((r.rel ?? 0) + v, -100, 100); break; }
+    case 'landsale': { const pc = s.parcels.find((x) => x.owner === 'player' && !x.clientLand && x.projectId === undefined && !x.demolishUntil); if (pc) { const amt = Math.round(fairValue(s, pc) * (1 + v / 100)); post(s, 'arsa', amt, { memo: `Arsa satışı (${pc.hood}): ${s.rivals.find((r) => r.id === p.rivalId)?.name ?? 'rakip'}` }); s.parcels = s.parcels.filter((x) => x.id !== pc.id); const r = s.rivals.find((q) => q.id === p.rivalId); if (r) { r.cash -= amt; } } break; }
     case 'tmorale': { const x = s.staff.find((q) => q.id === p.staffId); if (x) x.morale = clamp(x.morale + v, 0, 100); break; }
     case 'traise': { const x = s.staff.find((q) => q.id === p.staffId); if (x) x.salary = Math.round(x.salary * (1 + v / 100)); break; }
     case 'tleave': { s.staff = s.staff.filter((q) => q.id !== p.staffId); break; }
@@ -130,8 +138,8 @@ export function resolveEvent(s: GameState, choice: number, events: GameEvent[], 
   let success: boolean | undefined;
   if (ch.p !== undefined) { success = rand(s.rng, 'events') < ch.p; for (const e of (success ? ch.s : ch.f) ?? []) apply(s, e, p, events); }
   const next = ch.n ?? (success === true ? ch.ns : success === false ? ch.nf : undefined);
-  if (next && eventDef(next[0])) (s.evtQueue ??= []).push({ id: next[0], day: s.clock.day + next[1], ...(p.projectId !== undefined ? { projectId: p.projectId } : {}), ...(p.city ? { city: p.city } : {}), ...(p.staffId !== undefined ? { staffId: p.staffId } : {}) });
-  logDecision(s, d.c === 'kurul' ? 'kurul' : 'olay', d.t.replace(/\{kisi\}/g, who ?? 'Çalışan'), `${ch.l}${[...ch.e].map((e) => describeEffect(s, e)).filter(Boolean).length ? ' → ' + [...ch.e].map((e) => describeEffect(s, e)).filter(Boolean).join(', ') : ''}${success === undefined ? '' : success ? ' (başarılı)' : ' (olmadı)'}${auto ? ' [süre doldu]' : ''}`);
+  if (next && eventDef(next[0])) (s.evtQueue ??= []).push({ id: next[0], day: s.clock.day + next[1], ...(p.projectId !== undefined ? { projectId: p.projectId } : {}), ...(p.city ? { city: p.city } : {}), ...(p.staffId !== undefined ? { staffId: p.staffId } : {}), ...(p.rivalId !== undefined ? { rivalId: p.rivalId } : {}) });
+  logDecision(s, d.c === 'kurul' ? 'kurul' : 'olay', d.t.replace(/\{kisi\}/g, who ?? 'Çalışan').replace(/\{rakip\}/g, s.rivals.find((r) => r.id === p.rivalId)?.name ?? 'Rakip'), `${ch.l}${[...ch.e].map((e) => describeEffect(s, e)).filter(Boolean).length ? ' → ' + [...ch.e].map((e) => describeEffect(s, e)).filter(Boolean).join(', ') : ''}${success === undefined ? '' : success ? ' (başarılı)' : ' (olmadı)'}${auto ? ' [süre doldu]' : ''}`);
   s.pending = null; events.push({ type: 'EVENT_RESOLVED', day: s.clock.day, data: { id: d.id, choice, auto, ...(who ? { who } : {}), ...(success !== undefined ? { success } : {}) } });
   return { ok: true, ...(success !== undefined ? { success } : {}) };
 }

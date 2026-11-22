@@ -184,6 +184,15 @@ export const GUIDE: Topic[] = [
     ],
   },
   {
+    id: 'rakipler', ico: '🤝', title: 'Rakiplerle ilişkiler', blocks: [
+      { p: 'Piyasa › Sektör sıralaması\'nda bir rakibe dokun: sahibi, hikâyesi, gücü ve sana karşı ilişkisi (Müttefik, Dost, Tarafsız, Soğuk, Düşman) görünür.' },
+      { h: 'İş birliği öner' },
+      { ul: ['🤝 Ortak girişim: sermaye ve işi paylaşırsınız, birkaç ay sonra hesap kapanır (kâr ya da zarar).', '📑 Ortak ihale: iki firmanın referansıyla büyük ihaleye girersiniz.', '🚜 Makine kirala ve 📍 Arsa sat: rakibe makine kiralar ya da boş bir arsanı primle satmayı denersin (pazarlıkta fazla zorlarsan vazgeçer).', 'Aynı firmayla 90 günde bir görüşebilirsin; ilişkisi düşman seviyesindeyse görüşmez.'] },
+      { h: 'Rakipler de gelir' },
+      { ul: ['Rakipler zaman zaman sana teklif getirir: ortak proje, arsana talip olma, makine kiralama, ihale anlaşması.', 'İhale anlaşması kâğıt üstünde kârlıdır ama rekabet kurumu soruşturması riski taşır; yakalanırsan ceza ve itibar kaybı olur.', 'Dost rakipler ihalede fiyatı yüksek tutar (senin lehine), düşman rakipler fiyat kırar. Düşmanlar adını kötüleyebilir.'] },
+    ],
+  },
+  {
     id: 'borsa', ico: '📈', title: 'Borsa ve şirket satın alma', blocks: [
       { h: 'Halka arz (seviye 7)' },
       { ul: ['Şartlar: şirket seviyesi 7, net varlık en az 1 milyar ₺, itibar en az 55. Şirketin %10–25\'ini halka açarsın; fiyat adil değerin %92\'si, kaynağın %97\'si sana kalır.', 'Sahipliğin hiçbir zaman %60\'ın altına inemez (ortaklık ve yatırımcı satışları dahil).', 'Halka açık olunca her ay hisse fiyatı adil değere (net varlık × çarpan) yaklaşır; çarpan piyasa güveni, itibar ve büyümeyle artar. Fiyat halka arz fiyatının %30 üstündeyken itibar artar, %30 altındayken azalır.'] },
