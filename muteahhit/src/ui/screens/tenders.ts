@@ -8,14 +8,14 @@ import type { App } from '../app';
 import { buildingPhoto, emptyArt } from '../art';
 import { hbars } from '../charts';
 import type { Tender } from '../../core/types';
-import { bidLimits, bondOf, eligibility } from '../../sim/tenders';
+import { bidLimits, bondOf, eligibility, winOdds } from '../../sim/tenders';
 
 const KIND: Record<string, string> = { okul: 'Okul', belediye: 'Belediye', hastane: 'Hastane', fabrika: 'Sanayi', konut: 'Konut' };
 const STATUS: Record<string, [string, string]> = { acik: ['Açık', 'good'], kazandi: ['Kazandınız', 'good'], kaybetti: ['Kaybettiniz', 'bad'], elendi: ['Elendiniz', 'bad'], iptal: ['Teklif verilmedi', ''] };
 
 /** İhale sekmesi: açık ihaleler, şartlar, teklif ve sonuçlar. */
-export function tendersView(app: App, refresh: () => void): HTMLElement {
-  const s = app.store.state, open = s.tenders.filter((t) => t.status === 'acik'), done = s.tenders.filter((t) => t.status !== 'acik');
+export function tendersView(app: App, refresh: () => void, only?: 'infra'): HTMLElement {
+  const s = app.store.state, open = s.tenders.filter((t) => t.status === 'acik' && (only !== 'infra' || t.infra)), done = s.tenders.filter((t) => t.status !== 'acik' && (only !== 'infra' || t.infra));
   const card = (t: Tender) => {
     const el = eligibility(s, t), st = STATUS[t.status]!, bt = buildingType(t.type);
     const floorsOf = Math.max(2, Math.round(t.area / 700) + 1);
@@ -45,9 +45,9 @@ function openBid(app: App, t: Tender, refresh: () => void): void {
   const upd = () => {
     const margin = (price - t.trueCost) / price, low = price < min, el = eligibility(s, t);
     lab.textContent = fmt(price); out.innerHTML = '';
-    const lines = [`Teminat: ${fmt(bondOf(t, price))} (sözleşmede iade)`, `Tahmini kâr: ${fmt(price - t.trueCost)} (%${(margin * 100).toFixed(1)})`, price < t.trueCost ? 'Bu fiyatla zarar edersiniz.' : '', low ? 'Yaklaşık maliyetin %80\'inin altı olağan dışı düşük teklif sayılır: elenirsiniz.' : 'Fiyat ne kadar düşükse puanınız artar; ama kâr da düşer. Rakipler yaklaşık maliyetin %86–100\'i arasında teklif verir.', ...el.checks.filter((c) => !c.ok).map((c) => `Eksik şart: ${c.label} (${c.have}/${c.need})`)];
+    const wo = winOdds(s, t, price), lines = [`Kazanma ihtimali: ~%${Math.round(wo.odds * 100)} (rakip tekliflerine, itibarına, teknik gücüne ve kredi notuna göre tahmin)`, `Beklenen değer: kâr × ihtimal ≈ ${fmt(Math.round((price - t.trueCost) * wo.odds))}`, `Teminat: ${fmt(bondOf(t, price, s))} (sözleşmede iade)`, `Tahmini kâr: ${fmt(price - t.trueCost)} (%${(margin * 100).toFixed(1)})`, price < t.trueCost ? 'Bu fiyatla zarar edersiniz.' : '', low ? 'Yaklaşık maliyetin %80\'inin altı olağan dışı düşük teklif sayılır: elenirsiniz.' : 'Fiyat ne kadar düşükse puanınız artar; ama kâr da düşer. Rakipler yaklaşık maliyetin %86–100\'i arasında teklif verir.', ...el.checks.filter((c) => !c.ok).map((c) => `Eksik şart: ${c.label} (${c.have}/${c.need})`)];
     for (const l of lines) if (l) out.append(h('div', { class: l.startsWith('Eksik') || l.startsWith('Bu fiyat') || l.includes('elenirsiniz') ? 'neg' : 'mute' }, l));
-    go.disabled = !el.ok || s.company!.cash < bondOf(t, price);
+    go.disabled = !el.ok || s.company!.cash < bondOf(t, price, s);
   };
   modal.append(h('div', { class: 'card', style: 'width:min(480px,95vw)' }, h('div', { class: 'letterhead' }, h('span', { html: emblemSvg(s.company!.emblem.shape, s.company!.emblem.color, 30) }), h('div', {}, h('b', {}, s.company!.name), h('small', {}, `Teklif mektubu · Yetkili: ${s.company!.founder ?? 'Patron'}`))), h('h3', {}, t.title), h('div', { class: 'mute', style: 'font-size:12px' }, `Yaklaşık maliyet ${fmt(t.refCost)} · ${t.client === 'kamu' ? 'kamu: yaklaşık maliyet üstü teklif geçersiz' : 'özel: en çok %12 üstü'} · avans %10, hakediş aşama aşama (45 gün vadeli)`), lab, rng, out, h('div', { style: 'display:flex;gap:8px;justify-content:flex-end' }, h('button', { class: 'btn', onclick: close }, 'Vazgeç'), go)));
   document.body.append(modal); upd();

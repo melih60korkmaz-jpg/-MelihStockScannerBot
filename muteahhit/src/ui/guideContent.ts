@@ -12,7 +12,7 @@ export type Block =
 
 export interface Topic { id: string; ico: string; title: string; blocks: Block[] }
 
-export const TAB_TOPIC: Record<string, string> = { makine: 'makine', gayrimenkul: 'gayrimenkul', tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
+export const TAB_TOPIC: Record<string, string> = { altyapi: 'altyapi', makine: 'makine', gayrimenkul: 'gayrimenkul', tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
 
 export const GUIDE: Topic[] = [
   {
@@ -107,6 +107,17 @@ export const GUIDE: Topic[] = [
       { h: 'Tedarikçi seçimi' },
       { p: 'Yerel toptancı, ucuz tedarik, A.Ş. ve direkt tedarik gibi seçenekler fiyat, teslim süresi ve güvenilirlik açısından farklıdır. Ucuz olan geç ya da eksik getirebilir.' },
       { tip: 'Stok tutmak fiyat artışına karşı korur ama nakit bağlar. Malzeme zam haberi geldiyse biraz önceden almak mantıklı olabilir.' },
+    ],
+  },
+  {
+    id: 'altyapi', ico: '🛣️', title: 'Altyapı ve taahhüt', blocks: [
+      { p: 'Menü › İnşaat › Altyapı ve Taahhüt (seviye 5, itibar 35). 12 kategori: otoyol, şehir içi yol, köprü, viyadük, tünel, metro, demiryolu, içme suyu, kanalizasyon, baraj, liman, havalimanı altyapısı. Büyük işler (otoyol, metro, havalimanı) seviye 8\'de açılır.' },
+      { h: 'İhale' },
+      { ul: ['Her ihalede yaklaşık maliyet, süre, teknik gereksinimler (itibar, kredi notu, bitirilmiş proje, personel, makine), teminat ve gecikme cezası vardır. Teklif verirken kazanma ihtimali ve beklenen kâr hesaplanır.', 'En düşük teklif her zaman kazanmaz: puan fiyat, teknik yeterlilik, itibar, kredi notu ve kapasiteden oluşur.'] },
+      { h: 'Yürütme' },
+      { ul: ['İlerleme saha ekibine ve makine parkına (durumu iyi, operatörlü makineler) bağlıdır. Malzeme gerçek stoktan tüketilir; stok yoksa iş durur. Otomatik satın alma açıksa eksik malzeme sipariş edilir (depo ve nakit elverdiğince).', 'Her %10 ilerleme bir hakediş doğurur (45 gün vadeli); %5\'i kesin kabule kadar tutulur.', 'İş sürerken maliyet aşımı (ek iş talebinin bir kısmı karşılanır; hukuk departmanı oranı artırır), teknik sorunlar (iş durur) ve kamu denetimleri çıkar; denetimden kalırsan ceza ve itibar kaybı olur.'] },
+      { h: 'Kabul' },
+      { p: 'İş bitince geçici kabul denetimi yapılır (kalite ve geçmiş denetimler belirler); kalırsan onarım masrafı ve 20 gün ek süre gelir. Geçince kalan hakediş ödenir, teminatın yarısı çözülür ve 180 günlük garanti başlar; kesin kabulde tutulan bedel ve kalan teminat iade edilir.' },
     ],
   },
   {

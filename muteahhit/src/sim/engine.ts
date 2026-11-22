@@ -89,7 +89,7 @@ function monthly(s: GameState, events: GameEvent[]): void {
   salesMonthly(s, events);
   loansMonthly(s, events);
   tendersMonthly(s, events);
-  infraMonthly(s); infraPrune(s);
+  infraMonthly(s, events); infraPrune(s);
   venturesMonthly(s, events);
   stockMonthly(s);
   eventsMonthly(s, events);

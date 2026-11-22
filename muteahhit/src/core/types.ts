@@ -97,7 +97,9 @@ export interface StockState { listed: boolean; ipoDay: number; shares: number; p
 export interface InfraJob {
   id: number; tenderId: number; kind: string; name: string; city: string; price: Money; advance: Money; bond: Money; trueCost: Money;
   startDay: number; deadline: number; months: number; progress: number; spent: Money; doneShare: number; pending: { day: number; amount: Money }[];
-  status: 'devam' | 'bitti'; stalled: 'nakit' | 'kapasite' | null; bondReturned?: boolean; result?: { profit: Money; late: number; day: number };
+  status: 'devam' | 'kabul' | 'garanti' | 'bitti'; stalled: 'nakit' | 'kapasite' | 'malzeme' | 'teknik' | null; bondReturned?: boolean; result?: { profit: Money; late: number; day: number };
+  /** Gelişmiş altyapı alanları (eski kayıtlarda yok): malzeme kalitesi, kabul süreci, tutulan teminat, maliyet aşımı, denetim ve teknik duraklama. */
+  qSum?: number; qW?: number; acceptAt?: number; garantiEnd?: number; retention?: Money; overrun?: Money; claimed?: Money; inspections?: number; failedInsp?: number; techUntil?: number; rework?: Money; late?: number; matShort?: string; events?: { day: number; text: string }[];
 }
 export interface Rival { rel?: number; asked?: number; id: number; name: string; style: 'agresif' | 'dengeli' | 'temkinli'; home: string; cash: Money; rep: number; tech: number; projects: number; wins: number; failed: boolean; since: number; last?: string }
 /** Yıllık rapor (isteğe bağlı dizi; eski kayıtlarda yok). */

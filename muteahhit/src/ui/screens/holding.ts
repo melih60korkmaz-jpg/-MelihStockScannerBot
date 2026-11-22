@@ -1,3 +1,4 @@
+import { unlockState } from '../../sim/unlock';
 import { formatDate } from '../../core/calendar';
 import { TL } from '../../core/money';
 import type { Strategy, Venture } from '../../core/types';
@@ -99,6 +100,7 @@ function energy(app: App, refresh: () => void): HTMLElement {
 
 // ---------------- Altyapı ----------------
 function infra(app: App, refresh: () => void): HTMLElement {
+  if (unlockState(app.store.state, 'altyapi').open) return h('div', { class: 'card', style: 'text-align:center;padding:16px' }, h('div', { style: 'font-size:30px' }, '🛣️'), h('b', {}, 'Altyapı işleri artık Altyapı ve Taahhüt sekmesinde'), h('div', { class: 'mute', style: 'font-size:13px;margin:6px 0' }, 'İhaleler, yürüyen işler, kabul ve garanti orada.'), h('button', { class: 'btn gold', onclick: () => { press(app); app.openTab?.('altyapi'); } }, 'Aç'));
   const s = app.store.state, c = s.company!; if (c.level < INFRA_MIN_LEVEL) return lock(`Altyapı ihaleleri seviye ${INFRA_MIN_LEVEL}'te (Şehir Markası) açılır.`);
   const open = s.tenders.filter((t) => t.infra && t.status === 'acik').length, jobs = s.infra.filter((j) => j.status === 'devam'), done = s.infra.filter((j) => j.status === 'bitti');
   return h('div', {}, h('div', { class: 'card', style: 'margin-bottom:10px' }, h('div', { class: 'lbl-s' }, '🛣️ Kamu işleri ve altyapı'), h('div', { class: 'mute', style: 'font-size:13px' }, 'Yol, köprü, tünel, baraj ve şebeke ihaleleri İhale sekmesinde açılır. Kazanırsan iş burada yürür: ilerleme makine parkına ve saha ekibine bağlıdır, her %10 ilerleme bir hakediş doğurur (45 gün sonra tahsil).'),

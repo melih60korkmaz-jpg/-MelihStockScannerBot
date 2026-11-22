@@ -75,6 +75,24 @@ function score(price: number, minPrice: number, tech: number, rep: number, credi
   return 40 * (minPrice / price) + 25 * (tech / 100) + 15 * (rep / 100) + 10 * clamp(credit / 800, 0, 1) + 10 * clamp(cap, 0, 1);
 }
 
+/**
+ * Kazanma ihtimali tahmini: rakip fiyatları ±%4 oynatılarak 200 deneme yapılır (deterministik, oyun RNG'sini kullanmaz). Gerçek sonuç yine ihale gününde belirlenir;
+ * en düşük teklif her zaman kazanmaz: teknik yeterlilik, itibar, kredi notu ve kapasite de puanı belirler.
+ */
+export function winOdds(s: GameState, t: Tender, price: Money): { odds: number; margin: number } {
+  const c = s.company!, min = Math.round(t.refCost * 0.8), ps = playerScores(s, t), cap = (s.staff.length + s.machines.length * 2) / Math.max(1, t.req.staff + t.req.machines * 2) / 1.5;
+  const bonus = focusTender(s, !!t.infra) + mgmtTender(s); let a = ((t.id * 2654435761 + Math.round(price / 1000)) >>> 0) || 1; const rnd = () => { a = (Math.imul(a, 1664525) + 1013904223) >>> 0; return a / 4294967296; };
+  const margin = price > 0 ? (price - t.trueCost) / price : 0; if (price < min) return { odds: 0, margin };
+  let wins = 0; const N = 200;
+  for (let i = 0; i < N; i++) {
+    const rv = t.rivals.map((r) => ({ ...r, price: Math.round(r.price * (0.96 + rnd() * 0.08)) })).filter((r) => r.price >= min), lowest = Math.min(price, ...rv.map((r) => r.price));
+    const me = score(price, lowest, ps.tech, ps.rep, c.creditScore, cap) + bonus; let best = true;
+    for (const r of rv) if (score(r.price, lowest, r.tech, r.rep, 400 + r.rep * 5, 0.5 + r.rep / 200) >= me) { best = false; break; }
+    if (best) wins++;
+  }
+  return { odds: clamp(wins / N, 0.02, 0.98), margin };
+}
+
 /** Değerlendirme: puan = fiyat 40 + teknik 25 + itibar 15 + mali 10 + kapasite 10; olağan dışı düşük teklif elenir. */
 export function evaluateTender(s: GameState, t: Tender, events: GameEvent[]): void {
   const c = s.company!, day = s.clock.day, min = Math.round(t.refCost * 0.8);
