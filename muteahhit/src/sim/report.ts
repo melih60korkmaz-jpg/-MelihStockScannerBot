@@ -4,6 +4,7 @@ import type { GameEvent, GameState, YearReport } from '../core/types';
 import { ledgerCat } from '../data';
 import { netWorth } from './finance';
 import { standing } from './rivalLife';
+import { evalGoals } from './mgmt';
 
 /**
  * Yıllık rapor: biten takvim yılının geliri, gideri, kârı, net değer değişimi, en büyük gelir/gider kalemi,
@@ -33,6 +34,6 @@ export function reportYearly(s: GameState, events: GameEvent[]): void {
   const year = dateOf(s.clock.day).year - 1; s.reports ??= [];
   if (s.reports.some((r) => r.year === year)) return;
   if (year < dateOf(0).year) return;
-  const r = buildYearReport(s, year); s.reports.push(r); if (s.reports.length > 30) s.reports.shift();
+  const r = buildYearReport(s, year); const goals = evalGoals(s, r); if (goals) r.goals = { score: goals.score, res: goals.res.map((g) => ({ id: g.id, label: g.label, pct: g.pct })) }; s.reports.push(r); if (s.reports.length > 30) s.reports.shift();
   events.push({ type: 'YEAR_REPORT', day: s.clock.day, data: { year } });
 }

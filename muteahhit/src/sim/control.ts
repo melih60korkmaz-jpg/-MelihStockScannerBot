@@ -3,6 +3,7 @@ import { TL } from '../core/money';
 import type { GameEvent, GameState, Project, Staff } from '../core/types';
 import { eventDef } from '../data';
 import { traitEff } from './staff';
+import { mgmtBuildMult, mgmtRiskMult } from './mgmt';
 
 /**
  * Yönetim katmanı: yıllık odak, proje emirleri, proje müdürü, ofis eşyaları, yönetim kurulu ve karar günlüğü.
@@ -43,7 +44,7 @@ export function managerEff(x: Staff): number { const role = x.type === 'proje_yo
 
 /** İnşaat çarpanları: emir + proje müdürü. Hız ve maliyet çarpan, kalite puan, risk çarpandır. */
 export function projectMods(s: GameState, p: Project): { speed: number; cost: number; q: number; risk: number } {
-  const o = activeOrder(s, p), m = managerOf(s, p); let speed = o?.speed ?? 1, cost = o?.cost ?? 1, q = o?.q ?? 0, risk = o?.risk ?? 1;
+  const o = activeOrder(s, p), m = managerOf(s, p); let speed = (o?.speed ?? 1) * mgmtBuildMult(s), cost = o?.cost ?? 1, q = o?.q ?? 0, risk = (o?.risk ?? 1) * mgmtRiskMult(s);
   if (m) { const e = managerEff(m); speed *= 1 + 0.05 * e; q += 3 * e; risk *= 0.92; }
   if (focusId(s) === 'altyapi' && p.contract) speed *= 1.0;
   return { speed, cost, q, risk };
@@ -65,22 +66,8 @@ export function decorBonus(s: GameState, perk: DecorDef['perk']): number { retur
 export const decorSale = (s: GameState): number => 1 + decorBonus(s, 'sale');
 export const decorCost = (d: DecorDef) => TL(d.costTL);
 
-// ---- Yönetim kurulu ----
-export const BOARD_IDS = ['kurul_temettu', 'kurul_butce', 'kurul_yatirim', 'kurul_risk'];
-/** Her çeyrek başında (Oca/Nis/Tem/Eki) yönetim kurulu toplantısı: seviye 2+ şirketlerde bir karar olayı kuyruğa girer. */
-export function boardMonthly(s: GameState): void {
-  const c = s.company; if (!c || c.level < 2) return; const d = dateOf(s.clock.day);
-  if (![1, 4, 7, 10].includes(d.month) || s.clock.day < 80) return;
-  const q = d.year * 4 + Math.floor((d.month - 1) / 3), id = BOARD_IDS[q % BOARD_IDS.length]!;
-  if (s.evtLast[id] !== undefined && s.clock.day - s.evtLast[id]! < 60) return;
-  if ((s.evtQueue ?? []).some((x) => BOARD_IDS.includes(x.id))) return;
-  (s.evtQueue ??= []).push({ id, day: s.clock.day + 2 });
-}
-export const nextBoardMonth = (s: GameState): string => { const m = dateOf(s.clock.day).month; const nm = [1, 4, 7, 10].find((x) => x > m) ?? 1; return ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'][nm]!; };
-
 // ---- Karar günlüğü ----
 export function logDecision(s: GameState, kind: string, title: string, detail: string): void {
   (s.decisions ??= []).unshift({ day: s.clock.day, kind, title, detail }); if (s.decisions.length > 80) s.decisions.length = 80;
 }
-export const isBoardEvent = (id: string) => eventDef(id)?.c === 'kurul';
 void ({} as GameEvent);

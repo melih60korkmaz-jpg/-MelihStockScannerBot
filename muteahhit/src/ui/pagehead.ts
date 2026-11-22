@@ -3,9 +3,10 @@ import { EMOJI } from './art';
 import type { App } from './app';
 import { openGuide, TAB_TOPIC } from './guide';
 
-export type TabId = 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
+export type TabId = 'yonetim' | 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
 /** Her sekmenin tek satırlık tanıtımı ve "Ne yapılır?" yardımı. Oyuncu hangi ekranda ne bulacağını hep görsün. */
 export const TAB_INFO: Record<TabId, { ico: string; title: string; sub: string; help: string[] }> = {
+  yonetim: { ico: '🧭', title: 'Yönetim Merkezi', sub: 'Genel müdür, yönetim kurulu, yıllık hedefler ve departmanlar.', help: ['Genel Müdür: işe al; becerisi satış, şantiye ve ihale performansını etkiler.', 'Kurul: her çeyrek toplanır; üyelerin eğilimini görüp karar verirsin.', 'Hedefler: yılda bir belirlenir, yıl sonunda puanlanır.', 'Departmanlar: bütçe, müdür ve personel performansı belirler.'] },
   sirket: { ico: EMOJI.sirket, title: 'Şirket', sub: 'Genel durum: bugün ne yapmalı, paran ve projelerin.', help: ['Üstteki şehir resmine dokununca Genel Merkez açılır.', 'Görevler sana sıradaki adımı söyler; "Şimdi yap" ilgili sekmeye götürür.', 'Net varlık ve nakit yeterlilik, şirketin ne kadar dayanabileceğini gösterir.'] },
   harita: { ico: EMOJI.harita, title: 'Harita', sub: 'Nerede arsa alacağını seç: il, ilçe, fiyat ve gelişim.', help: ['Bir ile dokun, sonra ilçeyi seç; arsaları listeden incele.', 'Renkler seçtiğin ölçüte göre (satış fiyatı, gelir, rekabet, gelişim) değişir.', 'Yeni bir ilde şube açarsan oradaki arsalara ve ihalelere erişirsin.'] },
   projeler: { ico: EMOJI.insaat, title: 'Projeler', sub: 'Arsadan satışa tüm işlerin: tasarım, inşaat, satış.', help: ['Sol sütun projelerin, sağ sütun sahip olduğun arsalar.', '"Şantiyeyi aç" 3B şantiye görünümünü açar; "Satış merkezi" fiyat ve satışları yönetir.', 'Aşama şeridi 17 inşaat aşamasının hangisinde olduğunu gösterir.'] },

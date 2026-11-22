@@ -5,6 +5,7 @@ import type { GameEvent, GameState, Order, Project } from '../core/types';
 import { MATERIALS, STAGES, material, supplier } from '../data';
 import { projectedMonthlyCost } from './finance';
 import { post } from './ledger';
+import { mgmtMatMult } from './mgmt';
 
 const SPLIT_MAT = 0.55;
 import { stageDays as stageDaysOf } from './construction';
@@ -14,7 +15,7 @@ const hasRole = (s: GameState, role: string) => s.staff.some((x) => x.type === r
 /** Birim fiyat (kuruş): temel fiyat × makro malzeme endeksi × malzemeye özgü sapma × tedarikçi çarpanı (satın alma sorumlusu %3 indirim). */
 export function unitPrice(s: GameState, matId: string, supId: string): Money {
   const m = material(matId)!, sp = supplier(supId)!;
-  return Math.round(TL(m.priceTL) * (s.macro.materialIndex / 100) * (s.matPrice[matId] ?? 1) * sp.price * (hasRole(s, 'satin_alma') ? 0.97 : 1));
+  return Math.round(TL(m.priceTL) * (s.macro.materialIndex / 100) * (s.matPrice[matId] ?? 1) * sp.price * (hasRole(s, 'satin_alma') ? 0.97 : 1) * mgmtMatMult(s));
 }
 export const leadDays = (s: GameState, supId: string) => Math.max(1, supplier(supId)!.lead - (hasRole(s, 'satin_alma') ? 1 : 0));
 export const stockQty = (s: GameState, id: string) => s.stock[id]?.qty ?? 0;

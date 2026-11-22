@@ -193,5 +193,40 @@
   "id": "reklam",
   "label": "İlan ve reklam",
   "kind": "gider"
+ },
+ {
+  "id": "yonetim",
+  "label": "Yönetim ve departman giderleri",
+  "kind": "gider"
+ },
+ {
+  "id": "depo",
+  "label": "Depo ve lojistik giderleri",
+  "kind": "gider"
+ },
+ {
+  "id": "kira_gideri",
+  "label": "Dış kiralama giderleri",
+  "kind": "gider"
+ },
+ {
+  "id": "makine_gelir",
+  "label": "Makine kiralama geliri",
+  "kind": "gelir"
+ },
+ {
+  "id": "emlak_bakim",
+  "label": "Gayrimenkul bakım giderleri",
+  "kind": "gider"
+ },
+ {
+  "id": "fabrika_gelir",
+  "label": "Fabrika satış geliri",
+  "kind": "gelir"
+ },
+ {
+  "id": "fabrika_gider",
+  "label": "Fabrika giderleri",
+  "kind": "gider"
  }
 ]

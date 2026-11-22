@@ -26,6 +26,9 @@ import { heroBanner } from '../hero';
 import { openHQ } from '../hq';
 import { pageHead } from '../pagehead';
 import { holdingView, setHoldingSub } from './holding';
+import { yonetimView, setYonetimSub } from './yonetim';
+import { openMenu } from '../menu';
+import { openDeals } from '../dealsUi';
 import { openGuide, TAB_TOPIC } from '../guide';
 import { startTutorial, tutorialDone } from '../tutorial';
 import { saveView } from '../../platform/lastView';
@@ -54,8 +57,8 @@ const ICON = {
   menu: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   hold: '<svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V5h6v3M3 13h18M11 13v2h2v-2"/></svg>',
 };
-type Tab = 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
-const TABS: [Tab, string, keyof typeof ICON][] = [['sirket', 'Şirket', 'home'], ['harita', 'Harita', 'pin'], ['projeler', 'Projeler', 'build'], ['operasyon', 'Operasyon', 'team'], ['ihale', 'İhale', 'doc'], ['holding', 'Holding', 'hold'], ['finans', 'Finans', 'chart'], ['piyasa', 'Piyasa', 'globe']];
+type Tab = 'yonetim' | 'sirket' | 'harita' | 'projeler' | 'operasyon' | 'ihale' | 'holding' | 'finans' | 'piyasa';
+const TABS: [Tab, string, keyof typeof ICON][] = [['sirket', 'Şirket', 'home'], ['harita', 'Harita', 'pin'], ['projeler', 'Projeler', 'build'], ['yonetim', 'Yönetim', 'team'], ['finans', 'Finans', 'chart']];
 
 const monthLabel = (key: string) => { const [y, m] = key.split('-'); return `${['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][Number(m) - 1]} ${y!.slice(2)}`; };
 const dayLabel = (d: number) => { const x = dateOf(d); return monthLabel(`${x.year}-${String(x.month).padStart(2, '0')}`); };
@@ -109,7 +112,9 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   const drawTabs = () => {
     tabs.innerHTML = '';
     const coach = nextQuest(app.store.state)?.tab;
-    for (const [id, label, ic] of TABS) { if (id === 'holding' && app.store.state.company!.level < 4 && tab !== 'holding') continue; tabs.append(h('button', { class: `tab ${tab === id ? 'on' : ''}${coach === id && tab !== id ? ' coach' : ''}`, 'aria-current': tab === id ? 'page' : null, onclick: () => { if (tab === id) return; press(app); tab = id; saveView({ company: app.store.state.company!.name, tab }); drawTabs(); drawView(); } }, h('span', { html: ICON[ic], style: 'display:flex' }), label)) }
+    for (const [id, label, ic] of TABS) { tabs.append(h('button', { class: `tab ${tab === id ? 'on' : ''}${coach === id && tab !== id ? ' coach' : ''}`, 'aria-current': tab === id ? 'page' : null, onclick: () => { if (tab === id) return; press(app); tab = id; saveView({ company: app.store.state.company!.name, tab }); drawTabs(); drawView(); } }, h('span', { html: ICON[ic], style: 'display:flex' }), label)); }
+    const inMain = TABS.some(([id]) => id === tab);
+    tabs.append(h('button', { class: `tab ${inMain ? '' : 'on'}${coach && !TABS.some(([id]) => id === coach) && inMain ? ' coach' : ''}`, 'aria-label': 'Menü', onclick: () => { press(app); openMenu(app, tab, (tt, sb) => (tt === 'deals' ? openDeals(app, drawView) : app.openTab?.(tt as Tab, sb))); } }, h('span', { html: ICON.menu, style: 'display:flex' }), 'Menü'));
   };
 
   // ---------------- Şirket ----------------
@@ -228,7 +233,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   const drawView = () => {
     const vkey = `${tab}:${tab === 'harita' ? mapKey() : ''}`, keep = vkey === lastViewKey ? view.scrollTop : 0; lastViewKey = vkey; view.innerHTML = '';
     if (tab !== 'sirket') view.append(pageHead(app, tab));
-    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'holding' ? holdingView(app, drawView) : tab === 'finans' ? finance() : marketView(app, drawView));
+    view.append(tab === 'sirket' ? overview() : tab === 'harita' ? mapView(app, drawView) : tab === 'projeler' ? projectsView(app, drawView) : tab === 'operasyon' ? opsView(app, drawView) : tab === 'ihale' ? tendersView(app, drawView) : tab === 'holding' ? holdingView(app, drawView) : tab === 'yonetim' ? yonetimView(app, drawView) : tab === 'finans' ? finance() : marketView(app, drawView));
     view.scrollTop = keep;
   };
 
@@ -304,7 +309,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
   if (app.store.state.pending) setTimeout(() => openEventDecision(app), 0);
   // Yeni oyunda (gün ≤ 1) anlatıcı bir kez başlar; otomasyon tarayıcılarında (webdriver) kendiliğinden açılmaz.
   if (app.store.state.clock.day <= 1 && !tutorialDone() && !navigator.webdriver) setTimeout(() => { if (root.isConnected) startTutorial(app); }, 900);
-  app.openTab = (t, sb) => { if (t === 'holding' && sb) setHoldingSub(sb); tab = t; saveView({ company: app.store.state.company!.name, tab }); if (sb) sub = sb; drawTabs(); drawView(); };
+  app.openTab = (t, sb) => { if (t === 'holding' && sb) setHoldingSub(sb); if (t === 'yonetim' && sb) setYonetimSub(sb); tab = t; saveView({ company: app.store.state.company!.name, tab }); if (sb) sub = sb; drawTabs(); drawView(); };
   root.addEventListener('unmount', () => { unsub(); cancelAnimationFrame(tween); if (app.openTab) delete app.openTab; });
   buildHud(); drawHud(); drawTabs(); drawView(); app.audio.setMood(moodNow());
   return root;

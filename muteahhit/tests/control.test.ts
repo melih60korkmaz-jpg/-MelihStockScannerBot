@@ -3,7 +3,7 @@ import { dispatch } from '../src/core/commands';
 import { newGameState } from '../src/core/state';
 import { TL } from '../src/core/money';
 import { advanceDays } from '../src/sim/engine';
-import { activeOrder, projectMods, BOARD_IDS } from '../src/sim/control';
+import { activeOrder, projectMods } from '../src/sim/control';
 import { createStaff } from '../src/sim/staff';
 import { eventDef } from '../src/data';
 import { pack, unpack } from '../src/save/serialize';
@@ -37,11 +37,6 @@ describe('yönetim katmanı', () => {
   it('ofis eşyası: bir kez alınır, nakit düşer, ihale/moral etkisi vardır', () => {
     const s = setup(); const c0 = s.company!.cash; expect(dispatch(s, 'BuyDecor', { id: 'maket' }).ok).toBe(true); expect(s.company!.cash).toBeLessThan(c0);
     expect(dispatch(s, 'BuyDecor', { id: 'maket' }).ok).toBe(false); expect(dispatch(s, 'BuyDecor', { id: 'toplanti' }).ok).toBe(false); // ofis 1
-  });
-  it('yönetim kurulu olayları tanımlı, rastgele havuza girmez ve çeyrekte toplanır', () => {
-    for (const id of BOARD_IDS) { const d = eventDef(id)!; expect(d.c).toBe('kurul'); expect(d.need).toContain('chain'); expect(d.ch.length).toBeGreaterThanOrEqual(2); }
-    const s = setup(); const seen: string[] = []; for (let i = 0; i < 4; i++) { const evs = advanceDays(s, 100); for (const e of evs) if (e.type === 'EVENT_DECISION' && BOARD_IDS.includes(e.data!.id as string)) { seen.push(e.data!.id as string); dispatch(s, 'ResolveEvent', { choice: 0 }); } if (s.pending) dispatch(s, 'ResolveEvent', { choice: 0 }); }
-    expect(seen.length).toBeGreaterThanOrEqual(1); expect(s.decisions!.some((d) => d.kind === 'kurul')).toBe(true);
   });
   it('kayıttan sağ çıkar', () => {
     const s = setup(); dispatch(s, 'SetFocus', { id: 'holding' }); dispatch(s, 'BuyDecor', { id: 'kahve' }); const r = unpack(pack(s)); expect(r.ok).toBe(true); if (r.ok) { expect(r.state.company!.focus!.id).toBe('holding'); expect(r.state.company!.decor).toEqual(['kahve']); expect(r.state.decisions!.length).toBe(2); }

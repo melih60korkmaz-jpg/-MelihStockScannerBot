@@ -1,3 +1,4 @@
+import { mgmtMonthlyCosts } from './mgmt';
 import { venturesValue } from './ventures';
 import { infraAssets } from './infra';
 import { monthKey } from '../core/calendar';
@@ -24,6 +25,7 @@ export function monthlyCosts(s: GameState): { cat: string; amount: Money; memo: 
   const maint = machineMonthlyMaint(s); if (maint > 0) out.push({ cat: 'makine', amount: maint, memo: `${s.machines.length} makine bakımı` });
   out.push({ cat: 'kira', amount: mul(TL(off.monthlyRentTL), ci), memo: off.label });
   out.push({ cat: 'ofis', amount: mul(TL(12000) + TL(1500) * s.staff.length, ci), memo: 'Elektrik, internet, kırtasiye' });
+  out.push(...mgmtMonthlyCosts(s));
   return out;
 }
 

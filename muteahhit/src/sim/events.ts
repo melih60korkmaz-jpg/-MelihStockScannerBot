@@ -107,6 +107,8 @@ export function describeEffect(s: GameState, e: EffectTuple): string {
   }
 }
 
+/** Etki uygulayıcı: olaylar ve yönetim kurulu kararları aynı etki dilini kullanır. */
+export const applyEffect = (s: GameState, e: EffectTuple, p: PendingEvent, events: GameEvent[]): void => apply(s, e, p, events);
 function apply(s: GameState, e: EffectTuple, p: PendingEvent, events: GameEvent[]): void {
   const c = s.company!, k = e[0], v = Number(e[1] ?? 0), f = eventScale(s);
   switch (k) {

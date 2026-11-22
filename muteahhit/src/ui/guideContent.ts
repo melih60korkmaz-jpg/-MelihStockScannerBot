@@ -12,7 +12,7 @@ export type Block =
 
 export interface Topic { id: string; ico: string; title: string; blocks: Block[] }
 
-export const TAB_TOPIC: Record<string, string> = { sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
+export const TAB_TOPIC: Record<string, string> = { yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
 
 export const GUIDE: Topic[] = [
   {
@@ -22,7 +22,7 @@ export const GUIDE: Topic[] = [
       { ul: ['1) Harita: arsa bul ve satın al.', '2) Projeler: arsaya bina tasarla, inşaatı başlat.', '3) Operasyon: ekip, malzeme ve makineyi hazır tut; şantiyeyi izle.', '4) Satış: bina bitince daireleri sat (ya da ön satışla erkenden başla).', '5) Finans: kasayı, borcu ve kârı takip et. Para biterse iş biter.'] },
       { tip: 'En kolay başlangıç: Harita sekmesindeki "Hızlı başlangıç" kartı. Sana uygun bir arsa + proje önerir ve tek dokunuşla inşaata başlar. Nakdinin en fazla %45\'ini kullanır, geri kalanı güvende kalır.' },
       { h: 'Ekranın yapısı' },
-      { ul: ['Üst çubuk: şirket adı, kasa, tarih, zaman hızı, ? (bu rehber), ayarlar, ana menü.', 'Alt çubuk: 7 sekme (Şirket, Harita, Projeler, Operasyon, İhale, Finans, Piyasa). Pasif sekmede nabız atan turuncu nokta, sıradaki görevin yeri.', 'Her sekmenin başında "burada ne var" satırı ve ? düğmesi bulunur; ? bu rehberin ilgili bölümünü açar.'] },
+      { ul: ['Üst çubuk: şirket adı, kasa, tarih, zaman hızı, ? (bu rehber), ayarlar, ana menü.', 'Alt çubuk: Şirket, Harita, Projeler, Yönetim, Finans ve Menü. Menü; Şirket, İnşaat, Ticaret, Holding, Piyasalar ve Dünya gruplarıyla tüm sayfalara (Operasyon, İhale, Holding, Piyasa dahil) götürür; kilitli sayfaların açılma koşulları görünür. Nabız atan turuncu nokta sıradaki görevin yeridir.', 'Her sekmenin başında "burada ne var" satırı ve ? düğmesi bulunur; ? bu rehberin ilgili bölümünü açar.'] },
     ],
   },
   {
@@ -190,6 +190,19 @@ export const GUIDE: Topic[] = [
       { ul: ['🤝 Ortak girişim: sermaye ve işi paylaşırsınız, birkaç ay sonra hesap kapanır (kâr ya da zarar).', '📑 Ortak ihale: iki firmanın referansıyla büyük ihaleye girersiniz.', '🚜 Makine kirala ve 📍 Arsa sat: rakibe makine kiralar ya da boş bir arsanı primle satmayı denersin (arsa en az 120 gündür elinde olmalı; pazarlıkta fazla zorlarsan vazgeçer).', 'Aynı firmayla 90 günde bir görüşebilirsin; ilişkisi düşman seviyesindeyse görüşmez.'] },
       { h: 'Rakipler de gelir' },
       { ul: ['Rakipler zaman zaman sana teklif getirir: ortak proje, arsana talip olma, makine kiralama, ihale anlaşması.', 'İhale anlaşması kâğıt üstünde kârlıdır ama rekabet kurumu soruşturması riski taşır; yakalanırsan ceza ve itibar kaybı olur.', 'Dost rakipler ihalede fiyatı yüksek tutar (senin lehine), düşman rakipler fiyat kırar. Düşmanlar adını kötüleyebilir.'] },
+    ],
+  },
+  {
+    id: 'yonetim', ico: '🧭', title: 'Yönetim Merkezi', blocks: [
+      { p: 'Menü › Şirket › Yönetim Merkezi (şirket seviye 2\'de açılır). Şirketin yönetim katmanı burada: genel müdür, yönetim kurulu, yıllık hedefler ve departmanlar.' },
+      { h: 'Genel müdür' },
+      { ul: ['Adaylar üç ayda bir yenilenir; beceri, tecrübe, tarz ve maaşları farklıdır. İşe giriş masrafı 2 maaş, görevden alma tazminatı 4 maaştır.', 'İyi bir genel müdür satış akışını, şantiye hızını, ihale puanını ve departman etkilerini artırır. Düşük becerili biri ara sıra hatalı karar verir (kasadan zarar).'] },
+      { h: 'Yönetim kurulu' },
+      { ul: ['Beş üye (yatırımcı, bankacı, sektör uzmanı, bağımsız, aile) farklı görüşlere sahiptir. Seviye 3 ve itibar 20\'de kurulur.', 'Her çeyrek başı bir toplantı olur: büyüme/tasarruf duruşu, borç politikası, yeni sektör, kâr dağıtımı, genel müdür değerlendirmesi, departman bütçesi. Üyelerin eğilimini görürsün; çoğunlukla aynı kararı verirsen güven artar, tersini yaparsan düşer.', 'Güven %25\'in altına inerse itibar kaybedersin; %70 üstünde kredi notun yükselir.'] },
+      { h: 'Yıllık hedefler' },
+      { ul: ['Ciro, net kâr, yeni proje, şirket değeri, borç azaltma, şehir sayısı, çalışan memnuniyeti ve pazar payı hedeflerinden istediklerini seç; zorluk rahat, dengeli ya da iddialı.', 'Yıl sonunda ağırlıklı puan hesaplanır ve yıllık rapora yazılır: %85 üstü itibar, kredi notu ve kurul güveni, %40 altı kayıp getirir.'] },
+      { h: 'Departmanlar' },
+      { ul: ['İnşaat, satış, finans, İK, satın alma, hukuk, strateji. Kurulum bedeli ve aylık gider vardır; bütçe düzeyi, müdür becerisi ve personel sayısı performansı belirler.', 'Performans 40\'ın üstünde fayda sağlar: satış akışı, şantiye hızı, kredi faizi, malzeme fiyatı, moral, ihale puanı, gecikme cezaları.'] },
     ],
   },
   {

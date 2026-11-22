@@ -1,4 +1,5 @@
 import { focusTender } from './control';
+import { mgmtTender, sectorDiscount } from './mgmt';
 import { TL, type Money } from '../core/money';
 import { pick, rand, randInt } from '../core/rng';
 import type { GameEvent, GameState, Parcel, Project, Tender } from '../core/types';
@@ -49,7 +50,7 @@ export function eligibility(s: GameState, t: Tender): Eligibility {
   ];
   return { ok: checks.every((x) => x.ok), checks };
 }
-export const bondOf = (t: Tender, price: Money): Money => Math.round(price * t.bondPct);
+export const bondOf = (t: Tender, price: Money, s?: GameState): Money => Math.round(price * t.bondPct * (s ? 1 - sectorDiscount(s, 'altyapi') * (t.infra ? 1 : 0) : 1));
 /** Teklif aralığı: ihale yaklaşık maliyetinin %80'i altı olağan dışı düşük (elenir); kamuda yaklaşık maliyet üstü geçersiz. */
 export const bidLimits = (t: Tender) => ({ min: Math.round(t.refCost * 0.8), max: Math.round(t.refCost * (t.client === 'kamu' ? 1.0 : 1.12)) });
 
@@ -58,11 +59,11 @@ export function bidError(s: GameState, t: Tender | undefined, price: number): st
   if (!s.openCities.includes(t.city)) return 'Bu ilde şubeniz yok.';
   if (!(price > 0)) return 'Geçersiz teklif.'; const el = eligibility(s, t); if (!el.ok) return 'Şartları sağlamıyorsunuz: ' + el.checks.filter((x) => !x.ok).map((x) => x.label).join(', ') + '.';
   const { max } = bidLimits(t); if (price > max) return 'Teklif, yaklaşık maliyet sınırını aşıyor.';
-  if (c.cash < bondOf(t, price)) return 'Teminat için yeterli nakit yok.';
+  if (c.cash < bondOf(t, price, s)) return 'Teminat için yeterli nakit yok.';
   return null;
 }
 export function placeBid(s: GameState, t: Tender, price: Money, events: GameEvent[]): void {
-  const bond = bondOf(t, price); post(s, 'teminat', -bond, { memo: `İhale teminatı: ${t.title}` }); t.bid = { price, day: s.clock.day, bond };
+  const bond = bondOf(t, price, s); post(s, 'teminat', -bond, { memo: `İhale teminatı: ${t.title}` }); t.bid = { price, day: s.clock.day, bond };
   events.push({ type: 'BID_PLACED', day: s.clock.day, data: { tenderId: t.id, price } });
 }
 
@@ -81,7 +82,7 @@ export function evaluateTender(s: GameState, t: Tender, events: GameEvent[]): vo
   const entries: { name: string; score: number; me?: boolean }[] = [];
   const valid = [t.bid.price, ...t.rivals.map((r) => r.price)].filter((p) => p >= min); const lowest = Math.min(...valid);
   const ps = playerScores(s, t), cap = (s.staff.length + s.machines.length * 2) / Math.max(1, t.req.staff + t.req.machines * 2) / 1.5;
-  if (t.bid.price >= min) entries.push({ name: c.name, me: true, score: +(score(t.bid.price, lowest, ps.tech, ps.rep, c.creditScore, cap) + focusTender(s, !!t.infra)).toFixed(2) });
+  if (t.bid.price >= min) entries.push({ name: c.name, me: true, score: +(score(t.bid.price, lowest, ps.tech, ps.rep, c.creditScore, cap) + focusTender(s, !!t.infra) + mgmtTender(s)).toFixed(2) });
   for (const r of t.rivals) if (r.price >= min) entries.push({ name: r.name, score: +score(r.price, lowest, r.tech, r.rep, 400 + r.rep * 5, 0.5 + r.rep / 200).toFixed(2) });
   entries.sort((a, b) => b.score - a.score); const top = entries[0]; const out = { scores: entries.map((e) => ({ name: e.name, score: e.score })) };
   if (t.bid.price < min) {

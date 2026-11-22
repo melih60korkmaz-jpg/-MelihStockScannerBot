@@ -1,3 +1,4 @@
+import { mgmtRateDelta } from './mgmt';
 import { TL, type Money } from '../core/money';
 import type { GameEvent, GameState, Loan } from '../core/types';
 import { bank } from '../data';
@@ -14,7 +15,7 @@ const KIND_PREMIUM: Record<LoanKind, number> = { ticari: 0, insaat: 1, makine: -
 /** Faiz = politika faizi + banka marjı + not primi + ürün primi (sabit faiz: açılışta belirlenir). */
 export function rateFor(s: GameState, bankId: string, kind: LoanKind): number {
   const b = bank(bankId)!, sc = s.company!.creditScore;
-  return +clamp(s.macro.policyRate + b.margin + Math.max(0, 700 - sc) / 100 * 0.6 + KIND_PREMIUM[kind], s.macro.policyRate + 1, 90).toFixed(2);
+  return +clamp(s.macro.policyRate + b.margin + Math.max(0, 700 - sc) / 100 * 0.6 + KIND_PREMIUM[kind] + mgmtRateDelta(s), s.macro.policyRate + 0.6, 90).toFixed(2);
 }
 /** Toplam borç kapasitesi: özkaynak × not çarpanı + itibar. Mevcut borç düşülür. */
 export function creditCapacity(s: GameState): { total: Money; used: Money; available: Money } {

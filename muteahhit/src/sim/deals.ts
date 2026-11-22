@@ -7,6 +7,7 @@ import { TAPU_HARCI, askPrice, fairValue, generateParcel } from './land';
 import { newDesignSeed, planProject } from './projects';
 import { defaultSales, generateUnits, unitsOf } from './sales';
 import { startConstruction } from './construction';
+import { mgmtDealDiscount } from './mgmt';
 
 /**
  * Fırsat ilanları: rakiplerden indirimli bitmiş bina, yarım kalmış inşaat, yıkılacak eski bina arsası ve arsa sahiplerinden kat karşılığı teklifleri.
@@ -72,7 +73,7 @@ export function dealsMonthly(s: GameState, events: GameEvent[]): void {
   if (c.level < DEALS_MIN_LEVEL || !s.openCities.length || s.deals.length >= MAX_DEALS || rand(s.rng, 'misc') > 0.7) return;
   const r = rand(s.rng, 'misc'), kind: Deal['kind'] = r < 0.3 ? 'eski' : r < 0.55 ? 'kat' : r < 0.8 ? 'bina' : 'yarim';
   if (kind === 'yarim' && c.level < 3) return;
-  const d = makeDeal(s, kind); if (!d) return;
+  const d = makeDeal(s, kind); if (!d) return; d.price = Math.round(d.price * (1 - mgmtDealDiscount(s))); // strateji departmanı pazarlıkta indirim sağlar
   s.deals.push(d); events.push({ type: 'DEAL_NEW', day: s.clock.day, data: { dealId: d.id, kind: d.kind } });
 }
 

@@ -1,4 +1,5 @@
 import { focusId } from './control';
+import { mgmtPenaltyMult } from './mgmt';
 import { TL, type Money } from '../core/money';
 import { pick, rand, randInt } from '../core/rng';
 import type { GameEvent, GameState, InfraJob, Tender } from '../core/types';
@@ -77,7 +78,7 @@ export function infraDaily(s: GameState, events: GameEvent[]): void {
 function finishInfra(s: GameState, j: InfraJob, events: GameEvent[]): void {
   const c = s.company!, day = s.clock.day, late = Math.max(0, day - j.deadline), rest = Math.max(0, 1 - j.doneShare);
   if (rest > 0.0001) j.pending.push({ day: day + 45, amount: Math.round((j.price - j.advance) * rest) });
-  const penalty = Math.round(j.price * Math.min(0.1, late * 0.001)); if (penalty > 0) post(s, 'garanti', -penalty, { memo: `${j.name}: gecikme cezası` });
+  const penalty = Math.round(j.price * Math.min(0.1, late * 0.001) * mgmtPenaltyMult(s)); if (penalty > 0) post(s, 'garanti', -penalty, { memo: `${j.name}: gecikme cezası` });
   if (!j.bondReturned) { post(s, 'teminat', j.bond, { memo: 'Kesin teminat iadesi' }); j.bondReturned = true; }
   j.progress = 1; j.status = 'bitti'; const profit = j.price - penalty - j.spent; j.result = { profit, late, day };
   c.stats.completed++; c.stats.sold++; c.stats.profit += profit; c.reputation = clamp(c.reputation + (late === 0 ? 4 : late < 60 ? 1 : -2), 0, 100); c.creditScore = clamp(c.creditScore + 8, 100, 900);

@@ -587,3 +587,10 @@ body:has(.modal .sc) #toasts { right:auto; left:50%; transform:translateX(-50%);
 .sprog .sp-sub { height:3px; border-radius:2px; background:#ffffff14; overflow:hidden; } .sprog .sp-sub i { display:block; height:100%; background:#F5F5F3aa; transition:width .5s; }
 @keyframes spshine { from { background-position:200% 0; } to { background-position:-200% 0; } }
 html[data-motion=reduced] .sprog .sp-bar i { animation:none; transition:none; }
+/* Ana menü paneli */
+.menumodal { justify-content:flex-start; align-items:stretch; } .menupanel { width:min(780px,96vw); height:100%; max-height:100vh; border-radius:0 18px 18px 0; overflow:auto; animation:menuin .22s cubic-bezier(.2,.9,.3,1) both; } .menupanel.out { animation:menuout .16s ease-in both; }
+@keyframes menuin { from { transform:translateX(-30px); opacity:0; } to { transform:none; opacity:1; } } @keyframes menuout { to { transform:translateX(-30px); opacity:0; } }
+.menugrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px 14px; } .mgroup { display:flex; flex-direction:column; gap:6px; }
+.mitem { display:flex; align-items:center; gap:8px; text-align:left; min-height:46px; padding:6px 10px; border-radius:12px; border:1px solid var(--line); background:var(--s1); color:inherit; flex-wrap:wrap; } .mitem b { font-size:14px; font-weight:600; flex:1; } .mitem small { width:100%; color:var(--mute); font-size:11px; }
+.mitem.cur { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 16%, var(--s1)); } .mitem.locked { opacity:.55; } .mitem:active { transform:scale(.98); }
+html[data-motion=reduced] .menupanel { animation:none; }

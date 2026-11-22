@@ -1,5 +1,5 @@
 import { formatDate } from '../core/calendar';
-import { FOCI, MANAGER_TYPES, ORDERS, ORDER_DAYS, activeOrder, canChangeFocus, focusLabel, managerEff, managerOf, nextBoardMonth, projectMods } from '../sim/control';
+import { FOCI, MANAGER_TYPES, ORDERS, ORDER_DAYS, activeOrder, canChangeFocus, focusLabel, managerEff, managerOf, projectMods } from '../sim/control';
 import { traitOf } from '../sim/staff';
 import { staffType } from '../data';
 import { h, press, toast } from './dom';
@@ -60,5 +60,6 @@ export function mgmtCard(app: App): HTMLElement {
   return h('div', { class: 'card' },
     h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, `${f.ico} Yıllık odak: ${f.label}`, h('small', {}, can ? 'Bu yıl henüz seçmediniz' : f.desc)), h('button', { class: can ? 'btn gold' : 'btn', style: 'min-height:36px;font-size:12px', onclick: () => { press(app); openFocus(app); } }, can ? 'Seç' : 'Gör')),
     h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, '📢 Fırsat ilanları', h('small', {}, s.company!.level >= 2 ? `${dealsOpen(s).length} açık fırsat: rakip binaları, eski bina arsaları, kat karşılığı` : 'Seviye 2\'de başlar')), h('button', { class: dealsOpen(s).length ? 'btn gold' : 'btn', style: 'min-height:36px;font-size:12px', onclick: () => { press(app); openDeals(app); } }, 'Aç')),
-    h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, '🏛️ Yönetim kurulu', h('small', {}, s.company!.level >= 2 ? `Sonraki toplantı: ${nextBoardMonth(s)}` : 'Seviye 2\'de başlar')), h('button', { class: 'btn', style: 'min-height:36px;font-size:12px', onclick: () => { press(app); openDecisions(app); } }, `📒 Günlük (${n})`)));
+    h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, '🧭 Yönetim Merkezi', h('small', {}, s.mgmt?.meeting ? '🔔 Kurul toplantısı bekliyor' : 'Genel müdür, kurul, hedefler, departmanlar')), h('button', { class: s.mgmt?.meeting ? 'btn gold' : 'btn', style: 'min-height:36px;font-size:12px', onclick: () => { press(app); app.openTab?.('yonetim'); } }, 'Aç')),
+    h('div', { class: 'row', style: 'min-height:44px' }, h('div', { class: 'lbl' }, '📒 Karar günlüğü', h('small', {}, `${n} kayıt`)), h('button', { class: 'btn', style: 'min-height:36px;font-size:12px', onclick: () => { press(app); openDecisions(app); } }, `Aç (${n})`)));
 }

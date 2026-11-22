@@ -104,10 +104,27 @@ export interface Rival { rel?: number; asked?: number; id: number; name: string;
 export interface YearReport {
   year: number; revenue: Money; expense: Money; profit: Money; netWorth: Money; netWorthChange: Money | null; cash: Money;
   completed: number; sold: number; totals: { completed: number; sold: number }; reputation: number; level: number;
+  goals?: { score: number; res: { id: string; label: string; pct: number }[] };
   rank: number; rivals: number; leader: string | null; topIncome?: { cat: string; amount: Money }; topExpense?: { cat: string; amount: Money }; staff: number; openProjects: number;
 }
 /** Karar günlüğü kaydı. */
 export interface Decision { day: number; kind: string; title: string; detail: string }
+/** Yönetim Merkezi (eski kayıtlarda yok; ilk erişimde oluşturulur). */
+export interface Exec { id: number; name: string; role: string; skill: number; exp: number; salary: Money; style: 'temkinli' | 'dengeli' | 'atilgan'; since: number; mistakes: number }
+export interface BoardMember { id: number; name: string; role: string; growth: number; risk: number; loyalty: number }
+export interface AgendaOption { l: string; d: string; eff: [string, ...(number | string)[]][]; g: number; r: number; act?: { kind: 'mode'; id: 'buyume' | 'tasarruf' | 'denge'; days: number } | { kind: 'loan' } | { kind: 'repay' } | { kind: 'discount'; sector: string } | { kind: 'gmprime' } | { kind: 'gmfire' } | { kind: 'deptbudget'; dept: string } }
+export interface AgendaItem { id: string; kind: string; title: string; text: string; options: AgendaOption[]; picked?: number; majority?: number; votes?: number[] }
+export interface Goal { id: string; label: string; target: number; weight: number }
+export interface GoalResult { id: string; label: string; target: number; actual: number; pct: number }
+export interface DeptState { open: boolean; budget: number; mgr: Exec | null; staff: number }
+export interface MgmtState {
+  gm: Exec | null; cands: Exec[]; candDay: number; board: BoardMember[]; trust: number;
+  meeting: { id: number; day: number; items: AgendaItem[] } | null; lastMeetingQ: number;
+  mode?: { id: 'buyume' | 'tasarruf' | 'denge'; until: number }; discount?: Record<string, { pct: number; until: number }>;
+  goals: { year: number; items: Goal[]; diff: number; base: { nw: Money; debt: Money; started: number; completed: number } } | null;
+  goalHist: { year: number; score: number; res: GoalResult[] }[];
+  depts: Record<string, DeptState>;
+}
 export interface Progress { ach: Record<string, number>; quests: Record<string, number>; c: { loans: number; tendersWon: number; bids: number; events: number; unitsSold: number; started: number; bestQuality: number; crisisMonths: number; investors: number; equitySold: number } }
 export interface PendingEvent { rivalId?: number; id: string; day: number; projectId?: number; city?: string; staffId?: number }
 /** Hikâye zinciri: seçimden N gün sonra çıkacak devam olayı (isteğe bağlı alan; eski kayıtlarda yok). */
@@ -237,6 +254,7 @@ export interface GameState {
   decisions?: Decision[];
   offers?: Offer[];
   deals?: Deal[];
+  mgmt?: MgmtState;
   ventures: Venture[]; infra: InfraJob[]; holding: HoldingState; equity: StockState | null; // equity: halka arz/borsa durumu
   progress: Progress;
   /** Malzeme fiyat geçmişi (aylık etkin çarpan; en çok 36 ay). Eski kayıtlarda yoktur. */

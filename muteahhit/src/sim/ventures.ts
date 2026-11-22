@@ -1,4 +1,5 @@
 import { focusVenture } from './control';
+import { sectorDiscount } from './mgmt';
 import { TL, type Money } from '../core/money';
 import { dateOf } from '../core/calendar';
 import type { GameEvent, GameState, Project, Strategy, Venture, VentureKind } from '../core/types';
@@ -129,7 +130,7 @@ export function buildError(s: GameState, kind: 'gunes' | 'ruzgar', city: string,
   if (c.cash < energyCapex(s, kind, tier)) return 'Yatırım için yeterli nakit yok.';
   return null;
 }
-export const energyCapex = (s: GameState, kind: 'gunes' | 'ruzgar', tier: number): Money => Math.round(TL(ENERGY_TIERS[kind][tier]![1] * 1_000_000) * s.costIndex);
+export const energyCapex = (s: GameState, kind: 'gunes' | 'ruzgar', tier: number): Money => Math.round(TL(ENERGY_TIERS[kind][tier]![1] * 1_000_000) * s.costIndex * (1 - sectorDiscount(s, 'enerji')));
 export function buildEnergy(s: GameState, kind: 'gunes' | 'ruzgar', city: string, tier: number, cityLabel: string, events: GameEvent[]): Venture {
   const capex = energyCapex(s, kind, tier), mw = ENERGY_TIERS[kind][tier]![0];
   post(s, 'yatirim_isletme', -capex, { memo: `${VENTURE_INFO[kind].label} yatırımı` });

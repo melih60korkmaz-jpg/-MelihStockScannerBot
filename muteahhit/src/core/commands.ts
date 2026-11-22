@@ -2,6 +2,8 @@ import { TL, mul } from './money';
 import type { GameEvent, GameState } from './types';
 import { CITIES, branchCost, provinceData, background, buildingType, difficulty, machine, material, officeFor, quality, staffType, supplier } from '../data';
 import { dateOf } from './calendar';
+import { BUDGET_STEPS, decideAgenda, deptCandidates, deptDef, fireGM, getMgmt, hireDeptMgr, hireGM, openDept, refreshCands, setDeptStaff, setGoals } from '../sim/mgmt';
+import { isUnlocked } from '../sim/unlock';
 import { PROPOSALS } from '../sim/rivalLife';
 import { sellableIdle } from '../sim/events';
 import { KIND_LABEL, acceptDeal, dealError } from '../sim/deals';
@@ -452,7 +454,19 @@ const proposeCmd: CommandDef<{ rivalId: number; kind: string }> = {
   apply(s, p) { const r = s.rivals.find((x) => x.id === p.rivalId)!, pr = PROPOSALS[p.kind]!; r.asked = s.clock.day; (s.evtQueue ??= []).push({ id: pr.ev, day: s.clock.day + 3, rivalId: r.id }); logDecision(s, 'firsat', `${r.name}: ${pr.label}`, 'Görüşme başlatıldı; yanıt birkaç gün içinde gelir.'); return [ev(s, 'PROPOSED', { rivalId: r.id, kind: p.kind })]; },
 };
 
+// ---- Yönetim Merkezi ----
+const hireGmCmd: CommandDef<{ candId: number }> = { validate: (s, p) => { if (!s.company) return 'Önce şirket kurulmalı.'; refreshCands(s); const m = getMgmt(s), c = m.cands.find((x) => x.id === p.candId); if (!c) return 'Aday bulunamadı.'; if (m.gm) return 'Önce mevcut genel müdürü görevden alın.'; if (!isUnlocked(s, 'yonetim')) return 'Yönetim Merkezi henüz açılmadı.'; return s.company.cash < c.salary * 2 ? 'İşe giriş masrafı (2 maaş) için yeterli nakit yok.' : null; }, apply(s, p) { hireGM(s, p.candId); return [ev(s, 'MGMT_CHANGED', { what: 'gm' })]; } };
+const fireGmCmd: CommandDef<Record<string, never>> = { validate: (s) => { const m = getMgmt(s); if (!m.gm) return 'Genel müdür yok.'; return s.company!.cash < m.gm.salary * 4 ? 'Kıdem tazminatı (4 maaş) için yeterli nakit yok.' : null; }, apply(s) { fireGM(s); return [ev(s, 'MGMT_CHANGED', { what: 'gm' })]; } };
+const decideAgendaCmd: CommandDef<{ itemId: string; option: number }> = { validate(s, p) { const m = getMgmt(s), it = m.meeting?.items.find((x) => x.id === p.itemId); if (!it) return 'Toplantı gündemi bulunamadı.'; if (it.picked !== undefined) return 'Bu madde karara bağlandı.'; if (!it.options[p.option]) return 'Geçersiz seçenek.'; return null; }, apply(s, p) { const evs: GameEvent[] = []; decideAgenda(s, p.itemId, p.option, evs); return evs; } };
+const setGoalsCmd: CommandDef<{ ids: string[]; diff: number }> = { validate: (s, p) => { if (!s.company) return 'Önce şirket kurulmalı.'; const m = getMgmt(s); if (!isUnlocked(s, 'yonetim')) return 'Yönetim Merkezi henüz açılmadı.'; if (!(p.diff >= 0.8 && p.diff <= 1.4)) return 'Zorluk çarpanı 0,8–1,4 arasında olmalı.'; if (!p.ids?.length) return 'En az bir hedef seçin.'; if (m.goals?.year === dateOf(s.clock.day).year) return 'Bu yılın hedefleri zaten belirlendi.'; return null; }, apply(s, p) { setGoals(s, p.ids, p.diff); return [ev(s, 'MGMT_CHANGED', { what: 'goals' })]; } };
+const openDeptCmd: CommandDef<{ dept: string }> = { validate(s, p) { const def = deptDef(p.dept), m = getMgmt(s); if (!def) return 'Geçersiz departman.'; if (m.depts[p.dept]!.open) return 'Departman zaten açık.'; if (s.company!.level < def.level) return `Departman için şirket seviyesi ${def.level} gerekir.`; return s.company!.cash < Math.round(TL(def.openTL) * s.costIndex) ? 'Kuruluş masrafı için yeterli nakit yok.' : null; }, apply(s, p) { openDept(s, p.dept); return [ev(s, 'MGMT_CHANGED', { what: 'dept' })]; } };
+const deptBudgetCmd: CommandDef<{ dept: string; mult: number }> = { validate(s, p) { const d = getMgmt(s).depts[p.dept]; if (!d?.open) return 'Önce departmanı kurun.'; return BUDGET_STEPS.includes(p.mult) ? null : 'Geçersiz bütçe düzeyi.'; }, apply(s, p) { getMgmt(s).depts[p.dept]!.budget = p.mult; return [ev(s, 'MGMT_CHANGED', { what: 'dept' })]; } };
+const hireDeptMgrCmd: CommandDef<{ dept: string; candId: number }> = { validate(s, p) { const d = getMgmt(s).depts[p.dept]; if (!d?.open) return 'Önce departmanı kurun.'; const c = deptCandidates(s, p.dept).find((x) => x.id === p.candId); if (!c) return 'Aday bulunamadı.'; if (d.mgr) return 'Önce mevcut müdürü görevden alın.'; return s.company!.cash < c.salary * 2 ? 'İşe giriş masrafı için yeterli nakit yok.' : null; }, apply(s, p) { hireDeptMgr(s, p.dept, p.candId); return [ev(s, 'MGMT_CHANGED', { what: 'dept' })]; } };
+const fireDeptMgrCmd: CommandDef<{ dept: string }> = { validate(s, p) { const d = getMgmt(s).depts[p.dept]; return d?.mgr ? null : 'Departman müdürü yok.'; }, apply(s, p) { const d = getMgmt(s).depts[p.dept]!; post(s, 'yonetim', -d.mgr!.salary * 3, { memo: `Tazminat: ${d.mgr!.name}` }); d.mgr = null; return [ev(s, 'MGMT_CHANGED', { what: 'dept' })]; } };
+const deptStaffCmd: CommandDef<{ dept: string; delta: number }> = { validate(s, p) { const d = getMgmt(s).depts[p.dept]; if (!d?.open) return 'Önce departmanı kurun.'; if (![1, -1].includes(p.delta)) return 'Geçersiz değişim.'; const n = d.staff + p.delta; return n < 0 || n > 12 ? 'Personel sayısı 0–12 arasında olmalı.' : null; }, apply(s, p) { setDeptStaff(s, p.dept, p.delta); return [ev(s, 'MGMT_CHANGED', { what: 'dept' })]; } };
+
 export const COMMANDS = {
+  HireGM: hireGmCmd, FireGM: fireGmCmd, DecideAgenda: decideAgendaCmd, SetGoals: setGoalsCmd, OpenDept: openDeptCmd, SetDeptBudget: deptBudgetCmd, HireDeptMgr: hireDeptMgrCmd, FireDeptMgr: fireDeptMgrCmd, DeptStaff: deptStaffCmd,
   ProposeToRival: proposeCmd,
   AcceptDeal: acceptDealCmd, DeclineDeal: declineDealCmd,
   SetPace: setPaceCmd, PromoteUnit: promoteUnitCmd,

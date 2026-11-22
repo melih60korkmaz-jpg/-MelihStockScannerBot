@@ -4,7 +4,7 @@ import { h, press, toast } from '../dom';
 import { eventArt } from '../eventArt';
 import type { App } from '../app';
 
-const CAT: Record<string, string> = { mevzuat: 'Mevzuat', piyasa: 'Piyasa', doga: 'Doğa', insan: 'İnsan kaynağı', hukuk: 'Hukuk', guvenlik: 'Güvenlik', firsat: 'Fırsat', rakip: 'Rakip', finans: 'Finans', kurul: 'Yönetim kurulu' };
+const CAT: Record<string, string> = { mevzuat: 'Mevzuat', piyasa: 'Piyasa', doga: 'Doğa', insan: 'İnsan kaynağı', hukuk: 'Hukuk', guvenlik: 'Güvenlik', firsat: 'Fırsat', rakip: 'Rakip', finans: 'Finans' };
 
 /** Karar olayı penceresi: seçimlerin sabit etkileri gösterilir; riskli seçimlerde olasılık yazar. */
 export function openEventDecision(app: App): void {

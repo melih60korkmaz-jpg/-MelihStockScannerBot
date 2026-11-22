@@ -14,7 +14,8 @@ import { checkProgress, progressMonthly, track } from './progress';
 import { rivalsMonthly } from './rivals';
 import { reportYearly } from './report';
 import { dealsMonthly } from './deals';
-import { boardMonthly, decorBonus } from './control';
+import { decorBonus } from './control';
+import { mgmtMonthly, mgmtMorale, mgmtYearly } from './mgmt';
 import { eventsDaily, eventsMonthly } from './events';
 import { tendersDaily, tendersMonthly } from './tenders';
 import { infraDaily, infraMonthly, infraPrune } from './infra';
@@ -69,7 +70,7 @@ function processScheduled(s: GameState, events: GameEvent[]): void {
 /** Yıllık maaş artışı: enflasyonun %90'ı kadar (işçi kaybetmemek için). */
 function yearly(s: GameState, events: GameEvent[]): void {
   const k = 1 + (s.macro.inflation / 100) * 0.9;
-  for (const p of s.staff) p.salary = Math.round(p.salary * k);
+  for (const p of s.staff) p.salary = Math.round(p.salary * k); mgmtYearly(s);
   compactLedger(s, s.clock.day - 730); // 2 yıldan eski kayıtlar aylık toplamlara indirgenir (kayıt boyutu/performans)
   events.push({ type: 'YEAR', day: s.clock.day, data: { year: dateOf(s.clock.day).year, raise: k - 1 } });
 }
@@ -78,7 +79,7 @@ function monthly(s: GameState, events: GameEvent[]): void {
   const c = s.company!;
   macroMonthly(s, events);
   rivalsMonthly(s, events);
-  boardMonthly(s);
+  mgmtMonthly(s, events);
   dealsMonthly(s, events);
   marketMonthly(s, events);
   materialsMonthly(s, events);
@@ -104,7 +105,7 @@ function monthly(s: GameState, events: GameEvent[]): void {
 
 /** Moral hedefe yaklaşır: güvenlik politikası, yakın kaza, nakit sıkıntısı etkiler. */
 function moraleMonthly(s: GameState): void {
-  const c = s.company!; const team = Math.min(6, 2 * s.staff.filter((x) => traitOf(x).id === 'takimci').length) + decorBonus(s, 'morale'); const target = 68 + team + (c.safety === 'yuksek' ? 6 : c.safety === 'dusuk' ? -6 : 0) - (s.clock.day - c.lastAccidentDay < 90 ? 10 : 0) - (c.cash < 0 ? 8 : 0);
+  const c = s.company!; const team = Math.min(6, 2 * s.staff.filter((x) => traitOf(x).id === 'takimci').length) + decorBonus(s, 'morale') + mgmtMorale(s); const target = 68 + team + (c.safety === 'yuksek' ? 6 : c.safety === 'dusuk' ? -6 : 0) - (s.clock.day - c.lastAccidentDay < 90 ? 10 : 0) - (c.cash < 0 ? 8 : 0);
   for (const x of s.staff) x.morale = Math.round(Math.min(100, Math.max(0, x.morale + (target - x.morale) * 0.25)));
 }
 
