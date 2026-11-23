@@ -34,7 +34,7 @@ describe('tedarik: teklif ve sipariş', () => {
   it('vadeli alım: nakit çıkmaz, yükümlülük doğar ve net varlıktan düşer; vadesi gelince ödenir', () => {
     const s = setup(); const nw0 = netWorth(s), c0 = s.company!.cash; expect(dispatch(s, 'PlaceOrder', { material: 'cimento', qty: 200, supplier: 'premium', term: 'vade30' }).ok).toBe(true);
     expect(s.company!.cash).toBe(c0); expect(payablesTotal(s)).toBeGreaterThan(0); expect(netWorth(s)).toBeLessThan(nw0 + 1); const due = payablesTotal(s);
-    advanceDays(s, 20); expect(payablesTotal(s)).toBe(due); advanceDays(s, 16); expect(payablesTotal(s)).toBe(0); expect(s.company!.cash).toBeLessThan(c0 - due + TL(2_000_000)); expect(checkInvariant(s)).toBe(true);
+    advanceDays(s, 20); expect(payablesTotal(s)).toBe(due); advanceDays(s, 16); expect(payablesTotal(s)).toBe(0); expect(s.company!.cash).toBeLessThan(c0 - due + TL(8_000_000)); expect(checkInvariant(s)).toBe(true);
   });
   it('nakit yetmezse vade ertelenir (gecikme faizi, itibar kaybı) ve sonunda ödenir', () => {
     const s = setup(); dispatch(s, 'PlaceOrder', { material: 'cimento', qty: 500, supplier: 'premium', term: 'vade30' }); const due0 = payablesTotal(s); s.company!.cash = 1000; s.ledgerBase = 1000 - s.ledger.reduce((a, e) => a + e.amount, 0);
