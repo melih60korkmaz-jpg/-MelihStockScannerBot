@@ -31,7 +31,7 @@ Bir arsa, küçük bir ekip ve büyük bir hayalle başla. Temelden zirveye bir 
 Çevrimdışı oynanır, hesap gerektirmez. Tamamen ücretsiz, reklamsız ve uygulama içi satın almasızdır.
 
 ## Sürüm notları (1.2.0)
-Yönetim Merkezi, tedarik, gayrimenkul, makine parkı, altyapı, işletmeler, enerji, borsa ve iştirakler eklendi. Zaman artık kendiliğinden akıyor.
+İlk sürüm: inşaat, şirket yönetimi, tedarik, gayrimenkul, makine parkı, altyapı ihaleleri, işletmeler, enerji, fabrikalar, borsa ve iştirakler. Zaman kendiliğinden akar; mesaj kutusu ve oyun içi geri bildirim formu eklendi.
 
 ## App Privacy (Apple "Uygulama Gizliliği") yanıtları
 - Veri toplama: **Hayır** (uygulama hiçbir veri toplamaz; kayıtlar yalnızca cihazdadır).
