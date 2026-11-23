@@ -6,7 +6,7 @@ import { advanceDays } from '../src/sim/engine';
 import { checkInvariant } from '../src/sim/ledger';
 import { netWorth } from '../src/sim/finance';
 import { consolidate } from '../src/sim/consol';
-import { FACTORY_PRODUCTS, acceptThreshold, factoryOutput, ownStock, freightMult, hiddenDebt, rivalPrice, stakeOf, stakesValue, takeoverPrice } from '../src/sim/invest';
+import { FACTORY_PRODUCTS, acceptThreshold, factoryOutput, ownStock, freightMult, hiddenDebt, rivalPrice, sellStake, stakeOf, stakesValue, takeoverPrice } from '../src/sim/invest';
 import { quoteOrder, unitPrice } from '../src/sim/materials';
 import { fairPrice, priceDrivers } from '../src/sim/stock';
 import { debtTotal } from '../src/sim/loans';
@@ -115,5 +115,16 @@ describe('eski kayıt uyumu', () => {
     const r = unpack(pack(raw as unknown as GameState)); expect(r.ok).toBe(true); if (!r.ok) return;
     advanceDays(r.state, 1100); expect(checkInvariant(r.state)).toBe(true); expect(consolidate(r.state).ok).toBe(true); expect(Number.isFinite(netWorth(r.state))).toBe(true);
     expect(dispatch(r.state, 'BuildVenture', { kind: 'restoran', city: 'ankara', tier: 0 }).ok).toBe(true); expect(dispatch(r.state, 'SubTransfer', { div: 'enerji', kind: 'sermaye', amount: 100 }).ok).toBe(true);
+  });
+});
+
+describe('silinen rakip hissesi', () => {
+  it('hissesi olan batık rakip listeden silinmez; olmayan silinir; kayıp rakipte satış çökmez', () => {
+    const s = newGameState(5); dispatch(s, 'CreateCompany', { name: 'X', founderBackground: 'eski_kalfa', startCity: 'ankara' });
+    const r = s.rivals[0]!; r.failed = true; r.since = -2000; s.stakes = [{ rivalId: r.id, pct: 5, cost: 1000, since: 0 }];
+    const gone = s.rivals.length; s.rivals.splice(0, 1); // rakip kaybolmuş gibi
+    expect(s.rivals.length).toBe(gone - 1);
+    expect(() => sellStake(s, r.id, 5)).not.toThrow();
+    expect(s.stakes?.length ?? 0).toBe(0);
   });
 });

@@ -47,7 +47,7 @@ export function sellStakeError(s: GameState, rivalId: number, pct: number): stri
   const st = stakeOf(s, rivalId); if (!st) return 'Bu şirkette hisseniz yok.'; if (!Number.isInteger(pct) || pct < 1 || pct > st.pct) return `Satılacak oran %1–%${st.pct} olmalı.`; return null;
 }
 export function sellStake(s: GameState, rivalId: number, pct: number): Money {
-  const st = stakeOf(s, rivalId)!, r = rival(s, rivalId)!, v = stakeProceeds(s, r, pct); post(s, 'yatirim_isletme', v, { memo: `${r.name} hissesi satışı (%${pct})` });
+  const st = stakeOf(s, rivalId)!, r = rival(s, rivalId), v = r ? stakeProceeds(s, r, pct) : 0; post(s, 'yatirim_isletme', v, { memo: `${r?.name ?? 'Kapanmış şirket'} hissesi satışı (%${pct})` });
   st.cost = Math.round(st.cost * (1 - pct / st.pct)); st.pct -= pct; if (st.pct <= 0) s.stakes = s.stakes!.filter((x) => x !== st); return v;
 }
 

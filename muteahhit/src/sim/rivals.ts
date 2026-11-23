@@ -52,7 +52,7 @@ export function rivalsMonthly(s: GameState, events: GameEvent[]): void {
   if (aliveRivals(s).length < ALIVE && rand(s.rng, 'rivals') < 0.12) { const n = spawn(s, randInt(s.rng, 'rivals', 0, 2)); s.rivals.push(n); news(s, events, `Yeni bir firma sektöre girdi: ${n.name}.`, 'info'); }
   // arz baskısı sönümlenir; fazla arz konut fiyatını hafifçe aşağı çeker
   for (const cm of Object.values(s.cityMarket)) { cm.supply = (cm.supply ?? 0) * 0.93; if ((cm.supply ?? 0) > 6) cm.housingIndex *= 0.9985; }
-  if (s.rivals.length > 24) s.rivals = s.rivals.filter((r) => !r.failed || s.clock.day - r.since < 720).slice(-24);
+  if (s.rivals.length > 24) s.rivals = s.rivals.filter((r) => !r.failed || s.clock.day - r.since < 720 || s.stakes?.some((x) => x.rivalId === r.id) || s.dd?.[r.id]).slice(-24);
 }
 
 function rivalFails(s: GameState, r: Rival, events: GameEvent[]): void {
