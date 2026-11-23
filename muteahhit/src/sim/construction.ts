@@ -24,7 +24,8 @@ export const activeProjects = (s: GameState) => s.projects.filter((p) => p.statu
 /** Kalan tahmini gün (aşama süreleri toplamı). Şantiye ekranı ve proje kartları aynı hesabı kullanır. */
 export function remainingDays(p: Project): number { const b = p.build; if (!b) return 0; const d = stageDays(p); let r = (1 - b.progress) * d[b.stage]!; for (let k = b.stage + 1; k < 18; k++) r += d[k]!; return r; }
 export function stageDays(p: Project): number[] {
-  const total = Math.max(60, p.expected.months * 30);
+  // Oyun hızı için süre sıkıştırması: uzun projeler yumuşakça kısalır; en büyük bina bile ≈240 planlı gün (≈2–2,5 dk gerçek süre) sürer.
+  const raw = Math.max(60, p.expected.months * 30), total = Math.min(240, raw <= 150 ? raw : 150 + (raw - 150) * 0.35);
   return STAGES.map((st) => (total * st.time) / TOTAL_TIME);
 }
 
@@ -44,7 +45,7 @@ export function crewCapacity(s: GameState, stageId: string, projectId?: number):
 export function crewRatio(s: GameState, p: Project, stageId: string): number { return crewCapacity(s, stageId, p.id) / Math.max(2, p.brut / 70); }
 export function crewFactor(s: GameState, p: Project, stageId: string): number {
   const r = crewRatio(s, p, stageId);
-  return r < 1 ? 0.55 + 0.45 * r : Math.min(1.3, 1 + (r - 1) * 0.3);
+  return r < 1 ? 0.8 + 0.2 * r : Math.min(1.3, 1 + (r - 1) * 0.3);
 }
 const hasRole = (s: GameState, role: string) => s.staff.some((x) => x.type === role);
 

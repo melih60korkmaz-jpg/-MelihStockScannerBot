@@ -45,7 +45,7 @@ export const incomingSpace = (s: GameState) => s.orders.reduce((a, o) => a + spa
 export const freeSpace = (s: GameState) => Math.max(0, capacityOf(s) - usedSpace(s) - incomingSpace(s));
 export const TERM_PREMIUM = { pesin: 0, vade30: 0.025, vade60: 0.05 } as const, TERM_DAYS = { pesin: 0, vade30: 30, vade60: 60 } as const;
 export const TIER_PRICE = [0.85, 1, 1.25], TIER_LABEL = ['Ekonomik', 'Standart', 'Premium'];
-export interface OrderOpts { tier?: number; term?: 'pesin' | 'vade30' | 'vade60'; rush?: boolean; dest?: string; contractId?: number; lockedUnit?: Money }
+export interface OrderOpts { direct?: boolean; tier?: number; term?: 'pesin' | 'vade30' | 'vade60'; rush?: boolean; dest?: string; contractId?: number; lockedUnit?: Money }
 export interface OrderQuote { ok: boolean; error?: string; unit: Money; goods: Money; discount: Money; premium: Money; freight: Money; total: Money; lead: number; space: number; mismatch: boolean }
 const regionOf = (cityId: string) => cityData(cityId)?.province.region;
 /** Sipariş teklifi: birim fiyat, toplu indirim, vade farkı, nakliye (bölge uyumsuzluğu ve ekspres ek ücret), teslim süresi. Para hareketi yok. */
@@ -59,13 +59,13 @@ export function quoteOrder(s: GameState, matId: string, supId: string, qty: numb
   const adj = supplyAdjust(s, matId, supId); if (adj.blocked && o.contractId === undefined) return { ...empty, error: adj.blocked };
   const unit = o.lockedUnit ?? Math.round(unitPrice(s, matId, supId) * adj.price * TIER_PRICE[o.tier ?? 1]! * (supId === 'ithal' ? 1 + (s.macro.inflation / 100) * 0.15 : 1)), gross = Math.round(unit * qty);
   const discount = o.lockedUnit !== undefined ? 0 : Math.round(gross * (gross >= TL(20_000_000) * s.costIndex ? 0.04 : gross >= TL(5_000_000) * s.costIndex ? 0.02 : 0)), goods = gross - discount, premium = activeNego(s, matId, supId)?.freeTerm ? 0 : Math.round(goods * TERM_PREMIUM[term]);
-  const freight = Math.round(goods * (0.03 + (mismatch ? 0.04 : 0) + (o.rush ? 0.06 : 0)) * freightMult(s) * (hasDepotIn(s, dest) ? 0.75 : 1)), lead = Math.max(1, leadDays(s, supId) + (mismatch ? 3 : 0) - (o.rush ? 2 : 0) + adj.lead);
+  const freight = Math.round(goods * (0.03 + (mismatch ? 0.04 : 0) + (o.rush ? 0.06 : 0)) * freightMult(s) * (hasDepotIn(s, dest) ? 0.75 : 1) * (o.direct ? 1.08 : 1)), lead = Math.max(1, leadDays(s, supId) + (mismatch ? 3 : 0) - (o.rush ? 2 : 0) + adj.lead);
   return { ok: true, unit, goods, discount, premium, freight, total: goods + premium + freight, lead, space, mismatch };
 }
 
 export function placeOrder(s: GameState, matId: string, qty: number, supId: string, events: GameEvent[], o: OrderOpts = {}): { ok: true; order: Order } | { ok: false; error: string } {
   const q = quoteOrder(s, matId, supId, qty, o); if (!q.ok) return { ok: false, error: q.error ?? 'Sipariş verilemedi.' };
-  if (q.space > freeSpace(s) + 1e-9 && o.contractId === undefined) return { ok: false, error: `Depo kapasitesi yetersiz: ${freeSpace(s).toFixed(0)} m³ boş, sipariş ${q.space.toFixed(0)} m³.` };
+  if (q.space > freeSpace(s) + 1e-9 && o.contractId === undefined && !o.direct) return { ok: false, error: `Depo kapasitesi yetersiz: ${freeSpace(s).toFixed(0)} m³ boş, sipariş ${q.space.toFixed(0)} m³.` };
   const term = o.term ?? 'pesin'; if (!s.company || (term === 'pesin' && s.company.cash < q.total)) return { ok: false, error: 'Sipariş için yeterli nakit yok.' };
   const sp = supplier(supId)!, delayed = rand(s.rng, 'construction') > sp.reliability, extra = delayed ? randInt(s.rng, 'construction', 3, 8) : 0, lbl = `${material(matId)!.label} · ${sp.label}`;
   if (term === 'pesin') { post(s, 'malzeme', -(q.goods + q.premium), { memo: lbl }); if (q.freight > 0) post(s, 'malzeme', -q.freight, { memo: `Nakliye: ${lbl}` }); }
@@ -103,6 +103,7 @@ export function autoBuy(s: GameState, p: Project, events: GameEvent[]): void {
   const b = p.build, sup = c.procurement.supplier, need = new Map<string, number>();
   const add = (idx: number, f: number) => { for (const [id, q] of stageNeeds(p, idx)) need.set(id, (need.get(id) ?? 0) + q * f); };
   const r = 1 - b.progress; if (b.stage <= 17) add(b.stage, r);
+  const nowIds = new Set(need.keys()); // içinde bulunulan aşamanın malzemesi: depo dolu olsa bile doğrudan şantiyeye teslim edilir (aksi halde iş durur)
   // Sonraki aşamanın ilk günlerinin malzemesi tedarik süresi kadar önceden sipariş edilir (bekleme olmasın)
   if (b.stage < 17) { const nd = stageDaysOf(p)[b.stage + 1] || 1; add(b.stage + 1, Math.min(1, (leadDays(s, sup) + 6) / nd)); }
   // diğer aktif projelerin aynı malzeme ihtiyacı kendi çağrısında hesaplanır; burada stok + yoldaki dikkate alınır
@@ -111,9 +112,9 @@ export function autoBuy(s: GameState, p: Project, events: GameEvent[]): void {
   for (const [id, q] of need) {
     const deficit = q - stockQty(s, id) - incomingQty(s, id); if (deficit <= 1e-6) continue;
     const price = unitPrice(s, id, sup); let qty = Math.ceil(deficit * 1000) / 1000;
-    { const sp = material(id)!.space, free = freeSpace(s), capQ = supplier(sup)?.cap ?? 1e9; if (sp > 0) qty = Math.min(qty, Math.floor((Math.min(free, capQ) / sp) * 1000) / 1000); if (qty <= 1e-6) continue; }
+    { const sp = material(id)!.space, free = nowIds.has(id) ? 1e12 : freeSpace(s), capQ = supplier(sup)?.cap ?? 1e9; if (sp > 0) qty = Math.min(qty, Math.floor((Math.min(free, capQ) / sp) * 1000) / 1000); if (qty <= 1e-6) continue; }
     if (price * qty > budget) { if (p.build && p.status === 'insaat') { ensureCash(s, p.id, Math.round(price * qty) + reserve, events); budget = Math.max(0, c.cash - reserve); } if (price * qty > budget) qty = Math.floor((budget / price) * 1000) / 1000; } if (qty <= 0) continue;
-    const r2 = placeOrder(s, id, qty, sup, events); if (r2.ok) budget -= Math.round(price * qty);
+    const r2 = placeOrder(s, id, qty, sup, events, nowIds.has(id) ? { direct: true } : {}); if (r2.ok) budget -= Math.round(price * qty);
   }
 }
 
