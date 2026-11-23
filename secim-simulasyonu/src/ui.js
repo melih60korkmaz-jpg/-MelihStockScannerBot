@@ -47,7 +47,7 @@ function closeSheet(sessiz) { if (sheetEl) { sheetEl.remove(); sheetEl = null; i
 
 /* ---- menü ---- */
 function menu() {
-  PREV = {}; LASTTAB = null; SEEN = {}; TSAY = null; PBAR = null; MAPPREV = null; muzikMood('menu');
+  PREV = {}; LASTTAB = null; SEEN = {}; TSAY = null; PBAR = null; MAPPREV = null; muzikMood('menu'); rhKaldir();
   var kayitli = yukle();
   root.innerHTML = '<div class="menu"><div class="hero"><svg viewBox="0 0 100 100" aria-hidden="true"><rect x="36" y="10" width="28" height="38" rx="3" fill="#eceef4"/><path d="M42 22h16M42 29h16M42 36h10" stroke="#9a9fb2" stroke-width="2" stroke-linecap="round"/><rect x="14" y="48" width="72" height="44" rx="6" fill="#15171e" stroke="#dcab4a" stroke-width="2.5"/><rect x="30" y="48" width="40" height="5" rx="2.5" fill="#dcab4a"/><path d="M34 72l11 11 21-24" fill="none" stroke="#e63b5f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg><h1>Seçim Simülasyonu</h1><p>Parti kur, teşkilatı büyüt, sandığı kazan.</p></div>' +
     (kayitli ? '<button class="btn pri" id="devam">Devam et<small>' + esc(kayitli.parti.ad) + ' · ' + tarihUzun(kayitli.tarih) + '</small></button>' : '') +
@@ -66,7 +66,7 @@ function modSec() {
     '<button class="modc" id="m1"><h3>Yeni Parti Kur</h3><p class="muted small" style="margin:6px 0 0">Sıfırdan bir parti. Baraj, teşkilat ve ittifak mücadelesi.</p></button>' +
     '<button class="modc" id="m2"><h3>Mevcut Partiyi Yönet</h3><p class="muted small" style="margin:6px 0 0">Oyundaki mevcut partilerden birinin genel başkanı ol (kurgusal).</p></button>' +
     '<button class="modc" id="m3"><h3>Rastgele Hikâye</h3><p class="muted small" style="margin:6px 0 0">Rastgele parti, ekonomi ve siyasi denge. Her seferinde farklı bir kariyer.</p></button>' +
-    '<button class="modc" id="m4"><h3>🏆 Siyasi Kariyer <span class="kst" style="float:right">' + karToplam() + '/15 ★</span></h3><p class="muted small" style="margin:6px 0 0">5 bölümlük kampanya: parti kur, Meclis\'e gir, belediyeleri kazan, Cumhurbaşkanı ol.</p></button>' +
+    '<button class="modc" id="m4"><h3>🏆 Siyasi Kariyer <span class="kst" style="float:right">' + karToplam() + '/' + karMax() + ' ★</span></h3><p class="muted small" style="margin:6px 0 0">8 bölümlük kampanya: parti kur, Meclis\'e gir, belediyeleri kazan, Cumhurbaşkanı ol.</p></button>' +
     '<button class="modc" id="m5"><h3>📅 Günün Senaryosu <span class="pill go" style="float:right">' + (gunMenuHtml().oynandi ? 'Puan ' + gunMenuHtml().puan : (gunMenuHtml().seri ? '🔥 ' + gunMenuHtml().seri + ' gün' : 'Yeni')) + '</span></h3><p class="muted small" style="margin:6px 0 0">Her gün herkes için aynı başlangıç. İlk genel seçimde en yüksek puanı topla.</p></button>' +
     '<button class="btn ghost" id="geri" style="margin-top:6px">Geri</button></div>';
   $('#m1').onclick = function () { kurulumYeni(); }; $('#m2').onclick = kurulumMevcut; $('#m3').onclick = rastgeleHikaye; $('#m4').onclick = kariyerMenu; $('#m5').onclick = gunBaslat; $('#geri').onclick = menu;
@@ -134,7 +134,7 @@ function render() {
   var a = $('#ay'); if (a) a.onclick = ayBitirTikla;
   $('#ayar').onclick = ayarlar; bagla();
   if (S.sd && S.sd.length) sdGoster(S.sd.splice(0, 3));
-  rozetKontrol(); kariyerBagla();
+  rozetKontrol(); kariyerBagla(); rehberGuncelle();
   var bars = [].slice.call(document.querySelectorAll('#sc .bar i,#sc .pbar i'));
   if (!enter && !RM && PBAR && PBAR.tab === TAB && PBAR.w.length === bars.length) {
     var yeniW = bars.map(function (b) { return b.style.width; }), ch = false;

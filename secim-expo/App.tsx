@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ComponentType } from 're
 import { ActivityIndicator, AppState, BackHandler, Platform, Share, StyleSheet, Text, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { Asset } from 'expo-asset';
-import { File } from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { useKeepAwake } from 'expo-keep-awake';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -67,6 +67,19 @@ export default function App() {
   const onMessage = useCallback((e: WebViewMessageEvent) => {
     try {
       const m = JSON.parse(e.nativeEvent.data) as { t: string; p?: number | number[]; url?: string };
+      if (m.t === 'shareImg') {
+        const b64 = String((m as { b64?: string }).b64 ?? '');
+        const text = String((m as { text?: string }).text ?? '').slice(0, 600);
+        if (b64 && b64.length < 6_000_000) {
+          try {
+            const f = new File(Paths.cache, 'secim-sonuc.png');
+            f.create({ overwrite: true });
+            f.write(b64, { encoding: 'base64' });
+            Share.share({ url: f.uri, message: text }).catch(() => {});
+          } catch { if (text) Share.share({ message: text }).catch(() => {}); }
+        } else if (text) Share.share({ message: text }).catch(() => {});
+        return;
+      }
       if (m.t === 'share') {
         const text = String((m as { text?: string }).text ?? '').slice(0, 600);
         if (text) Share.share({ message: text }).catch(() => {});

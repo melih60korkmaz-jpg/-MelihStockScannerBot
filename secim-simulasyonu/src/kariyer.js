@@ -19,7 +19,16 @@ var BOLUMLER = [
   {id: 'k4', no: 4, ad: 'Yerel Güç', ikon: '🏙️', ozet: 'MHP\'nin başındasın (kurgusal). Yerel seçimde Anadolu\'nun kalesi olan illeri koru ve yenilerini kazan: hedef çok sayıda belediye başkanlığı.',
    setup: {mod: 'mevcut', partiId: 'MHP', zorluk: 'orta', senaryo: 'klasik', stil: 'teknokrat'}, bitis: 'yerel', bitisAd: 'Yerel seçim (Mart 2029)',
    hedef: [{t: '5 ilde kazan', f: function (r) { return r.il >= 5; }}, {t: '10 ilde kazan', f: function (r) { return r.il >= 10; }}, {t: '16 ilde kazan', f: function (r) { return r.il >= 16; }}]},
-  {id: 'k5', no: 5, ad: 'Cumhurbaşkanlığı', ikon: '👑', ozet: 'Son bölüm: refah dönemi iktidarı güçlü kılıyor. İYİ Parti\'nin başında (kurgusal) 2033 seçimine kadar yönet, Meclis\'te yükseliş yap ve Cumhurbaşkanlığını kazan.',
+  {id: 'k5', no: 5, ad: 'Genç Dalga', ikon: '🌊', ozet: 'Gençlerin siyasete yöneldiği bir dönem; ama tanınmamış yeni bir partiyle kısıtlı bütçeyle başlıyorsun. Dalgayı sandığa taşı.',
+   setup: {mod: 'yeni', zorluk: 'orta', senaryo: 'genclik', stil: 'karizmatik'}, bitis: 'genel1', bitisAd: 'İlk genel seçim (Mayıs 2028)',
+   hedef: [{t: 'Meclis\'e gir (en az 1 sandalye)', f: function (r) { return r.koltuk > 0; }}, {t: '50 sandalye kazan', f: function (r) { return r.koltuk >= 50; }}, {t: '90 sandalye kazan', f: function (r) { return r.koltuk >= 90; }}]},
+  {id: 'k6', no: 6, ad: 'Kutuplaşma', ikon: '🧱', ozet: 'İki büyük blok ortalığı kapladı; küçük partiler eziliyor. Yeni partinle bu duvarı aş ve Meclis\'te yer aç.',
+   setup: {mod: 'yeni', zorluk: 'orta', senaryo: 'kutup', stil: 'katilimci'}, bitis: 'genel1', bitisAd: 'İlk genel seçim (Mayıs 2028)',
+   hedef: [{t: 'Barajı aş ve Meclis\'e gir', f: function (r) { return r.koltuk > 0; }}, {t: '20 sandalye kazan', f: function (r) { return r.koltuk >= 20; }}, {t: '45 sandalye kazan', f: function (r) { return r.koltuk >= 45; }}]},
+  {id: 'k7', no: 7, ad: 'Büyükşehir Zaferi', ikon: '🏛️', ozet: 'CHP\'nin başında (kurgusal) yerel seçimde büyükşehirleri kazanmaya çalış. Ne kadar çok ilde kazanırsan o kadar yıldız.',
+   setup: {mod: 'mevcut', partiId: 'CHP', zorluk: 'orta', senaryo: 'klasik', stil: 'teknokrat'}, bitis: 'yerel', bitisAd: 'Yerel seçim (Mart 2029)',
+   hedef: [{t: '28 ilde kazan', f: function (r) { return r.il >= 28; }}, {t: '34 ilde kazan', f: function (r) { return r.il >= 34; }}, {t: '40 ilde kazan', f: function (r) { return r.il >= 40; }}]},
+  {id: 'k8', no: 8, ad: 'Cumhurbaşkanlığı', ikon: '👑', ozet: 'Son bölüm: refah dönemi iktidarı güçlü kılıyor. İYİ Parti\'nin başında (kurgusal) 2033 seçimine kadar yönet, Meclis\'te yükseliş yap ve Cumhurbaşkanlığını kazan.',
    setup: {mod: 'mevcut', partiId: 'IYI', zorluk: 'acimasiz', senaryo: 'refah', stil: 'karizmatik'}, bitis: 'genel2', bitisAd: 'İkinci genel seçim (Mayıs 2033)',
    hedef: [{t: '100 sandalye kazan', f: function (r) { return r.koltuk >= 100; }}, {t: 'Meclis\'te ilk iki partiden biri ol', f: function (r) { return r.rank > 0 && r.rank <= 2; }}, {t: 'Cumhurbaşkanı ol ve 185+ sandalye kazan', f: function (r) { return !!r.cb && r.koltuk >= 185; }}]}
 ];
@@ -28,7 +37,8 @@ function karIlerleme() { var d = kLoad(KAR_KEY, {b: {}}); d.b = d.b || {}; retur
 function karYildiz(id) { var b = karIlerleme().b[id]; return b ? b.y || 0 : 0; }
 function karToplam() { var t = 0; BOLUMLER.forEach(function (b) { t += karYildiz(b.id); }); return t; }
 function karAcik(i) { return i === 0 || karYildiz(BOLUMLER[i - 1].id) >= 1; }
-function karUnvan(t) { return t >= 15 ? 'Siyasetin Zirvesi' : t >= 12 ? 'Devlet Adamı' : t >= 9 ? 'Parti Lideri' : t >= 6 ? 'Kurmay' : t >= 3 ? 'Teşkilatçı' : 'Çırak'; }
+function karMax() { return BOLUMLER.length * 3; }
+function karUnvan(t) { var o = t / karMax(); return o >= 1 ? 'Siyasetin Zirvesi' : o >= 0.8 ? 'Devlet Adamı' : o >= 0.6 ? 'Parti Lideri' : o >= 0.4 ? 'Kurmay' : o >= 0.2 ? 'Teşkilatçı' : 'Çırak'; }
 function yildizYaz(n, max) { var o = ''; for (var i = 0; i < (max || 3); i++) o += i < n ? '★' : '☆'; return o; }
 
 /* Seçim sonucu → özet */
@@ -73,8 +83,8 @@ function gunMenuHtml() {
 /* ---------- Kariyer menüsü ---------- */
 function kariyerMenu() {
   var t = karToplam();
-  root.innerHTML = '<div class="menu"><h2>Siyasi Kariyer</h2><p class="muted small" style="margin:0 0 10px">5 bölüm, 15 yıldız. Her bölüm bir seçimle biter; yıldızlar hedeflerine göre verilir. Bir bölümü açmak için öncekinden en az 1 yıldız gerekir.</p>' +
-    '<div class="card" style="text-align:center"><div class="eyebrow" style="margin:0">Unvanın</div><h3 style="margin:2px 0">' + karUnvan(t) + '</h3><span class="kst">' + yildizYaz(Math.min(t, 15) / 5 | 0 || 0, 3) + '</span><div class="small muted">' + t + ' / 15 yıldız</div></div>' +
+  root.innerHTML = '<div class="menu"><h2>Siyasi Kariyer</h2><p class="muted small" style="margin:0 0 10px">' + BOLUMLER.length + ' bölüm, ' + karMax() + ' yıldız. Her bölüm bir seçimle biter; yıldızlar hedeflerine göre verilir. Bir bölümü açmak için öncekinden en az 1 yıldız gerekir.</p>' +
+    '<div class="card" style="text-align:center"><div class="eyebrow" style="margin:0">Unvanın</div><h3 style="margin:2px 0">' + karUnvan(t) + '</h3><span class="kst">' + yildizYaz(Math.round(t / karMax() * 3), 3) + '</span><div class="small muted">' + t + ' / ' + karMax() + ' yıldız</div></div>' +
     BOLUMLER.map(function (b, i) { var ac = karAcik(i), y = karYildiz(b.id); return '<button class="modc" data-b="' + b.id + '"' + (ac ? '' : ' disabled style="opacity:.55"') + '><h3>' + b.ikon + ' ' + b.no + '. ' + esc(b.ad) + ' <span class="kst" style="float:right">' + yildizYaz(y) + '</span></h3><p class="muted small" style="margin:6px 0 0">' + (ac ? esc(b.bitisAd) : '🔒 Önceki bölümden 1 yıldız gerekir') + '</p></button>'; }).join('') +
     '<button class="btn ghost" id="geri" style="margin-top:6px">Geri</button></div>';
   document.querySelectorAll('[data-b]').forEach(function (e) { e.onclick = function () { kariyerDetay(e.dataset.b); }; });
@@ -122,7 +132,7 @@ function kariyerSon() {
     satirlar = [{k: 'Sandalye', v: String(r.koltuk)}, {k: 'Oy', v: '%' + f1(r.oy)}, {k: 'Puan', v: String(puan), c: 'good'}, {k: 'Seri', v: d.seri + ' gün'}];
   } else {
     var b = bolumBul(k.id); b.hedef.forEach(function (h) { if (h.f(r)) yil++; });
-    var dd = karIlerleme(), eski = dd.b[b.id] || {y: 0, koltuk: 0}; var yeniAcil = karYildiz(b.id) < 1 && yil >= 1 && b.no < 5;
+    var dd = karIlerleme(), eski = dd.b[b.id] || {y: 0, koltuk: 0}; var yeniAcil = karYildiz(b.id) < 1 && yil >= 1 && b.no < BOLUMLER.length;
     dd.b[b.id] = {y: Math.max(eski.y || 0, yil), koltuk: Math.max(eski.koltuk || 0, r.koltuk), son: yil}; kSave(KAR_KEY, dd);
     S.kariyerSonuc.yildiz = yil; ad = b.ad; alt = yil ? yildizYaz(yil) + ' · ' + karUnvan(karToplam()) : 'Hedefe ulaşılamadı';
     satirlar = b.bitis === 'yerel' ? [{k: 'Kazanılan il', v: String(r.il)}] : [{k: 'Sandalye', v: String(r.koltuk)}, {k: 'Oy', v: '%' + f1(r.oy)}, {k: 'Sıra', v: r.rank < 99 ? r.rank + '.' : '—'}];
@@ -137,12 +147,13 @@ function kariyerBitisKart() {
   return '<div class="card son"><div class="sonik">' + (gun ? '📅' : y === 3 ? '🏆' : y ? '⭐' : '🏁') + '</div><div class="eyebrow">' + (gun ? 'Günün senaryosu bitti' : 'Bölüm ' + b.no + ' tamamlandı') + '</div><h3>' + esc(gun ? 'Puan ' + r.puan : b.ad) + '</h3>' +
     (gun ? '<p>Seri: <b>' + r.seri + ' gün</b>. Yarın yeni bir senaryo seni bekliyor.</p>' : '<p class="kst" style="font-size:28px;margin:4px 0">' + yildizYaz(y) + '</p>') +
     '<div class="sonst"><div><b>' + r.koltuk + '</b><span>Sandalye</span></div><div><b>%' + f1(r.oy) + '</b><span>Oy</span></div><div><b>' + (r.rank < 99 ? r.rank + '.' : '—') + '</b><span>Sıra</span></div></div>' +
-    '<button class="btn pri" id="paylas">📤 Sonucu paylaş</button>' + (gun ? '' : '<button class="btn" id="ktekrar">Bölümü tekrar oyna</button>') + '<button class="btn ghost" id="kmenu">' + (gun ? 'Ana menü' : 'Kariyer menüsü') + '</button></div>';
+    '<div class="kimgw"><img id="kimg" alt="Sonuç kartı"></div><button class="btn pri" id="paylas">📤 Sonucu paylaş</button>' + (gun ? '' : '<button class="btn" id="ktekrar">Bölümü tekrar oyna</button>') + '<button class="btn ghost" id="kmenu">' + (gun ? 'Ana menü' : 'Kariyer menüsü') + '</button></div>';
 }
 function kariyerBagla() {
   var p = $('#paylas'); if (!p || !S || !S.kariyerSonuc) return;
   var r = S.kariyerSonuc, k = S.kariyer, gun = k.id === 'gunluk', b = gun ? null : bolumBul(k.id);
-  p.onclick = function () { paylasMetin(paylasYaz()); };
+  var im = $('#kimg'); if (im) { try { im.src = kartCiz(); } catch (e) { im.parentNode.style.display = 'none'; } }
+  p.onclick = function () { paylasKart(); };
   var m = $('#kmenu'); if (m) m.onclick = function () { gun ? menu() : kariyerMenu(); };
   var t = $('#ktekrar'); if (t) t.onclick = function () { kariyerDetay(k.id); };
 }
@@ -158,4 +169,41 @@ function paylasMetin(t) {
     if (navigator.clipboard) { navigator.clipboard.writeText(t); toast('Kopyalandı; istediğin yere yapıştırabilirsin.'); return; }
   } catch (e) { /* aşağıya düş */ }
   toast(t);
+}
+
+/* ---------- Resimli paylaşım kartı (canvas, 1080x1350) ---------- */
+function kartRRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function kartCiz() {
+  var r = S.kariyerSonuc, k = S.kariyer, gun = k.id === 'gunluk', b = gun ? null : bolumBul(k.id), y = r.yildiz || 0;
+  var cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; var c = cv.getContext('2d'), renk = S.parti.renk || '#e63b5f';
+  var g = c.createLinearGradient(0, 0, 0, 1350); g.addColorStop(0, '#1b1020'); g.addColorStop(0.55, '#0e0b16'); g.addColorStop(1, '#07060b'); c.fillStyle = g; c.fillRect(0, 0, 1080, 1350);
+  var rg = c.createRadialGradient(540, 420, 20, 540, 420, 700); rg.addColorStop(0, renk + '88'); rg.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = rg; c.fillRect(0, 0, 1080, 1350);
+  /* oy sandığı */
+  c.save(); c.translate(540, 70); c.fillStyle = '#f2f2f6'; kartRRect(c, -95, 40, 190, 120, 18); c.fill(); c.fillStyle = '#f0b429'; kartRRect(c, -115, 20, 230, 40, 14); c.fill(); c.fillStyle = '#2a0f1c'; kartRRect(c, -60, 30, 120, 16, 8); c.fill();
+  c.save(); c.rotate(-0.14); c.fillStyle = '#fff'; kartRRect(c, -50, -40, 100, 110, 10); c.fill(); c.strokeStyle = '#e0344c'; c.lineWidth = 12; c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); c.moveTo(-26, 14); c.lineTo(-6, 36); c.lineTo(28, -12); c.stroke(); c.restore(); c.restore();
+  c.textAlign = 'center'; c.fillStyle = '#b9b9c8'; c.font = '700 34px -apple-system, Helvetica, Arial, sans-serif'; c.fillText('S E Ç İ M   S İ M Ü L A S Y O N U', 540, 300);
+  c.fillStyle = '#ffffff'; c.font = '800 76px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(gun ? 'Günün Senaryosu' : b.no + '. Bölüm · ' + b.ad, 540, 400);
+  c.fillStyle = renk; c.font = '800 58px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(S.parti.ad.slice(0, 26), 540, 480);
+  c.fillStyle = '#ffffff'; c.font = '900 300px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(String(b && b.bitis === 'yerel' ? r.il : r.koltuk), 540, 800);
+  c.fillStyle = '#c9c9d6'; c.font = '700 48px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(b && b.bitis === 'yerel' ? 'İLDE KAZANDI' : 'SANDALYE', 540, 875);
+  var stat = [['%' + f1(r.oy), 'OY'], [r.rank < 99 ? r.rank + '.' : '—', 'SIRA']];
+  stat.forEach(function (a, i) { var x = 340 + i * 400; c.fillStyle = 'rgba(255,255,255,.08)'; kartRRect(c, x - 150, 940, 300, 150, 28); c.fill(); c.fillStyle = '#fff'; c.font = '800 70px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(a[0], x, 1020); c.fillStyle = '#9a9aab'; c.font = '700 30px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(a[1], x, 1066); });
+  c.font = '900 110px -apple-system, Helvetica, Arial, sans-serif';
+  if (gun) { c.fillStyle = '#f0b429'; c.fillText('PUAN ' + r.puan, 540, 1210); c.fillStyle = '#c9c9d6'; c.font = '700 40px -apple-system, Helvetica, Arial, sans-serif'; c.fillText('🔥 ' + r.seri + ' günlük seri', 540, 1265); }
+  else { c.fillStyle = '#f0b429'; c.fillText(yildizYaz(y), 540, 1215); }
+  c.fillStyle = '#7d7d90'; c.font = '600 32px -apple-system, Helvetica, Arial, sans-serif'; c.fillText('Kurgusal bir simülasyondur · Sen de dene!', 540, 1310);
+  return cv.toDataURL('image/png');
+}
+function paylasKart() {
+  var txt = paylasYaz(), url;
+  try { url = kartCiz(); } catch (e) { paylasMetin(txt); return; }
+  try {
+    if (window.ReactNativeWebView && window.__NATIVE_SHELL) { window.ReactNativeWebView.postMessage(JSON.stringify({t: 'shareImg', b64: url.split(',')[1], text: txt})); return; }
+    if (navigator.canShare && navigator.share) {
+      var bin = atob(url.split(',')[1]), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      var f = new File([arr], 'secim-sonuc.png', {type: 'image/png'});
+      if (navigator.canShare({files: [f]})) { navigator.share({files: [f], text: txt}).catch(function () {}); return; }
+    }
+  } catch (e) { /* metne düş */ }
+  paylasMetin(txt);
 }

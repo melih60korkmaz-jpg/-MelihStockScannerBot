@@ -463,6 +463,14 @@ button,.card,.modc,.cx{touch-action:manipulation;-webkit-tap-highlight-color:tra
 .rzk{position:fixed;left:50%;top:76px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:12px;padding:12px 18px;border-radius:16px;background:linear-gradient(135deg,#3a2d0d,#1a1520);border:1px solid #e8c25a;box-shadow:0 0 0 0 rgba(232,194,90,.6),0 10px 30px rgba(0,0,0,.5);animation:rzin .5s cubic-bezier(.2,1.4,.4,1) both,rzg 1.6s ease-out .3s 1;white-space:nowrap}.rzk.out{opacity:0;transition:opacity .4s}.rzk-i{font-size:34px}.rzk-u{font-size:10px;letter-spacing:.18em;color:#e8c25a}.rzk b{font-size:15px}
 @keyframes rzin{from{transform:translate(-50%,-30px) scale(.8);opacity:0}}@keyframes rzg{to{box-shadow:0 0 0 22px rgba(232,194,90,0),0 10px 30px rgba(0,0,0,.5)}}
 .kst{color:#f0b429;letter-spacing:2px;font-weight:700}
+.kimgw{margin:10px 0}.kimgw img{width:100%;max-width:300px;border-radius:14px;box-shadow:0 8px 24px #0008;display:block;margin:0 auto}
+.rh{position:fixed;left:10px;right:10px;z-index:60;pointer-events:none;display:flex;justify-content:center}
+.rh-alt{bottom:calc(env(safe-area-inset-bottom,0px) + 150px)}.rh-ust{top:calc(env(safe-area-inset-top,0px) + 96px)}
+.rh-b{pointer-events:auto;max-width:420px;width:100%;background:#1c1830;border:1px solid #f0b42966;border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px #000a;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+.rh-av{font-size:30px;line-height:1}.rh-t{flex:1;min-width:0;font-size:14.5px;line-height:1.45;color:#eceef4}.rh-t b{color:#f0b429}
+.rh-bt{width:100%;display:flex;justify-content:space-between;align-items:center}.rh-bt .btn{padding:6px 14px;min-height:0;width:auto;font-size:13px;margin:0}.rh-n{font-size:12px;color:#9a9aab}
+.rh-ring{outline:3px solid #f0b429;outline-offset:3px;border-radius:12px;animation:rhp 1.2s ease-in-out infinite}
+@keyframes rhp{0%,100%{outline-color:#f0b429}50%{outline-color:#f0b42955}}
 </style>
 </head>
 <body>
@@ -3800,7 +3808,7 @@ function closeSheet(sessiz) { if (sheetEl) { sheetEl.remove(); sheetEl = null; i
 
 /* ---- menü ---- */
 function menu() {
-  PREV = {}; LASTTAB = null; SEEN = {}; TSAY = null; PBAR = null; MAPPREV = null; muzikMood('menu');
+  PREV = {}; LASTTAB = null; SEEN = {}; TSAY = null; PBAR = null; MAPPREV = null; muzikMood('menu'); rhKaldir();
   var kayitli = yukle();
   root.innerHTML = '<div class="menu"><div class="hero"><svg viewBox="0 0 100 100" aria-hidden="true"><rect x="36" y="10" width="28" height="38" rx="3" fill="#eceef4"/><path d="M42 22h16M42 29h16M42 36h10" stroke="#9a9fb2" stroke-width="2" stroke-linecap="round"/><rect x="14" y="48" width="72" height="44" rx="6" fill="#15171e" stroke="#dcab4a" stroke-width="2.5"/><rect x="30" y="48" width="40" height="5" rx="2.5" fill="#dcab4a"/><path d="M34 72l11 11 21-24" fill="none" stroke="#e63b5f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg><h1>Seçim Simülasyonu</h1><p>Parti kur, teşkilatı büyüt, sandığı kazan.</p></div>' +
     (kayitli ? '<button class="btn pri" id="devam">Devam et<small>' + esc(kayitli.parti.ad) + ' · ' + tarihUzun(kayitli.tarih) + '</small></button>' : '') +
@@ -3819,7 +3827,7 @@ function modSec() {
     '<button class="modc" id="m1"><h3>Yeni Parti Kur</h3><p class="muted small" style="margin:6px 0 0">Sıfırdan bir parti. Baraj, teşkilat ve ittifak mücadelesi.</p></button>' +
     '<button class="modc" id="m2"><h3>Mevcut Partiyi Yönet</h3><p class="muted small" style="margin:6px 0 0">Oyundaki mevcut partilerden birinin genel başkanı ol (kurgusal).</p></button>' +
     '<button class="modc" id="m3"><h3>Rastgele Hikâye</h3><p class="muted small" style="margin:6px 0 0">Rastgele parti, ekonomi ve siyasi denge. Her seferinde farklı bir kariyer.</p></button>' +
-    '<button class="modc" id="m4"><h3>🏆 Siyasi Kariyer <span class="kst" style="float:right">' + karToplam() + '/15 ★</span></h3><p class="muted small" style="margin:6px 0 0">5 bölümlük kampanya: parti kur, Meclis\'e gir, belediyeleri kazan, Cumhurbaşkanı ol.</p></button>' +
+    '<button class="modc" id="m4"><h3>🏆 Siyasi Kariyer <span class="kst" style="float:right">' + karToplam() + '/' + karMax() + ' ★</span></h3><p class="muted small" style="margin:6px 0 0">8 bölümlük kampanya: parti kur, Meclis\'e gir, belediyeleri kazan, Cumhurbaşkanı ol.</p></button>' +
     '<button class="modc" id="m5"><h3>📅 Günün Senaryosu <span class="pill go" style="float:right">' + (gunMenuHtml().oynandi ? 'Puan ' + gunMenuHtml().puan : (gunMenuHtml().seri ? '🔥 ' + gunMenuHtml().seri + ' gün' : 'Yeni')) + '</span></h3><p class="muted small" style="margin:6px 0 0">Her gün herkes için aynı başlangıç. İlk genel seçimde en yüksek puanı topla.</p></button>' +
     '<button class="btn ghost" id="geri" style="margin-top:6px">Geri</button></div>';
   $('#m1').onclick = function () { kurulumYeni(); }; $('#m2').onclick = kurulumMevcut; $('#m3').onclick = rastgeleHikaye; $('#m4').onclick = kariyerMenu; $('#m5').onclick = gunBaslat; $('#geri').onclick = menu;
@@ -3887,7 +3895,7 @@ function render() {
   var a = $('#ay'); if (a) a.onclick = ayBitirTikla;
   $('#ayar').onclick = ayarlar; bagla();
   if (S.sd && S.sd.length) sdGoster(S.sd.splice(0, 3));
-  rozetKontrol(); kariyerBagla();
+  rozetKontrol(); kariyerBagla(); rehberGuncelle();
   var bars = [].slice.call(document.querySelectorAll('#sc .bar i,#sc .pbar i'));
   if (!enter && !RM && PBAR && PBAR.tab === TAB && PBAR.w.length === bars.length) {
     var yeniW = bars.map(function (b) { return b.style.width; }), ch = false;
@@ -5283,7 +5291,16 @@ var BOLUMLER = [
   {id: 'k4', no: 4, ad: 'Yerel Güç', ikon: '🏙️', ozet: 'MHP\'nin başındasın (kurgusal). Yerel seçimde Anadolu\'nun kalesi olan illeri koru ve yenilerini kazan: hedef çok sayıda belediye başkanlığı.',
    setup: {mod: 'mevcut', partiId: 'MHP', zorluk: 'orta', senaryo: 'klasik', stil: 'teknokrat'}, bitis: 'yerel', bitisAd: 'Yerel seçim (Mart 2029)',
    hedef: [{t: '5 ilde kazan', f: function (r) { return r.il >= 5; }}, {t: '10 ilde kazan', f: function (r) { return r.il >= 10; }}, {t: '16 ilde kazan', f: function (r) { return r.il >= 16; }}]},
-  {id: 'k5', no: 5, ad: 'Cumhurbaşkanlığı', ikon: '👑', ozet: 'Son bölüm: refah dönemi iktidarı güçlü kılıyor. İYİ Parti\'nin başında (kurgusal) 2033 seçimine kadar yönet, Meclis\'te yükseliş yap ve Cumhurbaşkanlığını kazan.',
+  {id: 'k5', no: 5, ad: 'Genç Dalga', ikon: '🌊', ozet: 'Gençlerin siyasete yöneldiği bir dönem; ama tanınmamış yeni bir partiyle kısıtlı bütçeyle başlıyorsun. Dalgayı sandığa taşı.',
+   setup: {mod: 'yeni', zorluk: 'orta', senaryo: 'genclik', stil: 'karizmatik'}, bitis: 'genel1', bitisAd: 'İlk genel seçim (Mayıs 2028)',
+   hedef: [{t: 'Meclis\'e gir (en az 1 sandalye)', f: function (r) { return r.koltuk > 0; }}, {t: '50 sandalye kazan', f: function (r) { return r.koltuk >= 50; }}, {t: '90 sandalye kazan', f: function (r) { return r.koltuk >= 90; }}]},
+  {id: 'k6', no: 6, ad: 'Kutuplaşma', ikon: '🧱', ozet: 'İki büyük blok ortalığı kapladı; küçük partiler eziliyor. Yeni partinle bu duvarı aş ve Meclis\'te yer aç.',
+   setup: {mod: 'yeni', zorluk: 'orta', senaryo: 'kutup', stil: 'katilimci'}, bitis: 'genel1', bitisAd: 'İlk genel seçim (Mayıs 2028)',
+   hedef: [{t: 'Barajı aş ve Meclis\'e gir', f: function (r) { return r.koltuk > 0; }}, {t: '20 sandalye kazan', f: function (r) { return r.koltuk >= 20; }}, {t: '45 sandalye kazan', f: function (r) { return r.koltuk >= 45; }}]},
+  {id: 'k7', no: 7, ad: 'Büyükşehir Zaferi', ikon: '🏛️', ozet: 'CHP\'nin başında (kurgusal) yerel seçimde büyükşehirleri kazanmaya çalış. Ne kadar çok ilde kazanırsan o kadar yıldız.',
+   setup: {mod: 'mevcut', partiId: 'CHP', zorluk: 'orta', senaryo: 'klasik', stil: 'teknokrat'}, bitis: 'yerel', bitisAd: 'Yerel seçim (Mart 2029)',
+   hedef: [{t: '28 ilde kazan', f: function (r) { return r.il >= 28; }}, {t: '34 ilde kazan', f: function (r) { return r.il >= 34; }}, {t: '40 ilde kazan', f: function (r) { return r.il >= 40; }}]},
+  {id: 'k8', no: 8, ad: 'Cumhurbaşkanlığı', ikon: '👑', ozet: 'Son bölüm: refah dönemi iktidarı güçlü kılıyor. İYİ Parti\'nin başında (kurgusal) 2033 seçimine kadar yönet, Meclis\'te yükseliş yap ve Cumhurbaşkanlığını kazan.',
    setup: {mod: 'mevcut', partiId: 'IYI', zorluk: 'acimasiz', senaryo: 'refah', stil: 'karizmatik'}, bitis: 'genel2', bitisAd: 'İkinci genel seçim (Mayıs 2033)',
    hedef: [{t: '100 sandalye kazan', f: function (r) { return r.koltuk >= 100; }}, {t: 'Meclis\'te ilk iki partiden biri ol', f: function (r) { return r.rank > 0 && r.rank <= 2; }}, {t: 'Cumhurbaşkanı ol ve 185+ sandalye kazan', f: function (r) { return !!r.cb && r.koltuk >= 185; }}]}
 ];
@@ -5292,7 +5309,8 @@ function karIlerleme() { var d = kLoad(KAR_KEY, {b: {}}); d.b = d.b || {}; retur
 function karYildiz(id) { var b = karIlerleme().b[id]; return b ? b.y || 0 : 0; }
 function karToplam() { var t = 0; BOLUMLER.forEach(function (b) { t += karYildiz(b.id); }); return t; }
 function karAcik(i) { return i === 0 || karYildiz(BOLUMLER[i - 1].id) >= 1; }
-function karUnvan(t) { return t >= 15 ? 'Siyasetin Zirvesi' : t >= 12 ? 'Devlet Adamı' : t >= 9 ? 'Parti Lideri' : t >= 6 ? 'Kurmay' : t >= 3 ? 'Teşkilatçı' : 'Çırak'; }
+function karMax() { return BOLUMLER.length * 3; }
+function karUnvan(t) { var o = t / karMax(); return o >= 1 ? 'Siyasetin Zirvesi' : o >= 0.8 ? 'Devlet Adamı' : o >= 0.6 ? 'Parti Lideri' : o >= 0.4 ? 'Kurmay' : o >= 0.2 ? 'Teşkilatçı' : 'Çırak'; }
 function yildizYaz(n, max) { var o = ''; for (var i = 0; i < (max || 3); i++) o += i < n ? '★' : '☆'; return o; }
 
 /* Seçim sonucu → özet */
@@ -5337,8 +5355,8 @@ function gunMenuHtml() {
 /* ---------- Kariyer menüsü ---------- */
 function kariyerMenu() {
   var t = karToplam();
-  root.innerHTML = '<div class="menu"><h2>Siyasi Kariyer</h2><p class="muted small" style="margin:0 0 10px">5 bölüm, 15 yıldız. Her bölüm bir seçimle biter; yıldızlar hedeflerine göre verilir. Bir bölümü açmak için öncekinden en az 1 yıldız gerekir.</p>' +
-    '<div class="card" style="text-align:center"><div class="eyebrow" style="margin:0">Unvanın</div><h3 style="margin:2px 0">' + karUnvan(t) + '</h3><span class="kst">' + yildizYaz(Math.min(t, 15) / 5 | 0 || 0, 3) + '</span><div class="small muted">' + t + ' / 15 yıldız</div></div>' +
+  root.innerHTML = '<div class="menu"><h2>Siyasi Kariyer</h2><p class="muted small" style="margin:0 0 10px">' + BOLUMLER.length + ' bölüm, ' + karMax() + ' yıldız. Her bölüm bir seçimle biter; yıldızlar hedeflerine göre verilir. Bir bölümü açmak için öncekinden en az 1 yıldız gerekir.</p>' +
+    '<div class="card" style="text-align:center"><div class="eyebrow" style="margin:0">Unvanın</div><h3 style="margin:2px 0">' + karUnvan(t) + '</h3><span class="kst">' + yildizYaz(Math.round(t / karMax() * 3), 3) + '</span><div class="small muted">' + t + ' / ' + karMax() + ' yıldız</div></div>' +
     BOLUMLER.map(function (b, i) { var ac = karAcik(i), y = karYildiz(b.id); return '<button class="modc" data-b="' + b.id + '"' + (ac ? '' : ' disabled style="opacity:.55"') + '><h3>' + b.ikon + ' ' + b.no + '. ' + esc(b.ad) + ' <span class="kst" style="float:right">' + yildizYaz(y) + '</span></h3><p class="muted small" style="margin:6px 0 0">' + (ac ? esc(b.bitisAd) : '🔒 Önceki bölümden 1 yıldız gerekir') + '</p></button>'; }).join('') +
     '<button class="btn ghost" id="geri" style="margin-top:6px">Geri</button></div>';
   document.querySelectorAll('[data-b]').forEach(function (e) { e.onclick = function () { kariyerDetay(e.dataset.b); }; });
@@ -5386,7 +5404,7 @@ function kariyerSon() {
     satirlar = [{k: 'Sandalye', v: String(r.koltuk)}, {k: 'Oy', v: '%' + f1(r.oy)}, {k: 'Puan', v: String(puan), c: 'good'}, {k: 'Seri', v: d.seri + ' gün'}];
   } else {
     var b = bolumBul(k.id); b.hedef.forEach(function (h) { if (h.f(r)) yil++; });
-    var dd = karIlerleme(), eski = dd.b[b.id] || {y: 0, koltuk: 0}; var yeniAcil = karYildiz(b.id) < 1 && yil >= 1 && b.no < 5;
+    var dd = karIlerleme(), eski = dd.b[b.id] || {y: 0, koltuk: 0}; var yeniAcil = karYildiz(b.id) < 1 && yil >= 1 && b.no < BOLUMLER.length;
     dd.b[b.id] = {y: Math.max(eski.y || 0, yil), koltuk: Math.max(eski.koltuk || 0, r.koltuk), son: yil}; kSave(KAR_KEY, dd);
     S.kariyerSonuc.yildiz = yil; ad = b.ad; alt = yil ? yildizYaz(yil) + ' · ' + karUnvan(karToplam()) : 'Hedefe ulaşılamadı';
     satirlar = b.bitis === 'yerel' ? [{k: 'Kazanılan il', v: String(r.il)}] : [{k: 'Sandalye', v: String(r.koltuk)}, {k: 'Oy', v: '%' + f1(r.oy)}, {k: 'Sıra', v: r.rank < 99 ? r.rank + '.' : '—'}];
@@ -5401,12 +5419,13 @@ function kariyerBitisKart() {
   return '<div class="card son"><div class="sonik">' + (gun ? '📅' : y === 3 ? '🏆' : y ? '⭐' : '🏁') + '</div><div class="eyebrow">' + (gun ? 'Günün senaryosu bitti' : 'Bölüm ' + b.no + ' tamamlandı') + '</div><h3>' + esc(gun ? 'Puan ' + r.puan : b.ad) + '</h3>' +
     (gun ? '<p>Seri: <b>' + r.seri + ' gün</b>. Yarın yeni bir senaryo seni bekliyor.</p>' : '<p class="kst" style="font-size:28px;margin:4px 0">' + yildizYaz(y) + '</p>') +
     '<div class="sonst"><div><b>' + r.koltuk + '</b><span>Sandalye</span></div><div><b>%' + f1(r.oy) + '</b><span>Oy</span></div><div><b>' + (r.rank < 99 ? r.rank + '.' : '—') + '</b><span>Sıra</span></div></div>' +
-    '<button class="btn pri" id="paylas">📤 Sonucu paylaş</button>' + (gun ? '' : '<button class="btn" id="ktekrar">Bölümü tekrar oyna</button>') + '<button class="btn ghost" id="kmenu">' + (gun ? 'Ana menü' : 'Kariyer menüsü') + '</button></div>';
+    '<div class="kimgw"><img id="kimg" alt="Sonuç kartı"></div><button class="btn pri" id="paylas">📤 Sonucu paylaş</button>' + (gun ? '' : '<button class="btn" id="ktekrar">Bölümü tekrar oyna</button>') + '<button class="btn ghost" id="kmenu">' + (gun ? 'Ana menü' : 'Kariyer menüsü') + '</button></div>';
 }
 function kariyerBagla() {
   var p = $('#paylas'); if (!p || !S || !S.kariyerSonuc) return;
   var r = S.kariyerSonuc, k = S.kariyer, gun = k.id === 'gunluk', b = gun ? null : bolumBul(k.id);
-  p.onclick = function () { paylasMetin(paylasYaz()); };
+  var im = $('#kimg'); if (im) { try { im.src = kartCiz(); } catch (e) { im.parentNode.style.display = 'none'; } }
+  p.onclick = function () { paylasKart(); };
   var m = $('#kmenu'); if (m) m.onclick = function () { gun ? menu() : kariyerMenu(); };
   var t = $('#ktekrar'); if (t) t.onclick = function () { kariyerDetay(k.id); };
 }
@@ -5422,6 +5441,78 @@ function paylasMetin(t) {
     if (navigator.clipboard) { navigator.clipboard.writeText(t); toast('Kopyalandı; istediğin yere yapıştırabilirsin.'); return; }
   } catch (e) { /* aşağıya düş */ }
   toast(t);
+}
+
+/* ---------- Resimli paylaşım kartı (canvas, 1080x1350) ---------- */
+function kartRRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+function kartCiz() {
+  var r = S.kariyerSonuc, k = S.kariyer, gun = k.id === 'gunluk', b = gun ? null : bolumBul(k.id), y = r.yildiz || 0;
+  var cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; var c = cv.getContext('2d'), renk = S.parti.renk || '#e63b5f';
+  var g = c.createLinearGradient(0, 0, 0, 1350); g.addColorStop(0, '#1b1020'); g.addColorStop(0.55, '#0e0b16'); g.addColorStop(1, '#07060b'); c.fillStyle = g; c.fillRect(0, 0, 1080, 1350);
+  var rg = c.createRadialGradient(540, 420, 20, 540, 420, 700); rg.addColorStop(0, renk + '88'); rg.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = rg; c.fillRect(0, 0, 1080, 1350);
+  /* oy sandığı */
+  c.save(); c.translate(540, 70); c.fillStyle = '#f2f2f6'; kartRRect(c, -95, 40, 190, 120, 18); c.fill(); c.fillStyle = '#f0b429'; kartRRect(c, -115, 20, 230, 40, 14); c.fill(); c.fillStyle = '#2a0f1c'; kartRRect(c, -60, 30, 120, 16, 8); c.fill();
+  c.save(); c.rotate(-0.14); c.fillStyle = '#fff'; kartRRect(c, -50, -40, 100, 110, 10); c.fill(); c.strokeStyle = '#e0344c'; c.lineWidth = 12; c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); c.moveTo(-26, 14); c.lineTo(-6, 36); c.lineTo(28, -12); c.stroke(); c.restore(); c.restore();
+  c.textAlign = 'center'; c.fillStyle = '#b9b9c8'; c.font = '700 34px -apple-system, Helvetica, Arial, sans-serif'; c.fillText('S E Ç İ M   S İ M Ü L A S Y O N U', 540, 300);
+  c.fillStyle = '#ffffff'; c.font = '800 76px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(gun ? 'Günün Senaryosu' : b.no + '. Bölüm · ' + b.ad, 540, 400);
+  c.fillStyle = renk; c.font = '800 58px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(S.parti.ad.slice(0, 26), 540, 480);
+  c.fillStyle = '#ffffff'; c.font = '900 300px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(String(b && b.bitis === 'yerel' ? r.il : r.koltuk), 540, 800);
+  c.fillStyle = '#c9c9d6'; c.font = '700 48px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(b && b.bitis === 'yerel' ? 'İLDE KAZANDI' : 'SANDALYE', 540, 875);
+  var stat = [['%' + f1(r.oy), 'OY'], [r.rank < 99 ? r.rank + '.' : '—', 'SIRA']];
+  stat.forEach(function (a, i) { var x = 340 + i * 400; c.fillStyle = 'rgba(255,255,255,.08)'; kartRRect(c, x - 150, 940, 300, 150, 28); c.fill(); c.fillStyle = '#fff'; c.font = '800 70px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(a[0], x, 1020); c.fillStyle = '#9a9aab'; c.font = '700 30px -apple-system, Helvetica, Arial, sans-serif'; c.fillText(a[1], x, 1066); });
+  c.font = '900 110px -apple-system, Helvetica, Arial, sans-serif';
+  if (gun) { c.fillStyle = '#f0b429'; c.fillText('PUAN ' + r.puan, 540, 1210); c.fillStyle = '#c9c9d6'; c.font = '700 40px -apple-system, Helvetica, Arial, sans-serif'; c.fillText('🔥 ' + r.seri + ' günlük seri', 540, 1265); }
+  else { c.fillStyle = '#f0b429'; c.fillText(yildizYaz(y), 540, 1215); }
+  c.fillStyle = '#7d7d90'; c.font = '600 32px -apple-system, Helvetica, Arial, sans-serif'; c.fillText('Kurgusal bir simülasyondur · Sen de dene!', 540, 1310);
+  return cv.toDataURL('image/png');
+}
+function paylasKart() {
+  var txt = paylasYaz(), url;
+  try { url = kartCiz(); } catch (e) { paylasMetin(txt); return; }
+  try {
+    if (window.ReactNativeWebView && window.__NATIVE_SHELL) { window.ReactNativeWebView.postMessage(JSON.stringify({t: 'shareImg', b64: url.split(',')[1], text: txt})); return; }
+    if (navigator.canShare && navigator.share) {
+      var bin = atob(url.split(',')[1]), arr = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      var f = new File([arr], 'secim-sonuc.png', {type: 'image/png'});
+      if (navigator.canShare({files: [f]})) { navigator.share({files: [f], text: txt}).catch(function () {}); return; }
+    }
+  } catch (e) { /* metne düş */ }
+  paylasMetin(txt);
+}
+
+/* ===== OYUN REHBERİ: konuşma balonlu, atlanabilir; cihazda bir kez gösterilir ===== */
+var RH_KEY = 'secimsim_rehber', RH_EL = null, RH_SON = -1;
+function rhBitmis() { try { return localStorage.getItem(RH_KEY) === '1'; } catch (e) { return false; } }
+function rhKaldir() { RH_SON = -1; if (RH_EL) { RH_EL.remove(); RH_EL = null; } var r = document.querySelectorAll('.rh-ring'); for (var i = 0; i < r.length; i++) r[i].classList.remove('rh-ring'); }
+function rhBitir() { try { localStorage.setItem(RH_KEY, '1'); } catch (e) { /* yok say */ } if (S) S.rhBitti = 1; rhKaldir(); }
+/* Adım, oyun durumundan hesaplanır (kaydedilen oyunda da tutarlı): */
+function rhAdim() {
+  if (!S || S.bitti || S.rhBitti || rhBitmis()) return -1;
+  if (S.ay >= 3) { rhBitir(); return -1; }
+  var n = S.kararSay || 0;
+  if (n < 1) return 0; if (n < 2) return 1; if (S.ay < 1) return 2; if (!S.ogrAnket) return 3; return 4;
+}
+var RH_METIN = [
+  ['Merhaba Genel Başkan! 👋 Her ay <b>3 aksiyon</b> hakkın var. İlk aksiyonun: <b>Üye Kampanyası</b>. Dokun, bilgileri oku ve onayla.', '.aks[data-a="uye"]'],
+  ['Güzel başlangıç! Şimdi <b>Teşkilat</b> kur: seçime girmek için çok ilde örgütlenmen gerekir. Bir bölge seç ve onayla.', '.aks[data-a="teskilat"]'],
+  ['Bu ay için yeterli. <b>Ayı Bitir</b>\'e bas: anketler, kasa ve haberler güncellenir.', '#ay'],
+  ['Şimdi <b>Anket</b> sekmesine bak: partilerin durumu burada. Hedefin <b>%7 barajı</b> geçmek.', '.tab[data-t="anket"]'],
+  ['Hepsi bu! Ara sıra <b>karar kartları</b> çıkar; seçenekleri dikkatli oku. Teşkilat kur, kasayı koru, seçime hazırlan. Başarılar! 🗳️', null]
+];
+function rehberGuncelle() {
+  var a = rhAdim();
+  if (a < 0 || sheetEl || document.querySelector('.splash,.mt')) { rhKaldir(); return; }
+  var m = RH_METIN[a], hedef = m[1] ? document.querySelector(m[1]) : null;
+  if (m[1] && !hedef && a < 3) hedef = document.querySelector('.aks'); /* sekme/başka ekranda: genel hedefe düş */
+  if (m[1] && !hedef) { rhKaldir(); return; }
+  var r = document.querySelectorAll('.rh-ring'); for (var i = 0; i < r.length; i++) r[i].classList.remove('rh-ring');
+  if (hedef) hedef.classList.add('rh-ring');
+  if (hedef && RH_SON !== a) { RH_SON = a; var q = hedef.getBoundingClientRect(); if (q.top > innerHeight - 190 || q.top < 130) { try { hedef.scrollIntoView({block: 'center'}); } catch (e) { /* yok say */ } } }
+  var alt = true; if (hedef) { var rc = hedef.getBoundingClientRect(); alt = rc.top < innerHeight * 0.5; }
+  if (!RH_EL) { RH_EL = document.createElement('div'); RH_EL.className = 'rh'; document.body.appendChild(RH_EL); }
+  RH_EL.className = 'rh ' + (alt ? 'rh-alt' : 'rh-ust');
+  RH_EL.innerHTML = '<div class="rh-b"><div class="rh-av">🧑‍💼</div><div class="rh-t">' + m[0] + '</div><div class="rh-bt"><button class="btn ghost rh-atla">' + (a === 4 ? '' : 'Atla') + '</button>' + (a === 4 ? '<button class="btn pri rh-tm">Tamam</button>' : '<span class="rh-n">' + (a + 1) + ' / 5</span>') + '</div></div>';
+  var at = RH_EL.querySelector('.rh-atla'); if (at) at.onclick = rhBitir; var tm = RH_EL.querySelector('.rh-tm'); if (tm) tm.onclick = rhBitir;
 }
 
 animUygula(); intro(menu);
