@@ -82,7 +82,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
     let msg = '', tone = '';
     if (p.status === 'taslak') { msg = 'Proje taslağı — inşaatı başlatmak için aşağıdaki düğmeyi kullanın'; tone = 'info'; }
     else if (b?.stalled === 'nakit') { msg = 'Nakit yok — inşaat durdu! Gelir sağlayın veya gider azaltın'; tone = ''; }
-    else if (b?.stalled === 'malzeme') { msg = `Malzeme yok: ${MATERIALS.find((m) => m.id === b.matShort)?.label ?? ''} — Operasyon > Malzeme'den sipariş verin`; tone = 'warn'; }
+    else if (b?.stalled === 'malzeme') { msg = `Malzeme yok: ${MATERIALS.find((m) => m.id === b.matShort)?.label ?? ''} — Şirket ekranındaki «Malzeme al»dan sipariş verin`; tone = 'warn'; }
     else if (b?.stalled === 'kaza') { msg = `İş kazası — şantiye ${Math.max(0, (b.accidentUntil ?? 0) - s.clock.day)} gün kapalı`; tone = ''; }
     else if (p.status === 'insaat' && b?.matShort) { msg = `Malzeme yetersiz (${MATERIALS.find((m) => m.id === b.matShort)?.label}): iş yavaşladı`; tone = 'warn'; }
     else if (p.status === 'insaat' && st?.permit) { msg = `Ruhsat bekleniyor (${Math.max(0, Math.round(b!.progress * 100))}%)`; tone = 'info'; }
@@ -123,7 +123,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
         const rows: [string, string | Node, boolean?][] = [['Aşama', st.label], ['Saha ekibi', st.office ? 'Ofis aşaması (mimar/mühendis gerekir)' : `kapasite ${crewCapacity(s, st.id, p.id).toFixed(1)} / gereken ${(p.brut / 70).toFixed(1)}`]];
         for (const [id, q] of stageNeeds(p, b.stage)) { const m = MATERIALS.find((x) => x.id === id)!, have = stockQty(s, id), inc = incomingQty(s, id); rows.push([m.label, h('span', { class: have < q * (1 - b.progress) ? 'neg' : '' }, `kalan ihtiyaç ${nf(q * (1 - b.progress), 1)} · stok ${nf(have, 1)} · yolda ${nf(inc, 1)} ${m.unit}`)]); }
         for (const mid of st.machines ?? []) { const owned = s.machines.find((x) => x.type === mid && x.brokenUntil <= s.clock.day); rows.push([MACHINES.find((x) => x.id === mid)!.label, owned ? 'Sizin (yakıt)' : s.machines.some((x) => x.type === mid) ? 'Arızalı → kiralanıyor' : 'Kiralanıyor (günlük)']); }
-        body.append(kv(rows), h('div', { class: 'hint' }, 'Operasyon sekmesinden malzeme siparişi, makine alımı ve ekip ataması yapabilirsiniz.'));
+        body.append(kv(rows), h('div', { class: 'hint' }, 'Malzeme siparişi için Şirket ekranındaki «Malzeme al», ekip ve makine için Menü bölümünü kullanabilirsiniz.'));
       }
     } else {
       const spent = b ? b.spent + b.unpaid + (b.matCost ?? 0) : 0, rev = currentRevenue(s, { ...p, ...(p.result ? { result: p.result } : {}) }), land = parcelOf(p)?.costBasis ?? 0;
@@ -158,7 +158,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
       if (e.type === 'PROJECT_COMPLETED' && e.data!.projectId === projectId) { const p = proj(); if (p) showReport(p); }
       if (e.type === 'STAGE_COMPLETED' && e.data!.projectId === projectId) app.audio.sfx('toggle');
       if (e.type === 'SOIL_REVEALED' && e.data!.projectId === projectId) { app.audio.sfx((e.data!.extra as number) > 0 ? 'error' : 'confirm'); toast((e.data!.extra as number) === 0 ? 'Hafriyat: zemin beklendiği gibi çıktı.' : `Hafriyatta zemin ortaya çıktı: ${(e.data!.extra as number) > 0 ? 'ek maliyet +' : 'tasarruf '}${formatMoney(Math.abs(e.data!.extra as number))}`, 5000); }
-      if (e.type === 'CONSTRUCTION_STALLED' && e.data!.projectId === projectId) { app.audio.sfx('error'); toast('Nakit yetmedi: inşaat durdu!', 5000); }
+      if (e.type === 'CONSTRUCTION_STALLED' && e.data!.projectId === projectId) { app.audio.sfx('error'); toast(e.data!.reason === 'malzeme' ? 'Malzeme yetmedi: inşaat durdu! Şirket ekranından «Malzeme al»a dokunun.' : e.data!.reason === 'kaza' ? 'İş kazası: inşaat birkaç gün durdu.' : 'Nakit yetmedi: inşaat durdu!', 5000); }
       if (e.type === 'CONSTRUCTION_RESUMED' && e.data!.projectId === projectId) toast('Nakit sağlandı: inşaat devam ediyor.');
       if (e.type === 'MACRO_NEWS') toast((e.data as { text: string }).text, 4500);
     }

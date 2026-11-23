@@ -20,10 +20,9 @@ const STEPS: Step[] = [
   { title: 'Görevler', text: 'Görevler size sıradaki adımı söyler. "Şimdi yap" doğru sekmeye götürür. Sekmelerde nabız atan nokta da sıradaki adımı gösterir.', tab: 'sirket', target: '.questscard' },
   { title: 'Harita', text: 'Her iş arsayla başlar. Bir ile dokunun, ilçeyi seçin, arsayı inceleyin ve satın alın. "Hızlı başlangıç" kartı tek dokunuşla arsa, proje ve inşaatı başlatır.', tab: 'harita', target: tabSel(2) },
   { title: 'Projeler', text: 'Arsa alınca proje olur: tasarım, inşaat, satış. "Şantiyeyi aç" 3B şantiyeyi gösterir, "Satış merkezi" daireleri satmanızı sağlar.', tab: 'projeler', target: tabSel(3) },
-  { title: 'Operasyon', text: 'İşi yapan ekip burada. "Kim nerede?" panosunda herkesin hangi projede çalıştığını görürsünüz. Malzeme, makine ve iş güvenliği de burada.', tab: 'operasyon', target: tabSel(4) },
-  { title: 'İhale', text: 'Kamu ve özel işlere teklif verin. Kazanırsanız sözleşmeli iş olur; süresinde teslim etmek gerekir.', tab: 'ihale', target: tabSel(5) },
-  { title: 'Finans', text: 'Gelir-gider, nakit akışı, krediler ve ortaklar. Para biterse iş biter; nakit yeterliliğinizi izleyin.', tab: 'finans', target: tabSel(6) },
-  { title: 'Piyasa', text: 'Faiz, enflasyon, malzeme fiyatları ve rakipler. Kriz dönemlerinde dikkatli olun; her sekmenin başındaki "?" size yardım eder.', tab: 'piyasa', target: tabSel(7) },
+  { title: 'Yönetim', text: 'Ekip, ihaleler, malzeme, makine ve iş güvenliği burada. "Kim nerede?" panosunda herkesin hangi projede çalıştığını görürsünüz. Malzemeyi Şirket ekranındaki "Malzeme al" kısayolundan da alabilirsiniz.', tab: 'yonetim', target: tabSel(4) },
+  { title: 'Finans', text: 'Gelir-gider, nakit akışı, krediler, muhasebe ve ortaklar. Para biterse iş biter; nakit yeterliliğinizi izleyin.', tab: 'finans', target: tabSel(5) },
+  { title: 'Menü', text: 'Piyasa, Holding (şirket seviyeniz yükseldikçe fabrikalar ve yatırımlar), ayarlar ve rehber burada. Her sayfanın başındaki "?" size yardım eder.', target: tabSel(6) },
   { title: 'Hepsi bu!', text: 'İlk adımınız: Harita\'dan bir arsa alıp inşaata başlamak. Başarılar patron, ben şantiyedeyim!', tab: 'sirket', last: true },
 ];
 
