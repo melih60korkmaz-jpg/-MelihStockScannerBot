@@ -463,3 +463,26 @@ button,.card,.modc,.cx{touch-action:manipulation;-webkit-tap-highlight-color:tra
 .rh-bt{width:100%;display:flex;justify-content:space-between;align-items:center}.rh-bt .btn{padding:6px 14px;min-height:0;width:auto;font-size:13px;margin:0}.rh-n{font-size:12px;color:#9a9aab}
 .rh-ring{outline:3px solid #f0b429;outline-offset:3px;border-radius:12px;animation:rhp 1.2s ease-in-out infinite}
 @keyframes rhp{0%,100%{outline-color:#f0b429}50%{outline-color:#f0b42955}}
+/* ===== ek animasyonlar ===== */
+.st{position:relative}
+.dlt{position:fixed;z-index:95;transform:translateX(-50%);font:700 12px/1 -apple-system,system-ui,sans-serif;padding:4px 8px;border-radius:10px;pointer-events:none;white-space:nowrap;animation:dltfly 1.5s ease-out forwards;font-style:normal;box-shadow:0 4px 12px #0008}
+.dlt.up{color:#2ee6a6;background:#0d2a22;border:1px solid #2ee6a655}.dlt.dn{color:#ff6b81;background:#2a0f16;border:1px solid #ff6b8155}
+@keyframes dltfly{0%{opacity:0;transform:translate(-50%,-4px) scale(.7)}18%{opacity:1;transform:translate(-50%,8px) scale(1.08)}100%{opacity:0;transform:translate(-50%,46px) scale(1)}}
+.btn,.aks,.modc,.tab,.fab{transition:transform .12s ease,box-shadow .2s ease}
+.btn:active,.aks:active,.modc:active,.tab:active,.fab:active{transform:scale(.955)}
+.menu .modc{animation:rise .55s cubic-bezier(.2,.8,.3,1) both}
+.menu .modc:nth-of-type(2){animation-delay:.07s}.menu .modc:nth-of-type(3){animation-delay:.14s}.menu .modc:nth-of-type(4){animation-delay:.21s}.menu .modc:nth-of-type(5){animation-delay:.28s}.menu .modc:nth-of-type(n+6){animation-delay:.35s}
+.menu .card{animation:rise .55s cubic-bezier(.2,.8,.3,1) both}
+.ys{display:inline-block;color:#4a4a5c}.ys.on{color:#f0b429;text-shadow:0 0 14px #f0b42988;animation:ystar .75s cubic-bezier(.2,1.5,.4,1) both;animation-delay:calc(var(--i)*.3s + .35s)}
+@keyframes ystar{0%{opacity:0;transform:scale(0) rotate(-70deg)}60%{opacity:1;transform:scale(1.5) rotate(12deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+.kimgw img{animation:kzoom .8s cubic-bezier(.2,.9,.3,1.15) .6s both}
+@keyframes kzoom{from{opacity:0;transform:scale(.7) translateY(24px) rotate(-3deg)}to{opacity:1;transform:none}}
+.rh-b{animation:rhin .5s cubic-bezier(.2,1.2,.3,1) both}
+@keyframes rhin{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:none}}
+.rh-av{display:inline-block;animation:rhav 2.2s ease-in-out infinite;transform-origin:70% 80%}
+@keyframes rhav{0%,60%,100%{transform:rotate(0)}70%{transform:rotate(-12deg)}80%{transform:rotate(10deg)}90%{transform:rotate(-6deg)}}
+.tab.yeni{animation:tabyeni 1.2s cubic-bezier(.2,1.4,.4,1) both;position:relative}
+.tab.yeni::after{content:'YENİ';position:absolute;top:-6px;right:-2px;font:800 8px/1 system-ui;background:#f0b429;color:#241b05;border-radius:6px;padding:2px 4px}
+@keyframes tabyeni{0%{transform:scale(.5);opacity:0;box-shadow:0 0 0 0 #f0b429aa}50%{transform:scale(1.18);opacity:1;box-shadow:0 0 0 12px #f0b42900}100%{transform:none;box-shadow:0 0 0 0 #f0b42900}}
+@media (prefers-reduced-motion:reduce){.dlt,.ys.on,.kimgw img,.rh-b,.rh-av,.tab.yeni{animation:none!important}}
+.anim-kapali .dlt,.anim-kapali .ys.on,.anim-kapali .kimgw img,.anim-kapali .rh-av,.anim-kapali .tab.yeni{animation:none!important}

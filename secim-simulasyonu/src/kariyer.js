@@ -39,6 +39,7 @@ function karToplam() { var t = 0; BOLUMLER.forEach(function (b) { t += karYildiz
 function karAcik(i) { return i === 0 || karYildiz(BOLUMLER[i - 1].id) >= 1; }
 function karMax() { return BOLUMLER.length * 3; }
 function karUnvan(t) { var o = t / karMax(); return o >= 1 ? 'Siyasetin Zirvesi' : o >= 0.8 ? 'Devlet Adamı' : o >= 0.6 ? 'Parti Lideri' : o >= 0.4 ? 'Kurmay' : o >= 0.2 ? 'Teşkilatçı' : 'Çırak'; }
+function yildizHtml(n, max) { var o = ''; for (var i = 0; i < (max || 3); i++) o += '<span class="ys' + (i < n ? ' on' : '') + '" style="--i:' + i + '">' + (i < n ? '★' : '☆') + '</span>'; return o; }
 function yildizYaz(n, max) { var o = ''; for (var i = 0; i < (max || 3); i++) o += i < n ? '★' : '☆'; return o; }
 
 /* Seçim sonucu → özet */
@@ -84,8 +85,8 @@ function gunMenuHtml() {
 function kariyerMenu() {
   var t = karToplam();
   root.innerHTML = '<div class="menu"><h2>Siyasi Kariyer</h2><p class="muted small" style="margin:0 0 10px">' + BOLUMLER.length + ' bölüm, ' + karMax() + ' yıldız. Her bölüm bir seçimle biter; yıldızlar hedeflerine göre verilir. Bir bölümü açmak için öncekinden en az 1 yıldız gerekir.</p>' +
-    '<div class="card" style="text-align:center"><div class="eyebrow" style="margin:0">Unvanın</div><h3 style="margin:2px 0">' + karUnvan(t) + '</h3><span class="kst">' + yildizYaz(Math.round(t / karMax() * 3), 3) + '</span><div class="small muted">' + t + ' / ' + karMax() + ' yıldız</div></div>' +
-    BOLUMLER.map(function (b, i) { var ac = karAcik(i), y = karYildiz(b.id); return '<button class="modc" data-b="' + b.id + '"' + (ac ? '' : ' disabled style="opacity:.55"') + '><h3>' + b.ikon + ' ' + b.no + '. ' + esc(b.ad) + ' <span class="kst" style="float:right">' + yildizYaz(y) + '</span></h3><p class="muted small" style="margin:6px 0 0">' + (ac ? esc(b.bitisAd) : '🔒 Önceki bölümden 1 yıldız gerekir') + '</p></button>'; }).join('') +
+    '<div class="card" style="text-align:center"><div class="eyebrow" style="margin:0">Unvanın</div><h3 style="margin:2px 0">' + karUnvan(t) + '</h3><span class="kst">' + yildizHtml(Math.round(t / karMax() * 3), 3) + '</span><div class="small muted">' + t + ' / ' + karMax() + ' yıldız</div></div>' +
+    BOLUMLER.map(function (b, i) { var ac = karAcik(i), y = karYildiz(b.id); return '<button class="modc" data-b="' + b.id + '"' + (ac ? '' : ' disabled style="opacity:.55"') + '><h3>' + b.ikon + ' ' + b.no + '. ' + esc(b.ad) + ' <span class="kst" style="float:right">' + yildizHtml(y) + '</span></h3><p class="muted small" style="margin:6px 0 0">' + (ac ? esc(b.bitisAd) : '🔒 Önceki bölümden 1 yıldız gerekir') + '</p></button>'; }).join('') +
     '<button class="btn ghost" id="geri" style="margin-top:6px">Geri</button></div>';
   document.querySelectorAll('[data-b]').forEach(function (e) { e.onclick = function () { kariyerDetay(e.dataset.b); }; });
   $('#geri').onclick = modSec;
@@ -145,7 +146,7 @@ function kariyerSon() {
 function kariyerBitisKart() {
   var r = S.kariyerSonuc, k = S.kariyer, gun = k.id === 'gunluk', b = gun ? null : bolumBul(k.id), y = r.yildiz || 0;
   return '<div class="card son"><div class="sonik">' + (gun ? '📅' : y === 3 ? '🏆' : y ? '⭐' : '🏁') + '</div><div class="eyebrow">' + (gun ? 'Günün senaryosu bitti' : 'Bölüm ' + b.no + ' tamamlandı') + '</div><h3>' + esc(gun ? 'Puan ' + r.puan : b.ad) + '</h3>' +
-    (gun ? '<p>Seri: <b>' + r.seri + ' gün</b>. Yarın yeni bir senaryo seni bekliyor.</p>' : '<p class="kst" style="font-size:28px;margin:4px 0">' + yildizYaz(y) + '</p>') +
+    (gun ? '<p>Seri: <b>' + r.seri + ' gün</b>. Yarın yeni bir senaryo seni bekliyor.</p>' : '<p class="kst" style="font-size:34px;margin:4px 0">' + yildizHtml(y) + '</p>') +
     '<div class="sonst"><div><b>' + r.koltuk + '</b><span>Sandalye</span></div><div><b>%' + f1(r.oy) + '</b><span>Oy</span></div><div><b>' + (r.rank < 99 ? r.rank + '.' : '—') + '</b><span>Sıra</span></div></div>' +
     '<div class="kimgw"><img id="kimg" alt="Sonuç kartı"></div><button class="btn pri" id="paylas">📤 Sonucu paylaş</button>' + (gun ? '' : '<button class="btn" id="ktekrar">Bölümü tekrar oyna</button>') + '<button class="btn ghost" id="kmenu">' + (gun ? 'Ana menü' : 'Kariyer menüsü') + '</button></div>';
 }

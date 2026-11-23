@@ -5,7 +5,8 @@ var TABLAR = [['genel','Genel','🎯'],['merkez','Merkez','🏢'],['yonetim','Y�
 var TAB_AC = {genel: 0, merkez: 0, parti: 0, anket: 0, kayit: 0, harita: 1, tarihce: 1, rakip: 2, iller: 2, takvim: 2, yonetim: 3, ekonomi: 3, lider: 3, medya: 4, ittifak: 4, secim: 5, meclis: 6, karargah: 6, belediye: 8};
 var TAB_NOT = {harita: 'Harita: bölgelerdeki gücünü gör.', tarihce: 'Tarihçe: aldığın kararların kaydı.', rakip: 'Rakipler: diğer partilerin hamleleri.', iller: 'İller: il il anket ve teşkilat.', takvim: 'Takvim: seçimler ve önemli tarihler.', yonetim: 'Yönetim: kadro ve görev dağılımı.', ekonomi: 'Ekonomi: enflasyon ve makro tablo.', lider: 'Lider: kendi profilin ve itibarın.', medya: 'Medya: yayın organlarıyla ilişkiler.', ittifak: 'İttifak: seçim ittifakları.', secim: 'Seçim: yaklaşan seçimin hazırlığı.', meclis: 'Meclis: koltuk dağılımı ve yasalar.', karargah: 'Karargâh: gelişmiş kampanya kontrolleri.', belediye: 'Belediye: yerel yönetimler.'};
 function tabAcik(id) { var ay = S && S.ay != null ? S.ay : 0; if (S && S.bitti) return true; var k = TAB_AC[id]; return k === undefined || ay >= k || (S && S.tabAcikHepsi); }
-function acilanSekmeler() { if (!S) return; var ilk = !S.tabGor; S.tabGor = S.tabGor || {}; var yeni = []; TABLAR.forEach(function (t) { if (tabAcik(t[0])) { if (!S.tabGor[t[0]]) { S.tabGor[t[0]] = 1; if (!ilk && TAB_AC[t[0]] > 0 && S.ay > 0) yeni.push(t); } } }); if (yeni.length) setTimeout(function () { toast('🔓 Yeni sekme: ' + yeni.map(function (t) { return t[1]; }).join(', ') + (yeni.length === 1 && TAB_NOT[yeni[0][0]] ? ' — ' + TAB_NOT[yeni[0][0]] : '')); }, 600); }
+var YENI_TAB = [];
+function acilanSekmeler() { if (!S) return; var ilk = !S.tabGor; S.tabGor = S.tabGor || {}; var yeni = []; TABLAR.forEach(function (t) { if (tabAcik(t[0])) { if (!S.tabGor[t[0]]) { S.tabGor[t[0]] = 1; if (!ilk && TAB_AC[t[0]] > 0 && S.ay > 0) yeni.push(t); } } }); YENI_TAB = yeni.map(function (t) { return t[0]; }); if (yeni.length) setTimeout(function () { toast('🔓 Yeni sekme: ' + yeni.map(function (t) { return t[1]; }).join(', ') + (yeni.length === 1 && TAB_NOT[yeni[0][0]] ? ' — ' + TAB_NOT[yeni[0][0]] : '')); }, 600); }
 var PREV = {}, LASTTAB = null, SEEN = {}, BUSY = false;
 var HINTS = {belediye:'Belediye: yönettiğin illeri izle, hizmet yatırımı yap, skandal riskini azalt.',merkez:'Merkez: genel merkezin, kariyer yolun ve rozetlerin burada.',takvim:'Takvim: seçimler ve kurultay tarihlerini buradan izle.',tarihce:'Tarihçe: siyasi kariyerin ve önemli dönüm noktaların burada.',genel:'Genel: aylık aksiyonların burada. Her ay 3 hakkın var.',anket:'Anket: oyunu ve rakiplerini izle. Baraj %7.',harita:'Harita: her kutu bir il. Dokun, ayrıntıyı gör.',iller:'İller: teşkilat kurmak için il il çalışma listesi burada.',ittifak:'İttifak: yakın partileri davet et, barajı birlikte aş.',secim:'Seçim: takvim, baraj ve sandalye tahmini burada.',meclis:'Meclis: sandalye dağılımı ve hükümet.',ekonomi:'Ekonomi: enflasyon seçmenin ruh halini belirler.',medya:'Medya: gündemi sen belirle, ama riske dikkat.',yonetim:'Yönetim: kadroyu memnun tut, parti dağılmasın.',parti:'Parti: seçmen gruplarının ruh hali burada.',lider:'Lider: stres ve sağlığına dikkat et.'};
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
@@ -124,7 +125,7 @@ function render() {
     '<div class="stats"><div class="st"><span>Anket</span><b><span data-n="anket">%' + f1(S.anketOyuncu) + '</span> · ' + sira + '.</b></div><div class="st"><span>Kasa</span><b data-n="kasa" class="' + (st.kasa < 0 ? 'badc' : '') + '">' + para(st.kasa) + '</b></div><div class="st"><span>Üye</span><b data-n="uye">' + sayi(st.uye) + '</b></div><div class="st"><span>Teşkilat</span><b>' + teskilatSayisi(S) + '/81</b></div><div class="st"><span>Birlik</span><b>' + Math.round(st.birlik) + '</b></div><div class="st"><span>Stres</span><b class="' + (st.stres > 70 ? 'badc' : '') + '">' + Math.round(st.stres) + '</b></div></div></div>';
   var tick = S.haberler.length ? '<div class="tick"><span class="tb">CJN</span><div class="tw"><div class="tk"><span>' + S.haberler.map(esc).join('  •  ') + '  •  </span><span>' + S.haberler.map(esc).join('  •  ') + '  •  </span></div></div></div>' : '';
   var body = tick + '<div class="scroll' + (enter ? ' anim' : '') + '" id="sc">' + (S.bitti ? bitisKart() : tabHtml()) + '</div>';
-  var tabs = '<nav class="tabs" aria-label="Bölümler">' + TABLAR.filter(function (t) { return tabAcik(t[0]); }).map(function (t) { return '<button class="tab" data-t="' + t[0] + '" aria-current="' + (TAB === t[0]) + '"><span class="ti">' + t[2] + '</span>' + t[1] + '</button>'; }).join('') + '</nav>';
+  var tabs = '<nav class="tabs" aria-label="Bölümler">' + TABLAR.filter(function (t) { return tabAcik(t[0]); }).map(function (t) { return '<button class="tab' + (YENI_TAB.indexOf(t[0]) >= 0 ? ' yeni' : '') + '" data-t="' + t[0] + '" aria-current="' + (TAB === t[0]) + '"><span class="ti">' + t[2] + '</span>' + t[1] + '</button>'; }).join('') + '</nav>';
   var fab = S.bitti ? '' : '<button class="fab" id="ay">Ayı Bitir ▸ <i>' + S.aksiyon.kalan + '</i></button>';
   var sc = $('#sc'), y = sc ? sc.scrollTop : 0;
   root.innerHTML = top + body + tabs + fab;
@@ -132,7 +133,7 @@ function render() {
   var ct = $('.tab[aria-current=true]'); if (ct) ct.scrollIntoView({inline: 'center', block: 'nearest'});
   if (sc && $('#sc') && !enter) $('#sc').scrollTop = y;
   var a = $('#ay'); if (a) a.onclick = ayBitirTikla;
-  $('#ayar').onclick = ayarlar; bagla();
+  $('#ayar').onclick = ayarlar; bagla(); if (YENI_TAB.length) setTimeout(function () { YENI_TAB = []; }, 1300);
   if (S.sd && S.sd.length) sdGoster(S.sd.splice(0, 3));
   rozetKontrol(); kariyerBagla(); rehberGuncelle();
   var bars = [].slice.call(document.querySelectorAll('#sc .bar i,#sc .pbar i'));
@@ -491,7 +492,13 @@ function ayBitirTikla() {
   document.body.appendChild(el);
   setTimeout(function () { var a0 = S.anketOyuncu, r0 = oyuncuSira(S); ayiBitir(S); var da = S.anketOyuncu - a0, r1 = oyuncuSira(S); if (Math.abs(da) >= 0.8) sonDakika(S, 'Anketlerde ' + (da > 0 ? 'sert yükseliş' : 'sert düşüş') + ': ' + S.parti.ad + ' %' + f1(S.anketOyuncu) + '.'); else if (r1 < r0) sonDakika(S, S.parti.ad + ' anketlerde ' + r1 + '. sıraya yükseldi.'); kayit(); render(); el.classList.add('out'); setTimeout(function () { el.remove(); BUSY = false; queue(); }, 320); }, 1100);
 }
+function deltaUc(el, k, d) {
+  if (RM || !el || !el.closest) return; var h = el.closest('.st'); if (!h) return;
+  var m = k === 'anket' ? (d > 0 ? '+' : '−') + f1(Math.abs(d)).replace('-', '') + ' puan' : k === 'kasa' ? (d > 0 ? '+' : '−') + para(Math.abs(d)) : (d > 0 ? '+' : '−') + sayi(Math.abs(d));
+  var c = document.createElement('i'); var rc = h.getBoundingClientRect(); c.className = 'dlt ' + (d > 0 ? 'up' : 'dn'); c.textContent = m; c.style.left = (rc.left + rc.width / 2) + 'px'; c.style.top = (rc.bottom + 4) + 'px'; document.body.appendChild(c); setTimeout(function () { c.remove(); }, 1600);
+}
 function sayAnim(el, k, a, b) {
+  deltaUc(el, k, b - a);
   var t0 = performance.now(), D = 800, up = b > a; el.classList.add(up ? 'fu' : 'fd');
   function fmt(v) { return k === 'anket' ? '%' + f1(v) : k === 'kasa' ? para(v) : sayi(v); }
   (function f(t) { var p = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(a + (b - a) * e); if (p < 1) requestAnimationFrame(f); else setTimeout(function () { el.classList.remove('fu', 'fd'); }, 500); })(t0);
