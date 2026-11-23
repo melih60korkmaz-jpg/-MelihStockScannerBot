@@ -12,8 +12,12 @@ import { newDesignSeed, planProject } from './projects';
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 export const EVAL_DAYS = 30, MAX_OPEN = 8;
 
-interface Kind { id: string; label: string; type: string; quality: string; client: 'kamu' | 'ozel'; area: number; zoning: Parcel['zoning']; taks: number; kaks: number; floors: number; req: Tender['req']; bondPct: number; names: string[] }
+interface Kind { minLevel?: number; id: string; label: string; type: string; quality: string; client: 'kamu' | 'ozel'; area: number; zoning: Parcel['zoning']; taks: number; kaks: number; floors: number; req: Tender['req']; bondPct: number; names: string[] }
 export const KINDS: Kind[] = [
+  { minLevel: 4, id: 'kampus', label: 'Üniversite kampüsü', type: 'is_merkezi', quality: 'standart', client: 'kamu', area: 9000, zoning: 'ticaret', taks: 0.35, kaks: 2.2, floors: 8, req: { rep: 40, score: 560, completed: 6, staff: 14, machines: 3 }, bondPct: 0.04, names: ['Anadolu', 'Karadeniz', 'Ege', 'Akdeniz', 'Marmara'] },
+  { minLevel: 5, id: 'kent', label: 'Kent konut bölgesi', type: 'site', quality: 'premium', client: 'ozel', area: 22000, zoning: 'konut', taks: 0.3, kaks: 1.9, floors: 10, req: { rep: 52, score: 600, completed: 10, staff: 20, machines: 4 }, bondPct: 0.03, names: ['Vadi', 'Park', 'Yaşam', 'Bahçeşehir', 'Gökkafes'] },
+  { minLevel: 6, id: 'sehirhastane', label: 'Şehir hastanesi', type: 'is_merkezi', quality: 'premium', client: 'kamu', area: 16000, zoning: 'ticaret', taks: 0.4, kaks: 2.6, floors: 12, req: { rep: 62, score: 640, completed: 14, staff: 28, machines: 6 }, bondPct: 0.04, names: ['Şifa', 'Merkez', 'Kampüs', 'Bölge', 'Entegre'] },
+  { minLevel: 7, id: 'kule', label: 'Ticaret kulesi', type: 'is_merkezi', quality: 'luks', client: 'ozel', area: 12000, zoning: 'ticaret', taks: 0.45, kaks: 4.0, floors: 24, req: { rep: 72, score: 680, completed: 20, staff: 36, machines: 8 }, bondPct: 0.03, names: ['Zirve', 'Boğaz', 'Panorama', 'Meridyen', 'Atlas'] },
   { id: 'okul', label: 'İlkokul binası', type: 'ofis', quality: 'standart', client: 'kamu', area: 1800, zoning: 'ticaret', taks: 0.35, kaks: 1.05, floors: 3, req: { rep: 8, score: 350, completed: 0, staff: 4, machines: 0 }, bondPct: 0.03, names: ['Atatürk', 'Cumhuriyet', 'Fatih', 'Yunus Emre', 'Mimar Sinan'] },
   { id: 'belediye', label: 'Belediye hizmet binası', type: 'is_merkezi', quality: 'standart', client: 'kamu', area: 2200, zoning: 'ticaret', taks: 0.4, kaks: 1.6, floors: 4, req: { rep: 14, score: 420, completed: 1, staff: 6, machines: 1 }, bondPct: 0.03, names: ['Merkez', 'Kent', 'Çarşı', 'Yeni Mahalle', 'İlçe'] },
   { id: 'hastane', label: 'Devlet hastanesi eki', type: 'is_merkezi', quality: 'premium', client: 'kamu', area: 3500, zoning: 'ticaret', taks: 0.4, kaks: 2.0, floors: 5, req: { rep: 30, score: 520, completed: 2, staff: 10, machines: 2 }, bondPct: 0.04, names: ['Şehir', 'Devlet', 'Eğitim ve Araştırma', 'Kadın Doğum', 'Çocuk'] },
@@ -27,7 +31,7 @@ const mkParcel = (s: GameState, cityId: string, k: Kind, scale: number): Parcel 
 };
 
 export function generateTender(s: GameState, cityId: string): Tender | null {
-  const k = pick(s.rng, 'misc', KINDS), scale = 0.85 + rand(s.rng, 'misc') * 0.5; const pc = mkParcel(s, cityId, k, scale);
+  const lvl = s.company?.level ?? 1, kinds = KINDS.filter((x) => (x.minLevel ?? 1) <= lvl), k = pick(s.rng, 'misc', kinds), scale = 0.85 + rand(s.rng, 'misc') * 0.5; const pc = mkParcel(s, cityId, k, scale);
   const plan = planProject(s, pc, k.type, k.quality, 0); if (!plan.ok) return null;
   const trueCost = plan.cost.total - plan.cost.designFee; const ref = Math.round(trueCost * 1.2), day = s.clock.day;
   const name = pick(s.rng, 'misc', k.names), prov = cityData(cityId)!.label;

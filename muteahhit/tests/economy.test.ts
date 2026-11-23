@@ -1,4 +1,4 @@
-import { ledgerCat } from '../src/data';
+import { EVENTS, ledgerCat } from '../src/data';
 import { describe, expect, it } from 'vitest';
 import { dispatch } from '../src/core/commands';
 import { newGameState } from '../src/core/state';
@@ -91,12 +91,12 @@ describe('vergi', () => {
     expect(checkInvariant(s)).toBe(true);
   });
   it('zararlı dönemde vergi yok, zarar devreder', () => {
-    const s = start(); advanceDays(s, 100);
+    const s = start(); for (const e of EVENTS) s.evtLast[e.id] = 0; s.company!.cash = TL(500_000); s.ledgerBase = s.company!.cash - s.ledger.reduce((a, e) => a + e.amount, 0); advanceDays(s, 100); // az nakit: mevduat faizi gideri aşmasın // rastgele olay gelirleri vergi matrahını bozmasın
     expect(s.ledger.some((e) => e.cat === 'vergi')).toBe(false);
     expect(s.taxLossCarry).toBeGreaterThan(0);
   });
   it('sermaye, yatırım ve finansman vergi matrahına girmez', () => {
-    const s = start(); s.staff.length = 0;
+    const s = start(); s.staff.length = 0; for (const e of EVENTS) s.evtLast[e.id] = 0; s.company!.cash = TL(500_000); s.ledgerBase = s.company!.cash - s.ledger.reduce((a, e) => a + e.amount, 0);
     post(s, 'arsa', TL(-5_000_000)); post(s, 'kredi_cekim', TL(8_000_000)); advanceDays(s, 95);
     expect(s.ledger.some((e) => e.cat === 'vergi')).toBe(false);
   });

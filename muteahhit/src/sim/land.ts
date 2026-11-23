@@ -56,7 +56,7 @@ export function generateParcel(s: GameState, cityId: string, districtId: string,
   const [k0, k1, t0, t1] = range[zoning];
   const kaks = force?.kaks ?? round05(k0 + rand(s.rng, 'market') * (k1 - k0));
   const taks = force?.taks ?? round05(t0 + rand(s.rng, 'market') * (t1 - t0));
-  const [a0, a1] = d.areaBias === 'small' ? [150, 600] : d.areaBias === 'mid' ? [250, 1200] : [500, 4000];
+  const lv = s.company?.level ?? 1, grow = lv >= 3 ? Math.min(3, 1 + 0.35 * (lv - 2)) : 1, [a0, a1b] = d.areaBias === 'small' ? [150, 600] : d.areaBias === 'mid' ? [250, 1200] : [500, 4000], a1 = a1b * grow;
   const area = force?.area !== undefined ? round5(force.area) : round5(a0 * Math.pow(a1 / a0, Math.pow(rand(s.rng, 'market'), 1.3)));
   const soil = wpick(s, SOIL_W);
   const roads = wpick(s, [[1, 50], [2, 35], [3, 15]]);
