@@ -15,7 +15,7 @@ const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 function seeded(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
 export const AVG_AREA: Record<string, number> = { mustakil: 0, apartman: 95, site: 110, villa: 220, rezidans: 75, luks: 140, ofis: 70, is_merkezi: 90, otel: 32, avm: 60, fabrika: 0, depo: 0 };
-const SPEED: Record<string, number> = { mustakil: 0.8, apartman: 1, site: 1.05, villa: 0.5, rezidans: 0.9, luks: 0.55, ofis: 0.7, is_merkezi: 0.6, otel: 0.35, avm: 0.3, fabrika: 0.3, depo: 0.35 };
+const SPEED: Record<string, number> = { mustakil: 2, apartman: 1, site: 1.05, villa: 1.2, rezidans: 0.9, luks: 1, ofis: 0.7, is_merkezi: 0.6, otel: 0.35, avm: 0.3, fabrika: 0.3, depo: 0.35 };
 export const PRESALE_DISCOUNT = 0.9, CASH_DISCOUNT = 0.96, INSTALLMENT_MARKUP = 1.06, DOWN_TAKSIT = 0.25, DOWN_PRESALE = 0.4, KAPORA = 0.05, AGENT_FEE = 0.025, BULK = 0.92;
 export const WARRANTY_DAYS = 730;
 /** İlan hızı: alıcı akışı çarpanı, teklif oranına etkisi ve aylık ilan gideri (satılmamış daire değerinin oranı). */
