@@ -104,7 +104,8 @@ h1,h2,h3{font-family:var(--fd);margin:0;text-wrap:balance}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 
 /* menü */
-.menu{flex:1;overflow-y:auto;padding:max(28px,env(safe-area-inset-top)) 18px 30px;display:flex;flex-direction:column;gap:12px}
+.menu{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:max(28px,env(safe-area-inset-top)) 18px calc(34px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.menu>*{flex-shrink:0}.btn{flex-shrink:0;min-height:44px}
 .hero{text-align:center;padding:26px 0 8px}
 .hero svg{width:92px;height:92px}
 .hero h1{font-size:34px;letter-spacing:-.02em;margin-top:12px}
@@ -503,6 +504,15 @@ button,.card,.modc,.cx{touch-action:manipulation;-webkit-tap-highlight-color:tra
 .hk-f svg{filter:drop-shadow(0 4px 8px #0006);transition:transform .25s}.hk-f:active svg{transform:scale(1.1) rotate(-4deg)}
 @media (prefers-reduced-motion:reduce){.hk-f{animation:none!important}}
 .anim-kapali .hk-f{animation:none!important}
+/* ===== Hedefler · Rozetler · Rehber ===== */
+.hd-o{display:flex;gap:12px;align-items:flex-start}.hd-i{font-size:28px;line-height:1}
+.hd-s{margin:6px 0 10px}.hd-s .bar{margin-top:4px}
+.rzg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rzk{background:var(--p1);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;gap:10px;align-items:center;opacity:.65}
+.rzk.on{opacity:1;border-color:#f0b42955;background:linear-gradient(180deg,#2a2210,#171320)}.rzi{font-size:26px}.rzk b{font-size:13px}
+details.dt{padding:12px 14px}details.dt summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.dt summary::-webkit-details-marker{display:none}details.dt summary::after{content:'＋';color:var(--gold,#f0b429);font-size:18px}
+details.dt[open] summary::after{content:'－'}details.dt p{margin:8px 0 0}
 </style>
 </head>
 <body>
@@ -3793,9 +3803,9 @@ function kartKararBilgi(S, item, i) {
 
 /* ===== ARAYÜZ ===== */
 var S = null, TAB = 'genel', HF = 'birinci', KURULUM = {}, root = document.getElementById('app'), sheetEl = null;
-var TABLAR = [['genel','Genel','🎯'],['merkez','Merkez','🏢'],['yonetim','Yönetim','👔'],['parti','Parti','🏳️'],['anket','Anket','📊'],['karargah','Karargâh','🎛️'],['belediye','Belediye','🏙️'],['harita','Harita','🗺️'],['iller','İller','📍'],['ittifak','İttifak','🤝'],['rakip','Rakipler','🥊'],['secim','Seçim','🗳️'],['meclis','Meclis','🏛️'],['ekonomi','Ekonomi','📉'],['medya','Medya','📺'],['lider','Lider','🧑‍💼'],['takvim','Takvim','📅'],['tarihce','Tarihçe','📜'],['kayit','Kayıt','💾'],['hakkinda','Hakkında','ℹ️']];
+var TABLAR = [['genel','Genel','🎯'],['hedef','Hedefler','🧭'],['merkez','Merkez','🏢'],['yonetim','Yönetim','👔'],['parti','Parti','🏳️'],['anket','Anket','📊'],['karargah','Karargâh','🎛️'],['belediye','Belediye','🏙️'],['harita','Harita','🗺️'],['iller','İller','📍'],['ittifak','İttifak','🤝'],['rakip','Rakipler','🥊'],['secim','Seçim','🗳️'],['meclis','Meclis','🏛️'],['ekonomi','Ekonomi','📉'],['medya','Medya','📺'],['lider','Lider','🧑‍💼'],['takvim','Takvim','📅'],['tarihce','Tarihçe','📜'],['rozet','Rozetler','🎖️'],['sozluk','Rehber','📘'],['kayit','Kayıt','💾'],['hakkinda','Hakkında','ℹ️']];
 /* Sekmeler kademeli açılır: yeni oyuncu ilk dakikada 6 sekme görür, gerisi ay ilerledikçe belirir. */
-var TAB_AC = {genel: 0, merkez: 0, parti: 0, anket: 0, kayit: 0, harita: 1, tarihce: 1, rakip: 2, iller: 2, takvim: 2, yonetim: 3, ekonomi: 3, lider: 3, medya: 4, ittifak: 4, secim: 5, meclis: 6, karargah: 6, belediye: 8};
+var TAB_AC = {};
 var TAB_NOT = {harita: 'Harita: bölgelerdeki gücünü gör.', tarihce: 'Tarihçe: aldığın kararların kaydı.', rakip: 'Rakipler: diğer partilerin hamleleri.', iller: 'İller: il il anket ve teşkilat.', takvim: 'Takvim: seçimler ve önemli tarihler.', yonetim: 'Yönetim: kadro ve görev dağılımı.', ekonomi: 'Ekonomi: enflasyon ve makro tablo.', lider: 'Lider: kendi profilin ve itibarın.', medya: 'Medya: yayın organlarıyla ilişkiler.', ittifak: 'İttifak: seçim ittifakları.', secim: 'Seçim: yaklaşan seçimin hazırlığı.', meclis: 'Meclis: koltuk dağılımı ve yasalar.', karargah: 'Karargâh: gelişmiş kampanya kontrolleri.', belediye: 'Belediye: yerel yönetimler.'};
 function tabAcik(id) { var ay = S && S.ay != null ? S.ay : 0; if (S && S.bitti) return true; var k = TAB_AC[id]; return k === undefined || ay >= k || (S && S.tabAcikHepsi); }
 var YENI_TAB = [];
@@ -3925,9 +3935,9 @@ function render() {
   root.innerHTML = top + body + tabs + fab;
   document.querySelectorAll('.tab').forEach(function (b) { b.onclick = function () { TAB = b.dataset.t; if (TAB === 'anket') S.ogrAnket = 1; var oh = $('.hint'); if (oh) oh.remove(); render(); $('#sc').scrollTop = 0; }; });
   var ct = $('.tab[aria-current=true]'); if (ct) ct.scrollIntoView({inline: 'center', block: 'nearest'});
-  if (sc && $('#sc') && !enter) $('#sc').scrollTop = y;
+  if (sc && $('#sc') && !enter) $('#sc').scrollTop = y; else if ($('#sc')) { $('#sc').scrollTop = 0; requestAnimationFrame(function () { var z = $('#sc'); if (z && LASTTAB === TAB) z.scrollTop = 0; }); }
   var a = $('#ay'); if (a) a.onclick = ayBitirTikla;
-  $('#ayar').onclick = ayarlar; bagla(); if (TAB === 'hakkinda') hakkindaBagla(); if (YENI_TAB.length) setTimeout(function () { YENI_TAB = []; }, 1300);
+  $('#ayar').onclick = ayarlar; bagla(); if (TAB === 'hakkinda') hakkindaBagla(); if (TAB === 'hedef') hedefBagla(); if (YENI_TAB.length) setTimeout(function () { YENI_TAB = []; }, 1300);
   if (S.sd && S.sd.length) sdGoster(S.sd.splice(0, 3));
   rozetKontrol(); kariyerBagla(); rehberGuncelle();
   var bars = [].slice.call(document.querySelectorAll('#sc .bar i,#sc .pbar i'));
@@ -4149,7 +4159,7 @@ function ayarlar() {
 }
 
 /* ---- sekmeler ---- */
-function tabHtml() { var f = {genel: tGenel, merkez: tMerkez, yonetim: tYonetim, parti: tParti, anket: tAnket, harita: tHarita, karargah: tKarargah, belediye: tBelediye, iller: tIller, ittifak: tIttifak, rakip: tRakip, secim: tSecim, meclis: tMeclis, ekonomi: tEkonomi, medya: tMedya, lider: function () { return tLider() + liderEk(); }, takvim: tTakvim, tarihce: tTarihce, kayit: tKayit, hakkinda: tHakkinda}[TAB]; return f(); }
+function tabHtml() { var f = {genel: tGenel, merkez: tMerkez, yonetim: tYonetim, parti: tParti, anket: tAnket, harita: tHarita, karargah: tKarargah, belediye: tBelediye, iller: tIller, ittifak: tIttifak, rakip: tRakip, secim: tSecim, meclis: tMeclis, ekonomi: tEkonomi, medya: tMedya, lider: function () { return tLider() + liderEk(); }, takvim: tTakvim, tarihce: tTarihce, kayit: tKayit, hakkinda: tHakkinda, hedef: tHedef, rozet: tRozet, sozluk: tSozluk}[TAB]; return f(); }
 function aksBtn(a) {
   var n = a.maliyet && !muhalifMu(S) ? ' · ' + ((a.id === 'teskilat' || a.id === 'kamptur') ? 'bölgeye göre' : para(aksiyonMaliyet(S, a, null))) : '';
   return '<button class="aks" data-a="' + a.id + '"' + (S.aksiyon.kalan <= 0 ? ' disabled' : '') + '><b>' + a.ad + '<span style="display:inline;color:var(--gold);font-weight:500;font-size:11.5px">' + n + '</span></b><span>' + a.not + '</span></button>';
@@ -5591,7 +5601,7 @@ function hakkindaHtml() {
     '<div class="chiprow" id="hk-tur">' + HK_TUR.map(function (t) { return '<button class="cx' + (t[0] === HK_SEC ? ' on' : '') + '" data-v="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
     '<textarea class="in" id="hk-m" rows="4" maxlength="800" placeholder="Ne oldu? Ne olsun isterdin?" aria-label="Geri bildirim metni" style="width:100%;margin-top:8px;resize:none"></textarea>' +
     '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="hk-kp" style="flex:1">Kopyala</button><button class="btn pri" id="hk-gn" style="flex:2">Gönder ▸</button></div></div>' +
-    '<div class="eyebrow">Bilgi</div><div class="card"><div class="row small"><span>Sürüm</span><b>' + HK_SURUM + '</b></div><div class="row small"><span>Gizlilik politikası</span><button class="btn ghost" id="hk-gz" style="width:auto;padding:4px 12px;min-height:0">Aç</button></div><div class="row small"><span>Destek</span><button class="btn ghost" id="hk-ds" style="width:auto;padding:4px 12px;min-height:0">Aç</button></div><p class="tiny muted" style="margin:8px 0 0">Kurgusal bir simülasyondur: gerçek olayları, kişileri ve seçim sonuçlarını yansıtmaz; herhangi bir parti ya da adayı desteklemez veya kötülemez.</p></div></div>';
+    '<div class="eyebrow">Bilgi</div><div class="card"><div class="row small"><span>Sürüm</span><b>' + HK_SURUM + '</b></div><div class="row small"><span>Gizlilik politikası</span><button class="btn ghost" id="hk-gz" style="width:auto;padding:8px 18px;min-height:40px">Aç</button></div><div class="row small"><span>Destek</span><button class="btn ghost" id="hk-ds" style="width:auto;padding:8px 18px;min-height:40px">Aç</button></div><p class="tiny muted" style="margin:8px 0 0">Kurgusal bir simülasyondur: gerçek olayları, kişileri ve seçim sonuçlarını yansıtmaz; herhangi bir parti ya da adayı desteklemez veya kötülemez.</p></div></div>';
   return h;
 }
 function tHakkinda() { return hakkindaHtml(); }
@@ -5613,6 +5623,95 @@ function hakkindaBagla() {
   $('#hk-kp').onclick = function () { var m = $('#hk-m').value.trim(); var tx = m + '\n\n' + hkBaglam() + '\n(' + HK_MAIL + ')'; try { navigator.clipboard.writeText(tx); toast('Kopyalandı. Mail olarak gönderebilirsin.'); } catch (e) { toast('Adres: ' + HK_MAIL); } };
 }
 function hakkindaSheet() { sheet(hakkindaHtml() + '<button class="btn ghost" id="k" style="margin-top:12px">Kapat</button>'); $('#k').onclick = function () { closeSheet(true); }; hakkindaBagla(); }
+
+/* ===== YENİ SEKMELER: Hedefler (danışman) · Rozetler · Rehber (sözlük) ===== */
+
+/* ---------- Hedefler: danışman önerileri + ilerleme + takvim ---------- */
+function danismanOner() {
+  var st = S.stat, ts = teskilatSayisi(S), se = secimeAy(S), L = [], muh = muhalifMu(S);
+  if (st.kasa < 1e6) L.push(['💰', 'Kasa tehlikede', 'Kasan 1 M ₺\'nin altında. "Bağış Gecesi" ile para topla, pahalı aksiyonlardan kaçın.', 'bagis']);
+  if (st.stres >= 65) L.push(['😮‍💨', 'Stres yüksek', 'Stres ' + Math.round(st.stres) + ': çok yükselirse aksiyon hakkın 2\'ye düşer. "Kısa Tatil" stresi alır.', 'tatil']);
+  if (st.birlik < 55) L.push(['🤝', 'Parti birliği zayıf', 'Birlik ' + Math.round(st.birlik) + '. "Kadro Toplantısı" ile partiyi toparla; aksi hâlde kurultayda zorlanırsın.', 'kadro']);
+  if (!muh && ts < 41) L.push(['📍', 'Teşkilat eksik', 'Seçime girmek için en az 41 ilde teşkilat gerekir (şu an ' + ts + '). "Teşkilat Mesaisi" ile bölge bölge ilerle.', 'teskilat']);
+  if (S.anketOyuncu < 7) L.push(['📊', 'Baraj altındasın', 'Anket %' + f1(S.anketOyuncu) + '; baraj %7. Miting, TV programı ve seçmen buluşmasıyla görünürlüğünü artır.', 'miting']);
+  if (st.itibar < 40) L.push(['🌟', 'İtibar düşük', 'İtibar ' + Math.round(st.itibar) + '. "TV Programı" ve basın çalışmaları itibar kazandırır.', 'tv']);
+  if (st.uye < 100000) L.push(['👥', 'Üye sayısı düşük', st.uye < 30000 ? '"Üye Kampanyası" ucuz ve etkilidir; her ay mutlaka kullan.' : 'Hedef 100 bin üye (rozet!). "Üye Kampanyası" ile devam et.', 'uye']);
+  if (se.ay <= 3 && se.tip === 'genel' && !muh) L.unshift(['🗳️', 'Kampanya dönemi', 'Seçime ' + se.ay + ' ay kaldı: Genel sekmesindeki kampanya aksiyonları (tur, reklam, miting) açık.', null]);
+  if (!L.length) L.push(['✅', 'Her şey yolunda', 'Kalan aksiyon haklarını kullanmadan ayı bitirme; sabit tempoyla ilerlemek en güvenlisi.', null]);
+  return L.slice(0, 3);
+}
+function hdfSatir(ad, v, hedef, ters, not, birim) {
+  var oran = ters ? Math.max(0, 100 - v) : Math.min(100, v / hedef * 100), ok = ters ? v < hedef : v >= hedef, rn = ok ? 'var(--good,#2ee6a6)' : '';
+  return '<div class="hd-s"><div class="row small"><span>' + ad + '</span><b>' + (birim === 'para' ? para(v) : birim === 'yuzde' ? '%' + f1(v) : sayi(v)) + (ok ? ' ✅' : '') + '</b></div>' + bar(oran, rn) + (not ? '<div class="tiny muted">' + not + '</div>' : '') + '</div>';
+}
+function tHedef() {
+  var st = S.stat, ts = teskilatSayisi(S), se = secimeAy(S), tip = se.tip === 'yerel' ? 'Yerel seçim' : 'Genel seçim', O = danismanOner();
+  var h = '<div class="eyebrow">🧑‍💼 Danışman önerisi</div>' + O.map(function (o) {
+    return '<div class="card hd-o"><div class="hd-i">' + o[0] + '</div><div style="flex:1"><b>' + o[1] + '</b><div class="small muted" style="margin-top:2px">' + o[2] + '</div>' + (o[3] ? '<button class="btn hd-git" data-a="' + o[3] + '" style="margin-top:8px;min-height:36px;padding:6px 12px;font-size:13px;width:auto;display:inline-block">Aksiyona git ▸</button>' : '') + '</div></div>';
+  }).join('');
+  h += '<div class="eyebrow">⏳ Takvim</div><div class="card"><div class="row small"><span>' + tip + '</span><b>' + (se.ay < 99 ? se.ay + ' ay kaldı' : '—') + '</b></div>' + (kampAcik(S) ? '<div class="small" style="color:var(--gold)">🗳️ Kampanya dönemi açık</div>' : '<div class="small muted">Kampanya aksiyonları seçime son 3 ayda açılır.</div>') + '</div>';
+  h += '<div class="eyebrow">🎯 İlerleme</div><div class="card">' +
+    hdfSatir('Teşkilatlı il', ts, 41, false, 'Seçime girmek için 41 il · tam teşkilat 81', 'sayi') +
+    hdfSatir('Anket', S.anketOyuncu, 7, false, 'Baraj %7', 'yuzde') +
+    hdfSatir('Üye', st.uye, 100000, false, '100 bin üye rozeti', 'sayi') +
+    hdfSatir('İtibar', st.itibar, 70, false, '70 ve üzeri güçlü', 'sayi') +
+    hdfSatir('Parti birliği', st.birlik, 70, false, '70 ve üzeri sağlıklı', 'sayi') +
+    hdfSatir('Stres', st.stres, 60, true, '60\'ın altı güvenli', 'sayi') + '</div>';
+  var kb = typeof kariyerBanner === 'function' ? kariyerBanner() : ''; if (kb) h += '<div class="eyebrow">🏆 Kariyer hedefi</div>' + kb;
+  h += '<div class="eyebrow">Kısayollar</div><div class="grid2"><button class="btn hd-go" data-t="rozet">🎖️ Rozetler</button><button class="btn hd-go" data-t="sozluk">📘 Rehber</button></div>';
+  return h;
+}
+function hedefBagla() {
+  document.querySelectorAll('.hd-git').forEach(function (b) { b.onclick = function () { TAB = 'genel'; render(); var e = document.querySelector('.aks[data-a="' + b.dataset.a + '"]'); if (e) { try { e.scrollIntoView({block: 'center'}); } catch (x) { /* yok say */ } e.classList.add('rh-ring'); setTimeout(function () { e.classList.remove('rh-ring'); }, 2600); } }; });
+  document.querySelectorAll('.hd-go').forEach(function (b) { b.onclick = function () { TAB = b.dataset.t; render(); var sc = $('#sc'); if (sc) sc.scrollTop = 0; }; });
+}
+
+/* ---------- Rozetler: tüm koleksiyon ---------- */
+function tRozet() {
+  var n = ROZET.filter(function (r) { return S.rozet && S.rozet[r[0]]; }).length, pct = Math.round(n / ROZET.length * 100);
+  var h = '<div class="card"><div class="row"><b>Rozet koleksiyonu</b><b>' + n + ' / ' + ROZET.length + '</b></div>' + bar(pct) + '<div class="tiny muted">Rozetler oyun boyunca otomatik kazanılır; ilerlemek için aksiyon ve seçim hedeflerine odaklan.</div></div>';
+  var acik = ROZET.filter(function (r) { return S.rozet && S.rozet[r[0]]; }), kilit = ROZET.filter(function (r) { return !(S.rozet && S.rozet[r[0]]); });
+  var kart = function (r, ok) { return '<div class="rzk' + (ok ? ' on' : '') + '"><div class="rzi">' + (ok ? r[1] : '🔒') + '</div><div><b>' + r[2] + '</b><div class="tiny muted">' + r[3] + '</div></div></div>'; };
+  if (acik.length) h += '<div class="eyebrow">Kazanılanlar</div><div class="rzg">' + acik.map(function (r) { return kart(r, true); }).join('') + '</div>';
+  h += '<div class="eyebrow">Sırada</div><div class="rzg">' + (kilit.length ? kilit.map(function (r) { return kart(r, false); }).join('') : '<div class="card">Hepsini topladın! 🎉</div>') + '</div>';
+  return h;
+}
+
+/* ---------- Rehber: sözlük, aksiyonlar, ipuçları, SSS ---------- */
+var SOZLUK = [
+  ['Baraj', 'Genel seçimde Meclis\'e girmek için ülke çapında geçilmesi gereken oy oranı: %7. Barajı geçemeyen parti sandalye alamaz (ittifakla girmek ayrı bir yol).'],
+  ['Teşkilat', 'Partinin ildeki örgütü. Yeni bir parti seçime girmek için en az 41 ilde teşkilat kurmalıdır. Teşkilat oy, üye ve ivme getirir.'],
+  ['İvme', 'Partinin anketlerdeki hareket yönü. Pozitif ivme oyunu her ay biraz yükseltir; negatif ivme düşürür. Aksiyonlar ve olaylar ivmeyi değiştirir.'],
+  ['Birlik', 'Parti içi uyum. Düşük birlik kurultayda ve krizlerde seni zorlar; "Kadro Toplantısı" ve doğru kararlar birliği korur.'],
+  ['İtibar', 'Liderin ve partinin kamuoyundaki saygınlığı. Yüksek itibar bağış, oy ve medya etkisini artırır.'],
+  ['Stres', 'Liderin yorgunluğu. Çok yüksekse aylık aksiyon hakkın 3\'ten 2\'ye düşer. "Kısa Tatil" düşürür.'],
+  ['Kasa', 'Partinin parası. Eksiye düşmek itibarı zedeler. Bağış gecesi ve düzenli üyelik kasayı doldurur.'],
+  ['İttifak', 'Partilerin seçimde birlikte yarışması. Barajı aşmanın ve Meclis\'te güçlü olmanın bir yoludur.'],
+  ['Kurultay', 'Genel başkanlık için parti içi seçim. Birlik ve itibar yüksekse korursun; düşükse rakip kazanabilir.'],
+  ['Koalisyon', 'Hiçbir parti çoğunluğa ulaşamazsa kurulan ortaklık hükümeti. Pazarlık gücün koltuk sayına bağlıdır.']
+];
+var IPUCU = [
+  'İlk aylarda ucuz ve kalıcı etkili aksiyonlara odaklan: "Üye Kampanyası" ve "Teşkilat Mesaisi".',
+  'Her ay 3 hakkını da kullan; kullanılmayan hak birikmez.',
+  'Karar kartlarında "tahmin" bölümü aksiyonun beklenen etkisini ve riskini gösterir; riskli seçeneklerde kasanı gözet.',
+  'Stres 65\'i aşmadan "Kısa Tatil" kullan; yoksa verimin düşer.',
+  'Seçime 3 ay kala kampanya aksiyonları açılır: bölge turu, reklam ve büyük miting.',
+  'Günün Senaryosu\'nu her gün oyna: seri yaparsan puan tablon güçlenir.'
+];
+var SSS = [
+  ['Oyun nasıl biter?', 'Takvimdeki son genel seçimde (Mayıs 2033) oyun sona erer. Kariyer modunda her bölüm kendi seçiminde biter.'],
+  ['Kayıt nereye yapılır?', 'Oyun her ay ve her önemli işlemde cihazına otomatik kaydeder. "Kayıt" sekmesinden elle de kaydedebilirsin.'],
+  ['Gerçek bir partiyi mi temsil ediyor?', 'Hayır. Oyun tamamen kurgusaldır; gerçek olayları, kişileri ve sonuçları yansıtmaz. Lider isimleri uydurmadır.'],
+  ['Neden bir sekme yok?', 'Tüm sekmeler baştan açıktır. Aşağıdaki "Rehber" ve "Hedefler" sekmeleri yeni başlayanlar içindir.']
+];
+function tSozluk() {
+  var h = '<div class="card"><b>📘 Rehber</b><div class="small muted" style="margin-top:4px">Terimleri, aksiyonları ve ipuçlarını burada bulabilirsin. Başlığa dokunarak aç/kapat.</div></div>';
+  h += '<div class="eyebrow">Kavramlar</div>' + SOZLUK.map(function (x) { return '<details class="card dt"><summary><b>' + x[0] + '</b></summary><p class="small">' + x[1] + '</p></details>'; }).join('');
+  h += '<div class="eyebrow">Aksiyonlar</div><details class="card dt" open><summary><b>Ne işe yarar?</b></summary>' + AKSIYONLAR.filter(function (a) { return a.tab !== 'kampanya' && a.tab !== 'reform'; }).slice(0, 14).map(function (a) { return '<div class="row small" style="align-items:flex-start;gap:8px"><b style="min-width:110px">' + a.ad + '</b><span class="muted">' + a.not + '</span></div>'; }).join('') + '</details>';
+  h += '<div class="eyebrow">İpuçları</div><div class="card">' + IPUCU.map(function (t) { return '<div class="row small" style="align-items:flex-start;gap:8px"><span>💡</span><span>' + t + '</span></div>'; }).join('') + '</div>';
+  h += '<div class="eyebrow">Sık sorulanlar</div>' + SSS.map(function (x) { return '<details class="card dt"><summary><b>' + x[0] + '</b></summary><p class="small">' + x[1] + '</p></details>'; }).join('');
+  return h;
+}
 
 animUygula(); intro(menu);
 </script>
