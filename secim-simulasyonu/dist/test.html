@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Seçim Simülasyonu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>/* Plan: koyu, gazete-ofisi hissi. Tek tema (bilinçli): kömür zemin, kırmızı mühür, altın vurgu. Düzen: tek sütun, sticky üst bar, alt sekmeler. */
+:root{
+  --bg:#0c0d12;--p1:#15171e;--p2:#1d202a;--p3:#262a36;--line:#2b2f3c;
+  --ink:#eceef4;--mute:#9aa1b4;--ac:#e63b5f;--ac2:#ff6a86;--gold:#dcab4a;
+  --ok:#3fc27a;--bad:#ff5d6c;--info:#5ea0ff;--r:16px;
+  --fd:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;--fb:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--fb);overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+h1,h2,h3{font-family:var(--fd);margin:0;text-wrap:balance}
+#app{height:100%;display:flex;flex-direction:column;max-width:560px;margin:0 auto;position:relative}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 14px 150px;-webkit-overflow-scrolling:touch}
+.muted{color:var(--mute)}.small{font-size:12.5px}.tiny{font-size:11.5px}.num{font-variant-numeric:tabular-nums}
+.good{color:var(--ok)}.badc{color:var(--bad)}.warnc{color:var(--gold)}
+
+/* üst bar */
+.top{padding:max(10px,env(safe-area-inset-top)) 14px 6px;background:var(--bg);border-bottom:1px solid var(--line);position:relative;z-index:5}
+.ttl{display:flex;align-items:center;gap:8px;min-height:36px}
+.ttl b{font-family:var(--fd);font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}
+.dot{width:11px;height:11px;border-radius:50%;flex:none}
+.date{margin-left:auto;background:var(--p2);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:13px;font-weight:600}
+.ib{display:flex;gap:6px}
+.ib button{width:34px;height:34px;border-radius:50%;background:var(--p2);border:1px solid var(--line);font-weight:700}
+.stats{display:flex;gap:8px;overflow-x:auto;padding:8px 0 4px;scrollbar-width:none}
+.stats::-webkit-scrollbar{display:none}
+.st{flex:none;background:var(--p1);border:1px solid var(--line);border-radius:12px;padding:5px 10px;font-size:13px;white-space:nowrap}
+.st span{color:var(--mute);font-size:11px;display:block;letter-spacing:.02em}
+.st b{font-variant-numeric:tabular-nums}
+
+/* sekmeler */
+.tabs{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,var(--bg) 70%,rgba(12,13,18,0));padding:16px 8px max(8px,env(safe-area-inset-bottom));display:flex;gap:6px;overflow-x:auto;z-index:6;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:9px 14px;border-radius:12px;background:var(--p1);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--mute)}
+.tab[aria-current=true]{background:rgba(230,59,95,.16);border-color:var(--ac);color:var(--ink)}
+.fab{position:absolute;right:14px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:7;background:var(--ac);color:#fff;border-radius:999px;padding:12px 18px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 6px 22px rgba(230,59,95,.35)}
+.fab i{font-style:normal;background:rgba(0,0,0,.28);border-radius:999px;padding:1px 9px;font-size:13px}
+.fab[disabled]{opacity:.5}
+
+/* kartlar */
+.card{background:var(--p1);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.card h3{font-size:15px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card h3 small{font-family:var(--fb);font-weight:500;color:var(--mute);font-size:12px}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:16px 2px 8px;font-weight:600}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row .k{color:var(--mute)}
+.bar{height:6px;border-radius:99px;background:var(--p3);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--ac)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{display:block;width:100%;text-align:center;padding:12px 14px;border-radius:13px;background:var(--p2);border:1px solid var(--line);font-weight:600}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#1a1405}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn small{display:block;font-weight:400;color:inherit;opacity:.7;font-size:11.5px;margin-top:2px}
+.aks{text-align:left;padding:11px 12px;border-radius:13px;background:var(--p2);border:1px solid var(--line);display:block;width:100%}
+.aks b{display:block;font-size:14px}.aks span{display:block;font-size:11.5px;color:var(--mute);margin-top:2px;line-height:1.3}
+.aks[disabled]{opacity:.4}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;background:var(--p3);color:var(--mute);letter-spacing:.03em}
+.pill.ac{background:rgba(230,59,95,.18);color:var(--ac2)}.pill.go{background:rgba(220,171,74,.18);color:var(--gold)}.pill.ok{background:rgba(63,194,122,.16);color:var(--ok)}
+.chiprow{display:flex;gap:6px;flex-wrap:wrap}
+.cx{padding:6px 11px;border-radius:99px;border:1px solid var(--line);background:var(--p2);font-size:12.5px;font-weight:600;color:var(--mute)}
+.cx.on{background:rgba(230,59,95,.18);border-color:var(--ac);color:var(--ink)}
+.fx{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:11.5px;font-weight:600;background:var(--p3)}
+.fx.iyi{color:var(--ok)}.fx.kotu{color:var(--bad)}
+.fxs{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+
+/* partiler/anket */
+.pr{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;padding:7px 0}
+.pr .nm{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.pr.me .nm b{color:var(--gold)}
+.pbar{height:5px;border-radius:99px;background:var(--p3);margin-top:4px;overflow:hidden}.pbar i{display:block;height:100%}
+
+/* harita */
+.map{display:grid;gap:3px;grid-template-columns:repeat(19,1fr);margin:6px 0 10px}
+.cell{aspect-ratio:1;border-radius:4px;font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5);border:1px solid transparent;padding:0;font-variant-numeric:tabular-nums}
+.cell.no{opacity:.45}.cell.ghost{visibility:hidden}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mute)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* sheet */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fi .18s ease}
+.sh{background:var(--p1);width:100%;max-width:560px;max-height:88%;overflow-y:auto;border-radius:22px 22px 0 0;border-top:3px solid var(--gold);padding:18px 16px max(22px,env(safe-area-inset-bottom));animation:up .22s ease}
+.sh.blue{border-top-color:var(--info)}.sh.red{border-top-color:var(--ac)}
+.sh h2{font-size:21px;margin:6px 0 8px}
+.sh .lab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.opt{display:block;width:100%;text-align:left;background:var(--p2);border:1px solid var(--line);border-radius:14px;padding:13px;margin-top:8px}
+.opt b{display:block;font-size:14.5px}
+.news{background:#ece6d6;color:#1c1a14;border-radius:6px;padding:12px 14px;font-family:Georgia,'Times New Roman',serif;margin:10px 0}
+.news b{font-size:17px;display:block;line-height:1.2}
+.toast{position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);background:var(--p3);border:1px solid var(--line);border-radius:14px;padding:10px 14px;z-index:90;max-width:min(92%,520px);box-shadow:0 8px 30px rgba(0,0,0,.5);animation:fi .2s ease;font-size:13.5px}
+@keyframes fi{from{opacity:0}to{opacity:1}}@keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+/* menü */
+.menu{flex:1;overflow-y:auto;padding:max(28px,env(safe-area-inset-top)) 18px 30px;display:flex;flex-direction:column;gap:12px}
+.hero{text-align:center;padding:26px 0 8px}
+.hero svg{width:92px;height:92px}
+.hero h1{font-size:34px;letter-spacing:-.02em;margin-top:12px}
+.hero p{color:var(--mute);margin:6px 0 0}
+.modc{display:block;width:100%;text-align:left;background:var(--p1);border:1px solid var(--line);border-left:4px solid var(--ac);border-radius:14px;padding:14px}
+.modc[disabled]{opacity:.5;border-left-color:var(--line)}
+.modc h3{font-size:17px;display:flex;gap:8px;align-items:center}
+.fld{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.fld label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.in{background:var(--p1);border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:inherit;width:100%}
+.sw{display:flex;gap:8px;flex-wrap:wrap}.sw button{width:34px;height:34px;border-radius:50%;border:2px solid transparent}
+.sw button.on{border-color:#fff}
+svg text{font-family:var(--fb)}
+
+/* ===== hareket ===== */
+button{transition:transform .12s ease,background .2s ease,border-color .2s ease}
+button:active:not([disabled]){transform:scale(.96)}
+.ov{backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);background:rgba(4,5,9,.66)}
+.sh{animation:spring .42s cubic-bezier(.2,.9,.25,1.12);position:relative}
+.sh .hd{width:42px;height:4px;border-radius:9px;background:var(--line);margin:-6px auto 10px}
+.sh .opt,.sh .btn,.sh .row,.sh .news,.sh .card{animation:rise .45s cubic-bezier(.2,.8,.3,1) both}
+.sh>*:nth-child(3){animation-delay:.05s}.sh>*:nth-child(4){animation-delay:.1s}.sh>*:nth-child(5){animation-delay:.15s}.sh>*:nth-child(6){animation-delay:.2s}.sh>*:nth-child(7){animation-delay:.25s}.sh>*:nth-child(8){animation-delay:.3s}
+@keyframes spring{from{transform:translateY(60%);opacity:.4}to{transform:none;opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.4)}60%{transform:scale(1.12)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.scroll.anim>*{animation:rise .5s cubic-bezier(.2,.8,.3,1) both}
+.scroll.anim>*:nth-child(2){animation-delay:.05s}.scroll.anim>*:nth-child(3){animation-delay:.1s}.scroll.anim>*:nth-child(4){animation-delay:.15s}.scroll.anim>*:nth-child(5){animation-delay:.2s}.scroll.anim>*:nth-child(n+6){animation-delay:.25s}
+.scroll.anim .bar i,.scroll.anim .pbar i{transform-origin:left;animation:grow .8s cubic-bezier(.2,.8,.3,1) both .15s}
+.scroll.anim .cell{animation:pop .45s both;animation-delay:calc(var(--d)*1ms)}
+.fx{animation:pop .45s both}.fx .e{font-size:13px;margin-right:2px}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:62px;padding:7px 10px 6px;font-size:11.5px}
+.tab .ti{font-size:20px;line-height:1.1;filter:grayscale(.6) opacity(.75);transition:transform .2s,filter .2s}
+.tab[aria-current=true] .ti{filter:none;transform:translateY(-2px) scale(1.18)}
+.fab{animation:glow 2.2s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 6px 22px rgba(230,59,95,.35)}50%{box-shadow:0 6px 30px rgba(230,59,95,.75)}}
+.st b.fu{color:var(--ok);animation:bump .6s}.st b.fd{color:var(--bad);animation:bump .6s}
+@keyframes bump{40%{transform:scale(1.18)}}
+.hint{position:absolute;left:14px;right:14px;bottom:calc(120px + env(safe-area-inset-bottom));z-index:8;background:var(--p3);border:1px solid var(--line);border-radius:14px;padding:11px 14px;font-size:13px;animation:rise .4s both,fo .4s 4.1s forwards;box-shadow:0 8px 28px rgba(0,0,0,.5)}
+@keyframes fo{to{opacity:0;transform:translateY(8px)}}
+.tick{display:flex;align-items:center;background:#a8142c;color:#fff;font-size:11.5px;font-weight:600;letter-spacing:.03em;overflow:hidden;height:26px;flex:none}
+.tick .tb{background:#fff;color:#a8142c;padding:0 9px;height:100%;display:flex;align-items:center;font-weight:700;flex:none;z-index:1}
+.tw{overflow:hidden;flex:1}.tk{display:flex;white-space:nowrap;width:max-content;animation:mq 38s linear infinite}
+.tk span{padding-right:8px}@keyframes mq{to{transform:translateX(-50%)}}
+.mt{position:fixed;inset:0;z-index:70;background:radial-gradient(circle at 50% 40%,#2a1020,#0a0a10 70%);display:flex;align-items:center;justify-content:center;animation:fi .2s}
+.mt.out{opacity:0;transition:opacity .3s}
+.mt-in{text-align:center;padding:24px}
+.mt-e{font-size:64px;animation:flip 1s ease-in-out}
+.mt-a{font-family:var(--fd);font-size:26px;font-weight:700;margin-top:10px}.mt-s{color:var(--mute);margin-top:6px;font-size:14px}
+.mt-b{width:160px;height:4px;border-radius:9px;background:var(--p3);margin:20px auto 0;overflow:hidden}.mt-b i{display:block;height:100%;background:var(--ac);animation:fill 1.1s linear both}
+@keyframes flip{0%{transform:rotateY(0) scale(.6)}50%{transform:rotateY(180deg) scale(1.15)}100%{transform:rotateY(360deg) scale(1)}}
+@keyframes fill{from{width:0}to{width:100%}}
+.splash{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 38%,#3a1022 0%,#0b0b12 62%);animation:fi .35s;overflow:hidden}
+.splash.b{background:radial-gradient(ellipse at 50% 38%,#10223d 0%,#0b0b12 62%)}
+.splash.out{opacity:0;transition:opacity .3s}
+.splash .cf{position:absolute;inset:0;pointer-events:none;width:100%;height:100%}
+.gec{position:absolute;right:16px;top:max(16px,env(safe-area-inset-top));z-index:3;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-weight:600;font-size:13px;background:rgba(0,0,0,.35)}
+.sp-c{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 22px;position:relative;z-index:2;max-width:560px;margin:0 auto;width:100%}
+.sp-i{font-size:76px;animation:pop .8s cubic-bezier(.2,.9,.3,1.3) both .1s;filter:drop-shadow(0 0 28px rgba(230,59,95,.55))}
+.sp-u{font-size:11.5px;letter-spacing:.34em;color:var(--ac2);font-weight:700;margin-top:14px;animation:rise .6s both .35s}
+.sp-c h1{font-size:30px;line-height:1.1;margin-top:10px;animation:rise .7s both .5s}
+.sp-a{color:var(--mute);margin-top:8px;animation:rise .6s both .7s}
+.sp-l{color:#cfd3e0;font-size:14.5px;margin-top:10px;animation:rise .6s both}
+.sp-l:nth-of-type(1){animation-delay:.9s}.sp-l:nth-of-type(2){animation-delay:1.1s}.sp-l:nth-of-type(3){animation-delay:1.3s}
+.sp-q{margin-top:22px;border-left:3px solid var(--ac);background:rgba(255,255,255,.05);padding:10px 14px;text-align:left;font-size:13px;width:100%;animation:rise .6s both 1.5s}
+.sp-q b{display:block;color:var(--ac2);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
+.sp-d{margin-top:26px;width:auto!important;padding:12px 40px!important;animation:rise .6s both 1.7s}
+.sp-t{background:#a8142c;color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;padding:8px 0;overflow:hidden;position:relative;z-index:2}
+.sp-tk{display:flex;white-space:nowrap;width:max-content;animation:mq 26s linear infinite}
+.hero svg{animation:pop .8s cubic-bezier(.2,.9,.3,1.3) both,floaty 4s ease-in-out infinite .8s;filter:drop-shadow(0 0 24px rgba(230,59,95,.45))}
+@keyframes floaty{50%{transform:translateY(-6px)}}
+.hero h1{animation:rise .6s both .25s}.hero p{animation:rise .6s both .4s}
+.menu>.btn,.menu>.modc{animation:rise .5s both}
+.menu>*:nth-child(2){animation-delay:.5s}.menu>*:nth-child(3){animation-delay:.6s}.menu>*:nth-child(4){animation-delay:.7s}
+.menu::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 50% 0%,rgba(230,59,95,.18),transparent 55%);pointer-events:none}
+@media (prefers-reduced-motion:reduce){.tk,.sp-tk{animation:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>'use strict';
+/* ===== VERİ: iller, partiler, seçmen grupları, ideolojiler, kartlar ===== */
+var BOLGE = {M:'Marmara',E:'Ege',A:'Akdeniz',I:'İç Anadolu',K:'Karadeniz',D:'Doğu Anadolu',G:'Güneydoğu'};
+// plaka, ad, nüfus (bin, yaklaşık), bölge, boylam, enlem
+var IL_HAM = [
+[1,'Adana',2270,'A',35.3,37.0],[2,'Adıyaman',635,'G',38.3,37.8],[3,'Afyonkarahisar',745,'E',30.5,38.7],[4,'Ağrı',510,'D',43.0,39.7],
+[5,'Amasya',330,'K',35.8,40.65],[6,'Ankara',5780,'I',32.85,39.9],[7,'Antalya',2690,'A',30.7,36.9],[8,'Artvin',170,'K',41.8,41.2],
+[9,'Aydın',1130,'E',27.8,37.85],[10,'Balıkesir',1260,'M',27.9,39.6],[11,'Bilecik',225,'M',30.0,40.1],[12,'Bingöl',285,'D',40.5,38.9],
+[13,'Bitlis',350,'D',42.1,38.4],[14,'Bolu',320,'K',31.6,40.7],[15,'Burdur',275,'A',30.3,37.7],[16,'Bursa',3210,'M',29.1,40.2],
+[17,'Çanakkale',570,'M',26.4,40.1],[18,'Çankırı',195,'I',33.6,40.6],[19,'Çorum',530,'K',35.0,40.55],[20,'Denizli',1060,'E',29.1,37.8],
+[21,'Diyarbakır',1800,'G',40.2,37.9],[22,'Edirne',410,'M',26.6,41.7],[23,'Elazığ',590,'D',39.2,38.7],[24,'Erzincan',240,'D',39.5,39.75],
+[25,'Erzurum',760,'D',41.3,39.9],[26,'Eskişehir',930,'I',30.5,39.8],[27,'Gaziantep',2200,'G',37.4,37.1],[28,'Giresun',450,'K',38.4,40.9],
+[29,'Gümüşhane',145,'K',39.5,40.45],[30,'Hakkâri',290,'G',43.7,37.6],[31,'Hatay',1700,'A',36.2,36.4],[32,'Isparta',445,'A',30.3,37.8],
+[33,'Mersin',1930,'A',34.6,36.8],[34,'İstanbul',15700,'M',29.0,41.0],[35,'İzmir',4480,'E',27.1,38.4],[36,'Kars',280,'D',43.1,40.6],
+[37,'Kastamonu',380,'K',33.8,41.4],[38,'Kayseri',1450,'I',35.5,38.7],[39,'Kırklareli',370,'M',27.2,41.7],[40,'Kırşehir',245,'I',34.15,39.15],
+[41,'Kocaeli',2100,'M',29.9,40.8],[42,'Konya',2300,'I',32.5,37.9],[43,'Kütahya',575,'E',29.9,39.4],[44,'Malatya',810,'D',38.3,38.35],
+[45,'Manisa',1470,'E',27.4,38.6],[46,'Kahramanmaraş',1180,'A',36.9,37.6],[47,'Mardin',870,'G',40.7,37.3],[48,'Muğla',1060,'E',28.4,37.2],
+[49,'Muş',400,'D',41.5,38.9],[50,'Nevşehir',310,'I',34.7,38.6],[51,'Niğde',365,'I',34.7,37.95],[52,'Ordu',760,'K',37.9,40.98],
+[53,'Rize',350,'K',40.5,41.0],[54,'Sakarya',1100,'M',30.4,40.7],[55,'Samsun',1380,'K',36.3,41.3],[56,'Siirt',335,'G',41.9,37.9],
+[57,'Sinop',220,'K',35.15,42.0],[58,'Sivas',640,'I',37.0,39.75],[59,'Tekirdağ',1190,'M',27.5,41.0],[60,'Tokat',600,'K',36.55,40.3],
+[61,'Trabzon',830,'K',39.7,41.0],[62,'Tunceli',85,'D',39.5,39.1],[63,'Şanlıurfa',2230,'G',38.8,37.2],[64,'Uşak',375,'E',29.4,38.7],
+[65,'Van',1110,'D',43.4,38.5],[66,'Yozgat',420,'I',34.8,39.8],[67,'Zonguldak',590,'K',31.8,41.45],[68,'Aksaray',430,'I',34.0,38.4],
+[69,'Bayburt',82,'K',40.2,40.25],[70,'Karaman',255,'I',33.2,37.2],[71,'Kırıkkale',280,'I',33.5,39.85],[72,'Batman',660,'G',41.1,37.9],
+[73,'Şırnak',570,'G',42.5,37.5],[74,'Bartın',200,'K',32.3,41.6],[75,'Ardahan',93,'D',42.7,41.1],[76,'Iğdır',205,'D',44.0,39.9],
+[77,'Yalova',300,'M',29.3,40.65],[78,'Karabük',250,'K',32.6,41.2],[79,'Kilis',150,'G',37.1,36.7],[80,'Osmaniye',560,'A',36.2,37.1],
+[81,'Düzce',410,'K',31.2,40.8]
+];
+
+var ILLER = (function () {
+  var toplam = 0, i;
+  IL_HAM.forEach(function (r) { toplam += r[2]; });
+  var q = 600 / toplam, mv = [], top = 0;
+  IL_HAM.forEach(function (r) { var s = Math.max(1, Math.floor(r[2] * q)); mv.push(s); top += s; });
+  var kalan = 600 - top, guard = 0;
+  while (kalan !== 0 && guard++ < 2000) {
+    var best = -1, bv = kalan > 0 ? -1e9 : 1e9;
+    for (i = 0; i < 81; i++) {
+      var f = IL_HAM[i][2] * q - mv[i];
+      if (kalan > 0 && f > bv) { bv = f; best = i; }
+      if (kalan < 0 && mv[i] > 1 && f < bv) { bv = f; best = i; }
+    }
+    mv[best] += kalan > 0 ? 1 : -1; kalan += kalan > 0 ? -1 : 1;
+  }
+  // kartogram yerleşimi (yaklaşık coğrafi karo harita)
+  var taken = {}, pos = {};
+  IL_HAM.slice().sort(function (a, b) { return b[2] - a[2]; }).forEach(function (r) {
+    var c0 = Math.max(0, Math.min(19, Math.round(r[4] - 26))), r0 = Math.max(0, Math.min(9, Math.round((42.1 - r[5]) / 0.62)));
+    var best2 = null;
+    for (var d = 0; d < 8 && !best2; d++) {
+      var cand = [];
+      for (var dx = -d; dx <= d; dx++) for (var dy = -d; dy <= d; dy++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== d) continue;
+        var c = c0 + dx, rr = r0 + dy;
+        if (c < 0 || c > 19 || rr < 0 || rr > 11 || taken[c + ',' + rr]) continue;
+        cand.push([dx * dx + dy * dy * 1.6, c, rr]);
+      }
+      if (cand.length) { cand.sort(function (a, b) { return a[0] - b[0]; }); best2 = cand[0]; }
+    }
+    taken[best2[1] + ',' + best2[2]] = 1; pos[r[0]] = [best2[1], best2[2]];
+  });
+  return IL_HAM.map(function (r, k) {
+    return {id: r[0], ad: r[1], nufus: r[2], bolge: r[3], mv: mv[k], c: pos[r[0]][0], r: pos[r[0]][1]};
+  });
+})();
+var NUFUS_TOPLAM = ILLER.reduce(function (a, b) { return a + b.nufus; }, 0);
+
+// x: sol(-1)–sağ(+1) ekseni. baz: ulusal başlangıç oyu (%)
+var PARTILER = [
+  {id:'AK',ad:'AK Parti',renk:'#f0a030',baz:33.0,x:.65,ideo:'muh',zor:'kolay'},
+  {id:'CHP',ad:'CHP',renk:'#e0344c',baz:25.5,x:-.45,ideo:'sd',zor:'kolay'},
+  {id:'MHP',ad:'MHP',renk:'#b3202a',baz:9.5,x:.75,ideo:'mil',zor:'orta'},
+  {id:'DEM',ad:'DEM Parti',renk:'#8e4fd0',baz:8.8,x:-.7,ideo:'sol',zor:'orta'},
+  {id:'IYI',ad:'İYİ Parti',renk:'#3b9ee0',baz:8.0,x:.35,ideo:'msag',zor:'orta'},
+  {id:'YRP',ad:'Yeniden Refah',renk:'#2f9e5b',baz:3.0,x:.8,ideo:'muh',zor:'zor'},
+  {id:'ZAFER',ad:'Zafer Partisi',renk:'#9b1b30',baz:2.4,x:.7,ideo:'mil',zor:'zor'},
+  {id:'TIP',ad:'TİP',renk:'#d63b3b',baz:1.6,x:-.9,ideo:'sol',zor:'zor'},
+  {id:'SAADET',ad:'Saadet',renk:'#cfb02a',baz:1.2,x:.6,ideo:'muh',zor:'zor'},
+  {id:'DEVA',ad:'DEVA',renk:'#2b88d8',baz:1.0,x:.2,ideo:'lib',zor:'zor'},
+  {id:'GP',ad:'Gelecek',renk:'#2aa8a8',baz:.6,x:.15,ideo:'msag',zor:'zor'},
+  {id:'HUDA',ad:'HÜDA PAR',renk:'#3f9f4a',baz:.7,x:.85,ideo:'muh',zor:'zor'},
+  {id:'BBP',ad:'BBP',renk:'#a02828',baz:.9,x:.8,ideo:'mil',zor:'zor'},
+  {id:'DP',ad:'DP',renk:'#e5622e',baz:.3,x:.4,ideo:'msag',zor:'zor'},
+  {id:'DSP',ad:'DSP',renk:'#e0457a',baz:.3,x:-.1,ideo:'sd',zor:'zor'},
+  {id:'ANAHTAR',ad:'Anahtar',renk:'#7a8bd6',baz:.5,x:.3,ideo:'lib',zor:'zor'},
+  {id:'VATAN',ad:'Vatan',renk:'#b04a4a',baz:.2,x:-.3,ideo:'mil',zor:'zor'},
+  {id:'DIGER',ad:'Diğer',renk:'#6b7080',baz:1.0,x:0,ideo:'msag',zor:'zor'}
+];
+function partiBul(id) { for (var i = 0; i < PARTILER.length; i++) if (PARTILER[i].id === id) return PARTILER[i]; return null; }
+function partiIdx(id) { for (var i = 0; i < PARTILER.length; i++) if (PARTILER[i].id === id) return i; return -1; }
+
+var BOLGE_FIT = {
+  AK:{M:.9,E:.6,A:.85,I:1.2,K:1.4,D:1.2,G:1.0}, CHP:{M:1.1,E:1.7,A:1.3,I:.9,K:.8,D:.3,G:.2},
+  DEM:{M:.5,E:.3,A:.8,I:.2,K:.05,D:2.4,G:3.5}, MHP:{M:.8,E:.9,A:1.2,I:1.3,K:1.1,D:.9,G:.5},
+  IYI:{M:1.1,E:1.2,A:1.0,I:1.1,K:.9,D:.6,G:.2}, YRP:{M:.9,E:.7,A:1,I:1.1,K:1.1,D:1.2,G:1.6},
+  ZAFER:{M:1.2,E:1,A:1.1,I:1,K:.9,D:.4,G:.2}, HUDA:{M:.2,E:.1,A:.2,I:.2,K:.1,D:2,G:3},
+  TIP:{M:1.5,E:1.3,A:1,I:.6,K:.6,D:.6,G:.4}, SAADET:{M:.9,E:.7,A:.9,I:1.3,K:1.2,D:1,G:.8}
+};
+var IL_FIT = {62:{CHP:2.5,DEM:3},8:{CHP:1.6},22:{CHP:1.8},39:{CHP:1.8},59:{CHP:1.6},35:{CHP:1.2},63:{YRP:1.8},58:{MHP:1.3},47:{HUDA:1.5}};
+
+var GRUPLAR = [
+  {id:'gencler',ad:'Gençler',kaygi:'İşsizlik, özgürlük, gelecek kaygısı'},
+  {id:'emekliler',ad:'Emekliler',kaygi:'Emekli maaşı, sağlık, enflasyon'},
+  {id:'isciler',ad:'İşçiler',kaygi:'Asgari ücret, sendika, iş güvencesi'},
+  {id:'ciftciler',ad:'Çiftçiler',kaygi:'Mazot, gübre, taban fiyat'},
+  {id:'memurlar',ad:'Memurlar',kaygi:'Maaş zammı, kadro, özlük hakları'},
+  {id:'ogrenciler',ad:'Öğrenciler',kaygi:'Yurt, burs, eğitim kalitesi'},
+  {id:'esnaf',ad:'Esnaf',kaygi:'Vergi, kira, kredi faizi'},
+  {id:'muhafazakarlar',ad:'Muhafazakârlar',kaygi:'Din, aile, değerler'},
+  {id:'milliyetciler',ad:'Milliyetçiler',kaygi:'Güvenlik, terörle mücadele, bölge'}
+];
+
+var IDEOLOJILER = [
+  {id:'sd',ad:'Sosyal demokrat',x:-.45,grup:[55,45,55,35,50,60,40,25,25],fit:{M:1.2,E:1.5,A:1.2,I:.8,K:.8,D:.8,G:.6}},
+  {id:'sol',ad:'Sosyalist / sol',x:-.85,grup:[55,40,70,40,45,65,30,15,15],fit:{M:1.1,E:1.2,A:1.1,I:.6,K:.6,D:1.2,G:1.2}},
+  {id:'lib',ad:'Liberal',x:.15,grup:[60,35,40,35,45,60,55,25,25],fit:{M:1.4,E:1.3,A:1.1,I:.8,K:.6,D:.5,G:.5}},
+  {id:'msag',ad:'Merkez sağ',x:.4,grup:[40,50,45,50,45,40,55,50,40],fit:{M:1.1,E:.9,A:1.0,I:1.2,K:1.2,D:.9,G:.8}},
+  {id:'muh',ad:'Muhafazakâr demokrat',x:.65,grup:[35,55,40,60,45,30,55,75,40],fit:{M:.9,E:.6,A:.9,I:1.3,K:1.4,D:1.1,G:1.0}},
+  {id:'mil',ad:'Milliyetçi',x:.75,grup:[40,45,40,50,45,40,45,50,75],fit:{M:.9,E:.8,A:1.1,I:1.4,K:1.2,D:.9,G:.5}}
+];
+function ideoBul(id) { for (var i = 0; i < IDEOLOJILER.length; i++) if (IDEOLOJILER[i].id === id) return IDEOLOJILER[i]; return IDEOLOJILER[0]; }
+
+var ZORLUKLAR = {
+  kolay:{ad:'Kolay',not:'Bol kasa, güçlü başlangıç. Hatalar affedilir.',kasa:6,tohum:3.0,il:10},
+  orta:{ad:'Orta',not:'Dengeli. Baraj için ciddi çalışma ister.',kasa:3,tohum:2.0,il:6},
+  zor:{ad:'Zor',not:'Dar bütçe, tanınmamış bir parti.',kasa:1.5,tohum:1.2,il:3},
+  acimasiz:{ad:'Acımasız',not:'Merhamet yok. Her borç ve gaf pahalı.',kasa:.8,tohum:.7,il:1}
+};
+var STILLER = {
+  katilimci:{ad:'Katılımcı',not:'Parti içi birlik güçlenir, kampanya etkisi biraz düşer.',drift:.95,itibar:1,birlik:1.4,kasa:1},
+  karizmatik:{ad:'Karizmatik',not:'İtibar hızlı artar, stres de.',drift:1.05,itibar:1.35,birlik:.8,kasa:1},
+  teknokrat:{ad:'Teknokrat',not:'Harcamalar verimli, popülerlik yavaş.',drift:1,itibar:.85,birlik:1,kasa:.8},
+  otoriter:{ad:'Otoriter',not:'Hızlı sonuç, ama birlik kolay çatlar.',drift:1.15,itibar:1,birlik:.55,kasa:1}
+};
+var RENKLER = ['#e63b5f','#f0a030','#2f9e5b','#3b9ee0','#8e4fd0','#2aa8a8','#d9d14a','#e5622e'];
+
+var BOLGE_SIRA = ['M','E','A','I','K','D','G'];
+
+var AD_L = ['Ahmet','Mehmet','Mustafa','Ali','Hasan','Selim','Kemal','Cem','Emre','Burak','Murat','Okan','Serkan','Tolga','Ayşe','Fatma','Zeynep','Elif','Selin','Derya','Burcu','Gül','Nihan','Pınar','Seda','Esra','Leyla','Hande'];
+var SOYAD_L = ['Aksoy','Yıldız','Demirci','Kaya','Çelik','Arslan','Doğan','Kurt','Özkan','Erdem','Tuncer','Sönmez','Aydın','Polat','Karaca','Güneş','Bozkurt','Taşkın','Ekinci','Uysal','Başaran','Coşkun','Vural','Akgül'];
+var KADRO_ROL = ['Genel Başkan Yardımcısı','Genel Sekreter','Parti Sözcüsü','Mali İşler Sorumlusu','Teşkilat Başkanı','Grup Başkanvekili','Kadın Kolları Başkanı','Gençlik Kolları Başkanı'];
+
+var MEDYA_HAM = [
+  {ad:'Devlet Televizyonu',erisim:88,guven:42,yakin:-30},
+  {ad:'Havuz Ana Haber',erisim:78,guven:29,yakin:-45},
+  {ad:'Ulusal Haber Ajansı',erisim:70,guven:55,yakin:0},
+  {ad:'Merkez TV',erisim:66,guven:58,yakin:10},
+  {ad:'Halk Gazetesi',erisim:42,guven:61,yakin:25},
+  {ad:'Bağımsız Dijital',erisim:38,guven:72,yakin:15}
+];
+
+var HABER_HAVUZU = [
+  'Meclis yeni haftaya yoğun bir gündemle başladı.','Borsa haftayı dalgalı bir seyirle kapattı.','Belediyeler arası ulaşım protokolü imzalandı.',
+  'Esnaf odaları kira artışlarına karşı ortak toplantı yaptı.','Üniversite öğrencileri yurt kontenjanı için imza kampanyası başlattı.',
+  'Çiftçiler hasat öncesi destek açıklamasını bekliyor.','Sendikalar toplu görüşme takvimini kamuoyuna duyurdu.',
+  'Büyükşehir belediyeleri ortak enerji tasarrufu planı hazırladı.','Anket kuruluşları seçmenin kararsız oranının yüksek olduğunu bildirdi.',
+  'Sosyal medyada bir siyasi etiket gün boyu gündemde kaldı.'
+];
+
+/* ===== KARTLAR ===== */
+function O(t, fx, s, risk) { return {t: t, fx: fx || {}, s: s || '', risk: risk || null}; }
+var KARTLAR = [
+ {id:'esnaf',baslik:'Esnaf Odasının Çağrısı',metin:'Kira artışları çarşıyı bunaltmış durumda. Oda başkanı ortak bir açıklama yapmanı ve hafta sonu esnafla buluşmanı istiyor.',sec:[
+  O('İmzayı at, buluşmaya git',{grup:{esnaf:7},drift:.18,stres:3,itibar:1},'Çarşı seni alkışladı; ama gündemin diğer işleri biraz aksadı.'),
+  O('Açıklamaya katıl, buluşmayı ertele',{grup:{esnaf:3},drift:.07},'Ölçülü bir destek verdin. Kimse küsmedi, kimse coşmadı.'),
+  O('Bu başlıkta taraf olma',{grup:{esnaf:-4},itibar:-1},'Oda başkanı kararını not aldı.')]},
+ {id:'nakil',baslik:'Vekil Nakli Teklifi',kosul:function(S){return S.mod==='yeni'&&S.ay>=2;},metin:'Meclis\'te bağımsız çalışan bir milletvekili partine geçmek istiyor. Tecrübeli biri, ama geçmişi tartışmalı.',sec:[
+  O('Rozeti kendin tak',{vekil:1,itibar:-2,drift:.25,birlik:-2},'Meclis\'te ilk sandalyen oldu. Basın geçmişini kazıyor.'),
+  O('Danışman sıfatıyla yanında tut',{drift:.08},'İş birliği başladı, rozet takılmadı.'),
+  O('Kapıyı kapat',{itibar:2,birlik:2},'İlkeli duruşun parti içinde olumlu karşılandı.')]},
+ {id:'gaf',baslik:'Açık Mikrofon',metin:'Bir toplantıdan sonra mikrofon açık kalmış. Söylediğin esprili ama kırıcı bir cümle akşam haberlerinde dönüyor.',sec:[
+  O('Doğrudan özür dile',{itibar:1,stres:3,drift:-.05},'Konu iki günde soğudu.'),
+  O('Bağlamından koparıldığını söyle',{itibar:-3,drift:-.12,stres:2},'Tartışma bir hafta daha sürdü.'),
+  O('Konuyu soğumaya bırak',{drift:-.2,stres:4},'Sessizlik, rakiplerin işine yaradı.')]},
+ {id:'genclik',baslik:'Gençlik Kollarının Atağı',metin:'Gençlik kolları kampüs turu planlıyor, ama paylaşacakları metin senin çizginden sert.',sec:[
+  O('Metni yumuşatarak destekle',{grup:{gencler:5,ogrenciler:5},drift:.15,birlik:-1},'Turlar iyi geçti. Metin ortalandı.'),
+  O('Metne dokunma, serbest bırak',{grup:{gencler:8,ogrenciler:4},drift:.2,itibar:-2,birlik:-3},'Genç kitle coştu, kıdemliler homurdandı.'),
+  O('Turu ertele',{birlik:2,grup:{gencler:-3}},'Kadro rahatladı, gençlik söylendi.')]},
+ {id:'canli',baslik:'Sert Röportaj Daveti',metin:'Büyük bir kanal canlı ve uzun bir röportaj teklif ediyor. Soruların zor olacağı belli.',sec:[
+  O('Kabul et',{itibar:3,drift:.3,stres:5},'Zorlandın ama izleyici netliğini beğendi.',{p:.3,fx:{itibar:-5,drift:-.3},s:'Beklemediğin bir soruda yakalandın.'}),
+  O('Soru listesi şartıyla kabul et',{itibar:1,drift:.12,stres:2},'Güvenli bir yayın oldu.'),
+  O('Reddet',{drift:-.05},'Kanal boş sandalyeyi gösterdi.')]},
+ {id:'bagis',baslik:'Cömert Bağışçı',metin:'Bir iş insanı kampanyana büyük bağış yapmak istiyor. Karşılığında yalnızca zaman zaman görüşmek diyor.',sec:[
+  O('Bağışı kabul et',{kasa:2.5,itibar:-1},'Kasa nefes aldı.',{p:.3,fx:{itibar:-6,drift:-.4},s:'Bağış zinciri basına sızdı.'}),
+  O('Şeffaf bağış kampanyasına çevir',{kasa:.8,itibar:2,birlik:1},'Herkesin göreceği bir sayfada toplandı.'),
+  O('Reddet',{itibar:3},'Temiz duruşun konuşuldu.')]},
+ {id:'enf',baslik:'Çarşıda Fiyat Konuşuluyor',kosul:function(S){return S.makro.enf>35;},metin:'Pazar tezgâhından otobüs durağına herkes fiyatları konuşuyor. Ekonomi programını açıklaman bekleniyor.',sec:[
+  O('Radikal bir program aç',{grup:{emekliler:5,isciler:5,esnaf:-4},drift:.25,stres:4},'Cesur bulundu; kaynak sorusu da geldi.'),
+  O('Adım adım bir yol haritası sun',{grup:{esnaf:2,memurlar:2},drift:.12},'Mantıklı ama heyecansız.'),
+  O('Hükümeti sert eleştir',{grup:{muhafazakarlar:-3},drift:.15,itibar:-1},'Taraftarın alkışladı, tarafsızlar çekildi.')]},
+ {id:'sendika',baslik:'Sendika Masası',metin:'İşçi sendikaları asgari ücret için ortak kampanya yürütmeyi öneriyor. Maliyeti var, getirisi de.',sec:[
+  O('Ortak kampanyaya katıl',{kasa:-.6,grup:{isciler:8},drift:.2},'Fabrika kapılarında sesin duyuldu.'),
+  O('Destek mesajı ver',{grup:{isciler:3}},'Sendikalar mesajı yeterli buldu.'),
+  O('Katılma',{grup:{isciler:-3}},'Sendika yöneticileri not aldı.')]},
+ {id:'sel',baslik:'Sel Bölgesinde',metin:'Bir ilde sel baskını var. Yerinde olmak itibar kazandırır, ama lojistik masraf çıkaracak.',sec:[
+  O('Hemen git, yerel örgütle yardım topla',{kasa:-.5,itibar:3,drift:.15,stres:4,org:1},'Yerel örgüt sahaya çıktı, ilçeler seni anıyor.'),
+  O('Destek mesajı ve bağış çağrısı',{itibar:1,kasa:-.1},'Mesaj paylaşıldı.'),
+  O('Gelişmeleri bekle',{itibar:-2},'Eleştiri geldi.')]},
+ {id:'kadro',baslik:'Kadroda Huzursuzluk',kosul:function(S){return S.stat.birlik<62;},metin:'{k} liderliğini açıkça sorgulamaya başladı. Kulis toplantıları ve imza toplamaları dönüyor.',sec:[
+  O('Baş başa görüş',{birlik:5,stres:3},'Gerginlik düştü.'),
+  O('Görevden al',{birlik:-6,itibar:-1},'Ses kesildi ama yaralar kaldı.'),
+  O('Görmezden gel',{birlik:-4,stres:2},'Kulis büyüdü.')]},
+ {id:'troll',baslik:'Sosyal Medya Saldırısı',metin:'Hesabına koordineli bir saldırı başladı. Etiket yarım saatte gündem oldu.',sec:[
+  O('Mizahla karşılık ver',{itibar:2,grup:{gencler:3},stres:2},'Cevap viral oldu.',{p:.25,fx:{itibar:-4,drift:-.15},s:'Espri yanlış anlaşıldı.'}),
+  O('Sessiz kal',{stres:3,drift:-.05},'Saldırı iki günde söndü.'),
+  O('Hukuki yola git',{kasa:-.2,itibar:1},'Resmi dilekçe verildi.')]},
+ {id:'baraj',baslik:'Baraj Hesapları',kosul:function(S){return S.sonrakiSecim&&S.sonrakiSecim.ay<=14&&S.sonrakiSecim.tip==='genel'&&S.anketOyuncu<8;},metin:'Kulislerde herkes barajı konuşuyor. Küçük partilerle ittifak kurma ihtimali gündemde.',sec:[
+  O('Açıkça ittifak çağrısı yap',{yakin:8,drift:.1,itibar:1},'Çağrı, kapıları aralamış gibi.'),
+  O('Tek başına gireceğini söyle',{birlik:3,itibar:2,drift:-.05},'Kadroya güven verdin; kulis rahatsız oldu.'),
+  O('Sessiz kal',{},'Kulis konuşmaya devam ediyor.')]},
+ {id:'kampus',baslik:'Kampüs Söyleşisi',metin:'Bir üniversitede açık oturum var. Öğrenciler yurt ve burs sorularıyla gelecek.',sec:[
+  O('Sorulara tek tek yanıt ver',{grup:{ogrenciler:7,gencler:3},stres:3,drift:.1},'Salon seni uzun süre dinledi.'),
+  O('Sadece konuşma yap',{grup:{ogrenciler:2}},'Kısa ve güvenli bir ziyaretti.'),
+  O('Katılma',{},'Boş sandalye gündem olmadı.')]},
+ {id:'bina',baslik:'Genel Merkez Kirası',kosul:function(S){return S.mod==='yeni';},metin:'Genel merkez binasının sahibi kirayı artırmak istiyor.',sec:[
+  O('Pazarlık yap',{kasa:-.3,stres:2},'Orta yolda anlaşıldı.'),
+  O('Zammı kabul et',{kasa:-.7},'Zahmetsiz ama pahalı.'),
+  O('Başka bir binaya taşın',{kasa:-.4,birlik:-2,stres:4},'Taşınma yorucu geçti ama kira düştü.')]},
+ {id:'kulis',baslik:'Kulis Haberi',metin:'Rakip bir parti, kadronda çatlak olduğuna dair haber sızdırdı.',sec:[
+  O('Sert yalanla',{itibar:1,stres:2},'Haber büyümedi.'),
+  O('Kadroyla ortak fotoğraf çektir',{birlik:3,itibar:1,drift:.05},'Birlik mesajı verildi.'),
+  O('Yanıt verme',{birlik:-2},'Haber birkaç gün dolaştı.')]},
+ {id:'dis',baslik:'Sınır Ötesi Gerilim',metin:'Sınır ötesinde tırmanan bir gerilim var. Kamuoyu senden net bir duruş bekliyor.',sec:[
+  O('Ulusal birlik çağrısı yap',{grup:{milliyetciler:6,muhafazakarlar:3,gencler:-3},drift:.1},'Çağrın geniş kesimde karşılık buldu.'),
+  O('Diplomasi ve temkin vurgula',{grup:{memurlar:3,gencler:3},itibar:1},'Sakin ton takdir gördü.'),
+  O('Hükümeti sorgula',{grup:{milliyetciler:-3,gencler:2},drift:.08},'Soruların gündemi değiştirdi.')]},
+ {id:'mentor',baslik:'Mentor Teklifi',metin:'Siyasetin deneyimli bir ismi seni yetiştirmek istiyor. Ama onun da çok rakibi var.',sec:[
+  O('Yanına al',{itibar:2,drift:.2,birlik:-3},'Tecrübesi işe yaradı; kırgın isimler çıktı.'),
+  O('Saygı duy ama bağımsız kal',{itibar:1,birlik:1},'Hem saygı gördün hem bağımsızlığın korundu.'),
+  O('Mesafeli dur',{},'Teklif sessizce kapandı.')]},
+ {id:'saha',baslik:'Teşkilat Alarmı',metin:'Bir bölgede örgüt çözülmeye başladı. İl başkanı yardım istiyor.',sec:[
+  O('Ekip gönder',{kasa:-.4,org:2,stres:3},'İl örgütü toparlandı.'),
+  O('Telefonla yönlendir',{org:1},'Kısmi toparlanma oldu.'),
+  O('Kendi çözsün',{birlik:-2},'İl başkanı kırıldı.')]},
+ {id:'anketfirma',baslik:'Anket Şirketi',metin:'Bir anket şirketi sana özel ve gizli bir saha ölçümü satmak istiyor.',sec:[
+  O('Satın al',{kasa:-.5,drift:.12},'Verilerle stratejin netleşti.'),
+  O('Reddet',{},'Kasa korundu.')]},
+ {id:'dinlen',baslik:'Doktorun Uyarısı',kosul:function(S){return S.stat.stres>55;},metin:'Doktorun tempoyu düşürmeni söylüyor. Gündemin ise yoğun.',sec:[
+  O('Bir hafta dinlen',{stres:-18,saglik:4,drift:-.08},'Güçlenerek döndün.'),
+  O('Programı sürdür',{stres:5,saglik:-4,drift:.15},'Sahada kaldın; vücudun hesap soracak.')]},
+ {id:'imza',baslik:'Mahalle Dilekçesi',metin:'Bir mahalle, otobüs hattının geri getirilmesi için imza topluyor.',sec:[
+  O('İlk imzayı at, belediyeye git',{drift:.1,grup:{esnaf:2,emekliler:3},stres:1},'Hat yeniden gündeme girdi.'),
+  O('Destek mesajı gönder',{itibar:1},'Mahalle teşekkür etti.'),
+  O('Yerel örgüte bırak',{birlik:1},'Örgüt işi sahiplendi.')]},
+ {id:'kongre',baslik:'Olağan Kongre Takvimi',kosul:function(S){return S.ay%12===6;},metin:'Tüzüğe göre kongre süreci başlıyor. Delegelerle ilişkin sınanacak.',sec:[
+  O('Delegeleri tek tek gez',{birlik:6,stres:5,kasa:-.3,itibar:2},'Kongreye güçlü girdin.'),
+  O('Merkezden yönet',{birlik:-3},'Hızlı ama soğuk bir süreç oldu.'),
+  O('Hazırlığı kadroya bırak',{birlik:1},'Süreç sorunsuz işledi.')]},
+ {id:'diaspora',baslik:'Diaspora Daveti',metin:'Avrupa\'daki bir dernekler birliği seni konferansa çağırıyor.',sec:[
+  O('Yerinde katıl',{kasa:-.4,itibar:2,drift:.1},'Yurt dışında tanınırlığın arttı.'),
+  O('Çevrimiçi katıl',{itibar:1},'Kısa ve verimli oldu.')]},
+ {id:'fenomen',baslik:'Fenomen Teklifi',metin:'Milyonlarca takipçisi olan bir içerik üreticisi seni videosuna konuk almak istiyor.',sec:[
+  O('Kabul et',{grup:{gencler:6},drift:.2,itibar:-1},'Video genç kitlede yankı yaptı.',{p:.25,fx:{itibar:-4,s:0},s:'Sorular beklediğinden magazinsel çıktı.'}),
+  O('Reddet',{},'Fırsat başkasına gitti.')]}
+];
+
+'use strict';
+/* ===== MOTOR: durum, anket/oy hesabı, D'Hondt, seçimler, aksiyonlar, ay sonu ===== */
+var AYLAR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+var AYLAR_UZUN = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+var GOV0 = ['AK','MHP','BBP','HUDA'];
+var LIDER_AI = {AK:'Selçuk Aydemir',CHP:'Nermin Karaoğlu',MHP:'Ferhat Bozdemir',DEM:'Leyla Çağlayan',IYI:'Alper Gökçe',YRP:'Yeniden Refah Genel Başkanı',ZAFER:'Zafer Genel Başkanı'};
+var MECLIS0 = {AK:285,CHP:135,DEM:56,MHP:50,IYI:32,YRP:5,TIP:4,HUDA:4,SAADET:4,DEVA:4,GP:3,BBP:2,DSP:1,DP:1};
+
+function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+function rnd(S) {
+  S.rs = (S.rs + 0x6D2B79F5) | 0;
+  var t = S.rs; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function rn(S, a, b) { return a + (b - a) * rnd(S); }
+function norm(S) { return (rnd(S) + rnd(S) + rnd(S) - 1.5) / 0.5; }
+function pick(S, arr) { return arr[Math.floor(rnd(S) * arr.length)]; }
+function tarihNo(t) { return t.y * 12 + t.m; }
+function tarihYaz(t) { return AYLAR[t.m - 1] + ' ' + t.y; }
+function tarihUzun(t) { return AYLAR_UZUN[t.m - 1] + ' ' + t.y; }
+function govMu(S, id) { return S.gov.indexOf(id) >= 0; }
+function oyuncuAdi(S) { return S.parti.ad; }
+function partiAdi(S, id) { return id === S.pid ? S.parti.ad : (partiBul(id) || {ad: id}).ad; }
+function partiRengi(S, id) { return id === S.pid ? S.parti.renk : (partiBul(id) || {renk: '#6b7080'}).renk; }
+function gaf() { return 1 + Math.random() * 0; }
+
+/* ---------- yeni oyun ---------- */
+function newGame(o) {
+  var S = {v: 1, rs: (o.seed || 20260919) | 0, mod: o.mod, zorluk: o.zorluk || 'orta'};
+  S.stilId = o.stil || 'katilimci'; S.stil = STILLER[S.stilId];
+  S.tarih = {y: 2026, m: 9}; S.ay = 0;
+  var yeni = o.mod === 'yeni';
+  S.pid = yeni ? 'YENI' : o.partiId;
+  var pb = partiBul(S.pid);
+  S.parti = yeni ? {ad: o.partiAd || 'Yeni Parti', renk: o.renk || '#e63b5f', ideo: o.ideo || 'sd'} : {ad: pb.ad, renk: pb.renk, ideo: pb.ideo};
+  S.lider = {ad: o.liderAd || 'Genel Başkan', dogum: o.dogum || 1980};
+  S.makro = {enf: 46, faiz: 40, usd: 41.2, issiz: 8.6, buyume: 3.1, asgari: 28075, fiyat: 100};
+  S.gov = GOV0.slice();
+  S.ittifaklar = [{ad: 'Cumhur İttifakı', uyeler: GOV0.slice()}];
+  S.yk = {}; PARTILER.forEach(function (p) { S.yk[p.id] = Math.round(rn(S, -10, 10)); });
+  S.mods = PARTILER.map(function () { return 1; });
+  S.pn = ILLER.map(function () { return Math.exp(0.15 * norm(S)); });
+  S.baz = kalibre(S);
+  var zor = ZORLUKLAR[S.zorluk], idx = partiIdx(S.pid);
+  var ib = ideoBul(S.parti.ideo);
+  S.grupB = ib.grup.slice(); S.grup = {}; GRUPLAR.forEach(function (g, i) { S.grup[g.id] = ib.grup[i]; });
+  S.org = ILLER.map(function () { return 0; });
+  if (yeni) {
+    S.tohum = zor.tohum;
+    var sirali = ILLER.map(function (il, i) { return [il.nufus * (0.6 + rnd(S)), i]; }).sort(function (a, b) { return b[0] - a[0]; });
+    for (var k = 0; k < zor.il; k++) S.org[sirali[k][1]] = 35;
+    S.stat = {itibar: 40, birlik: 72, stres: 15, saglik: 90, kasa: zor.kasa * 1e6, uye: Math.round(zor.tohum * 24000), drift: 0, mom: 0};
+  } else {
+    S.tohum = pb.baz * 100 / PARTILER.reduce(function (a, p) { return a + p.baz; }, 0);
+    var sayi = clamp(Math.round(30 + pb.baz * 2.5), 30, 81);
+    var sr = ILLER.map(function (il, i) { return [S.baz[i][idx], i]; }).sort(function (a, b) { return b[0] - a[0]; });
+    for (var k2 = 0; k2 < sayi; k2++) S.org[sr[k2][1]] = 70;
+    S.stat = {itibar: 55, birlik: 70, stres: 15, saglik: 90, kasa: (4 + pb.baz * 1.4) * 1e6, uye: Math.round(S.tohum * 24000), drift: 0, mom: 0};
+  }
+  S.meclis = {}; var top = 0;
+  Object.keys(MECLIS0).forEach(function (id) { S.meclis[id] = MECLIS0[id]; top += MECLIS0[id]; });
+  S.meclis.DIGER = 600 - top; if (yeni) S.meclis.YENI = 0;
+  S.kadro = []; for (var q = 0; q < 8; q++) S.kadro.push({ad: pick(S, AD_L) + ' ' + pick(S, SOYAD_L), rol: KADRO_ROL[q], sad: Math.round(rn(S, 55, 85)), hirs: Math.round(rn(S, 20, 80))});
+  S.medya = MEDYA_HAM.map(function (m) { return {ad: m.ad, erisim: m.erisim, guven: m.guven, yakin: m.yakin}; });
+  S.yayin = 0;
+  S.takvim = [{tip: 'genel', y: 2028, m: 5}, {tip: 'yerel', y: 2029, m: 3}, {tip: 'genel', y: 2033, m: 5}];
+  S.gorulen = {}; S.log = []; S.kuyruk = []; S.ayEtki = []; S.haberler = []; S.anketGecmis = [];
+  S.aksiyon = {kalan: 3, hak: 3};
+  S.bitti = false; S.cbOyuncu = false; S.sonSecim = null;
+  anketGuncelle(S); S.anketGecmis.push({ay: 0, p: S.anketOyuncu});
+  secimGuncelle(S);
+  S.kuyruk.push({t: 'acilis'});
+  return S;
+}
+
+function kalibre(S) {
+  var n = PARTILER.length, B = [], i, j, top = 0;
+  PARTILER.forEach(function (p) { top += p.baz; });
+  for (i = 0; i < 81; i++) {
+    var row = [];
+    for (j = 0; j < n; j++) {
+      var p = PARTILER[j], f = (BOLGE_FIT[p.id] ? BOLGE_FIT[p.id][ILLER[i].bolge] : 1) * ((IL_FIT[ILLER[i].id] && IL_FIT[ILLER[i].id][p.id]) || 1);
+      row.push(p.baz * f * Math.exp(0.18 * norm(S)));
+    }
+    B.push(row);
+  }
+  for (var it = 0; it < 10; it++) {
+    for (i = 0; i < 81; i++) { var s = 0; for (j = 0; j < n; j++) s += B[i][j]; for (j = 0; j < n; j++) B[i][j] *= 100 / s; }
+    var nat = []; for (j = 0; j < n; j++) { var a = 0; for (i = 0; i < 81; i++) a += ILLER[i].nufus * B[i][j]; nat.push(a / NUFUS_TOPLAM); }
+    for (j = 0; j < n; j++) { var fct = (PARTILER[j].baz * 100 / top) / nat[j]; for (i = 0; i < 81; i++) B[i][j] *= fct; }
+  }
+  for (i = 0; i < 81; i++) { var s2 = 0; for (j = 0; j < n; j++) s2 += B[i][j]; for (j = 0; j < n; j++) B[i][j] = B[i][j] * 100 / s2; }
+  return B;
+}
+
+/* ---------- teşkilat ve oyuncu hedef oyu ---------- */
+function teskilatSayisi(S) { var c = 0; for (var i = 0; i < 81; i++) if (S.org[i] >= 30) c++; return c; }
+function kapsama(S) { var a = 0; for (var i = 0; i < 81; i++) a += ILLER[i].nufus * Math.min(1, S.org[i] / 70); return a / NUFUS_TOPLAM; }
+function girerMi(S) { return teskilatSayisi(S) >= 41; }
+function hedef(S) {
+  var yeni = S.mod === 'yeni', cov = kapsama(S);
+  var t = (S.tohum + S.stat.drift) * (yeni ? (0.3 + 0.7 * cov) : (0.78 + 0.22 * cov));
+  if (govMu(S, S.pid)) t *= 1 - 0.2 * clamp((S.makro.enf - 30) / 40, 0, 1.2);
+  return clamp(t, 0.1, 62);
+}
+function paylar(S) {
+  var T = hedef(S), pid = S.pid, yeni = S.mod === 'yeni', pidx = partiIdx(pid), n = PARTILER.length;
+  var ib = ideoBul(S.parti.ideo), raw = [], ps = [], i, j, k = 1;
+  for (i = 0; i < 81; i++) {
+    var shape = yeni ? ib.fit[ILLER[i].bolge] * S.pn[i] : S.baz[i][pidx];
+    raw.push(shape * (yeni ? (0.25 + 0.75 * Math.min(1, S.org[i] / 70)) : (0.6 + 0.4 * Math.min(1, S.org[i] / 70))));
+  }
+  for (var it = 0; it < 6; it++) {
+    var m = 0; for (i = 0; i < 81; i++) m += ILLER[i].nufus * Math.min(70, raw[i] * k); m /= NUFUS_TOPLAM;
+    k *= T / m;
+  }
+  for (i = 0; i < 81; i++) ps.push(Math.min(70, raw[i] * k));
+  var il = [], ul = {};
+  for (i = 0; i < 81; i++) {
+    var o = {}, sum = 0, w = [];
+    for (j = 0; j < n; j++) { if (j === pidx) { w.push(0); continue; } var v = S.baz[i][j] * S.mods[j]; w.push(v); sum += v; }
+    for (j = 0; j < n; j++) { if (j !== pidx) o[PARTILER[j].id] = w[j] / sum * (100 - ps[i]); }
+    o[pid] = ps[i]; il.push(o);
+  }
+  Object.keys(il[0]).forEach(function (id) { var a = 0; for (var q = 0; q < 81; q++) a += ILLER[q].nufus * il[q][id]; ul[id] = a / NUFUS_TOPLAM; });
+  return {il: il, ulusal: ul, T: T};
+}
+function anketGuncelle(S) {
+  var P = paylar(S), a = {}, tot = 0;
+  Object.keys(P.ulusal).forEach(function (id) { var v = Math.max(0.05, P.ulusal[id] + norm(S) * 0.35 * Math.sqrt(P.ulusal[id] / 10 + 0.1)); a[id] = v; tot += v; });
+  Object.keys(a).forEach(function (id) { a[id] = a[id] * 100 / tot; });
+  S.anket = a; S.anketOyuncu = a[S.pid];
+}
+function siralama(map) { return Object.keys(map).sort(function (a, b) { return map[b] - map[a]; }); }
+function oyuncuSira(S) { return siralama(S.anket).indexOf(S.pid) + 1; }
+
+/* ---------- koltuk dağılımı ---------- */
+function dhondt(votes, n) {
+  var won = votes.map(function () { return 0; });
+  for (var s = 0; s < n; s++) {
+    var b = 0, bv = -1;
+    for (var i = 0; i < votes.length; i++) { var v = votes[i] / (won[i] + 1); if (v > bv) { bv = v; b = i; } }
+    won[b]++;
+  }
+  return won;
+}
+function birimler(S) {
+  var kullanilan = {}, out = [];
+  S.ittifaklar.forEach(function (it) { it.uyeler.forEach(function (id) { kullanilan[id] = 1; }); out.push({ad: it.ad, uyeler: it.uyeler.slice(), ittifak: true}); });
+  PARTILER.forEach(function (p) { if (!kullanilan[p.id] && p.id !== S.pid) out.push({ad: p.ad, uyeler: [p.id]}); });
+  if (!kullanilan[S.pid]) out.push({ad: S.parti.ad, uyeler: [S.pid]});
+  return out;
+}
+function oyuncuyuCikar(S, il) {
+  return il.map(function (o) {
+    var c = {}, s = 0; Object.keys(o).forEach(function (id) { if (id !== S.pid) s += o[id]; });
+    Object.keys(o).forEach(function (id) { c[id] = id === S.pid ? 0 : o[id] * 100 / s; });
+    return c;
+  });
+}
+function koltuklar(S, il, ulusal) {
+  var u = birimler(S), gecen = [], bilgi = [];
+  u.forEach(function (b) {
+    var t = 0; b.uyeler.forEach(function (id) { t += ulusal[id] || 0; });
+    b.pay = t; b.gecti = t >= 7; bilgi.push({ad: b.ad, pay: t, gecti: b.gecti, uyeler: b.uyeler, ittifak: !!b.ittifak});
+    if (b.gecti) gecen.push(b);
+  });
+  var seats = {}; PARTILER.forEach(function (p) { seats[p.id] = 0; }); seats[S.pid] = seats[S.pid] || 0;
+  for (var i = 0; i < 81; i++) {
+    var votes = gecen.map(function (b) { var t = 0; b.uyeler.forEach(function (id) { t += il[i][id] || 0; }); return t; });
+    var won = dhondt(votes, ILLER[i].mv);
+    gecen.forEach(function (b, k) {
+      if (!won[k]) return;
+      var w2 = dhondt(b.uyeler.map(function (id) { return il[i][id] || 0; }), won[k]);
+      b.uyeler.forEach(function (id, j) { seats[id] = (seats[id] || 0) + w2[j]; });
+    });
+  }
+  return {seats: seats, birimler: bilgi};
+}
+function bugunSecimOlsa(S) {
+  var P = paylar(S), il = P.il, ul = P.ulusal, girer = girerMi(S);
+  if (!girer) { il = oyuncuyuCikar(S, il); ul = {}; Object.keys(il[0]).forEach(function (id) { var a = 0; for (var q = 0; q < 81; q++) a += ILLER[q].nufus * il[q][id]; ul[id] = a / NUFUS_TOPLAM; }); }
+  var r = koltuklar(S, il, ul); r.girer = girer; r.ulusal = ul; return r;
+}
+
+/* ---------- cumhurbaşkanlığı ---------- */
+function bloklar(S, ulusal) {
+  var u = birimler(S), out = [];
+  u.forEach(function (b) {
+    var t = 0, xs = 0; b.uyeler.forEach(function (id) { var v = ulusal[id] || 0; t += v; var p = partiBul(id); xs += v * (id === S.pid ? ideoBul(S.parti.ideo).x : (p ? p.x : 0)); });
+    var buyuk = b.uyeler.slice().sort(function (a, c) { return (ulusal[c] || 0) - (ulusal[a] || 0); })[0];
+    out.push({ad: b.ad, uyeler: b.uyeler, pay: t, x: t ? xs / t : 0, lider: buyuk === S.pid ? S.lider.ad : (LIDER_AI[buyuk] || (partiBul(buyuk) || {ad: buyuk}).ad + ' Genel Başkanı'), liderOyuncu: buyuk === S.pid});
+  });
+  return out.sort(function (a, b) { return b.pay - a.pay; }).filter(function (b) { return b.pay >= 1; });
+}
+function cumhurbaskani(S, ulusal) {
+  var b = bloklar(S, ulusal).slice(0, 3);
+  var sum = b.reduce(function (a, x) { return a + x.pay; }, 0), left = 100 - sum;
+  var p1 = b.map(function (x) { return Math.max(0.1, x.pay + left * x.pay / sum + norm(S) * 1.2); });
+  var t1 = p1.reduce(function (a, x) { return a + x; }, 0); p1 = p1.map(function (x) { return x * 100 / t1; });
+  var adaylar = b.map(function (x, i) { return {ad: x.lider, blok: x.ad, uyeler: x.uyeler, oyuncu: x.liderOyuncu, p1: p1[i], p2: null}; });
+  var order = adaylar.map(function (a, i) { return i; }).sort(function (a, c) { return p1[c] - p1[a]; });
+  if (p1[order[0]] > 50) return {tur: 1, adaylar: adaylar, kazanan: order[0]};
+  var f1 = order[0], f2 = order[1], t3 = order[2];
+  var a = p1[f1], c = p1[f2];
+  if (t3 !== undefined) {
+    var d1 = Math.abs(b[t3].x - b[f1].x), d2 = Math.abs(b[t3].x - b[f2].x), tr = p1[t3] * 0.7;
+    if (d1 < d2) a += tr; else c += tr;
+  }
+  a += norm(S) * 1.5;
+  var tt = a + c; adaylar[f1].p2 = a * 100 / tt; adaylar[f2].p2 = c * 100 / tt;
+  return {tur: 2, adaylar: adaylar, kazanan: a >= c ? f1 : f2};
+}
+
+/* ---------- seçim sonuçları ---------- */
+function gurultuluIl(S, il) {
+  return il.map(function (o) {
+    var c = {}, s = 0; Object.keys(o).forEach(function (id) { c[id] = o[id] * Math.exp(0.05 * norm(S)); s += c[id]; });
+    Object.keys(c).forEach(function (id) { c[id] = c[id] * 100 / s; }); return c;
+  });
+}
+function secimYap(S, tur) {
+  var P = paylar(S), il = gurultuluIl(S, P.il), girer = girerMi(S);
+  if (tur.tip === 'genel') {
+    if (!girer) il = oyuncuyuCikar(S, il);
+    var ul = {}; Object.keys(il[0]).forEach(function (id) { var a = 0; for (var q = 0; q < 81; q++) a += ILLER[q].nufus * il[q][id]; ul[id] = a / NUFUS_TOPLAM; });
+    var k = koltuklar(S, il, ul), cb = cumhurbaskani(S, ul);
+    var sonuc = {tip: 'genel', y: tur.y, m: tur.m, ulusal: ul, koltuk: k.seats, birimler: k.birimler, girer: girer, cb: cb};
+    S.meclis = {}; Object.keys(k.seats).forEach(function (id) { S.meclis[id] = k.seats[id]; });
+    var kz = cb.adaylar[cb.kazanan]; S.gov = kz.uyeler.slice(); S.cbOyuncu = !!kz.oyuncu;
+    S.ittifaklar = S.ittifaklar.filter(function (it) { return it.ad === 'Cumhur İttifakı' ? true : true; });
+    S.mods = PARTILER.map(function () { return 1; });
+    return sonuc;
+  }
+  var win = {}, kazanan = [];
+  for (var i = 0; i < 81; i++) {
+    var o = il[i], pid = S.pid;
+    var kos = S.org[i] >= 30;
+    var best = null, bv = -1;
+    Object.keys(o).forEach(function (id) { var v = (id === pid && !kos) ? 0 : o[id]; if (v > bv) { bv = v; best = id; } });
+    win[best] = (win[best] || 0) + 1; kazanan.push(best);
+  }
+  return {tip: 'yerel', y: tur.y, m: tur.m, iller: win, kazananlar: kazanan};
+}
+function secimGuncelle(S) {
+  var now = tarihNo(S.tarih), s = null;
+  for (var i = 0; i < S.takvim.length; i++) { var no = S.takvim[i].y * 12 + S.takvim[i].m; if (no >= now) { s = {tip: S.takvim[i].tip, y: S.takvim[i].y, m: S.takvim[i].m, ay: no - now}; break; } }
+  S.sonrakiSecim = s;
+}
+
+/* ---------- etkiler ---------- */
+function gain(S) { return S.stil.drift * (0.65 + 0.7 * S.stat.itibar / 100) * (S.stat.stres > 70 ? 0.8 : 1); }
+function dim(S) { return Math.max(0.15, 1 - Math.max(0, S.stat.drift) / 22); }
+function medyaCarpan(S) { return 1 + 0.15 * S.yayin; }
+var ETKI_AD = {kasa:'Kasa',itibar:'İtibar',birlik:'Parti birliği',stres:'Stres',saglik:'Sağlık',drift:'Anket',uye:'Üye',vekil:'Milletvekili',org:'Teşkilat',yakin:'İttifak yakınlığı'};
+function fxUygula(S, fx, etiket) {
+  var d = {}, st = S.stat, G = gain(S), v;
+  if (fx.kasa) { v = fx.kasa * 1e6 * (S.makro.fiyat / 100) * (fx.kasa < 0 ? S.stil.kasa : 1); st.kasa += v; d.kasa = v > 0 ? 1 : -1; }
+  if (fx.itibar) { v = fx.itibar > 0 ? fx.itibar * S.stil.itibar : fx.itibar; st.itibar = clamp(st.itibar + v, 0, 100); d.itibar = v > 0 ? 1 : -1; }
+  if (fx.birlik) { v = fx.birlik > 0 ? fx.birlik * S.stil.birlik : fx.birlik; st.birlik = clamp(st.birlik + v, 0, 100); d.birlik = v > 0 ? 1 : -1; }
+  if (fx.stres) { st.stres = clamp(st.stres + fx.stres, 0, 100); d.stres = fx.stres > 0 ? 1 : -1; }
+  if (fx.saglik) { st.saglik = clamp(st.saglik + fx.saglik, 0, 100); d.saglik = fx.saglik > 0 ? 1 : -1; }
+  if (fx.drift) { v = fx.drift > 0 ? fx.drift * G * dim(S) : fx.drift; st.drift += v; d.drift = v > 0 ? 1 : -1; S.ayEtki.push({ad: etiket || 'Olay', v: v}); }
+  if (fx.uye) { st.uye = Math.max(0, st.uye + fx.uye); d.uye = fx.uye > 0 ? 1 : -1; }
+  if (fx.grup) { d.grup = {}; Object.keys(fx.grup).forEach(function (g) { S.grup[g] = clamp(S.grup[g] + fx.grup[g], 0, 100); d.grup[g] = fx.grup[g] > 0 ? 1 : -1; }); }
+  if (fx.vekil) { S.meclis[S.pid] = (S.meclis[S.pid] || 0) + fx.vekil; d.vekil = 1; }
+  if (fx.org) {
+    for (var q = 0; q < fx.org; q++) {
+      var adaylar = []; for (var i = 0; i < 81; i++) if (S.org[i] > 0 && S.org[i] < 60) adaylar.push(i);
+      if (!adaylar.length) for (var j = 0; j < 81; j++) adaylar.push(j);
+      var t = pick(S, adaylar); S.org[t] = Math.min(100, S.org[t] + 12);
+    }
+    d.org = 1;
+  }
+  if (fx.orgBolge) { for (var z = 0; z < 81; z++) if (ILLER[z].bolge === fx.orgBolge.b) S.org[z] = Math.min(100, S.org[z] + fx.orgBolge.v); d.org = 1; }
+  if (fx.yakin) { Object.keys(S.yk).forEach(function (id) { S.yk[id] += fx.yakin; }); d.yakin = 1; }
+  return d;
+}
+function onizleme(fx) {
+  var d = {};
+  ['kasa','itibar','birlik','stres','saglik','drift','uye','vekil','org','yakin'].forEach(function (k) { if (fx[k]) d[k] = fx[k] > 0 ? 1 : -1; });
+  if (fx.grup) { d.grup = {}; Object.keys(fx.grup).forEach(function (g) { d.grup[g] = fx.grup[g] > 0 ? 1 : -1; }); }
+  return d;
+}
+function chipler(d) {
+  var out = [];
+  Object.keys(d).forEach(function (k) {
+    if (k === 'grup') { Object.keys(d.grup).forEach(function (g) { var ad = GRUPLAR.filter(function (x) { return x.id === g; })[0].ad; out.push({k: ad, d: d.grup[g], iyi: d.grup[g] > 0}); }); return; }
+    out.push({k: ETKI_AD[k], d: d[k], iyi: k === 'stres' ? d[k] < 0 : d[k] > 0});
+  });
+  return out;
+}
+
+/* ---------- aksiyonlar ---------- */
+var AKSIYONLAR = [
+  {id:'miting',ad:'Miting',not:'Bir bölgede büyük kalabalık. Kasa ve stres harcar.',maliyet:.7,hedef:'bolge',tab:'genel'},
+  {id:'teskilat',ad:'Teşkilat Mesaisi',not:'Seçtiğin bölgenin illerinde örgüt kurar.',maliyet:.02,hedef:'bolge',tab:'genel'},
+  {id:'secmen',ad:'Seçmen Buluşması',not:'Bir seçmen grubuyla yüz yüze görüşme.',maliyet:.15,hedef:'grup',tab:'genel'},
+  {id:'uye',ad:'Üye Kampanyası',not:'Parti üyeliği için kapı kapı çalışma.',maliyet:.25,tab:'genel'},
+  {id:'kadro',ad:'Kadro Toplantısı',not:'Parti içi birliği güçlendirir.',maliyet:0,tab:'genel'},
+  {id:'bagis',ad:'Bağış Gecesi',not:'Kasaya para girer, bağış sızıntısı riski vardır.',maliyet:0,tab:'genel'},
+  {id:'tv',ad:'TV Programı',not:'İtibar ve görünürlük kazandırır.',maliyet:0,tab:'genel'},
+  {id:'tatil',ad:'Kısa Tatil',not:'Stresi düşürür, sağlığı toparlar.',maliyet:.12,tab:'genel'},
+  {id:'viral',ad:'Viral İçerik Üret',not:'Gençlerde hızlı yayılır, küçük gaf riski.',maliyet:.1,tab:'medya'},
+  {id:'canli',ad:'Canlı Yayın Yap',not:'Doğrudan buluşma. Samimiyet, ama gaf riski.',maliyet:0,tab:'medya'},
+  {id:'influencer',ad:'Influencer Anlaşması',not:'Fenomenlerle iş birliği: gençlere ulaş.',maliyet:.4,tab:'medya'},
+  {id:'trol',ad:'Troll Ordusu Kur',not:'Rakipleri yıpratır. Deşifre olursa itibar çöker.',maliyet:.5,tab:'medya'},
+  {id:'algi',ad:'Algı Operasyonu',not:'Gündemi manipüle eder. Yakalanma riski yüksek.',maliyet:.8,tab:'medya'},
+  {id:'gazete',ad:'Gazete Kur',not:'Kendi yayın organın: medya etkisi kalıcı artar.',maliyet:4,tab:'medya'}
+];
+function aksiyonBul(id) { for (var i = 0; i < AKSIYONLAR.length; i++) if (AKSIYONLAR[i].id === id) return AKSIYONLAR[i]; return null; }
+function bolgeIller(b) { return ILLER.filter(function (il) { return il.bolge === b; }); }
+function bolgeNufusPay(b) { return bolgeIller(b).reduce(function (a, il) { return a + il.nufus; }, 0) / NUFUS_TOPLAM; }
+function aksiyonMaliyet(S, a, hedef) {
+  var m = a.maliyet;
+  if (a.id === 'teskilat') m = a.maliyet * bolgeIller(hedef).length;
+  return m * 1e6 * (S.makro.fiyat / 100) * S.stil.kasa;
+}
+function aksiyonYap(S, id, hedef) {
+  var a = aksiyonBul(id);
+  if (!a) return {ok: false, msg: 'Bilinmeyen aksiyon.'};
+  if (S.aksiyon.kalan <= 0) return {ok: false, msg: 'Bu ay aksiyon hakkın bitti. "Ayı Bitir" ile devam et.'};
+  if (id === 'gazete' && S.yayin >= 3) return {ok: false, msg: 'En fazla 3 yayın organın olabilir.'};
+  var maliyet = aksiyonMaliyet(S, a, hedef);
+  if (maliyet > 0 && S.stat.kasa < maliyet) return {ok: false, msg: 'Kasa yetersiz.'};
+  var G = gain(S), M = medyaCarpan(S), fx = {}, ad = a.ad, ek = '', risk = null;
+  if (maliyet > 0) S.stat.kasa -= maliyet;
+  switch (id) {
+    case 'miting': fx = {drift: (0.10 + 0.9 * bolgeNufusPay(hedef)) , stres: 4, itibar: .5, orgBolge: {b: hedef, v: 5}}; ad = 'Miting · ' + BOLGE[hedef]; break;
+    case 'teskilat': fx = {orgBolge: {b: hedef, v: 12}, birlik: 1, stres: 3, drift: .03}; ad = 'Teşkilat · ' + BOLGE[hedef]; break;
+    case 'secmen': fx = {grup: {}, drift: .07, stres: 2, itibar: .3}; fx.grup[hedef] = 8; ad = 'Buluşma · ' + GRUPLAR.filter(function (g) { return g.id === hedef; })[0].ad; break;
+    case 'uye': fx = {uye: Math.round(S.stat.uye * .04 + 800), drift: .04, stres: 2}; break;
+    case 'kadro': fx = {birlik: 6, stres: -1}; S.kadro.forEach(function (k) { k.sad = clamp(k.sad + 5, 0, 100); }); break;
+    case 'bagis': fx = {kasa: 1.0 * (0.4 + S.stat.itibar / 100) / S.stil.kasa, stres: 2}; risk = {p: .2, fx: {itibar: -5, drift: -.2}, s: 'Bağış listesi basına sızdı.'}; break;
+    case 'tv': fx = {itibar: 2, drift: .12 * M, stres: 3}; var o = pick(S, S.medya); o.yakin = clamp(o.yakin + 5, -100, 100); break;
+    case 'tatil': fx = {stres: -15, saglik: 4}; break;
+    case 'viral': fx = {drift: .10 * M, grup: {gencler: 3}}; risk = {p: .12, fx: {itibar: -3}, s: 'İçerik yanlış anlaşıldı.'}; break;
+    case 'canli': fx = {itibar: 2, drift: .14 * M, stres: 4}; risk = {p: .2, fx: {itibar: -4, drift: -.15}, s: 'Canlı yayında ağzından kaçan bir cümle gündem oldu.'}; break;
+    case 'influencer': fx = {grup: {gencler: 5}, drift: .12 * M}; risk = {p: .1, fx: {itibar: -3}, s: 'Fenomenin eski paylaşımları gündeme geldi.'}; break;
+    case 'trol': fx = {drift: .22 * M, itibar: -1}; risk = {p: .35, fx: {itibar: -8, drift: -.4}, s: 'Operasyon deşifre oldu.'}; break;
+    case 'algi': fx = {drift: .3 * M, itibar: -1, stres: 2}; risk = {p: .4, fx: {itibar: -10, drift: -.6}, s: 'Algı operasyonu ifşa edildi.'}; break;
+    case 'gazete': fx = {itibar: 1}; S.yayin++; break;
+  }
+  S.aksiyon.kalan--;
+  var d = fxUygula(S, fx, ad);
+  if (risk && rnd(S) < risk.p) { var d2 = fxUygula(S, risk.fx, ad + ' (riskli sonuç)'); Object.keys(d2).forEach(function (k) { if (k !== 'grup') d[k] = d2[k]; }); ek = risk.s; }
+  var kisa = {miting:'Kalabalık toplandı.',teskilat:'Yeni teşkilat çalışmaları başladı.',secmen:'Görüşme verimli geçti.',uye:'Yeni üye kayıtları geldi.',kadro:'Kadro toparlandı.',bagis:'Bağışlar kasaya girdi.',tv:'Programdan sonra mesajların yayıldı.',tatil:'Dinlendin, tazelendin.',viral:'İçerik hızla yayıldı.',canli:'Canlı yayın sona erdi.',influencer:'Anlaşma yapıldı.',trol:'Hesaplar devrede.',algi:'Operasyon yürürlükte.',gazete:'Gazete yayına başladı.'};
+  var msg = a.ad + ': ' + kisa[id] + (ek ? ' ' + ek : '');
+  S.log.unshift({t: tarihYaz(S.tarih), m: msg}); S.log = S.log.slice(0, 40);
+  return {ok: true, msg: msg, chips: chipler(d), kalan: S.aksiyon.kalan};
+}
+
+/* ---------- kartlar ---------- */
+function kartBul(id) { for (var i = 0; i < KARTLAR.length; i++) if (KARTLAR[i].id === id) return KARTLAR[i]; return null; }
+function kartCek(S) {
+  if (S.ay > 0 && rnd(S) > 0.9) return null;
+  var uygun = KARTLAR.filter(function (k) { return (!k.kosul || k.kosul(S)) && (S.gorulen[k.id] === undefined || S.ay - S.gorulen[k.id] >= 9); });
+  if (!uygun.length) return null;
+  var k = pick(S, uygun); S.gorulen[k.id] = S.ay;
+  var en = S.kadro.slice().sort(function (a, b) { return a.sad - b.sad; })[0];
+  return {t: 'kart', id: k.id, k: en.ad};
+}
+function kartMetni(item) { var k = kartBul(item.id); return k.metin.replace('{k}', item.k); }
+function kartSec(S, item, i) {
+  var k = kartBul(item.id), o = k.sec[i];
+  var d = fxUygula(S, o.fx, k.baslik), s = o.s;
+  if (o.risk && rnd(S) < o.risk.p) { var d2 = fxUygula(S, o.risk.fx, k.baslik + ' (riskli sonuç)'); Object.keys(d2).forEach(function (kk) { if (kk !== 'grup') d[kk] = d2[kk]; }); s += ' ' + o.risk.s; }
+  S.log.unshift({t: tarihYaz(S.tarih), m: k.baslik + ': ' + o.t}); S.log = S.log.slice(0, 40);
+  return {s: s, chips: chipler(d)};
+}
+
+/* ---------- ittifak ---------- */
+function yakinlik(S, id) {
+  var p = partiBul(id), px = ideoBul(S.parti.ideo).x;
+  if (S.mod === 'mevcut') px = partiBul(S.pid).x;
+  var v = 100 - 90 * Math.abs(p.x - px) + S.yk[id] - (govMu(S, id) && !govMu(S, S.pid) ? 45 : 0);
+  return clamp(Math.round(v), 0, 100);
+}
+function oyuncuIttifak(S) { for (var i = 0; i < S.ittifaklar.length; i++) if (S.ittifaklar[i].uyeler.indexOf(S.pid) >= 0) return S.ittifaklar[i]; return null; }
+function ittifakaDavet(S, id) {
+  if (S.aksiyon.kalan <= 0) return {ok: false, msg: 'Bu ay aksiyon hakkın bitti.'};
+  var it = oyuncuIttifak(S);
+  for (var i = 0; i < S.ittifaklar.length; i++) if (S.ittifaklar[i].uyeler.indexOf(id) >= 0 && S.ittifaklar[i] !== it) return {ok: false, msg: partiAdi(S, id) + ' zaten başka bir ittifakta.'};
+  if (it && it.uyeler.indexOf(id) >= 0) return {ok: false, msg: 'Zaten ittifaktasınız.'};
+  S.aksiyon.kalan--;
+  var y = yakinlik(S, id), oyOran = (S.anket[id] || 1) / Math.max(0.5, S.anketOyuncu);
+  var esik = oyOran > 2 ? 65 : 52;
+  if (y + rn(S, -8, 8) >= esik) {
+    if (!it) { it = {ad: S.parti.ad + ' İttifakı', uyeler: [S.pid]}; S.ittifaklar.push(it); }
+    it.uyeler.push(id); S.log.unshift({t: tarihYaz(S.tarih), m: partiAdi(S, id) + ' ittifaka katıldı.'});
+    return {ok: true, kabul: true, msg: partiAdi(S, id) + ' ittifak teklifini kabul etti.'};
+  }
+  S.yk[id] -= 6;
+  return {ok: true, kabul: false, msg: partiAdi(S, id) + ' teklifi şimdilik reddetti. Yakınlık düştü.'};
+}
+function ittifaktanAyril(S) {
+  var it = oyuncuIttifak(S); if (!it || it.ad === 'Cumhur İttifakı') return false;
+  S.ittifaklar = S.ittifaklar.filter(function (x) { return x !== it; }); return true;
+}
+
+/* ---------- ay sonu ---------- */
+function makroTick(S) {
+  var M = S.makro, ene = M.enf;
+  M.enf = clamp(M.enf + rn(S, -1, 1) * 0.9 - 0.25, 8, 90);
+  M.faiz = clamp(M.faiz + 0.25 * (M.enf * 0.85 - M.faiz) + rn(S, -0.5, 0.5), 5, 80);
+  M.usd *= 1 + (M.enf / 12 / 100) * rn(S, 0.7, 1.3);
+  M.issiz = clamp(M.issiz + rn(S, -0.2, 0.2) + (M.buyume < 1 ? 0.1 : -0.03), 5, 22);
+  M.buyume = clamp(M.buyume + rn(S, -0.4, 0.4) + (M.faiz > M.enf ? -0.1 : 0.05), -5, 7);
+  M.fiyat *= 1 + M.enf / 1200;
+  if (S.tarih.m === 1) M.asgari = Math.round(M.asgari * (1 + M.enf / 100 * 0.85));
+  var haber = null;
+  if (rnd(S) < 0.03 && M.enf > 45) { M.usd *= 1.12; M.enf += 3; haber = 'Kur şoku: dolar bir günde sert yükseldi, piyasalar gerildi.'; }
+  return {haber: haber, fark: M.enf - ene};
+}
+function krizSeviyesi(S) {
+  var M = S.makro, v = 0.5 * M.enf + 1.5 * Math.max(0, M.issiz - 8) + Math.max(0, -M.buyume) * 6;
+  return v;
+}
+function grupDurum(g, M) {
+  var e = M.enf, i = M.issiz, ton, t;
+  var tab = {
+    emekliler: e > 50 ? ['Maaş eriyor, öfkeli', 'bad'] : e > 30 ? ['Zam bekliyor', 'warn'] : ['Memnun', 'ok'],
+    memurlar: e > 45 ? ['Zam pazarlığında', 'warn'] : ['Sakin', 'ok'],
+    isciler: e > 40 ? ['Asgari ücret gündemde', 'bad'] : ['Sakin', 'ok'],
+    ciftciler: e > 40 ? ['Girdi maliyeti şikâyeti', 'warn'] : ['Sakin', 'ok'],
+    ogrenciler: ['Barınma sorunu', 'warn'],
+    esnaf: e > 45 ? ['Kira ve vergi baskısı', 'bad'] : ['Temkinli', 'warn'],
+    gencler: i > 10 ? ['İş bulamıyor', 'bad'] : ['Kararsız', 'warn'],
+    muhafazakarlar: ['Değerler gündemde', 'ok'],
+    milliyetciler: ['Güvenlik gündeminde', 'warn']
+  };
+  return tab[g];
+}
+function ayiBitir(S) {
+  var onceki = {anket: S.anketOyuncu, kasa: S.stat.kasa, uye: S.stat.uye, org: teskilatSayisi(S), sira: oyuncuSira(S)};
+  var etkiler = S.ayEtki.slice(); S.ayEtki = [];
+  var mk = makroTick(S), st = S.stat, i;
+  // finans
+  var T0 = hedef(S), n = onceki.org;
+  var gelir = (st.uye * 40 + 0.4e6 * (st.itibar / 50) * (1 + T0 / 4.4)) * S.makro.fiyat / 100;
+  var gider = (0.5e6 + 0.04e6 * n) * (1 + T0 / 4.4) * S.makro.fiyat / 100;
+  st.kasa += gelir - gider;
+  if (st.kasa < 0) { st.drift -= 0.05; st.birlik = clamp(st.birlik - 1, 0, 100); st.stres = clamp(st.stres + 2, 0, 100); }
+  // yapay zeka partiler
+  var enfK = clamp((S.makro.enf - 30) / 40, -0.5, 1.2);
+  PARTILER.forEach(function (p, j) {
+    var hedefMod = govMu(S, p.id) ? 1 - 0.12 * enfK : 1 + 0.04 * enfK;
+    S.mods[j] = clamp(S.mods[j] + (hedefMod - S.mods[j]) * 0.1 + (rnd(S) - 0.5) * 0.02, 0.6, 1.5);
+  });
+  // kadro
+  S.kadro.forEach(function (k) { k.sad = clamp(Math.round(k.sad + (st.birlik - k.sad) * 0.1 + rn(S, -2, 2) - k.hirs / 100), 0, 100); });
+  // stres, sağlık
+  st.stres = clamp(st.stres - 3, 0, 100); st.itibar = clamp(st.itibar + (50 - st.itibar) * 0.08, 0, 100);
+  if (st.stres > 70) st.saglik = clamp(st.saglik - 2, 0, 100); else if (st.stres < 40) st.saglik = clamp(st.saglik + 1, 0, 100);
+  // pasif etki
+  var avg = 0; GRUPLAR.forEach(function (g) { avg += S.grup[g.id]; }); avg /= 9;
+  var pasif = (0.05 * (st.itibar - 50) / 10 + 0.03 * (avg - 45) / 10 + 0.02 * (st.birlik - 50) / 10 - (st.stres > 75 ? 0.05 : 0)) * S.stil.drift;
+  if (govMu(S, S.pid)) pasif -= 0.03 * (S.makro.enf - 30) / 10;
+  st.drift = st.drift * 0.985 + pasif;
+  // örgüt
+  for (i = 0; i < 81; i++) {
+    if (S.org[i] > 0) { S.org[i] = Math.min(100, S.org[i] + 0.3); if (st.kasa < 0) S.org[i] -= 0.5; if (st.birlik < 40) S.org[i] -= 0.5; S.org[i] = Math.max(0, S.org[i]); }
+  }
+  // seçmen grupları
+  var gov = govMu(S, S.pid);
+  GRUPLAR.forEach(function (g, gi) {
+    var dlt = gov ? -0.15 * (S.makro.enf / 40) : (['emekliler','isciler','memurlar','esnaf','gencler'].indexOf(g.id) >= 0 ? 0.1 * (S.makro.enf / 40) : 0);
+    S.grup[g.id] = clamp(S.grup[g.id] + dlt + (S.grupB[gi] - S.grup[g.id]) * 0.03, 0, 100);
+  });
+  // üye
+  var T1 = hedef(S);
+  st.uye = Math.max(0, Math.round(st.uye + (T1 * 24000 * (0.8 + 0.4 * st.itibar / 100) - st.uye) * 0.25));
+  // tarih
+  S.ay++; S.tarih.m++; if (S.tarih.m > 12) { S.tarih.m = 1; S.tarih.y++; }
+  S.aksiyon.hak = st.stres > 85 ? 2 : 3; S.aksiyon.kalan = S.aksiyon.hak;
+  anketGuncelle(S);
+  st.mom = 0.5 * st.mom + 0.5 * (S.anketOyuncu - onceki.anket);
+  S.anketGecmis.push({ay: S.ay, p: S.anketOyuncu}); if (S.anketGecmis.length > 80) S.anketGecmis.shift();
+  // haberler
+  var top = siralama(S.anket), hb = [];
+  if (mk.haber) hb.push(mk.haber);
+  hb.push('Yıllık enflasyon %' + S.makro.enf.toFixed(1).replace('.', ',') + (mk.fark > 0.5 ? '; beklentilerin üzerinde geldi.' : mk.fark < -0.5 ? '; beklentilerin altında geldi.' : '; piyasada sakin seyir.'));
+  hb.push('Anket özeti: ' + partiAdi(S, top[0]) + ' %' + S.anket[top[0]].toFixed(1).replace('.', ',') + ', ' + partiAdi(S, top[1]) + ' %' + S.anket[top[1]].toFixed(1).replace('.', ',') + '.');
+  hb.push(pick(S, HABER_HAVUZU));
+  S.haberler = hb.slice(0, 4);
+  hb.forEach(function (h) { S.log.unshift({t: tarihYaz(S.tarih), m: h}); }); S.log = S.log.slice(0, 40);
+  secimGuncelle(S);
+  // kuyruk
+  var oz = {t: 'ozet', tarih: tarihUzun(S.tarih), onceki: onceki, anket: S.anketOyuncu, sira: oyuncuSira(S), kasa: st.kasa, uye: st.uye, org: teskilatSayisi(S), etkiler: etkiler.sort(function (a, b) { return Math.abs(b.v) - Math.abs(a.v); }).slice(0, 5), haberler: S.haberler.slice(), gelir: gelir, gider: gider};
+  S.kuyruk.push(oz);
+  for (var ti = 0; ti < S.takvim.length; ti++) {
+    var tk = S.takvim[ti];
+    if (tk.y === S.tarih.y && tk.m === S.tarih.m) {
+      var sonuc = secimYap(S, tk); S.sonSecim = sonuc;
+      if (sonuc.tip === 'yerel') { var w = sonuc.iller[S.pid] || 0; st.drift += (w - 10) * 0.01; st.itibar = clamp(st.itibar + (w > 15 ? 3 : -1), 0, 100); }
+      S.kuyruk.push({t: 'secim', sonuc: sonuc});
+      if (ti === S.takvim.length - 1) { S.bitti = true; S.kuyruk.push({t: 'bitis'}); }
+      S.anketOyuncu = S.anketOyuncu; anketGuncelle(S); secimGuncelle(S);
+    }
+  }
+  if (!S.bitti) { var kt = kartCek(S); if (kt) S.kuyruk.push(kt); }
+  return oz;
+}
+
+/* ---------- kayıt ---------- */
+var KAYIT = 'secimsim_v1';
+function kaydet(S) { try { localStorage.setItem(KAYIT, JSON.stringify(S)); return true; } catch (e) { return false; } }
+function yukle() { try { var s = localStorage.getItem(KAYIT); if (!s) return null; var o = JSON.parse(s); return o && o.v === 1 ? o : null; } catch (e) { return null; } }
+function kayitSil() { try { localStorage.removeItem(KAYIT); } catch (e) {} }
+
+/* ===== ARAYÜZ ===== */
+var S = null, TAB = 'genel', HF = 'birinci', KURULUM = {}, root = document.getElementById('app'), sheetEl = null;
+var TABLAR = [['genel','Genel','🎯'],['yonetim','Yönetim','👔'],['parti','Parti','🏳️'],['anket','Anket','📊'],['harita','Harita','🗺️'],['iller','İller','📍'],['ittifak','İttifak','🤝'],['secim','Seçim','🗳️'],['meclis','Meclis','🏛️'],['ekonomi','Ekonomi','📉'],['medya','Medya','📺'],['lider','Lider','🧑‍💼']];
+var PREV = {}, LASTTAB = null, SEEN = {}, BUSY = false;
+var HINTS = {genel:'Genel: aylık aksiyonların burada. Her ay 3 hakkın var.',anket:'Anket: oyunu ve rakiplerini izle. Baraj %7.',harita:'Harita: her kutu bir il. Dokun, ayrıntıyı gör.',iller:'İller: teşkilat kurmak için il il çalışma listesi burada.',ittifak:'İttifak: yakın partileri davet et, barajı birlikte aş.',secim:'Seçim: takvim, baraj ve sandalye tahmini burada.',meclis:'Meclis: sandalye dağılımı ve hükümet.',ekonomi:'Ekonomi: enflasyon seçmenin ruh halini belirler.',medya:'Medya: gündemi sen belirle, ama riske dikkat.',yonetim:'Yönetim: kadroyu memnun tut, parti dağılmasın.',parti:'Parti: seçmen gruplarının ruh hali burada.',lider:'Lider: stres ve sağlığına dikkat et.'};
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function f1(v) { return v.toFixed(1).replace('.', ','); }
+function para(v) { var a = Math.abs(v), s = v < 0 ? '-' : ''; if (a >= 1e9) return s + (a / 1e9).toFixed(1).replace('.', ',') + ' Mr ₺'; if (a >= 1e6) return s + (a / 1e6).toFixed(1).replace('.', ',') + ' M ₺'; return s + Math.round(a / 1e3) + ' B ₺'; }
+function sayi(v) { return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function $(sel, el) { return (el || document).querySelector(sel); }
+function toast(m) { var t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600); }
+function kayit() { kaydet(S); }
+var EMO = {'Kasa':'💰','İtibar':'✨','Parti birliği':'🛡️','Stres':'😰','Sağlık':'❤️','Anket':'📊','Üye':'👥','Milletvekili':'🏛️','Teşkilat':'📍','İttifak yakınlığı':'🤝'};
+function fxHtml(chips) { return '<div class="fxs">' + chips.map(function (c, i) { return '<span class="fx ' + (c.iyi ? 'iyi' : 'kotu') + '" style="animation-delay:' + (i * 80 + 120) + 'ms"><span class="e">' + (EMO[c.k] || '🎯') + '</span>' + (c.d > 0 ? '▲' : '▼') + ' ' + esc(c.k) + '</span>'; }).join('') + '</div>'; }
+function bar(v, renk) { return '<div class="bar"><i style="width:' + Math.max(0, Math.min(100, v)) + '%;' + (renk ? 'background:' + renk : '') + '"></i></div>'; }
+
+/* ---- sheet ---- */
+function sheet(html, cls, kapat) {
+  closeSheet(true);
+  var ov = document.createElement('div'); ov.className = 'ov';
+  ov.innerHTML = '<div class="sh ' + (cls || '') + '" role="dialog" aria-modal="true"><div class="hd"></div>' + html + '</div>';
+  ov.addEventListener('click', function (e) { if (e.target === ov && kapat !== false) closeSheet(); });
+  document.body.appendChild(ov); sheetEl = ov; return ov;
+}
+function closeSheet(sessiz) { if (sheetEl) { sheetEl.remove(); sheetEl = null; if (!sessiz) { render(); queue(); } } }
+
+/* ---- menü ---- */
+function menu() {
+  PREV = {}; LASTTAB = null; SEEN = {};
+  var kayitli = yukle();
+  root.innerHTML = '<div class="menu"><div class="hero"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#15171e" stroke="#dcab4a" stroke-width="3"/><path d="M30 52l14 14 28-30" fill="none" stroke="#e63b5f" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><rect x="28" y="22" width="44" height="7" rx="3" fill="#dcab4a"/></svg><h1>Seçim Simülasyonu</h1><p>Parti kur, teşkilatı büyüt, sandığı kazan.</p></div>' +
+    (kayitli ? '<button class="btn pri" id="devam">Devam et<small>' + esc(kayitli.parti.ad) + ' · ' + tarihUzun(kayitli.tarih) + '</small></button>' : '') +
+    '<button class="btn ' + (kayitli ? '' : 'pri') + '" id="yeni">Yeni oyun</button><button class="btn ghost" id="nasil">Nasıl oynanır?</button><p class="tiny muted" style="text-align:center;margin-top:auto">Kurgusal bir simülasyondur. Lider isimleri uydurmadır.</p></div>';
+  if (kayitli) $('#devam').onclick = function () { S = kayitli; TAB = 'genel'; render(); queue(); };
+  $('#yeni').onclick = modSec; $('#nasil').onclick = yardim;
+}
+function yardim() {
+  sheet('<div class="lab">Rehber</div><h2>Nasıl oynanır?</h2><p>Her ay <b>3 aksiyon</b> hakkın var (stres çok yükselirse 2). Aksiyonlarını kullan, sonra <b>Ayı Bitir</b>\'e bas. Ay sonunda anketler, kasa ve haberler güncellenir; bazen bir karar kartı çıkar.</p><p><b>Amaç:</b> Teşkilatı en az 41 ile yay (yeni partide seçime girmek için gerekir), %7 barajını geç ya da bir ittifakla gir, Mayıs 2028 ve Mayıs 2033 genel seçimlerinde Meclis\'te ve Cumhurbaşkanlığı\'nda güçlen. Mart 2029\'da yerel seçim var.</p><p>Etkiler ok ile gösterilir: ▲ iyi, ▼ kötü yönde. Tam sayıları görmezsin; sezgine güven.</p><button class="btn pri" id="k">Anladım</button>');
+  $('#k').onclick = function () { closeSheet(true); };
+}
+function modSec() {
+  root.innerHTML = '<div class="menu"><h2>Mod seç</h2>' +
+    '<button class="modc" id="m1"><h3>Yeni Parti Kur</h3><p class="muted small" style="margin:6px 0 0">Sıfırdan bir parti. Baraj, teşkilat ve ittifak mücadelesi.</p></button>' +
+    '<button class="modc" id="m2"><h3>Mevcut Partiyi Yönet</h3><p class="muted small" style="margin:6px 0 0">Gerçek bir partinin genel başkanı ol.</p></button>' +
+    '<button class="modc" disabled><h3>Siyasi Kariyer <span class="pill">Yakında</span></h3></button>' +
+    '<button class="modc" disabled><h3>Senaryo Modu <span class="pill">Yakında</span></h3></button>' +
+    '<button class="btn ghost" id="geri" style="margin-top:6px">Geri</button></div>';
+  $('#m1').onclick = kurulumYeni; $('#m2').onclick = kurulumMevcut; $('#geri').onclick = menu;
+}
+function kurulumYeni() {
+  KURULUM = {mod: 'yeni', renk: RENKLER[0], ideo: 'sd', zorluk: 'orta', stil: 'katilimci'};
+  var chips = function (obj, key) { return '<div class="chiprow" data-k="' + key + '">' + Object.keys(obj).map(function (k) { return '<button class="cx" data-v="' + k + '">' + (obj[k].ad) + '</button>'; }).join('') + '</div>'; };
+  root.innerHTML = '<div class="menu"><h2>Partini kur</h2>' +
+    '<div class="fld"><label for="pa">Parti adı</label><input class="in" id="pa" maxlength="28" placeholder="Örn. Umut Hareketi"></div>' +
+    '<div class="fld"><label>Renk</label><div class="sw" id="sw">' + RENKLER.map(function (c) { return '<button aria-label="renk" data-c="' + c + '" style="background:' + c + '"></button>'; }).join('') + '</div></div>' +
+    '<div class="fld"><label>İdeoloji</label><div class="chiprow" data-k="ideo">' + IDEOLOJILER.map(function (i) { return '<button class="cx" data-v="' + i.id + '">' + i.ad + '</button>'; }).join('') + '</div></div>' +
+    '<div class="fld"><label for="la">Lider adı</label><input class="in" id="la" maxlength="28" placeholder="Adın Soyadın"></div>' +
+    '<div class="fld"><label for="dg">Doğum yılı</label><input class="in" id="dg" type="number" value="1978" min="1940" max="2000" inputmode="numeric"></div>' +
+    '<div class="fld"><label>Zorluk</label>' + chips(ZORLUKLAR, 'zorluk') + '<span class="small muted" id="zn"></span></div>' +
+    '<div class="fld"><label>Liderlik tarzı</label>' + chips(STILLER, 'stil') + '<span class="small muted" id="sn"></span></div>' +
+    '<button class="btn pri" id="basla" style="margin-top:16px">Başla</button><button class="btn ghost" id="geri">Geri</button></div>';
+  function sync() {
+    document.querySelectorAll('.chiprow[data-k] .cx').forEach(function (b) { b.classList.toggle('on', KURULUM[b.parentNode.dataset.k] === b.dataset.v); });
+    document.querySelectorAll('#sw button').forEach(function (b) { b.classList.toggle('on', b.dataset.c === KURULUM.renk); });
+    $('#zn').textContent = ZORLUKLAR[KURULUM.zorluk].not; $('#sn').textContent = STILLER[KURULUM.stil].not;
+  }
+  document.querySelectorAll('.chiprow[data-k] .cx').forEach(function (b) { b.onclick = function () { KURULUM[b.parentNode.dataset.k] = b.dataset.v; sync(); }; });
+  document.querySelectorAll('#sw button').forEach(function (b) { b.onclick = function () { KURULUM.renk = b.dataset.c; sync(); }; });
+  sync();
+  $('#geri').onclick = modSec;
+  $('#basla').onclick = function () {
+    KURULUM.partiAd = $('#pa').value.trim() || 'Yeni Parti'; KURULUM.liderAd = $('#la').value.trim() || 'Genel Başkan'; KURULUM.dogum = +$('#dg').value || 1978; KURULUM.seed = Date.now() % 100000;
+    S = newGame(KURULUM); TAB = 'genel'; kayit(); render(); queue();
+  };
+}
+function kurulumMevcut() {
+  var secili = 'CHP';
+  var liste = PARTILER.filter(function (p) { return p.baz >= 1.5; });
+  root.innerHTML = '<div class="menu"><h2>Hangi parti?</h2><div id="pl"></div><div class="fld"><label for="la">Lider adı</label><input class="in" id="la" maxlength="28" placeholder="Adın Soyadın"></div><button class="btn pri" id="basla" style="margin-top:14px">Başla</button><button class="btn ghost" id="geri">Geri</button></div>';
+  function ciz() {
+    $('#pl').innerHTML = liste.map(function (p) { return '<button class="modc" data-id="' + p.id + '" style="border-left-color:' + p.renk + ';margin-bottom:8px;' + (p.id === secili ? 'background:var(--p2)' : '') + '"><h3>' + esc(p.ad) + (p.id === secili ? ' <span class="pill go">Seçili</span>' : '') + '</h3><span class="small muted">Zorluk: ' + ZORLUKLAR[p.zor].ad + ' · Tahmini oy %' + f1(p.baz) + '</span></button>'; }).join('');
+    document.querySelectorAll('#pl .modc').forEach(function (b) { b.onclick = function () { secili = b.dataset.id; ciz(); }; });
+  }
+  ciz(); $('#geri').onclick = modSec;
+  $('#basla').onclick = function () { S = newGame({mod: 'mevcut', partiId: secili, liderAd: $('#la').value.trim() || 'Genel Başkan', seed: Date.now() % 100000, zorluk: 'orta'}); TAB = 'genel'; kayit(); render(); queue(); };
+}
+
+/* ---- oyun iskeleti ---- */
+function render() {
+  if (!S) return menu();
+  var st = S.stat, sira = oyuncuSira(S), enter = false; if (LASTTAB !== TAB) { enter = true; LASTTAB = TAB; }
+  var top = '<div class="top"><div class="ttl"><span class="dot" style="background:' + S.parti.renk + '"></span><b>' + esc(S.parti.ad) + '</b><span class="date num">' + tarihYaz(S.tarih) + '</span><div class="ib"><button id="ayar" aria-label="Menü">⋯</button></div></div>' +
+    '<div class="stats"><div class="st"><span>Anket</span><b><span data-n="anket">%' + f1(S.anketOyuncu) + '</span> · ' + sira + '.</b></div><div class="st"><span>Kasa</span><b data-n="kasa" class="' + (st.kasa < 0 ? 'badc' : '') + '">' + para(st.kasa) + '</b></div><div class="st"><span>Üye</span><b data-n="uye">' + sayi(st.uye) + '</b></div><div class="st"><span>Teşkilat</span><b>' + teskilatSayisi(S) + '/81</b></div><div class="st"><span>Birlik</span><b>' + Math.round(st.birlik) + '</b></div><div class="st"><span>Stres</span><b class="' + (st.stres > 70 ? 'badc' : '') + '">' + Math.round(st.stres) + '</b></div></div></div>';
+  var tick = S.haberler.length ? '<div class="tick"><span class="tb">CJN</span><div class="tw"><div class="tk"><span>' + S.haberler.map(esc).join('  •  ') + '  •  </span><span>' + S.haberler.map(esc).join('  •  ') + '  •  </span></div></div></div>' : '';
+  var body = tick + '<div class="scroll' + (enter ? ' anim' : '') + '" id="sc">' + (S.bitti ? bitisKart() : tabHtml()) + '</div>';
+  var tabs = '<nav class="tabs" aria-label="Bölümler">' + TABLAR.map(function (t) { return '<button class="tab" data-t="' + t[0] + '" aria-current="' + (TAB === t[0]) + '"><span class="ti">' + t[2] + '</span>' + t[1] + '</button>'; }).join('') + '</nav>';
+  var fab = S.bitti ? '' : '<button class="fab" id="ay">Ayı Bitir ▸ <i>' + S.aksiyon.kalan + '</i></button>';
+  var sc = $('#sc'), y = sc ? sc.scrollTop : 0;
+  root.innerHTML = top + body + tabs + fab;
+  document.querySelectorAll('.tab').forEach(function (b) { b.onclick = function () { TAB = b.dataset.t; var oh = $('.hint'); if (oh) oh.remove(); render(); $('#sc').scrollTop = 0; }; });
+  var ct = $('.tab[aria-current=true]'); if (ct) ct.scrollIntoView({inline: 'center', block: 'nearest'});
+  if (sc && $('#sc') && !enter) $('#sc').scrollTop = y;
+  var a = $('#ay'); if (a) a.onclick = ayBitirTikla;
+  $('#ayar').onclick = ayarlar; bagla();
+  var vals = {anket: S.anketOyuncu, kasa: st.kasa, uye: st.uye};
+  document.querySelectorAll('[data-n]').forEach(function (el) { var k = el.dataset.n; if (PREV[k] !== undefined && Math.abs(PREV[k] - vals[k]) > 1e-6) sayAnim(el, k, PREV[k], vals[k]); });
+  PREV = vals;
+  if (!SEEN[TAB] && !sheetEl && !S.kuyruk.length && !S.bitti && HINTS[TAB] && !document.querySelector('.mt,.splash')) { SEEN[TAB] = 1; var hn = document.createElement('div'); hn.className = 'hint'; hn.textContent = '💡 ' + HINTS[TAB]; $('#app').appendChild(hn); setTimeout(function () { hn.remove(); }, 4500); }
+}
+function bitisKart() {
+  var son = S.sonSecim, kz = son && son.cb ? son.cb.adaylar[son.cb.kazanan] : null;
+  return '<div class="card"><h3>Oyun bitti</h3><p>Son genel seçim tamamlandı' + (kz ? '. Cumhurbaşkanı: <b>' + esc(kz.ad) + '</b>.' : '.') + '</p><button class="btn pri" id="yenioyun">Yeni oyun</button></div>';
+}
+function ayarlar() {
+  sheet('<h2>Menü</h2><button class="btn" id="a1">Nasıl oynanır?</button><button class="btn" id="a2" style="margin-top:8px">Ana menü</button><button class="btn" id="a3" style="margin-top:8px;color:var(--bad)">Kaydı sil ve yeni oyun</button><button class="btn ghost" id="a4" style="margin-top:8px">Kapat</button>');
+  $('#a1').onclick = yardim; $('#a2').onclick = function () { closeSheet(true); S = null; menu(); };
+  $('#a3').onclick = function () { kayitSil(); closeSheet(true); S = null; modSec(); }; $('#a4').onclick = function () { closeSheet(true); };
+}
+
+/* ---- sekmeler ---- */
+function tabHtml() { var f = {genel: tGenel, yonetim: tYonetim, parti: tParti, anket: tAnket, harita: tHarita, iller: tIller, ittifak: tIttifak, secim: tSecim, meclis: tMeclis, ekonomi: tEkonomi, medya: tMedya, lider: tLider}[TAB]; return f(); }
+function aksBtn(a) {
+  var n = a.maliyet ? ' · ' + (a.id === 'teskilat' ? 'bölgeye göre' : para(aksiyonMaliyet(S, a, null))) : '';
+  return '<button class="aks" data-a="' + a.id + '"' + (S.aksiyon.kalan <= 0 ? ' disabled' : '') + '><b>' + a.ad + '<span style="display:inline;color:var(--gold);font-weight:500;font-size:11.5px">' + n + '</span></b><span>' + a.not + '</span></button>';
+}
+function sbSatir() { var s = S.sonrakiSecim; if (!s) return ''; return '<div class="card" style="border-color:var(--gold)"><h3>' + (s.tip === 'genel' ? 'Genel seçim' : 'Yerel seçim') + '<small>' + (s.ay === 0 ? 'Bu ay!' : s.ay + ' ay kaldı') + '</small></h3><div class="small muted">' + AYLAR_UZUN[s.m - 1] + ' ' + s.y + (S.mod === 'yeni' ? (girerMi(S) ? ' · Seçime girmeye hazırsın.' : ' · Seçime girmek için 41 ilde teşkilat gerekir (şu an ' + teskilatSayisi(S) + ').') : '') + '</div></div>'; }
+function tGenel() {
+  var h = sbSatir() + '<div class="eyebrow">Bu ayın aksiyonları · ' + S.aksiyon.kalan + ' hak kaldı</div><div class="grid2">' + AKSIYONLAR.filter(function (a) { return a.tab === 'genel'; }).map(aksBtn).join('') + '</div>';
+  h += '<div class="eyebrow">Gündem</div><div class="card">' + (S.haberler.length ? S.haberler.map(function (x) { return '<div class="row small" style="align-items:flex-start">' + esc(x) + '</div>'; }).join('') : '<span class="muted small">Henüz haber yok. İlk ayı bitir.</span>') + '</div>';
+  if (S.log.length) h += '<div class="eyebrow">Son hareketler</div><div class="card">' + S.log.slice(0, 5).map(function (l) { return '<div class="row small"><span>' + esc(l.m) + '</span><span class="muted tiny">' + l.t + '</span></div>'; }).join('') + '</div>';
+  return h;
+}
+function tYonetim() {
+  var h = '<div class="eyebrow">Kadro</div>' + S.kadro.map(function (k) { return '<div class="card" style="padding:11px 14px"><h3>' + esc(k.ad) + '<small>' + k.rol + '</small></h3><div class="small muted">Sadakat</div>' + bar(k.sad, k.sad < 40 ? 'var(--bad)' : 'var(--ok)') + '</div>'; }).join('');
+  return h + '<button class="btn" data-a="kadro"' + (S.aksiyon.kalan <= 0 ? ' disabled' : '') + '>Kadro Toplantısı<small>Parti birliğini güçlendirir (1 aksiyon)</small></button>';
+}
+function tParti() {
+  var st = S.stat;
+  var h = '<div class="card"><h3>Durum</h3>' + [['İtibar', st.itibar], ['Parti birliği', st.birlik], ['Stres', st.stres], ['Sağlık', st.saglik]].map(function (x) { return '<div style="margin-bottom:8px"><div class="row" style="border:0;padding:0"><span class="k">' + x[0] + '</span><b class="num">' + Math.round(x[1]) + '</b></div>' + bar(x[1], x[0] === 'Stres' ? 'var(--gold)' : '') + '</div>'; }).join('') + '</div>';
+  h += '<div class="eyebrow">Seçmen grupları</div>' + GRUPLAR.map(function (g) {
+    var d = grupDurum(g.id, S.makro), v = S.grup[g.id];
+    return '<div class="card" style="padding:11px 14px"><h3>' + g.ad + '<small class="' + (d[1] === 'bad' ? 'badc' : d[1] === 'ok' ? 'good' : 'warnc') + '">' + d[0] + '</small></h3>' + bar(v) + '<div class="tiny muted" style="margin-top:6px">' + g.kaygi + '</div></div>';
+  }).join('');
+  h += '<div class="eyebrow">Seçmen buluşması</div><button class="btn" data-a="secmen"' + (S.aksiyon.kalan <= 0 ? ' disabled' : '') + '>Bir grupla görüş<small>1 aksiyon</small></button>';
+  return h;
+}
+function spark(arr, renk) {
+  if (arr.length < 2) return ''; var mn = Math.min.apply(null, arr), mx = Math.max.apply(null, arr), r = Math.max(0.5, mx - mn), w = 300, hh = 60;
+  var pts = arr.map(function (v, i) { return (i * w / (arr.length - 1)).toFixed(1) + ',' + (hh - 4 - (v - mn) / r * (hh - 8)).toFixed(1); }).join(' ');
+  return '<svg viewBox="0 0 ' + w + ' ' + hh + '" style="width:100%;height:60px" role="img" aria-label="Anket geçmişi"><polyline points="' + pts + '" fill="none" stroke="' + renk + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+}
+function tAnket() {
+  var s = siralama(S.anket), mx = S.anket[s[0]];
+  var h = '<div class="card"><h3>Oy oranı geçmişi<small>%' + f1(S.anketOyuncu) + '</small></h3>' + spark(S.anketGecmis.map(function (x) { return x.p; }), S.parti.renk) + '</div><div class="card"><h3>Ulusal anket</h3>';
+  s.slice(0, 12).forEach(function (id, i) {
+    var me = id === S.pid;
+    h += '<div class="pr' + (me ? ' me' : '') + '"><span class="dot" style="background:' + partiRengi(S, id) + '"></span><div><div class="nm"><span>' + (i + 1) + '. ' + esc(partiAdi(S, id)) + (me ? ' <span class="pill go">Sen</span>' : '') + '</span></div><div class="pbar"><i style="width:' + (S.anket[id] / mx * 100) + '%;background:' + partiRengi(S, id) + '"></i></div></div><b class="num">%' + f1(S.anket[id]) + '</b></div>';
+  });
+  return h + '<div class="tiny muted" style="margin-top:8px">Baraj %7. İttifak içindeki partiler toplamla barajı geçer.</div></div>';
+}
+function hucreRenk(i, P) {
+  var pid = S.pid, o = P.il[i];
+  if (HF === 'birinci') { var b = null, bv = -1; Object.keys(o).forEach(function (id) { var v = (id === pid && S.org[i] < 30) ? 0 : o[id]; if (v > bv) { bv = v; b = id; } }); return partiRengi(S, b); }
+  var t = HF === 'org' ? S.org[i] / 100 : Math.min(1, o[pid] / 40);
+  return 'rgba(' + hexRgb(S.parti.renk) + ',' + (0.12 + 0.88 * t).toFixed(2) + ')';
+}
+function hexRgb(h) { var n = parseInt(h.slice(1), 16); return (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255); }
+function tHarita() {
+  var P = paylar(S), cols = 0, rows = 0, g = {}; ILLER.forEach(function (il, i) { cols = Math.max(cols, il.c + 1); rows = Math.max(rows, il.r + 1); g[il.c + ',' + il.r] = i; });
+  var cells = ''; for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) { var i = g[c + ',' + r]; cells += i === undefined ? '<div class="cell ghost"></div>' : '<button class="cell' + (S.org[i] < 30 ? ' no' : '') + '" data-il="' + i + '" style="--d:' + (ILLER[i].c + ILLER[i].r) * 22 + ';background:' + hucreRenk(i, P) + '" aria-label="' + ILLER[i].ad + '">' + ILLER[i].id + '</button>'; }
+  var flt = [['birinci', 'Birinci parti'], ['org', 'Teşkilatım'], ['oy', 'Oy payım']];
+  var top = siralama(S.anket).slice(0, 5);
+  return '<div class="chiprow" id="hf">' + flt.map(function (f) { return '<button class="cx' + (HF === f[0] ? ' on' : '') + '" data-f="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div><div class="map" style="grid-template-columns:repeat(' + cols + ',1fr)">' + cells + '</div>' +
+    (HF === 'birinci' ? '<div class="legend">' + top.map(function (id) { return '<span><i style="background:' + partiRengi(S, id) + '"></i>' + esc(partiAdi(S, id)) + '</span>'; }).join('') + '</div>' : '<div class="legend"><span>Soluk: zayıf · Koyu: güçlü</span></div>') + '<div class="tiny muted" style="margin-top:10px">Silik hücreler: teşkilatın olmadığı iller. Dokun, ayrıntıyı gör.</div>';
+}
+function ilSheet(i) {
+  var P = paylar(S), o = P.il[i], il = ILLER[i], s = siralama(o).slice(0, 6);
+  sheet('<div class="lab">' + BOLGE[il.bolge] + ' · ' + il.id + '</div><h2>' + il.ad + '</h2><div class="small muted">Nüfus ' + sayi(il.nufus * 1000) + ' · ' + il.mv + ' milletvekili</div><div class="row"><span class="k">Teşkilatım</span><b>' + Math.round(S.org[i]) + '/100</b></div>' + bar(S.org[i]) +
+    '<div class="eyebrow">Tahmini oy dağılımı</div>' + s.map(function (id) { return '<div class="row"><span><span class="dot" style="display:inline-block;background:' + partiRengi(S, id) + ';margin-right:8px"></span>' + esc(partiAdi(S, id)) + '</span><b class="num">%' + f1(o[id]) + '</b></div>'; }).join('') + '<button class="btn" id="k" style="margin-top:12px">Kapat</button>');
+  $('#k').onclick = function () { closeSheet(true); };
+}
+function tIller() {
+  var P = paylar(S), idx = ILLER.map(function (x, i) { return i; }).sort(function (a, b) { return ILLER[b].nufus - ILLER[a].nufus; });
+  return '<div class="card">' + idx.map(function (i) { return '<button class="row" data-il="' + i + '" style="width:100%;text-align:left"><span>' + ILLER[i].ad + ' <span class="tiny muted">' + ILLER[i].mv + ' MV</span></span><span class="small"><span class="muted">Teşk. ' + Math.round(S.org[i]) + '</span> · <b>%' + f1(P.il[i][S.pid]) + '</b></span></button>'; }).join('') + '</div>';
+}
+function tIttifak() {
+  var it = oyuncuIttifak(S), h = '<div class="card"><h3>İttifakım</h3>';
+  if (it) { h += '<div class="small">' + esc(it.ad) + '</div><div class="chiprow" style="margin-top:8px">' + it.uyeler.map(function (id) { return '<span class="pill ' + (id === S.pid ? 'go' : '') + '">' + esc(partiAdi(S, id)) + '</span>'; }).join('') + '</div>' + (it.ad !== 'Cumhur İttifakı' ? '<button class="btn" id="ayril" style="margin-top:10px">İttifaktan ayrıl</button>' : ''); }
+  else h += '<div class="small muted">Henüz bir ittifakın yok. Barajı tek başına geçmek zor olabilir.</div>';
+  h += '</div><div class="eyebrow">Parti yakınlığı · davet 1 aksiyon</div>';
+  var ids = PARTILER.filter(function (p) { return p.id !== S.pid && p.baz >= 1.0; }).map(function (p) { return p.id; }).sort(function (a, b) { return yakinlik(S, b) - yakinlik(S, a); });
+  ids.forEach(function (id) {
+    var y = yakinlik(S, id), icerde = it && it.uyeler.indexOf(id) >= 0;
+    h += '<div class="card" style="padding:11px 14px"><h3><span><span class="dot" style="display:inline-block;background:' + partiRengi(S, id) + ';margin-right:8px"></span>' + esc(partiAdi(S, id)) + '</span><small>Yakınlık ' + y + '</small></h3>' + bar(y, y > 60 ? 'var(--ok)' : y > 40 ? 'var(--gold)' : 'var(--bad)') + (icerde ? '<span class="pill ok" style="margin-top:8px">İttifakta</span>' : '<button class="btn" data-dv="' + id + '" style="margin-top:8px;padding:8px"' + (S.aksiyon.kalan <= 0 ? ' disabled' : '') + '>İttifaka davet et</button>') + '</div>';
+  });
+  return h;
+}
+function koltukSatir(map, toplam) {
+  var s = Object.keys(map).filter(function (id) { return map[id] > 0; }).sort(function (a, b) { return map[b] - map[a]; }), mx = map[s[0]] || 1;
+  return s.map(function (id) { return '<div class="pr' + (id === S.pid ? ' me' : '') + '"><span class="dot" style="background:' + partiRengi(S, id) + '"></span><div><div class="nm"><span>' + esc(partiAdi(S, id)) + '</span></div><div class="pbar"><i style="width:' + (map[id] / mx * 100) + '%;background:' + partiRengi(S, id) + '"></i></div></div><b class="num">' + Math.round(map[id]) + '</b></div>'; }).join('');
+}
+function tSecim() {
+  var h = sbSatir(), b = bugunSecimOlsa(S);
+  h += '<div class="card"><h3>Bugün seçim olsa<small>Tahmini sandalye</small></h3>' + (b.girer ? '' : '<div class="small badc" style="margin-bottom:6px">Teşkilatın 41 ilden az: seçime giremezsin.</div>') + koltukSatir(b.seats) + '</div>';
+  if (S.sonSecim && S.sonSecim.tip === 'genel') h += '<div class="card"><h3>Son genel seçim<small>' + AYLAR_UZUN[S.sonSecim.m - 1] + ' ' + S.sonSecim.y + '</small></h3>' + koltukSatir(S.sonSecim.koltuk) + '</div>';
+  return h;
+}
+function tMeclis() {
+  var g = S.gov, hk = 0; g.forEach(function (id) { hk += S.meclis[id] || 0; });
+  return '<div class="card"><h3>Hükümet<small>' + hk + ' sandalye</small></h3><div class="chiprow">' + g.map(function (id) { return '<span class="pill ac">' + esc(partiAdi(S, id)) + '</span>'; }).join('') + '</div><div class="small muted" style="margin-top:8px">' + (govMu(S, S.pid) ? 'Hükümetin parçasısın: enflasyonun faturası sana da kesilir.' : 'Muhalefettesin.') + '</div></div><div class="card"><h3>Meclis dağılımı<small>600</small></h3>' + koltukSatir(S.meclis) + '</div>';
+}
+function tEkonomi() {
+  var M = S.makro, r = function (k, v, c) { return '<div class="row"><span class="k">' + k + '</span><b class="num ' + (c || '') + '">' + v + '</b></div>'; };
+  return '<div class="card"><h3>Makro göstergeler</h3>' + r('Enflasyon (yıllık)', '%' + f1(M.enf), M.enf > 50 ? 'badc' : '') + r('Faiz', '%' + f1(M.faiz)) + r('Dolar/TL', f1(M.usd)) + r('İşsizlik', '%' + f1(M.issiz), M.issiz > 11 ? 'badc' : '') + r('Büyüme', '%' + f1(M.buyume), M.buyume < 0 ? 'badc' : '') + r('Asgari ücret', sayi(M.asgari) + ' ₺') + '</div>' +
+    '<div class="card"><h3>Parti finansı</h3>' + r('Kasa', para(S.stat.kasa), S.stat.kasa < 0 ? 'badc' : 'good') + r('Üye', sayi(S.stat.uye)) + '<div class="small muted" style="margin-top:6px">Gelir üyelikten ve itibardan gelir; gider teşkilat sayısı ve seçim yaklaştıkça artar. Fiyatlar enflasyonla büyür.</div></div><button class="btn" data-a="bagis"' + (S.aksiyon.kalan <= 0 ? ' disabled' : '') + '>Bağış Gecesi<small>Kasaya para; sızıntı riski (1 aksiyon)</small></button><button class="btn" data-a="uye" style="margin-top:8px"' + (S.aksiyon.kalan <= 0 ? ' disabled' : '') + '>Üye Kampanyası<small>1 aksiyon</small></button>';
+}
+function tMedya() {
+  return '<div class="eyebrow">Medya aksiyonları · ' + S.aksiyon.kalan + ' hak</div><div class="grid2">' + AKSIYONLAR.filter(function (a) { return a.tab === 'medya'; }).map(aksBtn).join('') + '</div><div class="eyebrow">Yayın organları</div><div class="card">' + S.medya.map(function (m) { return '<div class="row small"><span>' + esc(m.ad) + '</span><span class="muted">Erişim ' + m.erisim + ' · ' + (m.yakin > 15 ? 'Sana yakın' : m.yakin < -15 ? 'Sana mesafeli' : 'Tarafsız') + '</span></div>'; }).join('') + '</div><div class="small muted">Kendi gazeteni kurunca medya aksiyonların güçlenir. Sahip olduğun yayın: ' + S.yayin + '/3</div>';
+}
+function tLider() {
+  return '<div class="card"><h3>' + esc(S.lider.ad) + '<small>' + (S.stil.ad) + '</small></h3><div class="row"><span class="k">Doğum yılı</span><b>' + S.lider.dogum + '</b></div><div class="row"><span class="k">Yaş</span><b>' + (S.tarih.y - S.lider.dogum) + '</b></div><div class="row"><span class="k">İtibar</span><b>' + Math.round(S.stat.itibar) + '</b></div><div class="row"><span class="k">Sağlık</span><b>' + Math.round(S.stat.saglik) + '</b></div><div class="small muted" style="margin-top:8px">' + S.stil.not + '</div></div><button class="btn" data-a="tatil"' + (S.aksiyon.kalan <= 0 ? ' disabled' : '') + '>Kısa Tatil<small>Stresi düşürür (1 aksiyon)</small></button>';
+}
+
+/* ---- etkileşim ---- */
+function bagla() {
+  document.querySelectorAll('[data-a]').forEach(function (b) { b.onclick = function () { aksiyonTikla(b.dataset.a); }; });
+  document.querySelectorAll('[data-il]').forEach(function (b) { b.onclick = function () { ilSheet(+b.dataset.il); }; });
+  document.querySelectorAll('[data-dv]').forEach(function (b) { b.onclick = function () { var r = ittifakaDavet(S, b.dataset.dv); toast(r.msg); kayit(); render(); }; });
+  var ay = $('#ayril'); if (ay) ay.onclick = function () { ittifaktanAyril(S); kayit(); render(); };
+  document.querySelectorAll('#hf .cx').forEach(function (b) { b.onclick = function () { HF = b.dataset.f; render(); }; });
+  var yo = $('#yenioyun'); if (yo) yo.onclick = function () { kayitSil(); S = null; modSec(); };
+}
+function sonucGoster(r) { if (!r.ok) { toast(r.msg); return; } kayit(); render(); sheet('<div class="lab">Sonuç</div><h2>' + esc(r.msg) + '</h2>' + fxHtml(r.chips) + '<button class="btn pri" id="k" style="margin-top:14px">Tamam</button>', 'blue'); $('#k').onclick = function () { closeSheet(); }; }
+function aksiyonTikla(id) {
+  var a = aksiyonBul(id);
+  if (S.aksiyon.kalan <= 0) { toast('Bu ay aksiyon hakkın bitti. "Ayı Bitir" ile devam et.'); return; }
+  if (a.hedef === 'bolge') {
+    sheet('<div class="lab">' + a.ad + '</div><h2>Hangi bölge?</h2>' + BOLGE_SIRA.map(function (b) { var m = aksiyonMaliyet(S, a, b); return '<button class="opt" data-b="' + b + '"><b>' + BOLGE[b] + '</b><span class="small muted">' + bolgeIller(b).length + ' il · ' + para(m) + '</span></button>'; }).join('') + '<button class="btn ghost" id="k" style="margin-top:10px">Vazgeç</button>');
+    document.querySelectorAll('.opt').forEach(function (o) { o.onclick = function () { var r = aksiyonYap(S, id, o.dataset.b); closeSheet(true); sonucGoster(r); }; });
+    $('#k').onclick = function () { closeSheet(true); };
+  } else if (a.hedef === 'grup') {
+    sheet('<div class="lab">' + a.ad + '</div><h2>Hangi grup?</h2>' + GRUPLAR.map(function (g) { return '<button class="opt" data-g="' + g.id + '"><b>' + g.ad + '</b><span class="small muted">' + g.kaygi + '</span></button>'; }).join('') + '<button class="btn ghost" id="k" style="margin-top:10px">Vazgeç</button>');
+    document.querySelectorAll('.opt').forEach(function (o) { o.onclick = function () { var r = aksiyonYap(S, id, o.dataset.g); closeSheet(true); sonucGoster(r); }; });
+    $('#k').onclick = function () { closeSheet(true); };
+  } else sonucGoster(aksiyonYap(S, id));
+}
+function ayBitirTikla() {
+  if (BUSY) return; BUSY = true;
+  var el = document.createElement('div'); el.className = 'mt';
+  var sn = tarihNo(S.tarih) + 1, sy = Math.floor((sn - 1) / 12), sm = sn - sy * 12;
+  el.innerHTML = '<div class="mt-in"><div class="mt-e">🗓️</div><div class="mt-a">' + AYLAR_UZUN[S.tarih.m - 1] + ' kapanıyor</div><div class="mt-s">' + AYLAR_UZUN[sm - 1] + ' ' + sy + ' için hazırlanılıyor…</div><div class="mt-b"><i></i></div></div>';
+  document.body.appendChild(el);
+  setTimeout(function () { ayiBitir(S); kayit(); render(); el.classList.add('out'); setTimeout(function () { el.remove(); BUSY = false; queue(); }, 320); }, 1100);
+}
+function sayAnim(el, k, a, b) {
+  var t0 = performance.now(), D = 800, up = b > a; el.classList.add(up ? 'fu' : 'fd');
+  function fmt(v) { return k === 'anket' ? '%' + f1(v) : k === 'kasa' ? para(v) : sayi(v); }
+  (function f(t) { var p = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(a + (b - a) * e); if (p < 1) requestAnimationFrame(f); else setTimeout(function () { el.classList.remove('fu', 'fd'); }, 500); })(t0);
+}
+function konfeti(cv) {
+  var x = cv.getContext('2d'), W = cv.width = innerWidth, H = cv.height = innerHeight, c = ['#e63b5f', '#dcab4a', '#ffffff', '#5ea0ff', '#3fc27a'], P = [];
+  for (var i = 0; i < 110; i++) P.push({x: Math.random() * W, y: -Math.random() * H, w: 5 + Math.random() * 6, h: 8 + Math.random() * 8, vy: 1.6 + Math.random() * 3, vx: (Math.random() - .5) * 2, r: Math.random() * 6, vr: (Math.random() - .5) * .3, c: c[i % 5]});
+  (function f() { if (!document.body.contains(cv)) return; x.clearRect(0, 0, W, H); P.forEach(function (q) { q.y += q.vy; q.x += q.vx; q.r += q.vr; if (q.y > H + 20) { q.y = -20; q.x = Math.random() * W; } x.save(); x.translate(q.x, q.y); x.rotate(q.r); x.fillStyle = q.c; x.globalAlpha = .85; x.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); x.restore(); }); requestAnimationFrame(f); })();
+}
+function splash(o, fn) {
+  closeSheet(true);
+  var el = document.createElement('div'); el.className = 'splash ' + (o.tema || '');
+  el.innerHTML = (o.konfeti ? '<canvas class="cf"></canvas>' : '') + '<button class="gec">Geç ›</button><div class="sp-c"><div class="sp-i">' + o.ikon + '</div><div class="sp-u">' + o.ust + '</div><h1>' + o.baslik + '</h1><div class="sp-a">' + (o.alt || '') + '</div>' + (o.satirlar || []).map(function (l) { return '<div class="sp-l">' + l + '</div>'; }).join('') + (o.alinti ? '<div class="sp-q"><b>' + o.alinti[0] + '</b>' + o.alinti[1] + '</div>' : '') + '<button class="btn pri sp-d">Devam</button></div><div class="sp-t"><div class="sp-tk"><span>' + o.ticker + '  •  ' + o.ticker + '  •  </span><span>' + o.ticker + '  •  ' + o.ticker + '  •  </span></div></div>';
+  document.body.appendChild(el);
+  if (o.konfeti) konfeti($('canvas', el));
+  var done = false; function bit() { if (done) return; done = true; el.classList.add('out'); setTimeout(function () { el.remove(); if (fn) fn(); }, 300); }
+  $('.gec', el).onclick = bit; $('.sp-d', el).onclick = bit;
+}
+
+/* ---- kuyruk: özet, kart, seçim ---- */
+function queue() {
+  if (!S || sheetEl) return;
+  var it = S.kuyruk.shift(); if (!it) { kayit(); return; }
+  if (it.t === 'acilis') acilis(); else if (it.t === 'ozet') ozet(it); else if (it.t === 'kart') kart(it); else if (it.t === 'secim') secimSheet(it.sonuc); else if (it.t === 'bitis') { render(); queue(); }
+}
+function acilis() {
+  var yeni = S.mod === 'yeni';
+  splash({ikon: '🗳️', ust: yeni ? 'KURULUŞ' : 'GÖREV DEVRİ', baslik: yeni ? esc(S.parti.ad) + ' kuruldu' : esc(S.parti.ad) + ' genel başkanı', alt: esc(S.lider.ad) + ' · Eylül 2026', satirlar: [yeni ? 'Önce teşkilat, sonra sandık.' : 'Parti seni bekliyor.', 'Her ay 3 aksiyonun var. Sonra Ayı Bitir.'], tema: 'k', ticker: 'CJN · ' + (yeni ? 'YENİ PARTİ SİYASET SAHNESİNDE' : 'GENEL BAŞKAN GÖREVE BAŞLADI') + ' · ' + esc(S.parti.ad).toUpperCase() + ' · Eylül 2026', konfeti: true}, queue);
+}
+function ozet(o) {
+  var d = S.anketOyuncu - o.onceki.anket, dp = o.sira - o.onceki.sira;
+  sheet('<div class="lab">Ay sonu özeti</div><h2>' + o.tarih + '</h2><div class="grid2"><div class="card" style="margin:0"><div class="tiny muted">Anket</div><b style="font-size:20px">%' + f1(o.anket) + '</b><div class="small ' + (d >= 0 ? 'good' : 'badc') + '">' + (d >= 0 ? '▲ ' : '▼ ') + f1(Math.abs(d)) + ' puan</div></div><div class="card" style="margin:0"><div class="tiny muted">Sıra</div><b style="font-size:20px">' + o.sira + '.</b><div class="small muted">' + (dp < 0 ? '▲ yükseldin' : dp > 0 ? '▼ düştün' : 'değişmedi') + '</div></div></div>' +
+    '<div class="row" style="margin-top:8px"><span class="k">Gelir / gider</span><span class="num small"><span class="good">' + para(o.gelir) + '</span> / <span class="badc">' + para(o.gider) + '</span></span></div><div class="row"><span class="k">Kasa</span><b class="num">' + para(o.kasa) + '</b></div><div class="row"><span class="k">Teşkilat</span><b>' + o.org + ' il</b></div>' +
+    '<div class="news"><b>' + esc(o.haberler[0] || '') + '</b></div>' + o.haberler.slice(1, 3).map(function (x) { return '<div class="small muted" style="margin-bottom:4px">• ' + esc(x) + '</div>'; }).join('') + '<button class="btn pri" id="k" style="margin-top:12px">Devam</button>', 'blue');
+  $('#k').onclick = function () { closeSheet(); };
+}
+function kart(it) {
+  var k = kartBul(it.id);
+  sheet('<div class="lab">Karar zamanı</div><h2>' + esc(k.baslik) + '</h2><p>' + esc(kartMetni(it)) + '</p>' + k.sec.map(function (o, i) { return '<button class="opt" data-i="' + i + '" style="animation-delay:' + (i * 90 + 100) + 'ms"><b>' + 'ABC'[i] + ') ' + esc(o.t) + '</b>' + fxHtml(chipler(onizleme(o.fx))) + '</button>'; }).join(''), 'red', false);
+  document.querySelectorAll('.opt').forEach(function (b) { b.onclick = function () {
+    var r = kartSec(S, it, +b.dataset.i); kayit();
+    sheet('<div class="lab">Sonuç</div><h2>' + esc(r.s) + '</h2>' + fxHtml(r.chips) + '<button class="btn pri" id="k" style="margin-top:14px">Tamam</button>', 'blue', false);
+    $('#k').onclick = function () { closeSheet(); };
+  }; });
+}
+function secimSheet(r) {
+  if (!r._g) { r._g = 1; return secimSplash(r); }
+  var h;
+  if (r.tip === 'yerel') {
+    var s = Object.keys(r.iller).sort(function (a, b) { return r.iller[b] - r.iller[a]; });
+    h = '<div class="lab">Yerel seçim · ' + AYLAR_UZUN[r.m - 1] + ' ' + r.y + '</div><h2>Belediye sonuçları</h2>' + s.map(function (id) { return '<div class="row"><span><span class="dot" style="display:inline-block;background:' + partiRengi(S, id) + ';margin-right:8px"></span>' + esc(partiAdi(S, id)) + '</span><b>' + r.iller[id] + ' il</b></div>'; }).join('');
+  } else {
+    var cb = r.cb, kz = cb.adaylar[cb.kazanan];
+    h = '<div class="lab">Genel seçim · ' + AYLAR_UZUN[r.m - 1] + ' ' + r.y + '</div><h2>Sandık açıldı</h2>' + (r.girer ? '' : '<p class="badc small">Teşkilatın yetersiz olduğu için seçime giremedin.</p>') + koltukSatir(r.koltuk) +
+      '<div class="news"><b>Cumhurbaşkanı: ' + esc(kz.ad) + '</b><span style="font-size:13px">' + (cb.tur === 2 ? 'İkinci turda seçildi.' : 'İlk turda seçildi.') + '</span></div>';
+  }
+  sheet(h + '<button class="btn pri" id="k" style="margin-top:12px">Devam</button>', 'red', false);
+  $('#k').onclick = function () { closeSheet(); };
+}
+
+
+function secimSplash(r) {
+  var tar = AYLAR_UZUN[r.m - 1] + ' ' + r.y;
+  if (r.tip === 'yerel') {
+    var s = Object.keys(r.iller).sort(function (a, b) { return r.iller[b] - r.iller[a]; });
+    return splash({ikon: '🏙️', ust: 'YEREL SEÇİM', baslik: 'Belediyeler sandıktan çıktı', alt: tar, satirlar: s.slice(0, 3).map(function (id) { return esc(partiAdi(S, id)) + ' · ' + r.iller[id] + ' il'; }), tema: 'b', ticker: 'CJN · YEREL SEÇİM SONUÇLARI · ' + tar}, function () { secimSheet(r); });
+  }
+  var cb = r.cb, kz = cb.adaylar[cb.kazanan], k = r.koltuk, ids = Object.keys(k).sort(function (a, b) { return k[b] - k[a]; });
+  var ilk = r.girer && (k[S.pid] || 0) > 0 && !S.mg; if (ilk) S.mg = 1;
+  if (kz.oyuncu) return splash({ikon: '👑', ust: 'CUMHURBAŞKANI', baslik: esc(S.lider.ad) + ' seçildi', alt: esc(S.parti.ad) + ' iktidara geliyor', satirlar: ['Meclis: ' + (k[S.pid] || 0) + ' sandalye'], tema: 'k', konfeti: true, ticker: 'CJN · ' + esc(S.lider.ad).toUpperCase() + ' CUMHURBAŞKANI SEÇİLDİ · ' + tar}, function () { secimSheet(r); });
+  if (ilk) return splash({ikon: '🏛️', ust: "MECLİS'TE", baslik: esc(S.parti.ad).toUpperCase() + " MECLİS'E GİRİYOR", alt: (k[S.pid]) + ' milletvekili', satirlar: ['İlk vekiller belli oldu.', 'Rozetler dağıtıldı.', 'Tarih yazıldı.'], tema: 'k', konfeti: true, ticker: 'CJN · ' + esc(S.parti.ad).toUpperCase() + " MECLİS'E GİRİYOR · " + tar}, function () { secimSheet(r); });
+  splash({ikon: '🗳️', ust: 'SANDIK AÇILDI', baslik: 'Genel seçim sonuçları', alt: tar, satirlar: ids.slice(0, 3).map(function (id) { return esc(partiAdi(S, id)) + ' · ' + k[id] + ' sandalye'; }), alinti: [esc(kz.ad), ' Cumhurbaşkanı seçildi.'], tema: 'b', ticker: 'CJN · GENEL SEÇİM SONUÇLARI · ' + tar}, function () { secimSheet(r); });
+}
+
+S=newGame({mod:'yeni',partiAd:'Umut Hareketi',renk:'#e63b5f',ideo:'sd',liderAd:'Ayşe Demir',dogum:1978,zorluk:'orta',stil:'katilimci',seed:7});TAB='genel';S.kuyruk=[];render();ayBitirTikla();setTimeout(function(){},0);
+</script>
+</body>
+</html>
