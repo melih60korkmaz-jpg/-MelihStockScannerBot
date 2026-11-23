@@ -99,7 +99,7 @@ describe('inşaat — nakit, ekip, hava, zemin', () => {
     expect(unk.s.parcels.find((x) => x.id === unk.p.parcelId)!.soilKnown).toBe(true);
   });
   it('ruhsat süresi rastgele gecikebilir; aşama günleri toplamı planlanan süreyi verir', () => {
-    const { project: p } = setup(); const d = stageDays(p).reduce((a, x) => a + x, 0); expect(Math.abs(d - Math.max(60, p.expected.months * 30))).toBeLessThan(0.001);
+    const { project: p } = setup(); const d = stageDays(p).reduce((a, x) => a + x, 0); expect(Math.abs(d - ((raw: number) => Math.max(60, 0.75 * Math.min(240, raw <= 150 ? raw : 150 + (raw - 150) * 0.35)))(Math.max(60, p.expected.months * 30)))).toBeLessThan(0.001);
     expect(STAGES).toHaveLength(18);
   });
 });

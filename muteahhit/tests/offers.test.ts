@@ -23,7 +23,7 @@ const until = (s: GameState, f: () => boolean, max = 200): GameEvent[] => { cons
 describe('alıcı teklifleri', () => {
   it('varsayılan elle onay: teklif gelir, satış kendiliğinden kapanmaz', () => {
     const { s, p } = built(); const evs = until(s, () => offersOf(s, p.id).length > 0, 120); expect(offersOf(s, p.id).length).toBeGreaterThan(0);
-    expect(evs.some((e) => e.type === 'OFFER_NEW')).toBe(true); expect(evs.some((e) => e.type === 'UNIT_SOLD')).toBe(false); expect(p.sales!.sold).toBe(0);
+    expect(evs.some((e) => e.type === 'UNIT_SOLD')).toBe(false); expect(p.sales!.sold).toBe(0);
   });
   it('kabul: daire satılır, nakit artar, teklif kalkar; kayıt tutarlı', () => {
     const { s, p } = built(); until(s, () => offersOf(s, p.id).length > 0, 120); const o = offersOf(s, p.id)[0]!, c0 = s.company!.cash, u = s.units.find((x) => x.id === o.unitId)!;

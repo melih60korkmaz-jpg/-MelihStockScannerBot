@@ -25,7 +25,7 @@ export const activeProjects = (s: GameState) => s.projects.filter((p) => p.statu
 export function remainingDays(p: Project): number { const b = p.build; if (!b) return 0; const d = stageDays(p); let r = (1 - b.progress) * d[b.stage]!; for (let k = b.stage + 1; k < 18; k++) r += d[k]!; return r; }
 export function stageDays(p: Project): number[] {
   // Oyun hızı için süre sıkıştırması: uzun projeler yumuşakça kısalır; en büyük bina bile ≈240 planlı gün (≈2–2,5 dk gerçek süre) sürer.
-  const raw = Math.max(60, p.expected.months * 30), total = Math.min(240, raw <= 150 ? raw : 150 + (raw - 150) * 0.35);
+  const raw = Math.max(60, p.expected.months * 30), total = Math.max(60, 0.75 * Math.min(240, raw <= 150 ? raw : 150 + (raw - 150) * 0.35));
   return STAGES.map((st) => (total * st.time) / TOTAL_TIME);
 }
 

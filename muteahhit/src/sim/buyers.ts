@@ -8,7 +8,7 @@ import { unitFair, fairPerM2, unitsOf, closeSaleAt, quotePrice, paceOf } from '.
  * Alıcı ve kiracı teklifleri: satış artık otomatik kapanmaz. Her alıcı bir teklifle gelir; oyuncu kabul eder, karşı teklif verir ya da reddeder.
  * İstenirse "otomatik kabul eşiği" ile danışmana yetki verilebilir. Alıcının gizli tavanı (`maxRatio`) teklif anında belirlenir; karşı teklif tavanı aşarsa alıcı gider.
  */
-export const OFFER_DAYS = 18, MAX_OFFERS = 5;
+export const OFFER_DAYS = 40, MAX_OFFERS = 6;
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 const FIRST = ['Ahmet', 'Elif', 'Mehmet', 'Zeynep', 'Mustafa', 'Ayşe', 'Burak', 'Selin', 'Emre', 'Deniz', 'Can', 'Merve', 'Kerem', 'Ece', 'Okan', 'Seda', 'Yusuf', 'Buse', 'Tolga', 'Naz'];
 const LAST = ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Aydın', 'Öztürk', 'Arslan', 'Doğan', 'Kılıç', 'Aksoy', 'Polat', 'Korkmaz', 'Erdem', 'Güneş'];

@@ -5,7 +5,7 @@ import { advanceDay } from '../sim/engine';
 type Listener = (events: GameEvent[]) => void;
 export type Speed = 0 | 1 | 2 | 4;
 /** Hız → gün başına milisaniye (0 = duraklat). Bkz. tasarım belgesi 2.1 */
-export const SPEED_MS: Record<Speed, number> = { 0: 0, 1: 400, 2: 400, 4: 150 };
+export const SPEED_MS: Record<Speed, number> = { 0: 0, 1: 600, 2: 600, 4: 220 };
 
 /** UI/render/audio'nun konuştuğu tek nesne: durum + olay yayını + zaman döngüsü. */
 export class Store {
