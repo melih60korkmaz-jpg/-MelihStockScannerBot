@@ -1,6 +1,6 @@
 // Görsel katman: portre sabit, logo sayısı, her kriz kartının görseli var. node test_gorsel.js
 const fs=require('fs'),vm=require('vm');const ctx=vm.createContext({console,Math,Date,JSON});
-vm.runInContext(['data','engine','gorsel'].map(f=>fs.readFileSync('src/'+f+'.js','utf8')).join('\n')+'\nthis.X={portre,logoSvg,LOGOLAR,KRIZ_G,KARTLAR_E,kartKat};',ctx);
+vm.runInContext(['data','engine','gorsel'].map(f=>fs.readFileSync('src/'+f+'.js','utf8')).join('\n')+'\nthis.X={portre:portreG,logoSvg,LOGOLAR,KRIZ_G,KARTLAR_E,kartKat};',ctx);
 const X=ctx.X;let bad=0;const ok=(c,m)=>{if(!c){console.log('HATA:',m);bad++}};
 ok(X.portre('Ayşe',"#e63b5f",40)===X.portre('Ayşe',"#e63b5f",40),'portre aynı isimle aynı');
 ok(X.portre('Ayşe','#e63b5f',40)!==X.portre('Mehmet','#e63b5f',40),'farklı isim farklı yüz');

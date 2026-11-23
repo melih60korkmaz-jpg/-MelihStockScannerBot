@@ -69,7 +69,13 @@ export default function App() {
       const m = JSON.parse(e.nativeEvent.data) as { t: string; p?: number | number[]; url?: string };
       if (m.t === 'mail') {
         const url = String((m as { url?: string }).url ?? '');
-        if (url.startsWith('mailto:mlhkrkmz6061@gmail.com?') && url.length < 4000) Linking.openURL(url).catch(() => {});
+        if (url.startsWith('mailto:mlhkrkmz6061@gmail.com?') && url.length < 4000) {
+          // Mail hesabı yoksa paylaşım menüsüne düş (Notlar, WhatsApp, başka mail uygulaması vb.).
+          let body = '';
+          try { body = decodeURIComponent((url.split('&body=')[1] ?? '')).slice(0, 1500); } catch { /* yok say */ }
+          const yedek = () => Share.share({ message: body + '\n\n(mlhkrkmz6061@gmail.com)' }).catch(() => {});
+          Linking.canOpenURL(url).then((ok) => (ok ? Linking.openURL(url).catch(yedek) : yedek())).catch(yedek);
+        }
         return;
       }
       if (m.t === 'url') {

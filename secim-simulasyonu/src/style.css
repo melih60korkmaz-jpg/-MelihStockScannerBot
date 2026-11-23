@@ -96,7 +96,8 @@ h1,h2,h3{font-family:var(--fd);margin:0;text-wrap:balance}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 
 /* menü */
-.menu{flex:1;overflow-y:auto;padding:max(28px,env(safe-area-inset-top)) 18px 30px;display:flex;flex-direction:column;gap:12px}
+.menu{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:max(28px,env(safe-area-inset-top)) 18px calc(34px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.menu>*{flex-shrink:0}.btn{flex-shrink:0;min-height:44px}
 .hero{text-align:center;padding:26px 0 8px}
 .hero svg{width:92px;height:92px}
 .hero h1{font-size:34px;letter-spacing:-.02em;margin-top:12px}
@@ -495,3 +496,12 @@ button,.card,.modc,.cx{touch-action:manipulation;-webkit-tap-highlight-color:tra
 .hk-f svg{filter:drop-shadow(0 4px 8px #0006);transition:transform .25s}.hk-f:active svg{transform:scale(1.1) rotate(-4deg)}
 @media (prefers-reduced-motion:reduce){.hk-f{animation:none!important}}
 .anim-kapali .hk-f{animation:none!important}
+/* ===== Hedefler · Rozetler · Rehber ===== */
+.hd-o{display:flex;gap:12px;align-items:flex-start}.hd-i{font-size:28px;line-height:1}
+.hd-s{margin:6px 0 10px}.hd-s .bar{margin-top:4px}
+.rzg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rzk{background:var(--p1);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;gap:10px;align-items:center;opacity:.65}
+.rzk.on{opacity:1;border-color:#f0b42955;background:linear-gradient(180deg,#2a2210,#171320)}.rzi{font-size:26px}.rzk b{font-size:13px}
+details.dt{padding:12px 14px}details.dt summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.dt summary::-webkit-details-marker{display:none}details.dt summary::after{content:'＋';color:var(--gold,#f0b429);font-size:18px}
+details.dt[open] summary::after{content:'－'}details.dt p{margin:8px 0 0}
