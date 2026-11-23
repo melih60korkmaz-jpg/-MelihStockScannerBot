@@ -4,6 +4,8 @@ import type { GameState, Parcel } from '../core/types';
 import { PLACES, SOIL_COST, STAGE_SHARES, buildingType, cityData, districtData, quality } from '../data';
 import { COMMISSION, COMMON_RATIO, qualityFit, refSale, askPrice, TAPU_HARCI } from './land';
 export { COMMISSION, COMMON_RATIO, qualityFit };
+/** Oyun içi inşaat maliyet kolaylığı: oyuncu ilk projelerde nakitsiz kalmasın, kâr marjı büyüsün. */
+export const COST_EASE = 0.88;
 const SOFT_STAGES = new Set(['planlama', 'mimari', 'statik', 'elmek', 'ruhsat']);
 const SOFT_SHARE = STAGE_SHARES.filter(([k]) => SOFT_STAGES.has(k)).reduce((a, [, w]) => a + w, 0) / 100; // 0,065
 const DESIGN_SHARE = STAGE_SHARES.filter(([k]) => k === 'planlama' || k === 'mimari').reduce((a, [, w]) => a + w, 0) / 100; // 0,025
@@ -44,7 +46,7 @@ export function planProject(s: GameState, p: Parcel, typeId: string, qualityId: 
   const common = COMMON_RATIO[t.use]!;
   const brut = b.emsal * common.brut, satilabilir = b.emsal * common.sat;
   const matIdx = s.macro.materialIndex / 100;
-  const base = Math.round(brut * TL(t.costM2) * q.costMult * city.costMult * matIdx * 0.935); // yapım aşamaları (hafriyat→teslim)
+  const base = Math.round(brut * TL(t.costM2) * q.costMult * city.costMult * matIdx * 0.935 * COST_EASE); // yapım aşamaları (hafriyat→teslim)
   const total0 = Math.round(base / 0.935);                                                     // yumuşak giderler dahil toplam (soil hariç)
   const soilTrue = SOIL_COST[p.soil] ?? 1, soilPlanned = p.soilKnown ? soilTrue : 1.1;
   const soilAdj = (f: number) => Math.round(total0 * SOIL_SHARE * (f - 1));

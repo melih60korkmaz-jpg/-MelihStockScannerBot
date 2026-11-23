@@ -28,7 +28,7 @@ export function quickPick(s: GameState): QuickPick | null {
     if (p.owner !== 'market' || !s.openCities.includes(p.city)) continue;
     const land = Math.round(askPrice(s, p) * (1 + TAPU_HARCI)); if (land > c.cash * 0.45) continue; // paranın yarısından fazlası arsaya gitmesin
     for (const t of types) {
-      try { const pl = planProject(s, p, t, 'standart', land); if (!pl.ok || land + pl.cost.designFee > c.cash * RESERVE_SHARE || land + pl.cost.designFee + pl.cost.total * 0.85 > c.cash) continue; if (!best || pl.margin > best.margin) best = { parcel: p, type: t, margin: pl.margin, land, design: pl.cost.designFee, budget: pl.cost.total, months: Math.round((pl.months.min + pl.months.max) / 2) }; } catch { /* uygun değil */ }
+      try { const pl = planProject(s, p, t, 'standart', land); if (!pl.ok || land + pl.cost.designFee > c.cash * RESERVE_SHARE || land + pl.cost.designFee + pl.cost.total * 0.85 > c.cash * 0.75) continue; if (!best || pl.margin > best.margin) best = { parcel: p, type: t, margin: pl.margin, land, design: pl.cost.designFee, budget: pl.cost.total, months: Math.round((pl.months.min + pl.months.max) / 2) }; } catch { /* uygun değil */ }
     }
   }
   return best;
@@ -45,7 +45,7 @@ export function quickStartRun(app: App, q: QuickPick): void {
     const b = app.store.run('BuyLand', { parcelId: q.parcel.id, offerPct: 1 }); if (!b.ok || !owned()) { app.audio.sfx('error'); toast(b.ok ? 'Arsa satın alınamadı.' : b.error); return; }
     const c = app.store.run('CreateProject', { parcelId: q.parcel.id, type: q.type, quality: 'standart' }); if (!c.ok) { app.audio.sfx('error'); toast(c.error); return; }
     const pr = app.store.state.projects.find((x) => x.parcelId === q.parcel.id)!; app.audio.sfx('stamp'); toast('📐 Arsa alındı, proje oluşturuldu.');
-    const open = () => { app.openSite(pr.id); setTimeout(() => toast('🚜 İpucu: Menü › Personel bölümünden işçi ekleyin; makine almazsanız makineler günlük kiralanır.', 6000), 1500); };
+    const open = () => { app.store.run('SetSalesPolicy', { projectId: pr.id, presale: true }); app.openSite(pr.id); setTimeout(() => toast('🚜 İpucu: Menü › Personel bölümünden işçi ekleyin; makine almazsanız makineler günlük kiralanır.', 6000), 1500); };
     startConstructionUI(app, pr.id, open, () => app.openSite(pr.id));
   });
 }

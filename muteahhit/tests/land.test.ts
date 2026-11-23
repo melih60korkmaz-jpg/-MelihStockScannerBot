@@ -10,6 +10,8 @@ import { netWorth } from '../src/sim/finance';
 import { pack, unpack } from '../src/save/serialize';
 import { DEFAULT_CITIES, cityData } from '../src/data';
 import type { GameState, Parcel } from '../src/core/types';
+import { COST_EASE } from '../src/sim/projects';
+const COSTX = Math.round(TL(11_648_000) * COST_EASE);
 
 const start = (seed = 5, bg = 'emlakci') => {
   const s = newGameState(seed);
@@ -120,9 +122,9 @@ describe('fizibilite — elle doğrulanmış örnek (Ankara/Çankaya, 400 m², K
   });
   it('maliyet: 832 × 14.000 = 11,648 M₺; yumuşak %6,5; tasarım %2,5; zemin sağlam → ek yok', () => {
     const s = start(); const p = mk(s); const plan = planProject(s, p, 'apartman', 'standart', TL(4_800_000));
-    expect(Math.abs(plan.cost.total - TL(11_648_000))).toBeLessThanOrEqual(2);
-    expect(Math.abs(plan.cost.soft - Math.round(TL(11_648_000) * 0.065))).toBeLessThanOrEqual(2);
-    expect(Math.abs(plan.cost.designFee - Math.round(TL(11_648_000) * 0.025))).toBeLessThanOrEqual(2);
+    expect(Math.abs(plan.cost.total - COSTX)).toBeLessThanOrEqual(2);
+    expect(Math.abs(plan.cost.soft - Math.round(COSTX * 0.065))).toBeLessThanOrEqual(2);
+    expect(Math.abs(plan.cost.designFee - Math.round(COSTX * 0.025))).toBeLessThanOrEqual(2);
     expect(plan.cost.soil).toBe(0);
   });
   it('gelir: 544 m² × (52.000 × fit 1,03) ₺ = 29,14 M₺; kâr = gelir − komisyon − maliyet − arsa', () => {
@@ -139,7 +141,7 @@ describe('fizibilite — elle doğrulanmış örnek (Ankara/Çankaya, 400 m², K
     const s = start(); const known = mk(s, { soil: 'yeralti_suyu', soilKnown: true }), unk = mk(s, { soil: 'yeralti_suyu', soilKnown: false });
     const a = planProject(s, known, 'apartman', 'standart', 0), b = planProject(s, unk, 'apartman', 'standart', 0);
     expect(a.cost.soil).toBeGreaterThan(b.cost.soil); expect(b.cost.totalHigh).toBeGreaterThan(b.cost.totalLow); expect(a.cost.totalHigh).toBe(a.cost.totalLow);
-    expect(Math.abs(a.cost.soil - Math.round(TL(11_648_000) * 0.13 * 0.4))).toBeLessThanOrEqual(2);
+    expect(Math.abs(a.cost.soil - Math.round(COSTX * 0.13 * 0.4))).toBeLessThanOrEqual(2);
   });
   it('malzeme endeksi bütçeyi orantılı artırır', () => {
     const s = start(); const p = mk(s); const a = planProject(s, p, 'apartman', 'standart', 0).cost.total; s.macro.materialIndex = 150;
