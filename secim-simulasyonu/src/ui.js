@@ -1,6 +1,6 @@
 /* ===== ARAYÜZ ===== */
 var S = null, TAB = 'genel', HF = 'birinci', KURULUM = {}, root = document.getElementById('app'), sheetEl = null;
-var TABLAR = [['genel','Genel','🎯'],['merkez','Merkez','🏢'],['yonetim','Yönetim','👔'],['parti','Parti','🏳️'],['anket','Anket','📊'],['karargah','Karargâh','🎛️'],['belediye','Belediye','🏙️'],['harita','Harita','🗺️'],['iller','İller','📍'],['ittifak','İttifak','🤝'],['rakip','Rakipler','🥊'],['secim','Seçim','🗳️'],['meclis','Meclis','🏛️'],['ekonomi','Ekonomi','📉'],['medya','Medya','📺'],['lider','Lider','🧑‍💼'],['takvim','Takvim','📅'],['tarihce','Tarihçe','📜'],['kayit','Kayıt','💾']];
+var TABLAR = [['genel','Genel','🎯'],['merkez','Merkez','🏢'],['yonetim','Yönetim','👔'],['parti','Parti','🏳️'],['anket','Anket','📊'],['karargah','Karargâh','🎛️'],['belediye','Belediye','🏙️'],['harita','Harita','🗺️'],['iller','İller','📍'],['ittifak','İttifak','🤝'],['rakip','Rakipler','🥊'],['secim','Seçim','🗳️'],['meclis','Meclis','🏛️'],['ekonomi','Ekonomi','📉'],['medya','Medya','📺'],['lider','Lider','🧑‍💼'],['takvim','Takvim','📅'],['tarihce','Tarihçe','📜'],['kayit','Kayıt','💾'],['hakkinda','Hakkında','ℹ️']];
 /* Sekmeler kademeli açılır: yeni oyuncu ilk dakikada 6 sekme görür, gerisi ay ilerledikçe belirir. */
 var TAB_AC = {genel: 0, merkez: 0, parti: 0, anket: 0, kayit: 0, harita: 1, tarihce: 1, rakip: 2, iller: 2, takvim: 2, yonetim: 3, ekonomi: 3, lider: 3, medya: 4, ittifak: 4, secim: 5, meclis: 6, karargah: 6, belediye: 8};
 var TAB_NOT = {harita: 'Harita: bölgelerdeki gücünü gör.', tarihce: 'Tarihçe: aldığın kararların kaydı.', rakip: 'Rakipler: diğer partilerin hamleleri.', iller: 'İller: il il anket ve teşkilat.', takvim: 'Takvim: seçimler ve önemli tarihler.', yonetim: 'Yönetim: kadro ve görev dağılımı.', ekonomi: 'Ekonomi: enflasyon ve makro tablo.', lider: 'Lider: kendi profilin ve itibarın.', medya: 'Medya: yayın organlarıyla ilişkiler.', ittifak: 'İttifak: seçim ittifakları.', secim: 'Seçim: yaklaşan seçimin hazırlığı.', meclis: 'Meclis: koltuk dağılımı ve yasalar.', karargah: 'Karargâh: gelişmiş kampanya kontrolleri.', belediye: 'Belediye: yerel yönetimler.'};
@@ -55,6 +55,7 @@ function menu() {
     '<button class="btn ' + (kayitli ? '' : 'pri') + '" id="yeni">Yeni oyun</button><button class="btn ghost" id="nasil">Nasıl oynanır?</button><p class="tiny muted" style="text-align:center;margin-top:auto">Kurgusal bir simülasyondur: gerçek olayları, kişileri ve seçim sonuçlarını yansıtmaz. Lider isimleri uydurmadır; parti adları yalnızca oyun bağlamında kullanılır ve gerçek kurumlarla bağlantı ya da onay anlamına gelmez.</p></div>';
   if (kayitli) $('#devam').onclick = function () { davetEt(kayitli); };
   var pb = document.createElement('button'); pb.className = 'btn ghost'; pb.textContent = 'Profil'; pb.onclick = function () { profilSheet(); }; $('#nasil').parentNode.insertBefore(pb, $('#nasil'));
+  var hb = document.createElement('button'); hb.className = 'btn ghost'; hb.textContent = 'ℹ️ Hakkında ve geri bildirim'; hb.onclick = function () { hakkindaSheet(); }; $('#nasil').parentNode.insertBefore(hb, $('#nasil'));
   if (kayitlar().some(function (k) { return k.ok; })) { var kb = document.createElement('button'); kb.className = 'btn ghost'; kb.textContent = 'Kayıtlar'; kb.onclick = function () { kayitlarSheet(false); }; $('#nasil').parentNode.insertBefore(kb, $('#nasil')); }
   $('#yeni').onclick = modSec; $('#nasil').onclick = yardim;
 }
@@ -133,7 +134,7 @@ function render() {
   var ct = $('.tab[aria-current=true]'); if (ct) ct.scrollIntoView({inline: 'center', block: 'nearest'});
   if (sc && $('#sc') && !enter) $('#sc').scrollTop = y;
   var a = $('#ay'); if (a) a.onclick = ayBitirTikla;
-  $('#ayar').onclick = ayarlar; bagla(); if (YENI_TAB.length) setTimeout(function () { YENI_TAB = []; }, 1300);
+  $('#ayar').onclick = ayarlar; bagla(); if (TAB === 'hakkinda') hakkindaBagla(); if (YENI_TAB.length) setTimeout(function () { YENI_TAB = []; }, 1300);
   if (S.sd && S.sd.length) sdGoster(S.sd.splice(0, 3));
   rozetKontrol(); kariyerBagla(); rehberGuncelle();
   var bars = [].slice.call(document.querySelectorAll('#sc .bar i,#sc .pbar i'));
@@ -355,7 +356,7 @@ function ayarlar() {
 }
 
 /* ---- sekmeler ---- */
-function tabHtml() { var f = {genel: tGenel, merkez: tMerkez, yonetim: tYonetim, parti: tParti, anket: tAnket, harita: tHarita, karargah: tKarargah, belediye: tBelediye, iller: tIller, ittifak: tIttifak, rakip: tRakip, secim: tSecim, meclis: tMeclis, ekonomi: tEkonomi, medya: tMedya, lider: function () { return tLider() + liderEk(); }, takvim: tTakvim, tarihce: tTarihce, kayit: tKayit}[TAB]; return f(); }
+function tabHtml() { var f = {genel: tGenel, merkez: tMerkez, yonetim: tYonetim, parti: tParti, anket: tAnket, harita: tHarita, karargah: tKarargah, belediye: tBelediye, iller: tIller, ittifak: tIttifak, rakip: tRakip, secim: tSecim, meclis: tMeclis, ekonomi: tEkonomi, medya: tMedya, lider: function () { return tLider() + liderEk(); }, takvim: tTakvim, tarihce: tTarihce, kayit: tKayit, hakkinda: tHakkinda}[TAB]; return f(); }
 function aksBtn(a) {
   var n = a.maliyet && !muhalifMu(S) ? ' · ' + ((a.id === 'teskilat' || a.id === 'kamptur') ? 'bölgeye göre' : para(aksiyonMaliyet(S, a, null))) : '';
   return '<button class="aks" data-a="' + a.id + '"' + (S.aksiyon.kalan <= 0 ? ' disabled' : '') + '><b>' + a.ad + '<span style="display:inline;color:var(--gold);font-weight:500;font-size:11.5px">' + n + '</span></b><span>' + a.not + '</span></button>';

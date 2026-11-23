@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react';
-import { ActivityIndicator, AppState, BackHandler, Platform, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, BackHandler, Linking, Platform, Share, StyleSheet, Text, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { Asset } from 'expo-asset';
 import { File, Paths } from 'expo-file-system';
@@ -67,6 +67,16 @@ export default function App() {
   const onMessage = useCallback((e: WebViewMessageEvent) => {
     try {
       const m = JSON.parse(e.nativeEvent.data) as { t: string; p?: number | number[]; url?: string };
+      if (m.t === 'mail') {
+        const url = String((m as { url?: string }).url ?? '');
+        if (url.startsWith('mailto:mlhkrkmz6061@gmail.com?') && url.length < 4000) Linking.openURL(url).catch(() => {});
+        return;
+      }
+      if (m.t === 'url') {
+        const url = String((m as { url?: string }).url ?? '');
+        if (url.startsWith('https://melih60korkmaz-jpg.github.io/')) Linking.openURL(url).catch(() => {});
+        return;
+      }
       if (m.t === 'shareImg') {
         const b64 = String((m as { b64?: string }).b64 ?? '');
         const text = String((m as { text?: string }).text ?? '').slice(0, 600);

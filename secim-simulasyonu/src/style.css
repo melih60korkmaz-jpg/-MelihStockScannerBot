@@ -486,3 +486,12 @@ button,.card,.modc,.cx{touch-action:manipulation;-webkit-tap-highlight-color:tra
 @keyframes tabyeni{0%{transform:scale(.5);opacity:0;box-shadow:0 0 0 0 #f0b429aa}50%{transform:scale(1.18);opacity:1;box-shadow:0 0 0 12px #f0b42900}100%{transform:none;box-shadow:0 0 0 0 #f0b42900}}
 @media (prefers-reduced-motion:reduce){.dlt,.ys.on,.kimgw img,.rh-b,.rh-av,.tab.yeni{animation:none!important}}
 .anim-kapali .dlt,.anim-kapali .ys.on,.anim-kapali .kimgw img,.anim-kapali .rh-av,.anim-kapali .tab.yeni{animation:none!important}
+/* ===== Hakkında sekmesi ===== */
+.hk{display:flex;flex-direction:column;gap:6px}
+.hk-t{font-size:26px;margin:10px 0 0;text-align:center}.hk-s{text-align:center;margin:0 0 6px;font-size:14px}
+.hk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hk-f{background:var(--p1);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:4px;animation:rise .5s cubic-bezier(.2,.8,.3,1) both;animation-delay:calc(var(--i)*60ms + 120ms)}
+.hk-f b{font-size:14px}.hk-f span{font-size:12px;color:var(--mut,#9a9aab);line-height:1.35}
+.hk-f svg{filter:drop-shadow(0 4px 8px #0006);transition:transform .25s}.hk-f:active svg{transform:scale(1.1) rotate(-4deg)}
+@media (prefers-reduced-motion:reduce){.hk-f{animation:none!important}}
+.anim-kapali .hk-f{animation:none!important}
