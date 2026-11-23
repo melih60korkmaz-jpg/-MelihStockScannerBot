@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Müteahhit",
+    "name": "Muteahhit",
     "slug": "muteahhit",
     "version": "1.2.0",
     "orientation": "landscape",
@@ -13,6 +13,7 @@
       "requireFullScreen": true,
       "infoPlist": {
         "UIRequiresFullScreen": true,
+        "CFBundleDisplayName": "Müteahhit",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
