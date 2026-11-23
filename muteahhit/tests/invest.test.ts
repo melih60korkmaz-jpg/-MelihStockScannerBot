@@ -6,7 +6,7 @@ import { advanceDays } from '../src/sim/engine';
 import { checkInvariant } from '../src/sim/ledger';
 import { netWorth } from '../src/sim/finance';
 import { consolidate } from '../src/sim/consol';
-import { FACTORY_PRODUCTS, acceptThreshold, factoryMatMult, freightMult, hiddenDebt, rivalPrice, stakeOf, stakesValue, takeoverPrice } from '../src/sim/invest';
+import { FACTORY_PRODUCTS, acceptThreshold, factoryOutput, ownStock, freightMult, hiddenDebt, rivalPrice, stakeOf, stakesValue, takeoverPrice } from '../src/sim/invest';
 import { quoteOrder, unitPrice } from '../src/sim/materials';
 import { fairPrice, priceDrivers } from '../src/sim/stock';
 import { debtTotal } from '../src/sim/loans';
@@ -59,11 +59,16 @@ describe('devralma, durum tespiti, pazarlık', () => {
 });
 
 describe('fabrikalar ve lojistik', () => {
-  it('çimento fabrikası hazır olunca çimento fiyatını düşürür; yapım sürerken etkisiz; tek fabrika kuralı', () => {
-    const s = setup(), p0 = unitPrice(s, 'cimento', 'yerel'); expect(dispatch(s, 'BuildFactory', { prod: 'cimento', city: 'ankara', tier: 1 }).ok).toBe(true);
-    expect(unitPrice(s, 'cimento', 'yerel')).toBe(p0); expect(dispatch(s, 'BuildFactory', { prod: 'cimento', city: 'ankara', tier: 0 }).ok).toBe(false); expect(dispatch(setup(3), 'BuildFactory', { prod: 'tugla', city: 'ankara', tier: 0 }).ok).toBe(false);
-    advanceDays(s, 300); expect(factoryMatMult(s, 'cimento')).toBeCloseTo(1 - FACTORY_PRODUCTS.cimento!.cut[1]!, 5); const withF = unitPrice(s, 'cimento', 'yerel'), keep = s.ventures.slice(); s.ventures.length = 0; const without = unitPrice(s, 'cimento', 'yerel'); s.ventures.push(...keep); expect(withF / without).toBeCloseTo(0.87, 2); expect(unitPrice(s, 'demir', 'yerel')).toBeGreaterThan(0);
-    expect(checkInvariant(s)).toBe(true); expect(s.ventures[0]!.total.revenue).toBeGreaterThan(0);
+  it('fabrika gerçekten üretir: hazır olunca her ay malzeme stoğa girer, maliyet deftere yazılır, fazla satılır; 20 ürün', () => {
+    const s = setup(); expect(Object.keys(FACTORY_PRODUCTS).length).toBeGreaterThanOrEqual(18); expect(dispatch(s, 'BuildFactory', { prod: 'cimento', city: 'ankara', tier: 1 }).ok).toBe(true);
+    const v = s.ventures[0]!; expect(ownStock(s, 'cimento')).toBe(0); advanceDays(s, 100); expect(ownStock(s, 'cimento')).toBe(0); expect(factoryOutput(v)).toBeGreaterThan(50);
+    expect(dispatch(s, 'BuildFactory', { prod: 'cimento', city: 'ankara', tier: 0 }).ok).toBe(false); expect(dispatch(setup(3), 'BuildFactory', { prod: 'tugla', city: 'ankara', tier: 0 }).ok).toBe(false);
+    advanceDays(s, 260); expect(ownStock(s, 'cimento')).toBeGreaterThan(0); expect(s.stockLog!.some((l) => l.ref === 'fabrika' && l.kind === 'giris')).toBe(true); expect(s.ledger.some((e) => e.cat === 'fabrika_gider' && e.amount < 0)).toBe(true);
+    advanceDays(s, 700); expect(s.ledger.some((e) => e.cat === 'fabrika_gelir' && e.amount > 0), 'depo dolunca fazla üretim satılır').toBe(true); expect(checkInvariant(s)).toBe(true);
+  });
+  it('kendi üretimi şantiyede tüketilir: stok azalır ve sipariş verilmez', () => {
+    const s = setup(); dispatch(s, 'BuildFactory', { prod: 'cimento', city: 'ankara', tier: 1 }); advanceDays(s, 400); const q = ownStock(s, 'cimento'); expect(q).toBeGreaterThan(0);
+    s.stock.cimento!.qty = q * 0.5; expect(ownStock(s, 'cimento')).toBeLessThan(q); advanceDays(s, 60); expect(ownStock(s, 'cimento')).toBeGreaterThan(q * 0.5);
   });
   it('kamyon filosu navlunu düşürür', () => {
     const s = setup(); const q0 = quoteOrder(s, 'cimento', 'yerel', 50).freight; s.machines.length = 0; dispatch(s, 'BuyMachine', { type: 'kamyon' }); dispatch(s, 'BuyMachine', { type: 'kamyon' });

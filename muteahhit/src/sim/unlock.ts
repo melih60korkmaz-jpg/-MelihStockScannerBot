@@ -14,6 +14,7 @@ export const UNLOCKS: UnlockDef[] = [
   { id: 'makine', label: 'Makine Parkı', level: 3, tier: 'gelisen' },
   { id: 'altyapi', label: 'Altyapı ve Taahhüt', level: 5, tier: 'buyuk', rep: 35 },
   { id: 'isletme', label: 'İşletmeler', level: 4, tier: 'buyuk' },
+  { id: 'fabrika', label: 'Fabrikalar (sanayi üretimi)', level: 4, tier: 'buyuk' },
   { id: 'enerji', label: 'Enerji Şirketi', level: 5, tier: 'buyuk' },
   { id: 'iştirak', label: 'İştirakler ve holding', level: 6, tier: 'holding', nw: 200_000_000 },
   { id: 'borsa', label: 'Yatırım ve Borsa', level: 6, tier: 'holding', rep: 45 },

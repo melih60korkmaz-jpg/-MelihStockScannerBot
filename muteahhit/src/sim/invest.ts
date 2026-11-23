@@ -1,7 +1,9 @@
 import { TL, type Money } from '../core/money';
 import type { GameEvent, GameState, Rival, Stake, Venture } from '../core/types';
 import { dateOf } from '../core/calendar';
-import { cityData } from '../data';
+import { cityData, material } from '../data';
+import { capacityOf, spaceOf, unitPrice } from './materials';
+import { logStock } from './supplyx';
 import { post } from './ledger';
 import { acquisitionPrice } from './stock';
 import { news } from './rivals';
@@ -87,15 +89,21 @@ export function takeover(s: GameState, rivalId: number, offer: number, events: G
   events.push({ type: 'ACQUIRED', day: s.clock.day, data: { rival: r.name, price: paid, debt } }); return v;
 }
 
-// ---------------- fabrikalar ve lojistik ----------------
-export const FACTORY_MIN_LEVEL = 6;
-export const FACTORY_PRODUCTS: Record<string, { label: string; ico: string; capexTL: number[]; cut: number[]; days: number }> = {
-  cimento: { label: 'Çimento fabrikası', ico: '🏭', capexTL: [90_000_000, 220_000_000], cut: [0.07, 0.13], days: 270 },
-  tugla: { label: 'Tuğla-briket fabrikası', ico: '🧱', capexTL: [45_000_000, 110_000_000], cut: [0.06, 0.11], days: 180 },
-  demir: { label: 'Çelik haddehane', ico: '⚙️', capexTL: [120_000_000, 300_000_000], cut: [0.06, 0.11], days: 300 },
-  beton: { label: 'Hazır beton santrali', ico: '🚛', capexTL: [30_000_000, 80_000_000], cut: [0.07, 0.12], days: 150 },
+// ---------------- fabrikalar (sanayi üretimi) ve lojistik ----------------
+export const FACTORY_MIN_LEVEL = 4;
+/** Her fabrika bir malzeme üretir: sermaye iki kademe (küçük/büyük tesis). Aylık üretim = yatırımın aylık %3,5'i değerinde malzeme (piyasa fiyatıyla). */
+const HEAVY = 1, MID = 0.45, LIGHT = 0.25;
+const FP = (label: string, ico: string, w: number, days: number) => ({ label, ico, capexTL: [Math.round(120 * w) * 1_000_000, Math.round(300 * w) * 1_000_000], days });
+export const FACTORY_PRODUCTS: Record<string, { label: string; ico: string; capexTL: number[]; days: number }> = {
+  cimento: FP('Çimento fabrikası', '🏭', HEAVY, 270), demir: FP('Çelik haddehane', '⚙️', HEAVY, 300), celik_profil: FP('Çelik profil tesisi', '🔩', HEAVY, 270), hasir_celik: FP('Hasır çelik tesisi', '🕸️', MID, 210),
+  cam: FP('Cam fabrikası', '🪟', HEAVY, 270), aluminyum: FP('Alüminyum doğrama fabrikası', '🔧', HEAVY, 270), kablo: FP('Kablo fabrikası', '🔌', MID, 210), boru: FP('Boru fabrikası', '🚰', MID, 210),
+  tugla: FP('Tuğla-briket fabrikası', '🧱', MID, 180), gazbeton: FP('Gazbeton fabrikası', '🧱', MID, 180), seramik: FP('Seramik fabrikası', '🍽️', MID, 210), parke: FP('Parke fabrikası', '🪵', MID, 180),
+  yalitim: FP('Yalıtım malzemesi tesisi', '🧊', MID, 180), mantolama: FP('Mantolama tesisi', '🧊', MID, 180), cephe_kaplama: FP('Cephe kaplama tesisi', '🏢', MID, 210),
+  boya: FP('Boya fabrikası', '🎨', LIGHT, 150), hazir_harc: FP('Hazır harç tesisi', '🪣', LIGHT, 120), alcipan: FP('Alçıpan fabrikası', '📐', LIGHT, 150), kalip: FP('Kalıp atölyesi', '🪚', LIGHT, 120), beton: FP('Hazır beton santrali', '🚛', LIGHT, 150),
 };
 export const factoryCapex = (s: GameState, prod: string, tier: number): Money => Math.round(TL(FACTORY_PRODUCTS[prod]!.capexTL[tier]!) * s.costIndex);
+/** Aylık üretim miktarı (malzeme biriminde). */
+export function factoryOutput(v: Venture): number { const m = material(v.prod ?? ''); return m ? (v.capex / 100 / (v.ci0 || 1)) * 0.035 / m.priceTL : 0; }
 export function factoryError(s: GameState, prod: string, city: string, tier: number): string | null {
   const c = s.company; if (!c) return 'Şirket yok.'; if (c.bankrupt) return 'Şirket iflas etti.'; if (c.level < FACTORY_MIN_LEVEL) return `Fabrika için seviye ${FACTORY_MIN_LEVEL} gerekir.`;
   const f = FACTORY_PRODUCTS[prod]; if (!f || !(tier === 0 || tier === 1)) return 'Geçersiz fabrika.'; if (!s.openCities.includes(city)) return 'Bu ilde şubeniz yok.';
@@ -106,11 +114,19 @@ export function buildFactory(s: GameState, prod: string, city: string, tier: num
   const v: Venture = { id: s.nextId++, kind: 'fabrika', name: `${cityData(city)?.label ?? city} ${f.label}`, city, openedDay: s.clock.day, readyDay: s.clock.day + f.days, capex, size: tier + 1, quality: 1, ci0: s.costIndex, prod, last: { revenue: 0, cost: 0, occ: 0, day: s.clock.day }, total: { revenue: 0, cost: 0 } };
   s.ventures.push(v); events.push({ type: 'VENTURE_OPENED', day: s.clock.day, data: { id: v.id, kind: 'fabrika', name: v.name } }); return v;
 }
-/** Kendi fabrikasının ürettiği malzemede birim fiyat çarpanı (hazır fabrika; bakımdaysa 1). */
-export function factoryMatMult(s: GameState, matId: string): number {
-  const v = s.ventures.find((x) => x.kind === 'fabrika' && x.prod === matId && s.clock.day >= x.readyDay); if (!v) return 1; return 1 - FACTORY_PRODUCTS[matId]!.cut[v.size - 1]!;
+export const ownStock = (s: GameState, prod: string) => s.stock[prod]?.qty ?? 0;
+/** Aylık üretim: üretilen malzeme depoya girer (üründen en çok depo kapasitesinin %35'i kadar stok tutulur); sığmayan fazla, piyasa fiyatının %88'inden satılır. Maliyet = piyasa fiyatının %55'i + sabit bakım. */
+export function produceMonth(s: GameState, v: Venture, day = s.clock.day): { revenue: Money; cost: Money; occ: number; broke: boolean } {
+  const id = v.prod ?? '', m = material(id); if (!m) return { revenue: 0, cost: 0, occ: 0, broke: false };
+  const broke = hash01(v.id * 61 + Math.floor(day / 30)) < 0.03, qty = broke ? 0 : factoryOutput(v) * (0.9 + 0.2 * hash01(v.id * 17 + Math.floor(day / 30))) * (s.costIndex / (v.ci0 || 1) > 0 ? 1 : 1);
+  const market = unitPrice(s, id, 'yerel'), unitCost = Math.round(market * 0.55), room = m.space > 0 ? Math.max(0, (capacityOf(s) * 0.35 - spaceOf(id, ownStock(s, id))) / m.space) : Math.max(0, 400 - ownStock(s, id)), keep = Math.min(qty, room), sell = qty - keep;
+  if (keep > 0) { const cur = (s.stock[id] ??= { qty: 0, qual: 1, cost: unitCost }), tot = cur.qty + keep; cur.cost = tot > 0 ? (cur.cost * cur.qty + unitCost * keep) / tot : unitCost; cur.qual = (cur.qual * cur.qty + 1 * keep) / Math.max(1e-9, tot); cur.qty = tot; logStock(s, id, keep, 'giris', keep * unitCost, 'fabrika'); }
+  const revenue = Math.round(sell * market * 0.88), cost = Math.round(qty * unitCost + v.capex * 0.0015);
+  return { revenue, cost, occ: qty > 0 ? Math.min(1.5, qty / Math.max(1e-9, factoryOutput(v))) : 0, broke };
 }
-export const hasFactory = (s: GameState, matId: string) => factoryMatMult(s, matId) < 1;
+export const factoryMatMult = (_s: GameState, _matId: string): number => 1;
+export const hasFactory = (s: GameState, matId: string) => s.ventures.some((x) => x.kind === 'fabrika' && x.prod === matId && s.clock.day >= x.readyDay);
+
 /** Kendi kamyon filosu navlunu düşürür: her kamyon %8, en çok %32. */
 export function freightMult(s: GameState): number { const n = s.machines.filter((m) => m.type === 'kamyon' || m.type === 'damperli_kamyon').length; return 1 - Math.min(0.32, 0.08 * n); }
 

@@ -1,3 +1,4 @@
+import { produceMonth } from './invest';
 import { focusVenture } from './control';
 import { sectorDiscount } from './mgmt';
 import { TL, type Money } from '../core/money';
@@ -153,7 +154,7 @@ export function venturesMonthly(s: GameState, events: GameEvent[]): void {
   const day = s.clock.day;
   for (const v of s.ventures) {
     if (day < v.readyDay) continue;
-    const r = ventureMonth(s, v);
+    const r = v.kind === 'fabrika' ? produceMonth(s, v) : ventureMonth(s, v);
     if (r.revenue > 0) post(s, REV_CAT[v.kind], r.revenue, { memo: v.name });
     if (r.cost > 0) post(s, COST_CAT[v.kind], -r.cost, { memo: v.name });
     v.last = { revenue: r.revenue, cost: r.cost, occ: r.occ, day }; v.total.revenue += r.revenue; v.total.cost += r.cost;

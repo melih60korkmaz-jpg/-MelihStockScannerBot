@@ -2,7 +2,7 @@ import { unlockState } from '../../sim/unlock';
 import { formatDate } from '../../core/calendar';
 import { TL } from '../../core/money';
 import type { GameState, Strategy, Venture } from '../../core/types';
-import { cityData } from '../../data';
+import { cityData, material } from '../../data';
 import { netWorth } from '../../sim/finance';
 import { DIV_INFO, divisionPL, type DivKey } from '../../sim/holding';
 import { INFRA_MIN_LEVEL, activeInfra, infraCapacity, infraKind } from '../../sim/infra';
@@ -13,7 +13,7 @@ import { C, ring } from '../art';
 import { stockChart } from '../stockChart';
 import { fmt, nf } from '../components';
 import { askConfirm, h, press, toast } from '../dom';
-import { FACTORY_PRODUCTS, FACTORY_MIN_LEVEL, OFFERS, RIVAL_SHARES, STAKE_MIN_LEVEL, acceptThreshold, ddFee, ddInfo, factoryCapex, factoryMatMult, freightMult, hiddenDebt, rivalPrice, stakeCost, stakeOf, stakeProceeds, stakeValue, takeoverPrice, DIVIDEND_MIN, BOARD_MIN, MAX_STAKE } from '../../sim/invest';
+import { FACTORY_PRODUCTS, FACTORY_MIN_LEVEL, factoryOutput, ownStock, OFFERS, RIVAL_SHARES, STAKE_MIN_LEVEL, acceptThreshold, ddFee, ddInfo, factoryCapex, freightMult, hiddenDebt, rivalPrice, stakeCost, stakeOf, stakeProceeds, stakeValue, takeoverPrice, DIVIDEND_MIN, BOARD_MIN, MAX_STAKE } from '../../sim/invest';
 import { SUB_KEYS, consolidate, icNet } from '../../sim/consol';
 import type { App } from '../app';
 
@@ -194,11 +194,13 @@ function market(app: App, refresh: () => void): HTMLElement {
 function factories(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state, c = s.company!; if (c.level < FACTORY_MIN_LEVEL) return lock(`Fabrikalar seviye ${FACTORY_MIN_LEVEL}'da açılır.`);
   const city = s.openCities[0] ?? 'ankara', trucks = s.machines.filter((m) => m.type === 'kamyon' || m.type === 'damperli_kamyon').length;
-  const cards = Object.entries(FACTORY_PRODUCTS).map(([prod, f]) => { const own = s.ventures.find((v) => v.kind === 'fabrika' && v.prod === prod), disc = Math.round((1 - factoryMatMult(s, prod)) * 100);
-    return h('div', { class: 'card', style: 'margin-bottom:8px' }, h('div', { style: 'display:flex;gap:8px;align-items:baseline;flex-wrap:wrap' }, h('span', { style: 'font-size:22px' }, f.ico), h('b', {}, f.label), own ? h('span', { class: 'chip good' }, s.clock.day >= own.readyDay ? `Çalışıyor · malzeme −%${disc}` : `Yapımda · ${formatDate(own.readyDay)}`) : h('span', { class: 'chip' }, `Malzeme −%${Math.round(f.cut[0]! * 100)}…%${Math.round(f.cut[1]! * 100)}`)),
-      own ? h('div', { class: 'mute', style: 'font-size:12px;margin-top:4px' }, `Son ay: gelir ${fmt(own.last.revenue)} · gider ${fmt(own.last.cost)} · değer ${fmt(ventureValue(s, own))}`) : h('div', { class: 'row', style: 'gap:6px;margin-top:6px;flex-wrap:wrap' }, ...[0, 1].map((tier) => h('button', { class: 'btn', style: 'flex-direction:column;align-items:flex-start;height:auto;padding:6px 10px;text-align:left', disabled: c.cash < factoryCapex(s, prod, tier), onclick: async () => { if (await askConfirm(`${f.label} (${tier ? 'büyük' : 'küçük'}) için ${fmt(factoryCapex(s, prod, tier))} yatırım yapılsın mı? ~${Math.round(f.days / 30)} ayda hazır olur.`)) run(app, 'BuildFactory', { prod, city, tier }, `${f.label} yapımına başlandı`, refresh, 'stamp'); } }, h('b', {}, tier ? 'Büyük tesis' : 'Küçük tesis'), h('small', {}, fmt(factoryCapex(s, prod, tier))), h('small', { class: 'mute' }, `${prod} alımı −%${Math.round(f.cut[tier]! * 100)}`)))));
+  const cards = Object.entries(FACTORY_PRODUCTS).map(([prod, f]) => { const own = s.ventures.find((v) => v.kind === 'fabrika' && v.prod === prod), mat = material(prod)!, ready = !!own && s.clock.day >= own.readyDay;
+    const outQ = (tier: number) => { const capex = factoryCapex(s, prod, tier); return (capex / 100 / s.costIndex) * 0.035 / mat.priceTL; };
+    return h('div', { class: 'card', style: 'margin-bottom:8px' }, h('div', { style: 'display:flex;gap:8px;align-items:baseline;flex-wrap:wrap' }, h('span', { style: 'font-size:22px' }, f.ico), h('b', {}, f.label), own ? h('span', { class: `chip ${ready ? 'good' : ''}` }, ready ? 'Üretiyor' : `Yapımda · ${formatDate(own.readyDay)}`) : h('span', { class: 'chip' }, `${mat.label} (${mat.unit}) üretir`), ownStock(s, prod) > 0 ? h('span', { class: 'chip' }, `Stok ${nf(ownStock(s, prod), 0)} ${mat.unit}`) : null),
+      own ? h('div', { class: 'mute', style: 'font-size:12px;margin-top:4px' }, `Aylık üretim ≈ ${nf(factoryOutput(own), 0)} ${mat.unit} · son ay: fazla satış ${fmt(own.last.revenue)} · üretim gideri ${fmt(own.last.cost)} · değer ${fmt(ventureValue(s, own))}`)
+        : h('div', { class: 'row', style: 'gap:6px;margin-top:6px;flex-wrap:wrap' }, ...[0, 1].map((tier) => h('button', { class: 'btn', style: 'flex-direction:column;align-items:flex-start;height:auto;padding:6px 10px;text-align:left', disabled: c.cash < factoryCapex(s, prod, tier), onclick: async () => { if (await askConfirm(`${f.label} (${tier ? 'büyük' : 'küçük'}) için ${fmt(factoryCapex(s, prod, tier))} yatırım yapılsın mı? ~${Math.round(f.days / 30)} ayda hazır olur; aylık ≈ ${nf(outQ(tier), 0)} ${mat.unit} üretir.`)) run(app, 'BuildFactory', { prod, city, tier }, `${f.label} yapımına başlandı`, refresh, 'stamp'); } }, h('b', {}, tier ? 'Büyük tesis' : 'Küçük tesis'), h('small', {}, fmt(factoryCapex(s, prod, tier))), h('small', { class: 'mute' }, `≈ ${nf(outQ(tier), 0)} ${mat.unit}/ay`)))));
   });
-  return h('div', {}, h('div', { class: 'card', style: 'margin-bottom:10px' }, h('div', { class: 'lbl-s' }, '🏭 Fabrikalar ve lojistik'), h('div', { class: 'mute', style: 'font-size:13px' }, 'Kendi fabrikanız, ürettiği malzemeyi tedarikçiden değil kendi maliyetinden alır: sipariş fiyatları düşer. Fazla üretimi satar (fabrika geliri). Kendi kamyon filosu da navlunu düşürür.'),
+  return h('div', {}, h('div', { class: 'card', style: 'margin-bottom:10px' }, h('div', { class: 'lbl-s' }, '🏭 Fabrikalar ve lojistik'), h('div', { class: 'mute', style: 'font-size:13px' }, 'Fabrika her ay gerçekten malzeme üretir: ürün depona girer (piyasa fiyatının ≈%55 maliyetiyle) ve şantiyelerin tükettiği malzemeyi tedarikçiden almana gerek kalmaz. Depoya sığmayan fazlası piyasaya satılır. Kendi kamyon filosu da navlunu düşürür.'),
     h('div', { class: 'kpis', style: 'margin-top:6px' }, h('div', { class: 'kpi', html: `<small>Kamyon filosu</small><b>${trucks}</b>` }), h('div', { class: 'kpi', html: `<small>Navlun çarpanı</small><b>${nf(freightMult(s), 2)}×</b>` }))), ...cards,
     h('button', { class: 'btn', style: 'min-height:38px', onclick: () => { press(app); app.openTab?.('makine'); } }, 'Makine ve kamyon al ▸'));
 }
