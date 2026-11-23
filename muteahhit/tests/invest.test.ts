@@ -120,7 +120,7 @@ describe('eski kayıt uyumu', () => {
 
 describe('silinen rakip hissesi', () => {
   it('hissesi olan batık rakip listeden silinmez; olmayan silinir; kayıp rakipte satış çökmez', () => {
-    const s = newGameState(5); dispatch(s, 'CreateCompany', { name: 'X', founderBackground: 'eski_kalfa', startCity: 'ankara' });
+    const s = newGameState(5); dispatch(s, 'CreateCompany', { name: 'Test Yapı', founderBackground: 'eski_kalfa', startCity: 'ankara' });
     const r = s.rivals[0]!; r.failed = true; r.since = -2000; s.stakes = [{ rivalId: r.id, pct: 5, cost: 1000, since: 0 }];
     const gone = s.rivals.length; s.rivals.splice(0, 1); // rakip kaybolmuş gibi
     expect(s.rivals.length).toBe(gone - 1);
