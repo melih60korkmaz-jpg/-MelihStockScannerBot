@@ -3803,7 +3803,7 @@ function kartKararBilgi(S, item, i) {
 
 /* ===== ARAYÜZ ===== */
 var S = null, TAB = 'genel', HF = 'birinci', KURULUM = {}, root = document.getElementById('app'), sheetEl = null;
-var TABLAR = [['genel','Genel','🎯'],['hedef','Hedefler','🧭'],['merkez','Merkez','🏢'],['yonetim','Yönetim','👔'],['parti','Parti','🏳️'],['anket','Anket','📊'],['karargah','Karargâh','🎛️'],['belediye','Belediye','🏙️'],['harita','Harita','🗺️'],['iller','İller','📍'],['ittifak','İttifak','🤝'],['rakip','Rakipler','🥊'],['secim','Seçim','🗳️'],['meclis','Meclis','🏛️'],['ekonomi','Ekonomi','📉'],['medya','Medya','📺'],['lider','Lider','🧑‍💼'],['takvim','Takvim','📅'],['tarihce','Tarihçe','📜'],['rozet','Rozetler','🎖️'],['sozluk','Rehber','📘'],['kayit','Kayıt','💾'],['hakkinda','Hakkında','ℹ️']];
+var TABLAR = [['genel','Genel','🎯'],['hedef','Hedefler','🧭'],['merkez','Merkez','🏢'],['yonetim','Yönetim','👔'],['parti','Parti','🏳️'],['anket','Anket','📊'],['karargah','Karargâh','🎛️'],['belediye','Belediye','🏙️'],['harita','Harita','🗺️'],['iller','İller','📍'],['ittifak','İttifak','🤝'],['rakip','Rakipler','🥊'],['secim','Seçim','🗳️'],['meclis','Meclis','🏛️'],['ekonomi','Ekonomi','📉'],['medya','Medya','📺'],['lider','Lider','🧑‍💼'],['takvim','Takvim','📅'],['tarihce','Tarihçe','📜'],['gorev','Görevler','✅'],['grafik','Grafik','📈'],['notlar','Notlar','📝'],['rozet','Rozetler','🎖️'],['sozluk','Rehber','📘'],['kayit','Kayıt','💾'],['hakkinda','Hakkında','ℹ️']];
 /* Sekmeler kademeli açılır: yeni oyuncu ilk dakikada 6 sekme görür, gerisi ay ilerledikçe belirir. */
 var TAB_AC = {};
 var TAB_NOT = {harita: 'Harita: bölgelerdeki gücünü gör.', tarihce: 'Tarihçe: aldığın kararların kaydı.', rakip: 'Rakipler: diğer partilerin hamleleri.', iller: 'İller: il il anket ve teşkilat.', takvim: 'Takvim: seçimler ve önemli tarihler.', yonetim: 'Yönetim: kadro ve görev dağılımı.', ekonomi: 'Ekonomi: enflasyon ve makro tablo.', lider: 'Lider: kendi profilin ve itibarın.', medya: 'Medya: yayın organlarıyla ilişkiler.', ittifak: 'İttifak: seçim ittifakları.', secim: 'Seçim: yaklaşan seçimin hazırlığı.', meclis: 'Meclis: koltuk dağılımı ve yasalar.', karargah: 'Karargâh: gelişmiş kampanya kontrolleri.', belediye: 'Belediye: yerel yönetimler.'};
@@ -3937,7 +3937,7 @@ function render() {
   var ct = $('.tab[aria-current=true]'); if (ct) ct.scrollIntoView({inline: 'center', block: 'nearest'});
   if (sc && $('#sc') && !enter) $('#sc').scrollTop = y; else if ($('#sc')) { $('#sc').scrollTop = 0; requestAnimationFrame(function () { var z = $('#sc'); if (z && LASTTAB === TAB) z.scrollTop = 0; }); }
   var a = $('#ay'); if (a) a.onclick = ayBitirTikla;
-  $('#ayar').onclick = ayarlar; bagla(); if (TAB === 'hakkinda') hakkindaBagla(); if (TAB === 'hedef') hedefBagla(); if (YENI_TAB.length) setTimeout(function () { YENI_TAB = []; }, 1300);
+  $('#ayar').onclick = ayarlar; bagla(); if (TAB === 'hakkinda') hakkindaBagla(); if (TAB === 'hedef') hedefBagla(); if (TAB === 'notlar') notBagla(); if (YENI_TAB.length) setTimeout(function () { YENI_TAB = []; }, 1300);
   if (S.sd && S.sd.length) sdGoster(S.sd.splice(0, 3));
   rozetKontrol(); kariyerBagla(); rehberGuncelle();
   var bars = [].slice.call(document.querySelectorAll('#sc .bar i,#sc .pbar i'));
@@ -4159,7 +4159,7 @@ function ayarlar() {
 }
 
 /* ---- sekmeler ---- */
-function tabHtml() { var f = {genel: tGenel, merkez: tMerkez, yonetim: tYonetim, parti: tParti, anket: tAnket, harita: tHarita, karargah: tKarargah, belediye: tBelediye, iller: tIller, ittifak: tIttifak, rakip: tRakip, secim: tSecim, meclis: tMeclis, ekonomi: tEkonomi, medya: tMedya, lider: function () { return tLider() + liderEk(); }, takvim: tTakvim, tarihce: tTarihce, kayit: tKayit, hakkinda: tHakkinda, hedef: tHedef, rozet: tRozet, sozluk: tSozluk}[TAB]; return f(); }
+function tabHtml() { var f = {genel: tGenel, merkez: tMerkez, yonetim: tYonetim, parti: tParti, anket: tAnket, harita: tHarita, karargah: tKarargah, belediye: tBelediye, iller: tIller, ittifak: tIttifak, rakip: tRakip, secim: tSecim, meclis: tMeclis, ekonomi: tEkonomi, medya: tMedya, lider: function () { return tLider() + liderEk(); }, takvim: tTakvim, tarihce: tTarihce, kayit: tKayit, hakkinda: tHakkinda, hedef: tHedef, rozet: tRozet, sozluk: tSozluk, gorev: tGorev, grafik: tGrafik, notlar: tNotlar}[TAB]; return f(); }
 function aksBtn(a) {
   var n = a.maliyet && !muhalifMu(S) ? ' · ' + ((a.id === 'teskilat' || a.id === 'kamptur') ? 'bölgeye göre' : para(aksiyonMaliyet(S, a, null))) : '';
   return '<button class="aks" data-a="' + a.id + '"' + (S.aksiyon.kalan <= 0 ? ' disabled' : '') + '><b>' + a.ad + '<span style="display:inline;color:var(--gold);font-weight:500;font-size:11.5px">' + n + '</span></b><span>' + a.not + '</span></button>';
@@ -5658,7 +5658,7 @@ function tHedef() {
     hdfSatir('Parti birliği', st.birlik, 70, false, '70 ve üzeri sağlıklı', 'sayi') +
     hdfSatir('Stres', st.stres, 60, true, '60\'ın altı güvenli', 'sayi') + '</div>';
   var kb = typeof kariyerBanner === 'function' ? kariyerBanner() : ''; if (kb) h += '<div class="eyebrow">🏆 Kariyer hedefi</div>' + kb;
-  h += '<div class="eyebrow">Kısayollar</div><div class="grid2"><button class="btn hd-go" data-t="rozet">🎖️ Rozetler</button><button class="btn hd-go" data-t="sozluk">📘 Rehber</button></div>';
+  h += '<div class="eyebrow">Kısayollar</div><div class="grid2"><button class="btn hd-go" data-t="rozet">🎖️ Rozetler</button><button class="btn hd-go" data-t="sozluk">📘 Rehber</button><button class="btn hd-go" data-t="gorev">✅ Görevler</button><button class="btn hd-go" data-t="grafik">📈 Grafik</button></div>';
   return h;
 }
 function hedefBagla() {
@@ -5711,6 +5711,51 @@ function tSozluk() {
   h += '<div class="eyebrow">İpuçları</div><div class="card">' + IPUCU.map(function (t) { return '<div class="row small" style="align-items:flex-start;gap:8px"><span>💡</span><span>' + t + '</span></div>'; }).join('') + '</div>';
   h += '<div class="eyebrow">Sık sorulanlar</div>' + SSS.map(function (x) { return '<details class="card dt"><summary><b>' + x[0] + '</b></summary><p class="small">' + x[1] + '</p></details>'; }).join('');
   return h;
+}
+
+/* ---------- Grafik: anket seyri + başlangıçtan beri değişim ---------- */
+function tGrafik() {
+  var g = (S.anketGecmis || []).slice(-36), st = S.stat, h = '<div class="card"><b>📈 Anket seyri</b><div class="small muted" style="margin:4px 0 8px">Son ' + g.length + ' ay · baraj çizgisi kesikli</div>';
+  if (g.length < 2) h += '<div class="small muted">Birkaç ay oynayınca grafik dolacak.</div>';
+  else {
+    var W = 320, H = 130, mx = Math.max(10, Math.ceil(Math.max.apply(null, g.map(function (x) { return x.p; })) + 2)), px = function (i) { return 8 + i * (W - 16) / (g.length - 1); }, py = function (v) { return H - 10 - (H - 20) * v / mx; };
+    var pts = g.map(function (x, i) { return px(i).toFixed(1) + ',' + py(x.p).toFixed(1); }).join(' ');
+    h += '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Anket grafiği"><line x1="8" x2="' + (W - 8) + '" y1="' + py(7).toFixed(1) + '" y2="' + py(7).toFixed(1) + '" stroke="#e8b04b" stroke-dasharray="4 4" opacity=".7"/><polyline fill="none" stroke="' + S.parti.renk + '" stroke-width="3" stroke-linejoin="round" points="' + pts + '"/><circle cx="' + px(g.length - 1).toFixed(1) + '" cy="' + py(g[g.length - 1].p).toFixed(1) + '" r="4.5" fill="' + S.parti.renk + '"/></svg>';
+    var en = Math.max.apply(null, g.map(function (x) { return x.p; })), dp = g[g.length - 1].p - g[0].p;
+    h += '<div class="row small" style="margin-top:6px"><span>En yüksek</span><b>%' + en.toFixed(1).replace('.', ',') + '</b></div><div class="row small"><span>Dönem değişimi</span><b style="color:' + (dp >= 0 ? 'var(--ok,#4cc38a)' : 'var(--bad,#ef6b6b)') + '">' + (dp >= 0 ? '+' : '') + dp.toFixed(1).replace('.', ',') + ' puan</b></div>';
+  }
+  h += '</div><div class="card"><b>📋 Şu an</b><div class="row small" style="margin-top:8px"><span>Anket</span><b>%' + S.anketOyuncu.toFixed(1).replace('.', ',') + '</b></div><div class="row small"><span>Üye</span><b>' + Math.round(st.uye).toLocaleString('tr-TR') + '</b></div><div class="row small"><span>Teşkilatlı il</span><b>' + teskilatSayisi(S) + '/81</b></div><div class="row small"><span>İtibar</span><b>' + Math.round(st.itibar) + '</b></div><div class="row small"><span>Parti birliği</span><b>' + Math.round(st.birlik) + '</b></div><div class="row small"><span>Stres</span><b>' + Math.round(st.stres) + '</b></div></div>';
+  return h;
+}
+
+/* ---------- Görevler: bu aya özel basit işler ---------- */
+function gorevListe() {
+  var st = S.stat, ts = teskilatSayisi(S), a = S.anketOyuncu, ad = Math.ceil(a / 2) * 2 + 2;
+  return [
+    ['⚡', 'Bu ayın 3 hakkını kullan', S.aksiyon.kalan === 0, 'Genel sekmesinden aksiyon seç.'],
+    ['📊', 'Anketi %' + ad + ' üstüne çıkar', a >= ad, 'Şu an %' + a.toFixed(1).replace('.', ',') + '.'],
+    ['📍', 'Teşkilatı ' + Math.min(81, ts + 3) + ' ile çıkar', false, 'Şu an ' + ts + ' il. "Teşkilat Mesaisi" işe yarar.'],
+    ['💰', 'Kasayı eksiye düşürme', st.kasa > 0, 'Şu an ' + (st.kasa / 1e6).toFixed(1).replace('.', ',') + ' M ₺.'],
+    ['🤝', 'Parti birliğini 60 üstünde tut', st.birlik >= 60, 'Şu an ' + Math.round(st.birlik) + '.'],
+    ['😮‍💨', 'Stresi 60 altında tut', st.stres < 60, 'Şu an ' + Math.round(st.stres) + '.']
+  ];
+}
+function tGorev() {
+  var L = gorevListe(), n = L.filter(function (x) { return x[2]; }).length;
+  return '<div class="card"><b>✅ Bu ayın görevleri</b><div class="small muted" style="margin-top:4px">' + n + '/' + L.length + ' tamam · ay bitince yenilenir. Ödül yok, yön gösterir.</div></div>' + L.map(function (x) {
+    return '<div class="card hd-o"><div class="hd-i">' + (x[2] ? '✅' : x[0]) + '</div><div style="flex:1"><b' + (x[2] ? ' style="opacity:.6;text-decoration:line-through"' : '') + '>' + x[1] + '</b><div class="small muted">' + x[3] + '</div></div></div>';
+  }).join('');
+}
+
+/* ---------- Notlar: kendi defterin (kayda girer) ---------- */
+function tNotlar() {
+  var n = S.notlar || [];
+  return '<div class="card"><b>📝 Notlarım</b><div class="small muted" style="margin:4px 0 8px">Planını yaz: "Mayıs\'ta İzmir\'e miting" gibi. Kayıtla birlikte saklanır.</div><textarea id="nt-m" maxlength="140" rows="2" placeholder="Not yaz (en çok 140 harf)" style="width:100%;box-sizing:border-box;border-radius:12px;padding:10px;background:var(--card2,#1b1b26);color:inherit;border:1px solid rgba(255,255,255,.12);font:inherit"></textarea><button class="btn" id="nt-e" style="margin-top:8px;width:100%">Ekle</button></div>' +
+    (n.length ? n.map(function (x, i) { return '<div class="card hd-o"><div style="flex:1"><div class="small muted">' + esc(x.t) + '</div><div>' + esc(x.m) + '</div></div><button class="btn nt-s" data-i="' + i + '" style="width:auto;min-height:40px;padding:6px 14px" aria-label="Sil">🗑️</button></div>'; }).join('') : '<div class="card small muted">Henüz not yok.</div>');
+}
+function notBagla() {
+  var e = $('#nt-e'); if (e) e.onclick = function () { var m = ($('#nt-m').value || '').trim(); if (!m) { toast('Önce bir şey yaz'); return; } S.notlar = S.notlar || []; S.notlar.unshift({t: tarihYaz(S.tarih), m: m.slice(0, 140)}); S.notlar = S.notlar.slice(0, 30); render(); };
+  document.querySelectorAll('.nt-s').forEach(function (b) { b.onclick = function () { S.notlar.splice(+b.dataset.i, 1); render(); }; });
 }
 
 animUygula(); intro(menu);
