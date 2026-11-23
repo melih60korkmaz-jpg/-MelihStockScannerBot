@@ -17,14 +17,34 @@ export interface UiCtx { audio: AudioEngine; haptic: (k?: 'light' | 'medium' | '
 
 export function press(ctx: UiCtx, sfx: Sfx = 'click', hk: 'light' | 'medium' | 'heavy' = 'light') { ctx.audio.sfx(sfx); ctx.haptic(hk); }
 
-/** Bildirimler üst üste binmesin: ortak kapta alt alta dizilir (en çok 3). */
-export function toast(msg: string, ms = 2600) {
-  let box = document.getElementById('toasts');
-  if (!box) { box = h('div', { id: 'toasts', 'aria-live': 'polite' }); document.body.append(box); }
-  for (const old of Array.from(box.children)) if (old.textContent === msg) old.remove();
-  const t = h('div', { class: 'toast', role: 'status' }, msg); box.append(t);
-  while (box.children.length > 2) box.firstElementChild!.remove();
-  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 200); }, ms);
+/** Mesaj kutusu: tüm bildirimler açılır pencere yerine buraya düşer (kayıt cihazda saklanır, en çok 80). */
+export interface Msg { t: number; text: string }
+const INBOX_KEY = 'muteahhit.inbox.v1';
+let inbox: Msg[] = [], unread = 0; const listeners = new Set<() => void>();
+try { const r = JSON.parse(localStorage.getItem(INBOX_KEY) ?? 'null'); if (r && Array.isArray(r.m)) { inbox = r.m; unread = r.u ?? 0; } } catch { /* yok say */ }
+const persist = () => { try { localStorage.setItem(INBOX_KEY, JSON.stringify({ m: inbox, u: unread })); } catch { /* yok say */ } };
+export const inboxList = (): Msg[] => inbox;
+export const inboxUnread = (): number => unread;
+export const inboxMarkRead = () => { unread = 0; persist(); listeners.forEach((f) => f()); };
+export const inboxClear = () => { inbox = []; unread = 0; persist(); listeners.forEach((f) => f()); };
+export const onInbox = (f: () => void) => { listeners.add(f); return () => listeners.delete(f); };
+export function toast(msg: string, _ms = 2600) {
+  if (inbox[0]?.text === msg && Date.now() - inbox[0].t < 3000) return;
+  inbox.unshift({ t: Date.now(), text: msg }); if (inbox.length > 80) inbox.length = 80; unread = Math.min(99, unread + 1); persist(); listeners.forEach((f) => f());
+}
+/** ✉ düğmesi: okunmamış sayısı rozet olarak görünür. */
+export function inboxButton(open: () => void, cls = 'btn ibtn'): HTMLElement {
+  const badge = h('i', { class: 'inbadge' }), b = h('button', { class: cls + ' inboxbtn', 'aria-label': 'Mesaj kutusu', onclick: open }, '✉', badge);
+  const upd = () => { badge.textContent = unread ? String(unread) : ''; badge.style.display = unread ? 'block' : 'none'; if (unread) { b.classList.remove('ping'); void b.offsetWidth; b.classList.add('ping'); } };
+  upd(); const off = onInbox(() => { if (!b.isConnected) { off(); return; } upd(); }); return b;
+}
+export function openInbox() {
+  if (document.querySelector('.inboxmodal')) return;
+  const list = h('div', { class: 'bd' }), close = () => { m.remove(); inboxMarkRead(); };
+  const draw = () => { list.innerHTML = ''; if (!inbox.length) list.append(h('p', { class: 'mute', style: 'padding:18px;text-align:center' }, 'Mesaj yok.')); for (const x of inbox) list.append(h('div', { class: 'inmsg' }, h('small', { class: 'mute' }, new Date(x.t).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })), h('span', {}, x.text))); };
+  const m = h('div', { class: 'modal inboxmodal', role: 'dialog', 'aria-label': 'Mesaj kutusu' }, h('div', { class: 'card sheet' },
+    h('div', { class: 'hd' }, h('h2', {}, '✉ Mesaj kutusu'), h('button', { class: 'btn', style: 'min-height:36px;font-size:13px;margin-right:8px', onclick: () => { inboxClear(); draw(); } }, 'Temizle'), h('button', { class: 'btn ibtn', 'aria-label': 'Kapat', onclick: close }, '✕')), list));
+  m.addEventListener('pointerdown', (e) => { if (e.target === m) close(); }); draw(); document.body.append(m);
 }
 
 /** Kutlama: renkli parçacık yağmuru (hareket azaltma açıksa yalnızca kısa bir parıltı). */

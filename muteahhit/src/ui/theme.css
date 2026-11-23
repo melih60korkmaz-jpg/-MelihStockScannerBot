@@ -597,3 +597,7 @@ html[data-motion=reduced] .menupanel { animation:none; }
 select { background:var(--s1); color:var(--text,#f5f5f3); border:1px solid var(--line); border-radius:10px; padding:0 10px; font-family:inherit; }
 select option { background:#23262b; color:#f5f5f3; }
 input[type=number] { background:var(--s1); color:var(--text,#f5f5f3); border:1px solid var(--line); border-radius:10px; padding:0 10px; font-family:inherit; }
+
+.inboxbtn { position:relative; font-size:20px; } .inbadge { position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; border-radius:9px; background:var(--accent,#FF8C32); color:#111; font:700 11px/18px var(--font-h,sans-serif); font-style:normal; text-align:center; padding:0 4px; }
+.inboxbtn.ping { animation:inping .5s ease-out; } @keyframes inping { 40% { transform:scale(1.25); } }
+.inmsg { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); font-size:14px; line-height:1.35; } .inmsg small { flex:0 0 auto; padding-top:2px; }

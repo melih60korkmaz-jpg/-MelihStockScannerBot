@@ -7,7 +7,7 @@ import { BUILDING_TYPES, STAGES, buildingType, quality } from '../../data';
 import { crewFactor, remainingDays } from '../../sim/construction';
 import { currentRevenue } from '../../sim/projects';
 import { SiteScene, type CamPreset, type SiteState } from '../../render3d/siteScene';
-import { h, press, toast } from '../dom';
+import { h, inboxButton, openInbox, press, toast } from '../dom';
 import { fmt, kv, nf, pct } from '../components';
 import { MACHINES, MATERIALS, cityData, districtData } from '../../data';
 import { incomingQty, stageNeeds, stockQty } from '../../sim/materials';
@@ -48,7 +48,7 @@ export function siteScreen(app: App, projectId: number, backTo: () => void): HTM
   const speedBtns: HTMLButtonElement[] = [];
   for (const [v, l] of [[0, ''], [1, '▶']] as [Speed, string][]) { const b = h('button', { 'aria-label': v === 0 ? 'Duraklat' : `Hız ${l}`, ...(v === 0 ? { html: '<svg viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" fill="none"/></svg>' } : {}), onclick: () => { press(app); app.store.setSpeed(v); } }, v === 0 ? null : l) as HTMLButtonElement; b.dataset.v = String(v); speedBtns.push(b); speedSeg.append(b); }
   top.append(h('button', { class: 'btn glass ibtn', 'aria-label': 'Geri', style: 'width:48px;height:48px;pointer-events:auto', onclick: () => { press(app); leave(); } }, '‹'), titleBox, h('div', { class: 'sp' }),
-    h('div', { class: 'glass mini' }, h('div', { class: 'pill cash' }, h('small', {}, 'KASA'), cashB), h('div', { class: 'pill' }, h('small', {}, 'TARİH'), dateB), speedSeg));
+    inboxButton(() => { press(app); openInbox(); }, 'btn glass ibtn'), h('div', { class: 'glass mini' }, h('div', { class: 'pill cash' }, h('small', {}, 'KASA'), cashB), h('div', { class: 'pill' }, h('small', {}, 'TARİH'), dateB), speedSeg));
   const cams = h('div', { class: 'cams' }, h('small', { class: 'camlbl' }, '🎥 Kamera'), ...CAMS.map(([id, l]) => h('button', { class: 'btn glass', 'aria-label': `Kamera: ${l}`, onclick: () => { press(app); scene?.preset(id); } }, l)), h('button', { class: 'btn glass camhelp', 'aria-label': 'Şantiye rehberi', onclick: () => { press(app); openGuide(app, 'santiye'); } }, '?'));
   root.append(top, h('div', { class: 'ov', style: 'top:calc(var(--st) + 58px);display:flex;justify-content:center' }, stagesEl), banner, cams, sheet);
 

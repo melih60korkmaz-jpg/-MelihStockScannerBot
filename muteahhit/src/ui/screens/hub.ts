@@ -8,7 +8,7 @@ import { alerts, monthlyRows, netWorth, projectAssetValue, projectedMonthlyCost,
 import { machineAssetValue } from '../../sim/machines';
 import { advancesTotal, receivablesTotal } from '../../sim/sales';
 import { barChart, donut, hbars, lineChart, pairBars, sparkline } from '../charts';
-import { celebrate, countTo, flyDelta, h, press, toast } from '../dom';
+import { celebrate, countTo, flyDelta, h, inboxButton, openInbox, press, toast } from '../dom';
 import { emblemSvg } from '../emblem';
 import type { App } from '../app';
 import { cityData } from '../../data';
@@ -92,6 +92,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
     hud.append(
       h('div', { class: 'id' }, h('span', { html: emblemSvg(c.emblem.shape, c.emblem.color, 38) }), h('div', { style: 'min-width:0' }, h('b', {}, c.name), ref.sub)),
       ref.cashPill, h('div', { class: 'sp' }), h('div', { class: 'pill' }, h('small', {}, 'TARİH'), ref.date), seg,
+      inboxButton(() => { press(app); openInbox(); }),
       h('button', { class: 'btn ibtn guidebtn', 'aria-label': 'Rehber: oyun nasıl oynanır', title: 'Rehber', onclick: () => { press(app); openGuide(app, TAB_TOPIC[tab]); } }, '?'),
       h('button', { class: 'btn ibtn', 'aria-label': 'Ayarlar', html: ICON.gear, onclick: () => { press(app); openSettings({ ...app, activeTier: () => app.scene?.activeTier ?? 'mid' }); } }),
       h('button', { class: 'btn ibtn', 'aria-label': 'Ana menü', html: ICON.menu, onclick: async () => { press(app); app.store.setSpeed(0); try { await app.saves.autosave(app.store.state); } catch { /* menü yine açılır */ } app.menu(); } }),
