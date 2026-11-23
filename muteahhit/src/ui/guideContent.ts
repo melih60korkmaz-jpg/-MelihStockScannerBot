@@ -27,7 +27,7 @@ export const GUIDE: Topic[] = [
   },
   {
     id: 'zaman', ico: '⏱️', title: 'Zaman, kasa ve hız', blocks: [
-      { p: 'Oyun gerçek zamanlıdır: zaman kendiliğinden akar (bir oyun günü yaklaşık 1 saniye). ⏸ ile durdurabilir, ▶ ile devam ettirebilirsin; olay çıkınca oyun durur, karar verince kendiliğinden devam eder. İnşaatı hızlandırmak için Altın sekmesini kullan.' },
+      { p: 'Oyun gerçek zamanlıdır: zaman kendiliğinden akar (bir oyun günü yaklaşık 1 saniye). ⏸ ile durdurabilir, ▶ ile devam ettirebilirsin; olay çıkınca oyun durur, karar verince kendiliğinden devam eder.' },
       { h: 'Zaman ne zaman durur?' },
       { ul: ['⏸ ile sen durdurunca.', 'Herhangi bir pencere (satış merkezi, sipariş, kredi, genel merkez…) açıkken: değerler kaymasın diye zaman bekler.', 'Önemli bir gelişmede oyun kendiliğinden durur ve "⏸ Oyun duraklatıldı" bildirimi çıkar: karar gerektiren olay, seviye atlama, proje teslimi, ihale kazanma, iş kazası, kredi taksidi kaçırma, haciz, ekonomik kriz haberi, kasanın eksiye düşmesi, iflas.', 'Uygulamadan çıkınca / ekran kilitlenince oyun otomatik durur ve kaydeder.'] },
       { h: 'Kasa' },

@@ -8,6 +8,8 @@ import { stageDays } from './construction';
 export const START_GOLD = 30, LEVEL_GOLD = 10;
 /** Gelir bölümü (altın paketleri, ödüllü reklam, satın alımı geri yükle): hesaplar ve anahtarlar hazır olunca true yapılır. */
 export const SHOP_OPEN = false;
+/** Altın sistemi (sekme, üst çubuk sayacı, hızlandırma): ilk sürümde kapalı; true yapılınca hepsi görünür. */
+export const GOLD_OPEN = false;
 export const AD_GOLD = 5, AD_DAILY = 3;
 export const adsLeft = (s: GameState): number => (s.ad && s.ad.day === s.clock.day ? Math.max(0, AD_DAILY - s.ad.n) : AD_DAILY);
 export function watchAdError(s: GameState): string | null { if (!s.company) return 'Şirket yok.'; return adsLeft(s) > 0 ? null : 'Bugünkü reklam hakkın doldu; yarın tekrar dene.'; }

@@ -15,7 +15,7 @@ interface Step { title: string; text: string; tab?: TabId; target?: string; last
 const tabSel = (i: number) => `.tabs .tab:nth-child(${i})`;
 const STEPS: Step[] = [
   { title: 'Hoş geldin patron!', text: 'Ben Şef Ayşe, şantiye şefiniz. Şirketinizi birkaç adımda tanıtayım. İstediğiniz an "Atla" diyebilirsiniz; Ayarlar\'dan yeniden izlenir.' },
-  { title: 'Kasa, takvim, hız', text: 'Burası komuta paneli: paranız (kasa), tarih, altın ve zaman. Zaman kendiliğinden akar; ⏸ ile durdurun, ▶ ile devam edin. Kasa eksiye düşerse oyun durur.', tab: 'sirket', target: '.hud' },
+  { title: 'Kasa, takvim, hız', text: 'Burası komuta paneli: paranız (kasa), tarih ve zaman. Zaman kendiliğinden akar; ⏸ ile durdurun, ▶ ile devam edin. Kasa eksiye düşerse oyun durur.', tab: 'sirket', target: '.hud' },
   { title: 'Şirket', text: 'Günün özeti burada: görevler, para durumunuz ve şirket seviyeniz. Üstteki şehir resmine dokununca Genel Merkez açılır.', tab: 'sirket', target: tabSel(1) },
   { title: 'Görevler', text: 'Görevler size sıradaki adımı söyler. "Şimdi yap" doğru sekmeye götürür. Sekmelerde nabız atan nokta da sıradaki adımı gösterir.', tab: 'sirket', target: '.questscard' },
   { title: 'Harita', text: 'Her iş arsayla başlar. Bir ile dokunun, ilçeyi seçin, arsayı inceleyin ve satın alın. "Hızlı başlangıç" kartı tek dokunuşla arsa, proje ve inşaatı başlatır.', tab: 'harita', target: tabSel(2) },

@@ -31,7 +31,7 @@ import { yonetimView, setYonetimSub } from './yonetim';
 import { tedarikView, setTedarikSub } from './tedarik';
 import { altinView } from './altin';
 import { auditChance, hasAccountant, taxSavedTotal } from '../../sim/accounting';
-import { goldOf } from '../../sim/gold';
+import { GOLD_OPEN, goldOf } from '../../sim/gold';
 import { gayrimenkulView, setEstateSub } from './gayrimenkul';
 import { makineView, setMakineSub } from './makine';
 import { altyapiView, setInfraSub } from './altyapi';
@@ -93,7 +93,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
     hud.innerHTML = '';
     hud.append(
       h('div', { class: 'id' }, h('span', { html: emblemSvg(c.emblem.shape, c.emblem.color, 38) }), h('div', { style: 'min-width:0' }, h('b', {}, c.name), ref.sub)),
-      ref.cashPill, h('button', { class: 'pill goldpill', 'aria-label': 'Altın', style: 'cursor:pointer', onclick: () => { press(app); app.openTab?.('altin'); } }, h('small', {}, '🪙'), ref.gold = h('b', {})), h('div', { class: 'sp' }), h('div', { class: 'pill' }, h('small', {}, 'TARİH'), ref.date), seg,
+      ref.cashPill, ...(GOLD_OPEN ? [h('button', { class: 'pill goldpill', 'aria-label': 'Altın', style: 'cursor:pointer', onclick: () => { press(app); app.openTab?.('altin'); } }, h('small', {}, '🪙'), ref.gold = h('b', {}))] : []), h('div', { class: 'sp' }), h('div', { class: 'pill' }, h('small', {}, 'TARİH'), ref.date), seg,
       h('button', { class: 'btn ibtn guidebtn', 'aria-label': 'Rehber: oyun nasıl oynanır', title: 'Rehber', onclick: () => { press(app); openGuide(app, TAB_TOPIC[tab]); } }, '?'),
       h('button', { class: 'btn ibtn', 'aria-label': 'Ayarlar', html: ICON.gear, onclick: () => { press(app); openSettings({ ...app, activeTier: () => app.scene?.activeTier ?? 'mid' }); } }),
       h('button', { class: 'btn ibtn', 'aria-label': 'Ana menü', html: ICON.menu, onclick: async () => { press(app); app.store.setSpeed(0); try { await app.saves.autosave(app.store.state); } catch { /* menü yine açılır */ } app.menu(); } }),
@@ -169,7 +169,7 @@ export function hubScreen(app: App, startTab: Tab = 'sirket'): HTMLElement {
     }) : [h('div', { class: 'empty' }, 'Aktif şantiye yok. Harita sekmesinden arsa alıp proje başlat.')]), h('button', { class: 'btn', style: 'margin-top:8px;min-height:36px', onclick: () => { press(app); app.openTab?.('projeler'); } }, 'Tüm projeler ▸'));
     const newLeft = h('div', { class: 'col' }, sec('🎯', 'Bugün ne yapmalıyım?'), R[0]!, R[2]!, sec('🏗️', 'Projelerim'), mini);
     const newRight = h('div', { class: 'col' }, sec('💰', 'Para durumum'), L[0]!, L[1]!, sec('🧭', 'Yönetim'), mgmtCard(app), sec('🏅', 'Şirket seviyesi'), R[1]!, sec('📈', 'Piyasa'), R[3]!);
-    const quick: [string, string, string, string?][] = [['🧱', 'Malzeme al', 'tedarik', 'siparis'], ['🏷️', 'Satış merkezi', 'projeler'], ['📍', 'Arsalar', 'harita'], ['📑', 'İhaleler', 'ihale'], ['🚜', 'Makine', 'makine'], ['🏘️', 'Kira', 'gayrimenkul'], ['🧭', 'Yönetim', 'yonetim'], ['🪙', 'Altın', 'altin']];
+    const quick: [string, string, string, string?][] = [['🧱', 'Malzeme al', 'tedarik', 'siparis'], ['🏷️', 'Satış merkezi', 'projeler'], ['📍', 'Arsalar', 'harita'], ['📑', 'İhaleler', 'ihale'], ['🚜', 'Makine', 'makine'], ['🏘️', 'Kira', 'gayrimenkul'], ['🧭', 'Yönetim', 'yonetim']];
     const qrow = h('div', { class: 'quickrow', style: 'display:flex;gap:8px;overflow-x:auto;padding:4px 0 2px;margin-top:10px' }, ...quick.filter(([, , tab]) => { const id = ({ tedarik: 'tedarik', makine: 'makine', gayrimenkul: 'gayrimenkul', yonetim: 'yonetim' } as Record<string, string>)[tab]; return !id || unlockState(app.store.state, id).open; }).map(([ico, label, tab, sub]) => h('button', { class: 'btn', style: 'min-height:48px;flex:0 0 auto;flex-direction:column;gap:2px;padding:6px 12px;font-size:12px', onclick: () => { press(app); app.openTab?.(tab as never, sub); } }, h('span', { style: 'font-size:20px' }, ico), label)));
     return h('div', {}, hero, qrow, h('div', { class: 'cols', style: 'margin-top:12px' }, newLeft, newRight));
   };
