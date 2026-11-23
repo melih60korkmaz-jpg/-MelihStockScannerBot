@@ -19,10 +19,10 @@ export const GUIDE: Topic[] = [
     id: 'basla', ico: '🎮', title: 'Oyuna başlarken', blocks: [
       { p: 'Bir inşaat şirketi kuruyorsun. Amaç: arsa alıp bina yapmak, daireleri satmak, kâr etmek ve şirketi küçük bir müteahhitlikten Holding\'e büyütmek.' },
       { h: 'Oyunun döngüsü' },
-      { ul: ['1) Harita: arsa bul ve satın al.', '2) Projeler: arsaya bina tasarla, inşaatı başlat.', '3) Operasyon: ekip, malzeme ve makineyi hazır tut; şantiyeyi izle.', '4) Satış: bina bitince daireleri sat (ya da ön satışla erkenden başla).', '5) Finans: kasayı, borcu ve kârı takip et. Para biterse iş biter.'] },
+      { ul: ['1) Harita: arsa bul ve satın al.', '2) Projeler: arsaya bina tasarla, inşaatı başlat.', '3) Personel (Menü): ekip, malzeme ve makineyi hazır tut; şantiyeyi izle.', '4) Satış: bina bitince daireleri sat (ya da ön satışla erkenden başla).', '5) Finans: kasayı, borcu ve kârı takip et. Para biterse iş biter.'] },
       { tip: 'En kolay başlangıç: Harita sekmesindeki "Hızlı başlangıç" kartı. Sana uygun bir arsa + proje önerir ve tek dokunuşla inşaata başlar. Nakdinin en fazla %45\'ini kullanır, geri kalanı güvende kalır.' },
       { h: 'Ekranın yapısı' },
-      { ul: ['Üst çubuk: şirket adı, kasa, tarih, zaman hızı, ? (bu rehber), ayarlar, ana menü.', 'Alt çubuk: Şirket, Harita, Projeler, Yönetim, Finans ve Menü. Menü; Şirket, İnşaat, Ticaret, Holding, Piyasalar ve Dünya gruplarıyla tüm sayfalara (Operasyon, İhale, Holding, Piyasa dahil) götürür; kilitli sayfaların açılma koşulları görünür. Nabız atan turuncu nokta sıradaki görevin yeridir.', 'Her sekmenin başında "burada ne var" satırı ve ? düğmesi bulunur; ? bu rehberin ilgili bölümünü açar.'] },
+      { ul: ['Üst çubuk: şirket adı, kasa, tarih, zaman hızı, ? (bu rehber), ayarlar, ana menü.', 'Alt çubuk: Şirket, Harita, Projeler, Yönetim, Finans ve Menü. Menü; Şirket, İnşaat, Ticaret, Holding, Piyasalar ve Dünya gruplarıyla tüm sayfalara (Personel, İhale, Holding, Piyasa dahil) götürür; kilitli sayfaların açılma koşulları görünür. Nabız atan turuncu nokta sıradaki görevin yeridir.', 'Her sekmenin başında "burada ne var" satırı ve ? düğmesi bulunur; ? bu rehberin ilgili bölümünü açar.'] },
     ],
   },
   {
@@ -70,7 +70,7 @@ export const GUIDE: Topic[] = [
       { h: 'Kartta ne görürsün' },
       { ul: ['Bina resmi: inşaat ilerledikçe gri/sönük halden renkli hale açılır.', 'Proje bütçesi, beklenen gelir ve beklenen kâr.', 'Tahmini bitiş, gerçekleşen harcama, kalan bütçe.', 'Düğmeler: İnşaatı başlat, Şantiyeyi aç, Satış merkezi, Arsa dosyası.'] },
       { h: 'İnşaat neden durur?' },
-      { ul: ['Malzeme yok: stok bitti ve sipariş gelmedi (Operasyon › Malzeme).', 'Nakit yok: aşamanın maliyetini ödeyecek kasa yok.', 'Kaza: iş kazası sonrası birkaç gün durur.'] },
+      { ul: ['Malzeme yok: stok bitti ve sipariş gelmedi (Menü › Personel › Malzeme).', 'Nakit yok: aşamanın maliyetini ödeyecek kasa yok.', 'Kaza: iş kazası sonrası birkaç gün durur.'] },
       { tip: 'Ön satış: betonarme aşamasından sonra daireleri inşaat sürerken satabilirsin; nakit girer ama teslim gecikirse ceza doğar.' },
     ],
   },
@@ -85,7 +85,7 @@ export const GUIDE: Topic[] = [
   },
   {
     id: 'ekip', ico: '👷', title: 'Ekip ve "Kim nerede?"', blocks: [
-      { p: 'Operasyon › Ekip. Üstteki "Kim nerede?" panosu kimin nerede çalıştığını gösterir: Ofis, Ortak havuz ve her aktif proje için ayrı bir sütun. Yana kaydırarak hepsini görürsün.' },
+      { p: 'Menü › Personel › Ekip. Üstteki "Kim nerede?" panosu kimin nerede çalıştığını gösterir: Ofis, Ortak havuz ve her aktif proje için ayrı bir sütun. Yana kaydırarak hepsini görürsün.' },
       { h: 'İki tür çalışan' },
       { ul: ['Saha: işçi, usta, kalıpçı, demirci, elektrikçi, tesisatçı, şantiye şefi. İnşaatta çalışırlar.', 'Ofis: mimar, mühendis, proje yöneticisi, muhasebeci, satış danışmanı, satın alma sorumlusu. Ofiste çalışırlar; tasarım, ruhsat, satış ve alım gibi işleri hızlandırırlar.'] },
       { h: 'Atama' },
@@ -102,7 +102,7 @@ export const GUIDE: Topic[] = [
   },
   {
     id: 'malzeme', ico: '🧱', title: 'Malzeme ve tedarik', blocks: [
-      { p: 'Operasyon › Malzeme. 17 malzeme: demir, hazır beton, çimento, tuğla, gazbeton, kum, çakıl, cam, alüminyum, seramik, parke, boya, yalıtım, kablo, boru, kapı-pencere, çatı. Her aşama kendi malzemesini tüketir.' },
+      { p: 'Menü › Personel › Malzeme. 17 malzeme: demir, hazır beton, çimento, tuğla, gazbeton, kum, çakıl, cam, alüminyum, seramik, parke, boya, yalıtım, kablo, boru, kapı-pencere, çatı. Her aşama kendi malzemesini tüketir.' },
       { ul: ['Tabloda stok, yolda olan sipariş, birim fiyat ve fiyat trendi (▲ pahalandı, ▼ ucuzladı) görünür.', '"Sipariş" ile miktar ve tedarikçi seçersin; toplam tutar yazarken canlı güncellenir. Malzeme gecikmeyle gelir ("yolda").', 'Sağdaki "Otomatik satın alma" açıksa aktif aşamanın malzemesi tercih edilen tedarikçiden otomatik sipariş edilir.'] },
       { h: 'Tedarikçi seçimi' },
       { p: 'Yerel toptancı, ucuz tedarik, A.Ş. ve direkt tedarik gibi seçenekler fiyat, teslim süresi ve güvenilirlik açısından farklıdır. Ucuz olan geç ya da eksik getirebilir.' },
@@ -122,14 +122,14 @@ export const GUIDE: Topic[] = [
   },
   {
     id: 'makine', ico: '🚜', title: 'Makineler', blocks: [
-      { p: 'Operasyon › Makine. Kule vinç, mobil vinç, ekskavatör, kepçe, dozer, beton pompası, beton mikseri, forklift, kamyon, jeneratör, iskele, kompresör.' },
+      { p: 'Menü › Personel › Makine. Kule vinç, mobil vinç, ekskavatör, kepçe, dozer, beton pompası, beton mikseri, forklift, kamyon, jeneratör, iskele, kompresör.' },
       { ul: ['Satın alırsan sende kalır: aylık bakım ve yakıt gideri var, zamanla değer kaybeder, arızalanabilir.', 'Satın almazsan ilgili aşamada makine günlük kiralanır: sermaye ayırmazsın ama birim maliyet yüksektir.', 'Kartta durum: Beklemede, Kullanımda ya da Arızalı. Arızalı makine tamir bitene kadar çalışmaz; kartı gri olur ve kırmızı "!" çıkar.', 'Sat düğmesi değerinin %90\'ını geri öder.'] },
       { tip: 'Yeni oyunda geçmişine göre küçük bir ekipman hediye gelir (örneğin Eski Kalfa için kamyon ve iskele).' },
     ],
   },
   {
     id: 'guvenlik', ico: '🦺', title: 'İş güvenliği ve politikalar', blocks: [
-      { p: 'Operasyon › Politika. İş güvenliği seviyesi ve tedarikçi tercihini seçersin.' },
+      { p: 'Menü › Personel › Politika. İş güvenliği seviyesi ve tedarikçi tercihini seçersin.' },
       { ul: ['Güvenlik harcaması kısa vadede maliyeti artırır, kaza olasılığını düşürür. Kaza olursa inşaat durur, tazminat ödersin, moral ve itibar düşer.', 'Tedarikçi tercihi otomatik alımda kullanılır.'] },
     ],
   },
@@ -316,14 +316,14 @@ export const GUIDE: Topic[] = [
   {
     id: 'takildim', ico: '🆘', title: 'Takıldım! Sık sorulanlar', blocks: [
       { qa: [
-        ['İnşaat durdu, neden?', 'Şantiye ekranındaki uyarı bandı ve alt panel nedenini gösterir: malzeme yok (Operasyon › Malzeme\'den sipariş ver ya da otomatik alımı aç), nakit yok (kasayı doldur: kredi, ön satış, varlık sat) veya kaza (birkaç gün bekler).'],
+        ['İnşaat durdu, neden?', 'Şantiye ekranındaki uyarı bandı ve alt panel nedenini gösterir: malzeme yok (Menü › Personel › Malzeme\'den sipariş ver ya da otomatik alımı aç), nakit yok (kasayı doldur: kredi, ön satış, varlık sat) veya kaza (birkaç gün bekler).'],
         ['İnşaatı başlat düğmesi çalışmıyor.', 'Düğme onay penceresi açar; "Evet" demelisin. Nakit yetmiyorsa uyarı çıkar. Taslak projenin tasarım bedeli ve ilk aşama için kasada para olmalı.'],
         ['Oyun kendiliğinden durdu.', 'Önemli bir gelişme oldu (olay kararı, seviye, teslim, kaza, kriz, kasa eksi). "⏸" bildirimini okuyup hız düğmesine dokunarak devam et. Bir pencere açıksa zaman beklediğini unutma; kapat.'],
         ['Param bitti.', 'Önce Finans › Gelir-Gider\'de nakit yeterliliğe bak. Çözümler: ön satış aç, tamamlanmış daireleri sat ya da toplu sat, krediyi uygun faizle al, yatırımcı bul, gereksiz makine ve arsa sat, işten çıkarma son çaredir.'],
         ['Satış çok yavaş.', 'Satış merkezinde fiyat çubuğunu aşağı çek (talep ve satış hızı hemen güncellenir), emlakçıyı aç, peşin satışa ya da taksite izin ver. Faiz yüksekse ve piyasa daralıyorsa talep zaten düşüktür.'],
         ['Arsa teklifim kabul edilmiyor.', 'Reddedilen ya da daha düşük teklif tekrar kabul edilmez; biraz yüksek bir teklif dene. Liste fiyatının %100\'ünü verirsen alırsın.'],
         ['Hangi bina tipini yapmalıyım?', 'İlk işte müstakil ev ya da küçük apartman: hızlı, ucuz, düşük risk. Büyük bina tipleri sermaye ve uzun süre ister. Hızlı başlangıç kartı sana uygun olanı önerir.'],
-        ['Ekibim yetmiyor / işler yavaş.', 'Operasyon › Ekip\'te işçi ve usta ekle; saha çalışanlarını projeye ata. Ofis doluysa daha büyük genel merkeze taşın. Düşük moral de yavaşlatır.'],
+        ['Ekibim yetmiyor / işler yavaş.', 'Menü › Personel › Ekip\'te işçi ve usta ekle; saha çalışanlarını projeye ata. Ofis doluysa daha büyük genel merkeze taşın. Düşük moral de yavaşlatır.'],
         ['Kredi taksidini kaçırdım.', 'Kredi notu düşer; üst üste 3 kaçırmada haciz gelir. Hemen kasayı doldurup Finans › Krediler\'den ödeme yap.'],
         ['Otel ya da AVM nasıl yapılır?', 'Seviye 4\'te Projeler\'den arsaya Otel/AVM projesi başlat (büyük ve ticari imarlı arsa gerekir). Bitince Holding › Otel & AVM\'den işletmeye al; her ay gelir getirir.'],
         ['Nasıl daha hızlı büyürüm?', 'Görevleri izle (ödülleri nakit), her projeyi kârlı bitirip itibarı artır, ihalelere gir, yeni ilde şube aç. Seviye atladıkça daha büyük bina tipleri ve merkezler açılır.'],

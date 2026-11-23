@@ -28,8 +28,18 @@ export const inboxUnread = (): number => unread;
 export const inboxMarkRead = () => { unread = 0; persist(); listeners.forEach((f) => f()); };
 export const inboxClear = () => { inbox = []; unread = 0; persist(); listeners.forEach((f) => f()); };
 export const onInbox = (f: () => void) => { listeners.add(f); return () => listeners.delete(f); };
+/** Kullanıcının dokunuşuna verilen ret/uyarı cümleleri kısa süre görünür (yoksa düğme bozuk sanılır); gerisi yalnızca kutuya düşer. */
+const IMMEDIATE = /🔒|yetersiz|yeterli|yeterince|yapılamaz|olamaz|gerek(ir|li)|bulunamadı|uygun değil|en az|en çok|dolu|zaten|yok\b|açılmadı|yüklenemedi|satın alınamadı/i;
+function flash(msg: string) {
+  let box = document.getElementById('toasts');
+  if (!box) { box = h('div', { id: 'toasts', 'aria-live': 'polite' }); document.body.append(box); }
+  for (const old of Array.from(box.children)) old.remove();
+  const t = h('div', { class: 'toast', role: 'status' }, msg); box.append(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 200); }, 2200);
+}
 export function toast(msg: string, _ms = 2600) {
   if (inbox[0]?.text === msg && Date.now() - inbox[0].t < 3000) return;
+  if (IMMEDIATE.test(msg)) flash(msg);
   inbox.unshift({ t: Date.now(), text: msg }); if (inbox.length > 80) inbox.length = 80; unread = Math.min(99, unread + 1); persist(); listeners.forEach((f) => f());
 }
 /** ✉ düğmesi: okunmamış sayısı rozet olarak görünür. */

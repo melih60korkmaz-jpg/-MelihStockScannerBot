@@ -38,7 +38,7 @@ export function startTutorial(app: App): void {
     const st = STEPS[i]!, el = st.target ? document.querySelector<HTMLElement>(st.target) : null;
     if (!el) { ring.style.display = 'none'; card.className = 'tutcard mid'; card.style.cssText = ''; return; }
     const r = el.getBoundingClientRect(); ring.style.display = 'block';
-    ring.style.cssText = `left:${r.left - 6}px;top:${r.top - 6}px;width:${r.width + 12}px;height:${r.height + 12}px`;
+    ring.style.cssText = `display:block;left:${r.left - 6}px;top:${r.top - 6}px;width:${r.width + 12}px;height:${r.height + 12}px`;
     const below = r.top + r.height / 2 < innerHeight / 2; card.className = 'tutcard ' + (below ? 'bot' : 'top'); card.style.cssText = '';
   };
   const render = () => {

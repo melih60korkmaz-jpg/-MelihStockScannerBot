@@ -104,7 +104,7 @@
   {
    "id": "q_ekip",
    "t": "Ekibini kur",
-   "x": "Operasyon sekmesinden en az 3 çalışan işe al.",
+   "x": "Menü › Personel bölümünden en az 3 çalışan işe al.",
    "m": "staff",
    "n": 3,
    "r": {
@@ -167,7 +167,7 @@
   {
    "id": "q_makine",
    "t": "Kendi makineni al",
-   "x": "Operasyon › Makine'den bir makine satın al.",
+   "x": "Menü › Personel › Makine'den bir makine satın al.",
    "m": "machines",
    "n": 1,
    "r": {

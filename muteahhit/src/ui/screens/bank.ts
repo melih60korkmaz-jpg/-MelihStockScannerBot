@@ -8,7 +8,7 @@ import { fmt, pct } from '../components';
 import type { App } from '../app';
 
 const KIND_LABEL: Record<string, string> = { ticari: 'Ticari kredi', insaat: 'İnşaat kredisi', makine: 'Makine kredisi', kisa: 'Kısa vadeli finansman' };
-const KIND_BLURB: Record<LoanKind, string> = { ticari: '12–60 ay eşit taksit. Nakit ihtiyacı için.', insaat: 'Projeye bağlı kredi hattı (bütçenin %70\'ine kadar). Nakit bitince otomatik çekilir; yalnızca faiz ödenir; satış/hakediş gelirleri önce hattı kapatır.', makine: '12–48 ay. Makine alımında %20 peşinatla (Operasyon › Makine).', kisa: '3 ay vade, sonunda tek ödeme. En çok 3 milyon ₺. Pahalıdır.' };
+const KIND_BLURB: Record<LoanKind, string> = { ticari: '12–60 ay eşit taksit. Nakit ihtiyacı için.', insaat: 'Projeye bağlı kredi hattı (bütçenin %70\'ine kadar). Nakit bitince otomatik çekilir; yalnızca faiz ödenir; satış/hakediş gelirleri önce hattı kapatır.', makine: '12–48 ay. Makine alımında %20 peşinatla (Menü › Personel › Makine).', kisa: '3 ay vade, sonunda tek ödeme. En çok 3 milyon ₺. Pahalıdır.' };
 
 export type BankSub = 'krediler' | 'ortaklar';
 

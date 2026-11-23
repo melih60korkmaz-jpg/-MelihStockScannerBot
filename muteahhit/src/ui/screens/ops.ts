@@ -17,7 +17,7 @@ const hashId = (s: string) => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0))
 const FIELD = new Set(['isci', 'usta', 'kalipci', 'demirci', 'elektrikci', 'tesisatci', 'santiye_sefi']);
 const QUAL = { '-1': 'C', '0': 'B', '1': 'A' } as Record<string, string>;
 
-/** Operasyon sekmesi: ekip ataması ve moral, malzeme stoğu/sipariş, makine parkı, güvenlik ve satın alma politikaları. */
+/** Personel sekmesi: ekip ataması ve moral, malzeme stoğu/sipariş, makine parkı, güvenlik ve satın alma politikaları. */
 export function opsView(app: App, refresh: () => void): HTMLElement {
   const s = app.store.state;
   const seg = h('div', { class: 'seg', role: 'tablist', style: 'margin-bottom:10px;align-self:flex-start' });
