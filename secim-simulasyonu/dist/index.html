@@ -1198,7 +1198,7 @@ function aksiyonYap0(S, id, hedef) {
   if (id === 'miting') ekstra = {tip: 'miting', bolge: BOLGE[hedef], katilim: Math.round(bolgeNufusPay(hedef) * NUFUS_TOPLAM * 1000 * 0.0025 * (0.6 + S.stat.itibar / 80) * (0.8 + rnd(S) * 0.4)), nufus: bolgeNufusPay(hedef) * NUFUS_TOPLAM * 1000};
   if (id === 'tvtart') ekstra = {tip: 'tvtart', rakip: rk.ad, rid: rk.id, risk: !!ek, skor: clamp(Math.round(50 + (S.stat.itibar - 50) * 0.35 + norm(S) * 7 + (ek ? -16 : 9)), 8, 94)};
   var kisa = {medyaili:'Yayın organıyla görüşme yapıldı.',haberlek:'Haber sızdırıldı.',haberyalan:'Haber yayınlandı.',haberduz:'Düzeltme yayınlandı.',haberortaya:'Skandal belgeleri yayında.',skandalkoz:'Skandal gündemde tutuldu.',belediye:'Belediyede çalışmalar başladı.',bldden:'Denetim tamamlandı.',bldborc:'Borç yapılandırıldı.',bldbaskan:'Belediye başkanı değişti.',yasa:'Teklif Meclis yolunda.',guvenoyu:'Güvenoyu oylaması yapıldı.',gensoru:'Önerge Meclis gündeminde.',ilodak:'Saha ekibi ilde çalışmaya başladı.',delege:'Delegelerle görüşmeler yapıldı.',hizip:'Hizip çalışması yürütüldü.',elestir:'Açıklaman gündem oldu.',miting:'Kalabalık toplandı.',teskilat:'Yeni teşkilat çalışmaları başladı.',secmen:'Görüşme verimli geçti.',uye:'Yeni üye kayıtları geldi.',kadro:'Kadro toparlandı.',bagis:'Bağışlar kasaya girdi.',tv:'Programdan sonra mesajların yayıldı.',tatil:'Dinlendin, tazelendin.',viral:'İçerik hızla yayıldı.',canli:'Canlı yayın sona erdi.',influencer:'Anlaşma yapıldı.',trol:'Hesaplar devrede.',algi:'Operasyon yürürlükte.',gazete:'Gazete yayına başladı.',tvtart:'Tartışma sona erdi.',basin:'Basın toplantısı yapıldı.'};
-  var msg = a.ad + ': ' + kisa[id] + (ek ? ' ' + ek : '');
+  var msg = a.ad + ': ' + (kisa[id] || 'Uygulandı.') + (ek ? ' ' + ek : '');
   S.log.unshift({t: tarihYaz(S.tarih), m: msg}); S.log = S.log.slice(0, 40);
   return {ok: true, msg: msg, chips: chipler(d), kalan: S.aksiyon.kalan, ekstra: ekstra};
 }
@@ -3808,8 +3808,7 @@ function yardim() {
 function modSec() {
   root.innerHTML = '<div class="menu"><h2>Mod seç</h2>' +
     '<button class="modc" id="m1"><h3>Yeni Parti Kur</h3><p class="muted small" style="margin:6px 0 0">Sıfırdan bir parti. Baraj, teşkilat ve ittifak mücadelesi.</p></button>' +
-    '<button class="modc" id="m2"><h3>Mevcut Partiyi Yönet</h3><p class="muted small" style="margin:6px 0 0">Gerçek bir partinin genel başkanı ol.</p></button>' +
-    '<button class="modc" disabled><h3>Siyasi Kariyer <span class="pill">Yakında</span></h3></button>' +
+    '<button class="modc" id="m2"><h3>Mevcut Partiyi Yönet</h3><p class="muted small" style="margin:6px 0 0">Oyundaki mevcut partilerden birinin genel başkanı ol (kurgusal).</p></button>' +
     '<button class="modc" id="m3"><h3>Rastgele Hikâye</h3><p class="muted small" style="margin:6px 0 0">Rastgele parti, ekonomi ve siyasi denge. Her seferinde farklı bir kariyer.</p></button>' +
     '<button class="btn ghost" id="geri" style="margin-top:6px">Geri</button></div>';
   $('#m1').onclick = kurulumYeni; $('#m2').onclick = kurulumMevcut; $('#m3').onclick = rastgeleHikaye; $('#geri').onclick = menu;
@@ -4255,7 +4254,7 @@ function splash(o, fn) {
 function queue() {
   if (!S || sheetEl) return;
   var it = S.kuyruk.shift(); if (!it) { kayit(); return; }
-  if (it.t === 'acilis') acilis(); else if (it.t === 'ozet') ozet(it); else if (it.t === 'kart') kart(it); else if (it.t === 'secim') secimGece(it.sonuc); else if (it.t === 'kurultay') kurultaySheet(it); else if (it.t === 'oylama') oylamaSheet(it); else if (it.t === 'koalisyon') koalisyonSheet(); else if (it.t === 'skandal') skandalSheet(it); else if (it.t === 'olay') splash({ses: it.ses || 'istifa', tema: it.erken ? 'b' : (it.tema || ''), ikon: it.ikon, ust: esc(it.ust), baslik: esc(it.baslik), alt: esc(it.alt || ''), satirlar: (it.satirlar || []).map(esc)}, function () { render(); queue(); }); else if (it.t === 'sd') { sdGoster([it]); render(); queue(); } else if (it.t === 'teklif') teklifSheet(it); else if (it.t === 'bitis') bitisSahne();
+  if (it.t === 'acilis') acilis(); else if (it.t === 'ozet') ozet(it); else if (it.t === 'kart') kart(it); else if (it.t === 'secim') secimGece(it.sonuc); else if (it.t === 'kurultay') kurultaySheet(it); else if (it.t === 'oylama') oylamaSheet(it); else if (it.t === 'koalisyon') koalisyonSheet(); else if (it.t === 'skandal') skandalSheet(it); else if (it.t === 'olay') splash({ses: it.ses || 'istifa', tema: it.erken ? 'b' : (it.tema || ''), ikon: it.ikon, ust: esc(it.ust), baslik: esc(it.baslik), alt: esc(it.alt || ''), satirlar: (it.satirlar || []).map(function (l) { return l && typeof l === 'object' ? {k: esc(l.k), v: esc(l.v), c: l.c} : esc(l); }), alinti: it.alinti ? [esc(it.alinti[0]), esc(it.alinti[1])] : undefined, gazete: it.gazete, konfeti: it.konfeti, ticker: it.ticker ? esc(it.ticker) : undefined}, function () { render(); queue(); }); else if (it.t === 'sd') { sdGoster([it]); render(); queue(); } else if (it.t === 'teklif') teklifSheet(it); else if (it.t === 'bitis') bitisSahne();
 }
 function acilis() {
   var yeni = S.mod === 'yeni';
@@ -4333,7 +4332,7 @@ function tRakip() {
   h += '<div class="eyebrow">Rakip partiler</div><div class="small muted" style="margin-bottom:8px">Kasası boşalan ya da lideri sarsılan rakip savunmasızdır; güçlü kasalı ve teşkilatlı rakip ise sahada baskı kurar.</div>';
   h += sr.map(function (id) {
     var r = S.rk[id], kas = r.kasa == null ? null : r.kasa, tk = r.tesk == null ? null : r.tesk, zayif = r.kriz || r.guc < 34 || (kas != null && kas < 15);
-    return '<div class="card"><h3><span class="kpr">' + portre(r.lider || id, partiRengi(S, id), 38) + ' ' + rozet(id, 22) + ' ' + esc(partiAdi(S, id)) + '</span><small>%' + f1(S.anket[id]) + '</small></h3>' +
+    return '<div class="card"><h3><span class="kpr">' + portreG(r.lider || id, partiRengi(S, id), 38) + ' ' + rozet(id, 22) + ' ' + esc(partiAdi(S, id)) + '</span><small>%' + f1(S.anket[id]) + '</small></h3>' +
       '<div class="row small"><span>Lider</span><b>' + esc(r.lider) + (r.kriz ? ' · kriz' : '') + '</b></div>' +
       '<div class="row small"><span>Hat</span><b>' + esc(STRAT[r.strateji] || '') + '</b></div>' +
       '<div class="row small"><span>Lider gücü</span><b>' + Math.round(r.guc) + '</b></div>' + bar(r.guc, r.guc < 34 ? 'var(--bad,#c44)' : 'var(--gold)') +
@@ -4489,7 +4488,7 @@ function ilSheet(i) {
   var P = paylar(S), o = P.il[i], il = ILLER[i], s = siralama(o).slice(0, 6), pid = S.pid, tr = S.ilOnce ? o[pid] - S.ilOnce[i] : 0;
   var son = S.sonSecim && S.sonSecim.il ? S.sonSecim.il[i] : null;
   var ed = siralama(o).filter(function (id) { return id !== pid; })[0];
-  var h = '<div class="lab">' + BOLGE[il.bolge] + ' · Plaka ' + il.id + '</div><h2>' + il.ad + '</h2>' + (ed ? '<div class="ilr">' + portre(liderAdi(ed), partiRengi(S, ed), 44) + '<div><div class="tiny muted">İlin en güçlü rakibi</div><b>' + esc(partiAdi(S, ed)) + '</b><span class="muted small"> · ' + esc(liderAdi(ed)) + ' · %' + f1(o[ed]) + '</span></div></div>' : '') +
+  var h = '<div class="lab">' + BOLGE[il.bolge] + ' · Plaka ' + il.id + '</div><h2>' + il.ad + '</h2>' + (ed ? '<div class="ilr">' + portreG(liderAdi(ed), partiRengi(S, ed), 44) + '<div><div class="tiny muted">İlin en güçlü rakibi</div><b>' + esc(partiAdi(S, ed)) + '</b><span class="muted small"> · ' + esc(liderAdi(ed)) + ' · %' + f1(o[ed]) + '</span></div></div>' : '') +
     '<div class="grid2" style="margin-bottom:8px"><div class="card" style="margin:0;padding:10px"><div class="tiny muted">Nüfus</div><b>' + sayi(il.nufus * 1000) + '</b></div><div class="card" style="margin:0;padding:10px"><div class="tiny muted">Seçmen (tah.)</div><b>' + sayi(il.nufus * 740) + '</b></div><div class="card" style="margin:0;padding:10px"><div class="tiny muted">Milletvekili</div><b>' + il.mv + '</b></div><div class="card" style="margin:0;padding:10px"><div class="tiny muted">Teşkilatım</div><b>' + Math.round(S.org[i]) + '/100</b></div></div>' + bar(S.org[i]) +
     '<div class="eyebrow">Tahmini oy dağılımı</div>' + s.map(function (id) { var d = son && son[id] !== undefined ? o[id] - son[id] : null; return '<div class="pr' + (id === pid ? ' me' : '') + '"><span class="dot" style="background:' + partiRengi(S, id) + '"></span><div><div class="nm"><span>' + esc(partiAdi(S, id)) + '</span></div><div class="pbar"><i style="width:' + Math.min(100, o[id] * 1.6) + '%;background:' + partiRengi(S, id) + '"></i></div></div><b class="num">%' + f1(o[id]) + (d !== null ? ' <span class="tiny ' + (d >= 0 ? 'good' : 'badc') + '">' + (d >= 0 ? '▲' : '▼') + f1(Math.abs(d)) + '</span>' : '') + '</b></div>'; }).join('') +
     '<div class="eyebrow">Siyasi eğilim</div><div class="small">' + (tr > 0.05 ? '📈 ' + esc(S.parti.ad) + ' bu ay yükselişte (+' + f1(tr) + ').' : tr < -0.05 ? '📉 ' + esc(S.parti.ad) + ' bu ay geriledi (' + f1(tr) + ').' : '➖ Bu ay belirgin bir değişim yok.') + (ed ? ' Ana rakip: <b>' + esc(partiAdi(S, ed)) + '</b>.' : '') + '</div>' +
@@ -4616,7 +4615,7 @@ function secimGece(r) {
   }
   function liderler() {
     var ks = r.koltuk, ids2 = Object.keys(r.ulusal).sort(function (a, b) { return r.ulusal[b] - r.ulusal[a]; }).slice(0, 4);
-    sayfa('<div class="lab">LİDERLER</div><h2>Gecenin liderleri</h2><div class="ld">' + ids2.map(function (id, i) { var nm = id === S.pid ? baskanAd(S) : liderAdi(id); return '<div class="lc" style="animation-delay:' + (RM ? 0 : i * 140) + 'ms;border-color:' + partiRengi(S, id) + '">' + portre(nm, partiRengi(S, id), 64) + '<b>' + esc(nm) + '</b><small>' + esc(partiAdi(S, id)) + '</small><div class="lv">%' + f1(r.ulusal[id]) + '</div><small>' + (ks[id] || 0) + ' milletvekili</small></div>'; }).join('') + '</div>', 'Cumhurbaşkanlığı ›', cb);
+    sayfa('<div class="lab">LİDERLER</div><h2>Gecenin liderleri</h2><div class="ld">' + ids2.map(function (id, i) { var nm = id === S.pid ? baskanAd(S) : liderAdi(id); return '<div class="lc" style="animation-delay:' + (RM ? 0 : i * 140) + 'ms;border-color:' + partiRengi(S, id) + '">' + portreG(nm, partiRengi(S, id), 64) + '<b>' + esc(nm) + '</b><small>' + esc(partiAdi(S, id)) + '</small><div class="lv">%' + f1(r.ulusal[id]) + '</div><small>' + (ks[id] || 0) + ' milletvekili</small></div>'; }).join('') + '</div>', 'Cumhurbaşkanlığı ›', cb);
   }
   function bashaba() {
     var kz = r.cb.adaylar[r.cb.kazanan]; el.classList.add('bas');
@@ -5143,7 +5142,7 @@ function profilSheet() { sheet('<h2>Profil</h2>' + profilHtml() + '<button class
 function hashS(s) { s = String(s); var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
 
 /* ---- Lider portresi: isimden üretilen, her zaman aynı çıkan SVG yüz ---- */
-function portre(seed, renk, boy) {
+function portreG(seed, renk, boy) {
   var h = hashS(seed), P = function (n, k) { return (h >>> (k * 3)) % n; };
   var skin = ['#f1c9a5', '#e3b088', '#c98f66', '#a86d48', '#7a4b32'][P(5, 0)];
   var hair = ['#1b1b1f', '#3a2a20', '#6b4a2f', '#9a9aa2', '#c9a24a', '#2b1d14'][P(6, 1)];
@@ -5231,7 +5230,7 @@ function gazeteHtml(g) {
   var ld = S.lider ? S.lider.ad : 'Genel Başkan';
   return '<div class="gz"><div class="gz-mh"><span>GÜNLÜK HABER</span><small>' + tarihYaz(S.tarih) + ' · ' + esc(g.ust || 'ÖZEL SAYI') + '</small></div>' +
     '<h1 class="gz-h">' + esc(g.manset) + '</h1><div class="gz-s">' + esc(g.alt || '') + '</div>' +
-    '<div class="gz-row"><div class="gz-pt">' + portre(ld, S.parti.renk, 74) + '<small>' + esc(ld) + '<br>' + esc(S.parti.ad) + '</small></div><div class="gz-ch"><div class="gz-lab">ANKET DURUMU</div>' + bars + '</div></div>' +
+    '<div class="gz-row"><div class="gz-pt">' + portreG(ld, S.parti.renk, 74) + '<small>' + esc(ld) + '<br>' + esc(S.parti.ad) + '</small></div><div class="gz-ch"><div class="gz-lab">ANKET DURUMU</div>' + bars + '</div></div>' +
     '<div class="gz-col">' + br + '</div><div class="gz-ft">Kurgusal bir simülasyondur. Kişi ve kurumlar uydurmadır.</div></div>';
 }
 function gazeteAc(g) {

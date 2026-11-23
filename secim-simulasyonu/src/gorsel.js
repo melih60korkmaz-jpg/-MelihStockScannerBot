@@ -4,7 +4,7 @@
 function hashS(s) { s = String(s); var h = 7; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
 
 /* ---- Lider portresi: isimden üretilen, her zaman aynı çıkan SVG yüz ---- */
-function portre(seed, renk, boy) {
+function portreG(seed, renk, boy) {
   var h = hashS(seed), P = function (n, k) { return (h >>> (k * 3)) % n; };
   var skin = ['#f1c9a5', '#e3b088', '#c98f66', '#a86d48', '#7a4b32'][P(5, 0)];
   var hair = ['#1b1b1f', '#3a2a20', '#6b4a2f', '#9a9aa2', '#c9a24a', '#2b1d14'][P(6, 1)];
@@ -92,7 +92,7 @@ function gazeteHtml(g) {
   var ld = S.lider ? S.lider.ad : 'Genel Başkan';
   return '<div class="gz"><div class="gz-mh"><span>GÜNLÜK HABER</span><small>' + tarihYaz(S.tarih) + ' · ' + esc(g.ust || 'ÖZEL SAYI') + '</small></div>' +
     '<h1 class="gz-h">' + esc(g.manset) + '</h1><div class="gz-s">' + esc(g.alt || '') + '</div>' +
-    '<div class="gz-row"><div class="gz-pt">' + portre(ld, S.parti.renk, 74) + '<small>' + esc(ld) + '<br>' + esc(S.parti.ad) + '</small></div><div class="gz-ch"><div class="gz-lab">ANKET DURUMU</div>' + bars + '</div></div>' +
+    '<div class="gz-row"><div class="gz-pt">' + portreG(ld, S.parti.renk, 74) + '<small>' + esc(ld) + '<br>' + esc(S.parti.ad) + '</small></div><div class="gz-ch"><div class="gz-lab">ANKET DURUMU</div>' + bars + '</div></div>' +
     '<div class="gz-col">' + br + '</div><div class="gz-ft">Kurgusal bir simülasyondur. Kişi ve kurumlar uydurmadır.</div></div>';
 }
 function gazeteAc(g) {

@@ -59,8 +59,7 @@ function yardim() {
 function modSec() {
   root.innerHTML = '<div class="menu"><h2>Mod seç</h2>' +
     '<button class="modc" id="m1"><h3>Yeni Parti Kur</h3><p class="muted small" style="margin:6px 0 0">Sıfırdan bir parti. Baraj, teşkilat ve ittifak mücadelesi.</p></button>' +
-    '<button class="modc" id="m2"><h3>Mevcut Partiyi Yönet</h3><p class="muted small" style="margin:6px 0 0">Gerçek bir partinin genel başkanı ol.</p></button>' +
-    '<button class="modc" disabled><h3>Siyasi Kariyer <span class="pill">Yakında</span></h3></button>' +
+    '<button class="modc" id="m2"><h3>Mevcut Partiyi Yönet</h3><p class="muted small" style="margin:6px 0 0">Oyundaki mevcut partilerden birinin genel başkanı ol (kurgusal).</p></button>' +
     '<button class="modc" id="m3"><h3>Rastgele Hikâye</h3><p class="muted small" style="margin:6px 0 0">Rastgele parti, ekonomi ve siyasi denge. Her seferinde farklı bir kariyer.</p></button>' +
     '<button class="btn ghost" id="geri" style="margin-top:6px">Geri</button></div>';
   $('#m1').onclick = kurulumYeni; $('#m2').onclick = kurulumMevcut; $('#m3').onclick = rastgeleHikaye; $('#geri').onclick = menu;
@@ -506,7 +505,7 @@ function splash(o, fn) {
 function queue() {
   if (!S || sheetEl) return;
   var it = S.kuyruk.shift(); if (!it) { kayit(); return; }
-  if (it.t === 'acilis') acilis(); else if (it.t === 'ozet') ozet(it); else if (it.t === 'kart') kart(it); else if (it.t === 'secim') secimGece(it.sonuc); else if (it.t === 'kurultay') kurultaySheet(it); else if (it.t === 'oylama') oylamaSheet(it); else if (it.t === 'koalisyon') koalisyonSheet(); else if (it.t === 'skandal') skandalSheet(it); else if (it.t === 'olay') splash({ses: it.ses || 'istifa', tema: it.erken ? 'b' : (it.tema || ''), ikon: it.ikon, ust: esc(it.ust), baslik: esc(it.baslik), alt: esc(it.alt || ''), satirlar: (it.satirlar || []).map(esc)}, function () { render(); queue(); }); else if (it.t === 'sd') { sdGoster([it]); render(); queue(); } else if (it.t === 'teklif') teklifSheet(it); else if (it.t === 'bitis') bitisSahne();
+  if (it.t === 'acilis') acilis(); else if (it.t === 'ozet') ozet(it); else if (it.t === 'kart') kart(it); else if (it.t === 'secim') secimGece(it.sonuc); else if (it.t === 'kurultay') kurultaySheet(it); else if (it.t === 'oylama') oylamaSheet(it); else if (it.t === 'koalisyon') koalisyonSheet(); else if (it.t === 'skandal') skandalSheet(it); else if (it.t === 'olay') splash({ses: it.ses || 'istifa', tema: it.erken ? 'b' : (it.tema || ''), ikon: it.ikon, ust: esc(it.ust), baslik: esc(it.baslik), alt: esc(it.alt || ''), satirlar: (it.satirlar || []).map(function (l) { return l && typeof l === 'object' ? {k: esc(l.k), v: esc(l.v), c: l.c} : esc(l); }), alinti: it.alinti ? [esc(it.alinti[0]), esc(it.alinti[1])] : undefined, gazete: it.gazete, konfeti: it.konfeti, ticker: it.ticker ? esc(it.ticker) : undefined}, function () { render(); queue(); }); else if (it.t === 'sd') { sdGoster([it]); render(); queue(); } else if (it.t === 'teklif') teklifSheet(it); else if (it.t === 'bitis') bitisSahne();
 }
 function acilis() {
   var yeni = S.mod === 'yeni';
@@ -584,7 +583,7 @@ function tRakip() {
   h += '<div class="eyebrow">Rakip partiler</div><div class="small muted" style="margin-bottom:8px">Kasası boşalan ya da lideri sarsılan rakip savunmasızdır; güçlü kasalı ve teşkilatlı rakip ise sahada baskı kurar.</div>';
   h += sr.map(function (id) {
     var r = S.rk[id], kas = r.kasa == null ? null : r.kasa, tk = r.tesk == null ? null : r.tesk, zayif = r.kriz || r.guc < 34 || (kas != null && kas < 15);
-    return '<div class="card"><h3><span class="kpr">' + portre(r.lider || id, partiRengi(S, id), 38) + ' ' + rozet(id, 22) + ' ' + esc(partiAdi(S, id)) + '</span><small>%' + f1(S.anket[id]) + '</small></h3>' +
+    return '<div class="card"><h3><span class="kpr">' + portreG(r.lider || id, partiRengi(S, id), 38) + ' ' + rozet(id, 22) + ' ' + esc(partiAdi(S, id)) + '</span><small>%' + f1(S.anket[id]) + '</small></h3>' +
       '<div class="row small"><span>Lider</span><b>' + esc(r.lider) + (r.kriz ? ' · kriz' : '') + '</b></div>' +
       '<div class="row small"><span>Hat</span><b>' + esc(STRAT[r.strateji] || '') + '</b></div>' +
       '<div class="row small"><span>Lider gücü</span><b>' + Math.round(r.guc) + '</b></div>' + bar(r.guc, r.guc < 34 ? 'var(--bad,#c44)' : 'var(--gold)') +

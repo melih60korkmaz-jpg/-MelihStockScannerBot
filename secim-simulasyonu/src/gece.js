@@ -108,7 +108,7 @@ function secimGece(r) {
   }
   function liderler() {
     var ks = r.koltuk, ids2 = Object.keys(r.ulusal).sort(function (a, b) { return r.ulusal[b] - r.ulusal[a]; }).slice(0, 4);
-    sayfa('<div class="lab">LİDERLER</div><h2>Gecenin liderleri</h2><div class="ld">' + ids2.map(function (id, i) { var nm = id === S.pid ? baskanAd(S) : liderAdi(id); return '<div class="lc" style="animation-delay:' + (RM ? 0 : i * 140) + 'ms;border-color:' + partiRengi(S, id) + '">' + portre(nm, partiRengi(S, id), 64) + '<b>' + esc(nm) + '</b><small>' + esc(partiAdi(S, id)) + '</small><div class="lv">%' + f1(r.ulusal[id]) + '</div><small>' + (ks[id] || 0) + ' milletvekili</small></div>'; }).join('') + '</div>', 'Cumhurbaşkanlığı ›', cb);
+    sayfa('<div class="lab">LİDERLER</div><h2>Gecenin liderleri</h2><div class="ld">' + ids2.map(function (id, i) { var nm = id === S.pid ? baskanAd(S) : liderAdi(id); return '<div class="lc" style="animation-delay:' + (RM ? 0 : i * 140) + 'ms;border-color:' + partiRengi(S, id) + '">' + portreG(nm, partiRengi(S, id), 64) + '<b>' + esc(nm) + '</b><small>' + esc(partiAdi(S, id)) + '</small><div class="lv">%' + f1(r.ulusal[id]) + '</div><small>' + (ks[id] || 0) + ' milletvekili</small></div>'; }).join('') + '</div>', 'Cumhurbaşkanlığı ›', cb);
   }
   function bashaba() {
     var kz = r.cb.adaylar[r.cb.kazanan]; el.classList.add('bas');
