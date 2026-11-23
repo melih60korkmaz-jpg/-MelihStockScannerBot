@@ -505,3 +505,5 @@ button,.card,.modc,.cx{touch-action:manipulation;-webkit-tap-highlight-color:tra
 details.dt{padding:12px 14px}details.dt summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
 details.dt summary::-webkit-details-marker{display:none}details.dt summary::after{content:'＋';color:var(--gold,#f0b429);font-size:18px}
 details.dt[open] summary::after{content:'－'}details.dt p{margin:8px 0 0}
+
+.mz{flex-direction:row!important;top:auto!important;bottom:8px;right:8px}

@@ -178,7 +178,7 @@ function kartCiz() {
   var r = S.kariyerSonuc, k = S.kariyer, gun = k.id === 'gunluk', b = gun ? null : bolumBul(k.id), y = r.yildiz || 0;
   var cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1350; var c = cv.getContext('2d'), renk = S.parti.renk || '#e63b5f';
   var g = c.createLinearGradient(0, 0, 0, 1350); g.addColorStop(0, '#1b1020'); g.addColorStop(0.55, '#0e0b16'); g.addColorStop(1, '#07060b'); c.fillStyle = g; c.fillRect(0, 0, 1080, 1350);
-  var rg = c.createRadialGradient(540, 420, 20, 540, 420, 700); rg.addColorStop(0, renk + '88'); rg.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = rg; c.fillRect(0, 0, 1080, 1350);
+  var rg = c.createRadialGradient(540, 420, 20, 540, 420, 700); rg.addColorStop(0, renk + '88'); rg.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = rg; c.fillRect(0, 0, 1080, 1350); try { kartHarita(c); } catch (e) { /* harita çizilemezse kart yine çıkar */ }
   /* oy sandığı */
   c.save(); c.translate(540, 70); c.fillStyle = '#f2f2f6'; kartRRect(c, -95, 40, 190, 120, 18); c.fill(); c.fillStyle = '#f0b429'; kartRRect(c, -115, 20, 230, 40, 14); c.fill(); c.fillStyle = '#2a0f1c'; kartRRect(c, -60, 30, 120, 16, 8); c.fill();
   c.save(); c.rotate(-0.14); c.fillStyle = '#fff'; kartRRect(c, -50, -40, 100, 110, 10); c.fill(); c.strokeStyle = '#e0344c'; c.lineWidth = 12; c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); c.moveTo(-26, 14); c.lineTo(-6, 36); c.lineTo(28, -12); c.stroke(); c.restore(); c.restore();

@@ -87,40 +87,6 @@ function tSozluk() {
   return h;
 }
 
-/* ---------- Grafik: anket seyri + başlangıçtan beri değişim ---------- */
-function tGrafik() {
-  var g = (S.anketGecmis || []).slice(-36), st = S.stat, h = '<div class="card"><b>📈 Anket seyri</b><div class="small muted" style="margin:4px 0 8px">Son ' + g.length + ' ay · baraj çizgisi kesikli</div>';
-  if (g.length < 2) h += '<div class="small muted">Birkaç ay oynayınca grafik dolacak.</div>';
-  else {
-    var W = 320, H = 130, mx = Math.max(10, Math.ceil(Math.max.apply(null, g.map(function (x) { return x.p; })) + 2)), px = function (i) { return 8 + i * (W - 16) / (g.length - 1); }, py = function (v) { return H - 10 - (H - 20) * v / mx; };
-    var pts = g.map(function (x, i) { return px(i).toFixed(1) + ',' + py(x.p).toFixed(1); }).join(' ');
-    h += '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Anket grafiği"><line x1="8" x2="' + (W - 8) + '" y1="' + py(7).toFixed(1) + '" y2="' + py(7).toFixed(1) + '" stroke="#e8b04b" stroke-dasharray="4 4" opacity=".7"/><polyline fill="none" stroke="' + S.parti.renk + '" stroke-width="3" stroke-linejoin="round" points="' + pts + '"/><circle cx="' + px(g.length - 1).toFixed(1) + '" cy="' + py(g[g.length - 1].p).toFixed(1) + '" r="4.5" fill="' + S.parti.renk + '"/></svg>';
-    var en = Math.max.apply(null, g.map(function (x) { return x.p; })), dp = g[g.length - 1].p - g[0].p;
-    h += '<div class="row small" style="margin-top:6px"><span>En yüksek</span><b>%' + en.toFixed(1).replace('.', ',') + '</b></div><div class="row small"><span>Dönem değişimi</span><b style="color:' + (dp >= 0 ? 'var(--ok,#4cc38a)' : 'var(--bad,#ef6b6b)') + '">' + (dp >= 0 ? '+' : '') + dp.toFixed(1).replace('.', ',') + ' puan</b></div>';
-  }
-  h += '</div><div class="card"><b>📋 Şu an</b><div class="row small" style="margin-top:8px"><span>Anket</span><b>%' + S.anketOyuncu.toFixed(1).replace('.', ',') + '</b></div><div class="row small"><span>Üye</span><b>' + Math.round(st.uye).toLocaleString('tr-TR') + '</b></div><div class="row small"><span>Teşkilatlı il</span><b>' + teskilatSayisi(S) + '/81</b></div><div class="row small"><span>İtibar</span><b>' + Math.round(st.itibar) + '</b></div><div class="row small"><span>Parti birliği</span><b>' + Math.round(st.birlik) + '</b></div><div class="row small"><span>Stres</span><b>' + Math.round(st.stres) + '</b></div></div>';
-  return h;
-}
-
-/* ---------- Görevler: bu aya özel basit işler ---------- */
-function gorevListe() {
-  var st = S.stat, ts = teskilatSayisi(S), a = S.anketOyuncu, ad = Math.ceil(a / 2) * 2 + 2;
-  return [
-    ['⚡', 'Bu ayın 3 hakkını kullan', S.aksiyon.kalan === 0, 'Genel sekmesinden aksiyon seç.'],
-    ['📊', 'Anketi %' + ad + ' üstüne çıkar', a >= ad, 'Şu an %' + a.toFixed(1).replace('.', ',') + '.'],
-    ['📍', 'Teşkilatı ' + Math.min(81, ts + 3) + ' ile çıkar', false, 'Şu an ' + ts + ' il. "Teşkilat Mesaisi" işe yarar.'],
-    ['💰', 'Kasayı eksiye düşürme', st.kasa > 0, 'Şu an ' + (st.kasa / 1e6).toFixed(1).replace('.', ',') + ' M ₺.'],
-    ['🤝', 'Parti birliğini 60 üstünde tut', st.birlik >= 60, 'Şu an ' + Math.round(st.birlik) + '.'],
-    ['😮‍💨', 'Stresi 60 altında tut', st.stres < 60, 'Şu an ' + Math.round(st.stres) + '.']
-  ];
-}
-function tGorev() {
-  var L = gorevListe(), n = L.filter(function (x) { return x[2]; }).length;
-  return '<div class="card"><b>✅ Bu ayın görevleri</b><div class="small muted" style="margin-top:4px">' + n + '/' + L.length + ' tamam · ay bitince yenilenir. Ödül yok, yön gösterir.</div></div>' + L.map(function (x) {
-    return '<div class="card hd-o"><div class="hd-i">' + (x[2] ? '✅' : x[0]) + '</div><div style="flex:1"><b' + (x[2] ? ' style="opacity:.6;text-decoration:line-through"' : '') + '>' + x[1] + '</b><div class="small muted">' + x[3] + '</div></div></div>';
-  }).join('');
-}
-
 /* ---------- Notlar: kendi defterin (kayda girer) ---------- */
 function tNotlar() {
   var n = S.notlar || [];

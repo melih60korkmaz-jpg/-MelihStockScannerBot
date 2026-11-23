@@ -1418,7 +1418,7 @@ function ayiBitir(S) {
     if (S.sbias && S.sbias[p.id]) { hedefMod *= S.sbias[p.id]; S.sbias[p.id] = 1 + (S.sbias[p.id] - 1) * 0.985; }
     S.mods[j] = clamp(S.mods[j] + (hedefMod - S.mods[j]) * 0.1 + (rnd(S) - 0.5) * 0.02, 0.6, 1.5);
   });
-  var rkh = rakipTick(S);
+  var rkh = rakipTick(S); rkh = rkh.concat(typeof genisleTick === 'function' ? genisleTick(S) : []);
   if (muhalifMu(S)) { rkh = rkh.concat(muhalifTick(S)); rkh = rkh.concat(erkenBaski(S)); } else { rkh = rkh.concat(kadroTick(S)); rkh = rkh.concat(asama2Tick(S)); rkh = rkh.concat(meclisTick(S)); rkh = rkh.concat(kpTick(S)); }
   rkh = rkh.concat(bldTick(S)); rkh = rkh.concat(mdTick(S)); rkh = rkh.concat(ilisTick(S));
   yilRapor(S); mirasTick(S);
