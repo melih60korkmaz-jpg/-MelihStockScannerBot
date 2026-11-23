@@ -6,6 +6,8 @@ import { COMMISSION, COMMON_RATIO, qualityFit, refSale, askPrice, TAPU_HARCI } f
 export { COMMISSION, COMMON_RATIO, qualityFit };
 /** Oyun içi inşaat maliyet kolaylığı: oyuncu ilk projelerde nakitsiz kalmasın, kâr marjı büyüsün. */
 export const COST_EASE = 0.88;
+/** Satış fiyatı bonusu: piyasa biraz cömert, kâr marjı büyür. */
+export const SALE_BONUS = 1.08;
 const SOFT_STAGES = new Set(['planlama', 'mimari', 'statik', 'elmek', 'ruhsat']);
 const SOFT_SHARE = STAGE_SHARES.filter(([k]) => SOFT_STAGES.has(k)).reduce((a, [, w]) => a + w, 0) / 100; // 0,065
 const DESIGN_SHARE = STAGE_SHARES.filter(([k]) => k === 'planlama' || k === 'mimari').reduce((a, [, w]) => a + w, 0) / 100; // 0,025
@@ -58,7 +60,7 @@ export function planProject(s: GameState, p: Parcel, typeId: string, qualityId: 
   const months = { min: Math.max(2, Math.round(mid * 0.85)), max: Math.round(mid * 1.15) };
   const housing = s.cityMarket[p.city]?.housingIndex ?? 1;
   const fit = qualityFit(qualityId, d.income);
-  const salePerM2 = Math.round(TL(refSale(d, t.use === 'konut' ? 'konut' : t.use === 'ticari' ? 'ticaret' : 'sanayi')) * t.saleMult * q.saleMult * fit * housing);
+  const salePerM2 = Math.round(TL(refSale(d, t.use === 'konut' ? 'konut' : t.use === 'ticari' ? 'ticaret' : 'sanayi')) * t.saleMult * q.saleMult * fit * housing * SALE_BONUS);
   const revMid = Math.round(satilabilir * salePerM2 * (1 - (p.kat?.share ?? 0))); // kat karşılığında arsa sahibinin payı düşer
   const band = 0.08 + (s.macro.regime === 'kriz' ? 0.12 : s.macro.regime === 'daralma' || s.macro.regime === 'asiri_isinma' ? 0.04 : 0);
   const land = landCost ?? Math.round(askPrice(s, p) * (1 + TAPU_HARCI));

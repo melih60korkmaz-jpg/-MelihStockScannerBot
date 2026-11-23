@@ -15,10 +15,12 @@ import { landAssetValue } from './land';
 import { advancesTotal, receivablesTotal, unsoldValue } from './sales';
 import { machineAssetValue, machineMonthlyMaint } from './machines';
 
+/** Kolay oyun: maaşlar %30 düşük (erken oyunda sabit gider nakdi eritmesin). */
+export const WAGE_EASE = 0.7;
 /** Her ay yapılan sabit giderler. Hem motor (ödeme) hem arayüz (beklenen gider) bunu kullanır → tek doğru. */
 export function monthlyCosts(s: GameState): { cat: string; amount: Money; memo: string }[] {
   const c = s.company; if (!c) return [];
-  const wages = s.staff.reduce((a, x) => a + x.salary, 0);
+  const wages = Math.round(s.staff.reduce((a, x) => a + x.salary, 0) * WAGE_EASE);
   const off = officeFor(c.office), ci = s.costIndex;
   const out: { cat: string; amount: Money; memo: string }[] = [];
   if (wages > 0) out.push({ cat: 'maas', amount: wages, memo: `${s.staff.length} çalışan` });

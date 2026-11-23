@@ -93,7 +93,9 @@ export const canTrade = (s: GameState, cityId: string) => s.openCities.includes(
 // ---------- Değerleme ----------
 export const landIndex = (s: GameState, p: Parcel) => s.cityMarket[p.city]?.landIndex ?? 1;
 export const fairValue = (s: GameState, p: Parcel): Money => Math.round(p.unitBase * p.area * landIndex(s, p));
-export const askPrice = (s: GameState, p: Parcel): Money => Math.round(fairValue(s, p) * p.askMult);
+/** Kolay oyun: arsa istenen fiyatları %10 düşük. */
+export const LAND_EASE = 0.9;
+export const askPrice = (s: GameState, p: Parcel): Money => Math.round(fairValue(s, p) * p.askMult * LAND_EASE);
 const hash01 = (id: number, salt: number) => (((id * 2654435761 + salt * 40503) >>> 0) % 1000) / 1000;
 
 /** Oyuncunun görebildiği tahmini değer aralığı: araştırma yoksa geniş, varsa dar. Gerçek değer aralık içindedir. */

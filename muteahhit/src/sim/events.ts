@@ -112,7 +112,7 @@ export const applyEffect = (s: GameState, e: EffectTuple, p: PendingEvent, event
 function apply(s: GameState, e: EffectTuple, p: PendingEvent, events: GameEvent[]): void {
   const c = s.company!, k = e[0], v = Number(e[1] ?? 0), f = eventScale(s);
   switch (k) {
-    case 'cash': post(s, v < 0 ? 'olay_gider' : 'olay_gelir', Math.round(TL(v) * f), { memo: eventDef(p.id)?.t ?? 'Olay' }); break;
+    case 'cash': post(s, v < 0 ? 'olay_gider' : 'olay_gelir', Math.round(TL(v) * f * (v < 0 ? 0.6 : 1)), { memo: eventDef(p.id)?.t ?? 'Olay' }); break;
     case 'rep': c.reputation = clamp(c.reputation + v, 0, 100); break;
     case 'score': c.creditScore = clamp(c.creditScore + v, 100, 900); break;
     case 'morale': for (const x of s.staff) x.morale = clamp(x.morale + v, 0, 100); break;

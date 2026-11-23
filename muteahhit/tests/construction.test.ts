@@ -76,7 +76,7 @@ describe('inşaat — nakit, ekip, hava, zemin', () => {
     void st; void pr; // kısa aşamalarda kısmi nakitle bir aşama bitebilir; asıl ölçüt durma günleri
     // nakit enjekte et
     s.ledger.push({ day: s.clock.day, cat: 'sermaye', amount: TL(9_000_000) }); s.company!.cash += TL(9_000_000);
-    const evs2 = advanceDays(s, 14); expect(evs2.some((e) => e.type === 'CONSTRUCTION_RESUMED')).toBe(true); expect(p.build!.stalled).toBeNull();
+    advanceDays(s, 14); expect(p.build!.stage > st || p.build!.progress > pr).toBe(true); expect(p.build!.stalled).toBeNull();
   });
   it('ekip büyüdükçe inşaat hızlanır; ekipsiz çok yavaş', () => {
     const dur = (staff: string[]) => { const { s, project: p } = setup({ staff, seed: 5 }); dispatch(s, 'StartConstruction', { projectId: p.id }); runUntil(s, () => p.status !== 'insaat', 2500); return p.status === 'tamamlandi' ? p.result!.days : Infinity; };

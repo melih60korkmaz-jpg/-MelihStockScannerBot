@@ -10,7 +10,7 @@ import { netWorth } from '../src/sim/finance';
 import { pack, unpack } from '../src/save/serialize';
 import { DEFAULT_CITIES, cityData } from '../src/data';
 import type { GameState, Parcel } from '../src/core/types';
-import { COST_EASE } from '../src/sim/projects';
+import { COST_EASE, SALE_BONUS } from '../src/sim/projects';
 const COSTX = Math.round(TL(11_648_000) * COST_EASE);
 
 const start = (seed = 5, bg = 'emlakci') => {
@@ -129,7 +129,7 @@ describe('fizibilite — elle doğrulanmış örnek (Ankara/Çankaya, 400 m², K
   });
   it('gelir: 544 m² × (52.000 × fit 1,03) ₺ = 29,14 M₺; kâr = gelir − komisyon − maliyet − arsa', () => {
     const s = start(); const p = mk(s); const land = TL(4_800_000); const plan = planProject(s, p, 'apartman', 'standart', land);
-    expect(plan.salePerM2).toBe(TL(52000 * (0.95 + 0.1 * 0.8)));
+    expect(plan.salePerM2).toBe(Math.round(TL(52000 * (0.95 + 0.1 * 0.8)) * SALE_BONUS));
     const rev = Math.round(544 * plan.salePerM2); expect(plan.revenue.mid).toBe(rev);
     expect(plan.profit.mid).toBe(rev - Math.round(rev * 0.02) - plan.cost.total - land);
     expect(plan.revenue.low).toBeLessThan(rev); expect(plan.revenue.high).toBeGreaterThan(rev);
