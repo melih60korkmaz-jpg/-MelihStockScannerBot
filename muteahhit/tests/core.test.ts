@@ -113,14 +113,14 @@ describe('patron geçmişi ve zorluk (gerçek etkiler)', () => {
   };
   it('her geçmiş farklı sermaye/itibar/kadro verir', () => {
     const a = make('muhendis_mirasci'), b = make('eski_kalfa'), c = make('emlakci');
-    expect(a.company!.cash).toBe(TL(14_000_000)); expect(a.company!.reputation).toBe(18); expect(a.staff.map((x) => x.type)).toEqual(['muhendis']);
+    expect(a.company!.cash).toBe(TL(25_200_000)); expect(a.company!.reputation).toBe(18); expect(a.staff.map((x) => x.type)).toEqual(['muhendis']);
     expect(b.staff.map((x) => x.type)).toEqual(['usta', 'isci', 'isci']);
-    expect(c.company!.cash).toBe(TL(12_000_000)); expect(c.staff[0]!.type).toBe('satis_danismani');
+    expect(c.company!.cash).toBe(TL(21_600_000)); expect(c.staff[0]!.type).toBe('satis_danismani');
     for (const s of [a, b, c]) expect(checkInvariant(s)).toBe(true);
   });
   it('zorluk başlangıç sermayesini çarpar', () => {
-    expect(make('emlakci', 'rahat').company!.cash).toBe(TL(12_000_000 * 1.25));
-    expect(make('emlakci', 'acimasiz').company!.cash).toBe(TL(12_000_000 * 0.8));
+    expect(make('emlakci', 'rahat').company!.cash).toBe(TL(21_600_000 * 1.25));
+    expect(make('emlakci', 'acimasiz').company!.cash).toBe(TL(21_600_000 * 0.8));
     expect(make('emlakci', 'acimasiz').meta.difficulty).toBe('acimasiz');
   });
   it('geçersiz amblem/zorluk reddedilir', () => {

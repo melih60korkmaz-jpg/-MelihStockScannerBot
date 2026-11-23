@@ -1,3 +1,4 @@
+import { ledgerCat } from '../src/data';
 import { describe, expect, it } from 'vitest';
 import { dispatch } from '../src/core/commands';
 import { newGameState } from '../src/core/state';
@@ -83,9 +84,10 @@ describe('vergi', () => {
     post(s, 'satis', TL(10_000_000));                   // Ocak: büyük gelir
     advanceDays(s, 90);                                   // 1 Nisan civarı: ilk çeyrek vergisi
     const tax1 = -s.ledger.filter((e) => e.cat === 'vergi').reduce((a, e) => a + e.amount, 0);
-    const expense1 = -s.ledger.filter((e) => ['kira', 'ofis', 'sigorta', 'maas'].includes(e.cat) && e.day < 90).reduce((a, e) => a + e.amount, 0);
+    const income1 = s.ledger.filter((e) => ledgerCat(e.cat)?.kind === 'gelir' && e.day < 90).reduce((a, e) => a + e.amount, 0);
+    const expense1 = -s.ledger.filter((e) => ledgerCat(e.cat)?.kind === 'gider' && e.day < 90).reduce((a, e) => a + e.amount, 0);
     expect(tax1).toBeGreaterThan(0);
-    expect(Math.abs(tax1 - Math.round((TL(10_000_000) - expense1) * 0.25))).toBeLessThanOrEqual(TL(30_000)); // bir ay gider farkı toleransı
+    expect(Math.abs(tax1 - Math.round((income1 - expense1) * 0.25))).toBeLessThanOrEqual(TL(30_000)); // bir ay gider farkı toleransı
     expect(checkInvariant(s)).toBe(true);
   });
   it('zararlı dönemde vergi yok, zarar devreder', () => {
