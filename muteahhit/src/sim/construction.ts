@@ -1,4 +1,3 @@
-import { rushMult } from './gold';
 import { logStock } from './supplyx';
 import { projectMods } from './control';
 import { markLandlord } from './deals';
@@ -139,7 +138,7 @@ export function advanceConstruction(s: GameState, p: Project, events: GameEvent[
     const crew = st.office ? (hasRole(s, st.office) ? 1.25 : 0.85) : crewFactor(s, p, st.id);
     if (!st.office && b.stage >= 6 && maybeAccident(s, p, b, cap, weather, events)) return;
     const wm = 1;
-    const pm = projectMods(s, p), mult = Math.max(0.05, crew * wm * pm.speed * rushMult(s, p)), d = (days[b.stage]! * (st.permit ? b.permitMult : 1)) || 1;
+    const pm = projectMods(s, p), mult = Math.max(0.05, crew * wm * pm.speed), d = (days[b.stage]! * (st.permit ? b.permitMult : 1)) || 1;
     const need = ((1 - b.progress) * d) / mult;
     let use = Math.min(remaining, need), dp = (use * mult) / d;
 

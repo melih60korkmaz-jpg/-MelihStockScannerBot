@@ -3,7 +3,7 @@
 **Uygulama adı (30):** Müteahhit: Temelden Zirveye
 **Alt başlık (30):** İnşaat ve holding simülasyonu
 **Kategori:** Oyunlar › Simülasyon (ikincil: Strateji)
-**Yaş derecelendirmesi:** 4+ (şiddet, kumar, uygunsuz içerik yok; uygulama içi satın alma var)
+**Yaş derecelendirmesi:** 4+ (şiddet, kumar, uygunsuz içerik yok)
 **Anahtar kelimeler (100):** müteahhit,inşaat,simülasyon,emlak,holding,şirket,iş,tycoon,strateji,borsa,enerji
 
 ## Açıklama
@@ -28,25 +28,15 @@ Bir arsa, küçük bir ekip ve büyük bir hayalle başla. Temelden zirveye bir 
 **İNŞAAT YARIŞI**
 - Altyapı ihaleleri, rakip müteahhitler, ekonomik krizler ve fırsatlar.
 
-Çevrimdışı oynanır, hesap gerektirmez. İsteğe bağlı Altın ile inşaatı hızlandırabilirsin; Altın nakit ya da güç vermez.
+Çevrimdışı oynanır, hesap gerektirmez. Tamamen ücretsiz, reklamsız ve uygulama içi satın almasızdır.
 
 ## Sürüm notları (1.2.0)
-Yönetim Merkezi, tedarik, gayrimenkul, makine parkı, altyapı, işletmeler, enerji, borsa ve iştirakler eklendi. Altın ile inşaat hızlandırma. Zaman artık kendiliğinden akıyor.
+Yönetim Merkezi, tedarik, gayrimenkul, makine parkı, altyapı, işletmeler, enerji, borsa ve iştirakler eklendi. Zaman artık kendiliğinden akıyor.
 
 ## App Privacy (Apple "Uygulama Gizliliği") yanıtları
-- Veri toplama: **Evet** (üçüncü taraf hizmetleri).
-- Satın alımlar (Purchases) → Uygulama işlevi; kullanıcıya bağlı DEĞİL.
-- Tanımlayıcılar (Device ID) → Üçüncü taraf reklamcılık (AdMob); izleme için KULLANILMAZ (kişiselleştirilmemiş reklam).
-- Kullanım verisi / Tanılama → yok (kendi analitiğimiz yok).
-- Takip (ATT): **Hayır** (uygulama izlemez; tracking izni istenmez).
-
-## Uygulama içi ürünler (tüketilebilir)
-| Ürün kimliği | Ad | Altın | Önerilen fiyat |
-|---|---|---|---|
-| app.muteahhit.gold50 | Küçük kese | 50 | ₺29,99 |
-| app.muteahhit.gold150 | Altın çanta | 150 | ₺79,99 |
-| app.muteahhit.gold400 | Altın sandık | 400 | ₺179,99 |
-| app.muteahhit.gold1000 | Altın kasa | 1000 | ₺399,99 |
+- Veri toplama: **Hayır** (uygulama hiçbir veri toplamaz; kayıtlar yalnızca cihazdadır).
+- Takip (ATT): **Hayır**.
+- Uygulama içi satın alma: **yok**. Reklam: **yok**.
 
 ## İncelemeci notu
-Oyun çevrimdışı çalışır, giriş gerekmez. Altın sekmesi: Menü › "Altın ve hızlandırma". Altın yalnızca inşaat süresini kısaltır; satın alımı geri yükle düğmesi aynı sekmededir.
+Oyun çevrimdışı çalışır, giriş gerekmez. Ücretsizdir; uygulama içi satın alma ve reklam yoktur.

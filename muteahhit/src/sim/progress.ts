@@ -1,4 +1,3 @@
-import { LEVEL_GOLD, addGold } from './gold';
 import { TL } from '../core/money';
 import type { GameEvent, GameState, Progress } from '../core/types';
 import { ACHIEVEMENTS, LEVEL_DEFS, OFFICE_STEPS, QUESTS } from '../data';
@@ -58,7 +57,7 @@ export function checkProgress(s: GameState, events: GameEvent[], silent = false,
   for (const a of ACHIEVEMENTS) if (pr.ach[a.id] === undefined && metric(s, a.m) >= a.n) { pr.ach[a.id] = day; if (!silent) events.push({ type: 'ACHIEVEMENT', day, data: { id: a.id } }); }
   for (let guard = 0; guard < 8 && !achOnly; guard++) {
     const nl = nextLevel(s); if (!nl || !levelChecks(s, nl.level).every((x) => x.ok)) break;
-    c.level = nl.level; if (!silent) { addGold(s, LEVEL_GOLD, 'seviye', `Seviye ${nl.level}`); c.creditScore = clamp(c.creditScore + 15, 100, 900); c.reputation = clamp(c.reputation + 2, 0, 100); events.push({ type: 'LEVEL_UP', day, pause: true, data: { level: nl.level, label: nl.label } }); }
+    c.level = nl.level; if (!silent) { c.creditScore = clamp(c.creditScore + 15, 100, 900); c.reputation = clamp(c.reputation + 2, 0, 100); events.push({ type: 'LEVEL_UP', day, pause: true, data: { level: nl.level, label: nl.label } }); }
   }
 }
 

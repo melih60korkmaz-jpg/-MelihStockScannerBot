@@ -7,7 +7,6 @@ import * as Haptics from 'expo-haptics';
 import { useKeepAwake } from 'expo-keep-awake';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { StatusBar } from 'expo-status-bar';
-import { paymentMode, purchase, restore, rewardedAd } from './payments';
 
 /**
  * Müteahhit — Expo sarmalayıcı. Oyun (Vite ile tek dosyaya derlenmiş HTML) bir WebView içinde çalışır.
@@ -20,7 +19,6 @@ const GAME = require('./assets/game.html');
 const GameView = WebView as unknown as ComponentType<Record<string, unknown>>;
 
 // Sayfa yüklenmeden önce: navigator.vibrate → React Native köprüsü (hapticsSupported() true olur).
-const bridge = () => BRIDGE.replace('__MODE__', paymentMode());
 const BRIDGE = `
   (function () {
     navigator.vibrate = function (p) {
@@ -28,7 +26,6 @@ const BRIDGE = `
       return true;
     };
     window.__NATIVE_SHELL = 'expo';
-    window.__IAP_MODE = '__MODE__';
   })();
   true;
 `;
@@ -69,12 +66,7 @@ export default function App() {
 
   const onMessage = useCallback((e: WebViewMessageEvent) => {
     try {
-      const m = JSON.parse(e.nativeEvent.data) as { t: string; p?: number | number[]; id?: number; pack?: string };
-      if (m.t === 'iap' || m.t === 'ad' || m.t === 'restore') {
-        const run = m.t === 'iap' ? purchase(m.pack ?? '') : m.t === 'ad' ? rewardedAd() : restore();
-        run.then((r) => web.current?.injectJavaScript(`window.__nativeReply && window.__nativeReply(${m.id}, ${JSON.stringify(r)}); true;`));
-        return;
-      }
+      const m = JSON.parse(e.nativeEvent.data) as { t: string; p?: number | number[] };
       if (m.t !== 'haptic') return;
       const strong = Array.isArray(m.p) || (typeof m.p === 'number' && m.p > 24);
       const style = strong ? Haptics.ImpactFeedbackStyle.Heavy : (typeof m.p === 'number' && m.p > 10) ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light;
@@ -105,7 +97,7 @@ export default function App() {
         style={styles.web}
         originWhitelist={['*']}
         source={{ html, baseUrl: 'https://muteahhit.app/' }}
-        injectedJavaScriptBeforeContentLoaded={bridge()}
+        injectedJavaScriptBeforeContentLoaded={BRIDGE}
         onMessage={onMessage}
         javaScriptEnabled
         domStorageEnabled

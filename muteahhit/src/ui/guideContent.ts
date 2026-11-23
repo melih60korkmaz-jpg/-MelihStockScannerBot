@@ -12,7 +12,7 @@ export type Block =
 
 export interface Topic { id: string; ico: string; title: string; blocks: Block[] }
 
-export const TAB_TOPIC: Record<string, string> = { altin: 'sirket', altyapi: 'altyapi', makine: 'makine', gayrimenkul: 'gayrimenkul', tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
+export const TAB_TOPIC: Record<string, string> = { altyapi: 'altyapi', makine: 'makine', gayrimenkul: 'gayrimenkul', tedarik: 'tedarik', yonetim: 'yonetim', sirket: 'sirket', harita: 'harita', projeler: 'projeler', operasyon: 'ekip', ihale: 'ihale', holding: 'holding', finans: 'finans', piyasa: 'piyasa' };
 
 export const GUIDE: Topic[] = [
   {
