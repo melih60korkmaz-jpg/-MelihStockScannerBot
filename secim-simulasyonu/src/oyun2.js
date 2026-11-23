@@ -284,6 +284,8 @@ function kariyerHtml() {
   return '<div class="car">' + KARIYER.map(function (k, i) { return '<div class="cn' + (i <= l ? ' on' : '') + (i === l ? ' cur' : '') + '"><span>' + k[0] + '</span><small>' + k[1] + '</small></div>'; }).join('') + '</div>';
 }
 var ROZET = [
+  ['ilk', '👣', 'İlk Adım', 'İlk aksiyonunu kullandın', function () { return !!(S.kararlar && S.kararlar.length >= 1); }],
+  ['ay3', '📆', 'Üç Ay Sahada', '3 ay boyunca partiyi yönettin', function () { return S.ay >= 3; }],
   ['t41', '📍', 'Sahaya Yayıldı', '41 ilde teşkilat', function () { return teskilatSayisi(S) >= 41; }],
   ['t81', '🗺️', 'Her İlde Varız', '81 ilde teşkilat', function () { return teskilatSayisi(S) >= 81; }],
   ['b7', '📈', 'Baraj Aşıldı', 'Anket %7 ve üzeri', function () { return S.ms && S.ms.b7; }],

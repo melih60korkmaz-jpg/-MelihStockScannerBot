@@ -436,7 +436,7 @@ function aksiyonYap0(S, id, hedef) {
   }
   if (id === 'miting' && ozVar(S, 'saha') && fx.drift > 0) fx.drift *= 1.12;
   var d = fxUygula(S, fx, ad);
-  if (risk && rnd(S) < risk.p) { var d2 = fxUygula(S, risk.fx, ad + ' (riskli sonuç)'); Object.keys(d2).forEach(function (k) { if (k !== 'grup') d[k] = d2[k]; }); ek = risk.s; sonDakika(S, ek); }
+  if (risk && rnd(S) < riskP(S, risk.p)) { var d2 = fxUygula(S, risk.fx, ad + ' (riskli sonuç)'); Object.keys(d2).forEach(function (k) { if (k !== 'grup') d[k] = d2[k]; }); ek = risk.s; sonDakika(S, ek); }
   if (id === 'miting') ekstra = {tip: 'miting', bolge: BOLGE[hedef], katilim: Math.round(bolgeNufusPay(hedef) * NUFUS_TOPLAM * 1000 * 0.0025 * (0.6 + S.stat.itibar / 80) * (0.8 + rnd(S) * 0.4)), nufus: bolgeNufusPay(hedef) * NUFUS_TOPLAM * 1000};
   if (id === 'tvtart') ekstra = {tip: 'tvtart', rakip: rk.ad, rid: rk.id, risk: !!ek, skor: clamp(Math.round(50 + (S.stat.itibar - 50) * 0.35 + norm(S) * 7 + (ek ? -16 : 9)), 8, 94)};
   var kisa = {medyaili:'Yayın organıyla görüşme yapıldı.',haberlek:'Haber sızdırıldı.',haberyalan:'Haber yayınlandı.',haberduz:'Düzeltme yayınlandı.',haberortaya:'Skandal belgeleri yayında.',skandalkoz:'Skandal gündemde tutuldu.',belediye:'Belediyede çalışmalar başladı.',bldden:'Denetim tamamlandı.',bldborc:'Borç yapılandırıldı.',bldbaskan:'Belediye başkanı değişti.',yasa:'Teklif Meclis yolunda.',guvenoyu:'Güvenoyu oylaması yapıldı.',gensoru:'Önerge Meclis gündeminde.',ilodak:'Saha ekibi ilde çalışmaya başladı.',delege:'Delegelerle görüşmeler yapıldı.',hizip:'Hizip çalışması yürütüldü.',elestir:'Açıklaman gündem oldu.',miting:'Kalabalık toplandı.',teskilat:'Yeni teşkilat çalışmaları başladı.',secmen:'Görüşme verimli geçti.',uye:'Yeni üye kayıtları geldi.',kadro:'Kadro toparlandı.',bagis:'Bağışlar kasaya girdi.',tv:'Programdan sonra mesajların yayıldı.',tatil:'Dinlendin, tazelendin.',viral:'İçerik hızla yayıldı.',canli:'Canlı yayın sona erdi.',influencer:'Anlaşma yapıldı.',trol:'Hesaplar devrede.',algi:'Operasyon yürürlükte.',gazete:'Gazete yayına başladı.',tvtart:'Tartışma sona erdi.',basin:'Basın toplantısı yapıldı.'};
@@ -722,7 +722,7 @@ function kartSec0(S, item, i) {
     tarihceEkle(S, yok ? '📜' : '🗳️', (k.baslik || 'Teklif') + (yok ? ': kabul edildi' : ': reddedildi'));
   }
   if (o.sx) { var sxm = fxSis(S, o.sx); if (sxm) s += ' ' + sxm; }
-  if (o.risk && rnd(S) < o.risk.p) { var d2 = fxUygula(S, o.risk.fx, k.baslik + ' (riskli sonuç)'); Object.keys(d2).forEach(function (kk) { if (kk !== 'grup') d[kk] = d2[kk]; }); s += ' ' + o.risk.s; }
+  if (o.risk && rnd(S) < riskP(S, o.risk.p)) { var d2 = fxUygula(S, o.risk.fx, k.baslik + ' (riskli sonuç)'); Object.keys(d2).forEach(function (kk) { if (kk !== 'grup') d[kk] = d2[kk]; }); s += ' ' + o.risk.s; }
   S.log.unshift({t: tarihYaz(S.tarih), m: k.baslik + ': ' + o.t}); S.log = S.log.slice(0, 40);
   tarihceEkle(S, '📰', k.baslik + ': ' + o.t);
   S.kartGecmis = S.kartGecmis || []; S.kartGecmis.unshift({id: item.id, i: i, ay: S.ay, t: tarihYaz(S.tarih), sec: o.t}); if (S.kartGecmis.length > 40) S.kartGecmis.pop();
@@ -765,6 +765,8 @@ function ittifaktanAyril(S) {
 
 /* ---------- haber, tarihçe, olaylar ---------- */
 function tarihceEkle(S, i, m) { S.tarihce = S.tarihce || []; S.tarihce.unshift({t: tarihYaz(S.tarih), i: i, m: m}); if (S.tarihce.length > 60) S.tarihce.pop(); }
+/* Acemi desteği: ilk 4 ayda riskli sonuç ihtimali %70 azalır (yeni oyuncu hemen cezalanmasın). */
+function riskP(S, p) { return S && S.ay < 4 ? p * 0.3 : p; }
 function olayEkle(S, o) { o.t = 'olay'; S.kuyruk.push(o); }
 function sonDakika(S, m) { S.sd = S.sd || []; S.sd.push({m: m}); if (S.sd.length > 12) S.sd.shift(); }
 function rakipler(S) { return PARTILER.filter(function (p) { return p.id !== S.pid && p.baz >= 3; }); }
@@ -1484,6 +1486,7 @@ function ayiBitir(S) {
       S.kuyruk.push({t: 'secim', sonuc: sonuc});
       secimAnaliz(S, sonuc);
       if (ti === S.takvim.length - 1) { S.bitti = true; S.kuyruk.push({t: 'bitis'}); }
+      if (S.kariyer && typeof kariyerKontrol === 'function') kariyerKontrol(S, sonuc);
       if (sonuc.tip === 'genel') rakipSecimSonrasi(S, sonuc);
       if (sonuc.tip === 'genel' && !S.bitti) { ebInit(S); S.kpSoz = []; var kb = kpBaslat(S); if (kb) S.kuyruk.push(kb); }
       if (sonuc.tip === 'genel' && muhalifMu(S)) { var vk = (sonuc.koltuk[S.pid] || 0) > 0 && S.pd.destek >= 25; if (vk !== S.pd.vekil) { S.pd.vekil = vk; tarihceEkle(S, vk ? '🏛️' : '📉', vk ? S.lider.ad + ' milletvekili seçildi.' : S.lider.ad + ' Meclis dışında kaldı.'); } }
@@ -2984,7 +2987,7 @@ function kartKararBilgi(S, item, i) {
   var k = kartBul(item.id), o = k && k.sec[i]; if (!o) return {ok: false, msg: 'Geçersiz seçenek.'};
   var tah = tahminYap(S, function (T) { return kartSec(T, JSON.parse(JSON.stringify(item)), i); }, 24); if (!tah.ok) return tah;
   var b = kararOzet(S, {id: item.id, ad: k.baslik, not: o.t, maliyet: 0}, {arka: o.t, tes: 'Karar kartı: teşkilat yükü doğrudan değişmez.', kisa: 'Etkiler seçim anında uygulanır.', uzun: (o.fx && (o.fx.drift || o.fx.itibar)) ? 'Kararın yankısı 2–4 ay içinde ek etki yaratabilir.' : 'Belirgin gecikmeli etki beklenmiyor.'}, tah, undefined);
-  if (o.risk) b.rs.unshift('Beklenmedik ters sonuç ihtimali: %' + Math.round(o.risk.p * 100));
+  if (o.risk) b.rs.unshift('Beklenmedik ters sonuç ihtimali: %' + Math.round(riskP(S, o.risk.p) * 100));
   if (typeof ZINCIR !== 'undefined' && ZINCIR[item.id]) b.uzun += ' Bu olay ileride yeni gelişmeleri tetikleyebilir.';
   b.alt = k.sec.map(function (x, j) { return j === i ? null : {id: j, ad: x.t, not: fxMetin9(x.fx || {}), maliyet: 0}; }).filter(Boolean); return b;
 }

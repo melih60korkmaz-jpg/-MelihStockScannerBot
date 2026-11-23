@@ -120,10 +120,10 @@ var IDEOLOJILER = [
 function ideoBul(id) { for (var i = 0; i < IDEOLOJILER.length; i++) if (IDEOLOJILER[i].id === id) return IDEOLOJILER[i]; return IDEOLOJILER[0]; }
 
 var ZORLUKLAR = {
-  kolay:{ad:'Kolay',not:'Bol kasa, güçlü başlangıç. Hatalar affedilir.',kasa:7,tohum:3.8,il:12},
-  orta:{ad:'Orta',not:'Dengeli. Baraj için ciddi çalışma ister.',kasa:5.5,tohum:3.0,il:10},
-  zor:{ad:'Zor',not:'Dar bütçe, tanınmamış bir parti.',kasa:4.0,tohum:2.8,il:7},
-  acimasiz:{ad:'Acımasız',not:'Merhamet yok. Her borç ve gaf pahalı.',kasa:2.8,tohum:2.5,il:5}
+  kolay:{ad:'Kolay',not:'Bol kasa, güçlü başlangıç. Hatalar affedilir.',kasa:8,tohum:4.0,il:15},
+  orta:{ad:'Orta',not:'Dengeli. Baraj için ciddi çalışma ister.',kasa:6.5,tohum:3.3,il:12},
+  zor:{ad:'Zor',not:'Dar bütçe, tanınmamış bir parti.',kasa:4.4,tohum:2.9,il:8},
+  acimasiz:{ad:'Acımasız',not:'Merhamet yok. Her borç ve gaf pahalı.',kasa:3.0,tohum:2.6,il:5}
 };
 var STILLER = {
   katilimci:{ad:'Katılımcı',not:'Parti içi birlik güçlenir, kampanya etkisi biraz düşer.',drift:.95,itibar:1,birlik:1.4,kasa:1},
