@@ -1,6 +1,7 @@
 import { unlockState } from '../sim/unlock';
 import { h, press, toast } from './dom';
 import type { App } from './app';
+import { openFeedback } from './feedback';
 
 /** Kategorili ana menü: yatay telefonda yan panel. Kilitli sayfaların açılma koşulları açıkça gösterilir. */
 export interface MenuItem { label: string; ico: string; tab: string; sub?: string; unlock?: string }
@@ -17,7 +18,7 @@ export function registerMenu(items: { group: string; ico: string; items: MenuIte
 export function openMenu(app: App, current: string, go: (tab: string, sub?: string) => void): void {
   const s = app.store.state, panel = h('div', { class: 'card menupanel', role: 'navigation', 'aria-label': 'Ana menü' }), modal = h('div', { class: 'modal menumodal', role: 'dialog', 'aria-label': 'Menü' }, panel);
   const close = () => { panel.classList.add('out'); setTimeout(() => modal.remove(), 160); };
-  panel.append(h('div', { style: 'display:flex;align-items:center;margin-bottom:6px' }, h('h2', { style: 'font-size:22px;flex:1' }, '☰ Menü'), h('button', { class: 'btn', style: 'min-height:34px', onclick: () => { press(app); close(); } }, 'Kapat')));
+  panel.append(h('div', { style: 'display:flex;align-items:center;margin-bottom:6px' }, h('h2', { style: 'font-size:22px;flex:1' }, '☰ Menü'), h('button', { class: 'btn', style: 'min-height:34px;margin-right:8px', onclick: () => { press(app); close(); openFeedback(app); } }, '💬 Geri bildirim'), h('button', { class: 'btn', style: 'min-height:34px', onclick: () => { press(app); close(); } }, 'Kapat')));
   const grid = h('div', { class: 'menugrid' });
   for (const g of MENU) {
     const col = h('div', { class: 'mgroup' }, h('div', { class: 'lbl-s' }, `${g.ico} ${g.group}`));

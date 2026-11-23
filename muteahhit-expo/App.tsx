@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react';
-import { ActivityIndicator, AppState, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, BackHandler, Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { Asset } from 'expo-asset';
 import { File } from 'expo-file-system';
@@ -66,7 +66,12 @@ export default function App() {
 
   const onMessage = useCallback((e: WebViewMessageEvent) => {
     try {
-      const m = JSON.parse(e.nativeEvent.data) as { t: string; p?: number | number[] };
+      const m = JSON.parse(e.nativeEvent.data) as { t: string; p?: number | number[]; url?: string };
+      if (m.t === 'mail') {
+        const url = (m as { url?: string }).url ?? '';
+        if (url.startsWith('mailto:mlhkrkmz6061@gmail.com?') && url.length < 4000) Linking.openURL(url).catch(() => {});
+        return;
+      }
       if (m.t !== 'haptic') return;
       const strong = Array.isArray(m.p) || (typeof m.p === 'number' && m.p > 24);
       const style = strong ? Haptics.ImpactFeedbackStyle.Heavy : (typeof m.p === 'number' && m.p > 10) ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light;
