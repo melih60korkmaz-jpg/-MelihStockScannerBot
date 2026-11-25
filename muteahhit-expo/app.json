@@ -14,7 +14,11 @@
       "infoPlist": {
         "UIRequiresFullScreen": true,
         "CFBundleDisplayName": "Müteahhit",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "tr",
+        "CFBundleLocalizations": [
+          "tr"
+        ]
       }
     },
     "android": {

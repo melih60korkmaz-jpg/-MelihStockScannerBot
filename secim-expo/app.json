@@ -12,7 +12,11 @@
       "bundleIdentifier": "app.secimsimulasyonu.game",
       "infoPlist": {
         "CFBundleDisplayName": "Seçim Simülasyonu",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "tr",
+        "CFBundleLocalizations": [
+          "tr"
+        ]
       }
     },
     "android": {
