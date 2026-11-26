@@ -38,7 +38,7 @@ export function zoomVb(il: number): VB {
 }
 export interface RegOpts { metric: Metric; sel: number; zoomIl: number | null; selIlce: number | null; vb: VB; fx: Fx[]; now: number; lv: number; start?: boolean }
 const STATE_FILL = { acik: '#b9a93a', satilik: '#2f6b6f', kilitli: '#2a303b' } as const;
-export const SINIF_RENK: Record<Sinif, string> = { Lüks: '#7a63c9', Premium: '#a8903a', Normal: '#3a78a8', Düşük: '#39445a' };
+export const SINIF_RENK: Record<Sinif, string> = { Seçkin: '#b07cff', Canlı: '#ffb44c', Mahalle: '#35b99a', Ekonomik: '#4a6677' };
 export function regionMap(s: GameState, o: RegOpts): string {
   const recent = (k: Fx['k'], id: string): boolean => o.fx.some((f) => f.k === k && f.id === id && o.now - f.t < 1600);
   const by: Record<number, number> = {}, byI: Record<string, number> = {}; for (const b of s.subeler) { by[b.city] = (by[b.city] ?? 0) + 1; if (b.ilce) byI[b.ilce] = (byI[b.ilce] ?? 0) + 1; }

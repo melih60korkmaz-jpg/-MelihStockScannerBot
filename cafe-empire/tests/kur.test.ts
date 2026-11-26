@@ -13,8 +13,8 @@ describe('başlangıç: şubesiz oyun', () => {
   it('2 M ₺ kasa, sadece İstanbul açık, şube yok; günler sorunsuz geçer', () => { const s = bos(); expect(s.subeler).toHaveLength(0); expect(s.kasa).toBe(2000000); expect(Object.keys(s.bolge.il)).toEqual(['34']); expect(Object.keys(s.bolge.ilce)).toHaveLength(0); run(s, 10); expect(Number.isFinite(s.kasa)).toBe(true); expect(s.rapor.length).toBe(10); });
 });
 describe('semt sınıfı ve ilanlar', () => {
-  it('İstanbul ilçeleri dört sınıfa dağılır; Beşiktaş Lüks, Esenyurt Düşük; Lüks için şube ve itibar şartı', () => {
-    const k = new Set(ilcelerOf(34).map(sinifOf)); expect(k.size).toBeGreaterThanOrEqual(3); for (const x of k) expect(SINIFLAR).toContain(x); expect(sinifOf(ist('Beşiktaş'))).toBe('Lüks'); expect(sinifOf(ist('Esenyurt'))).toBe('Düşük');
+  it('İstanbul ilçeleri dört sınıfa dağılır; Beşiktaş Seçkin, Esenyurt Ekonomik; Seçkin için şube ve itibar şartı', () => {
+    const k = new Set(ilcelerOf(34).map(sinifOf)); expect(k.size).toBeGreaterThanOrEqual(3); for (const x of k) expect(SINIFLAR).toContain(x); expect(sinifOf(ist('Beşiktaş'))).toBe('Seçkin'); expect(sinifOf(ist('Esenyurt'))).toBe('Ekonomik');
     const s = bos(); expect(sinifSartlari(s, ist('Beşiktaş')).length).toBe(2); expect(sinifSartlari(s, ist('Esenyurt'))).toEqual([]);
   });
   it('ilanlar: 5 adet, deterministik, makul değerler; yenileme para öder ve listeyi değiştirir', () => {
@@ -29,7 +29,7 @@ describe('Kirala ve kur sihirbazı', () => {
     const k = dokum(s, { ...sc, odeme: 'kredi' }, d); expect(k.kredi).toBeGreaterThan(0); expect(Math.abs(k.kredi - n.toplam * KREDI_ORAN)).toBeLessThan(1000); expect(k.nakit).toBeLessThan(n.nakit); expect(k.nakit).toBe(k.toplam - k.kredi + k.komisyon);
     expect(dokum(s, { ...sc, dekor: 2 }, d).toplam).toBeGreaterThan(dokum(s, { ...sc, dekor: 0 }, d).toplam); expect(dokum(s, { ...sc, personel: 6 }, d).maasAylik).toBeGreaterThan(dokum(s, { ...sc, personel: 3 }, d).maasAylik);
   });
-  it('şart kontrolleri: Lüks semtte ilk dükkân açılamaz; yetersiz kasada açılamaz; kısa isim reddedilir', () => {
+  it('şart kontrolleri: Seçkin semtte ilk dükkân açılamaz; yetersiz kasada açılamaz; kısa isim reddedilir', () => {
     const s = bos(); const l = sec(s, 'Beşiktaş', 'cadde'); expect(kurNeden(s, l.sc, l.d)).toContain('şube gerekiyor'); const e = sec(s); s.kasa = 1000; expect(kurNeden(s, e.sc, e.d)).toContain('Kasa yetersiz'); s.kasa = 2e6; expect(kurNeden(s, { ...e.sc, ad: 'a' }, e.d)).toContain('Şube adı'); expect(kurNeden(s, e.sc, e.d)).toBeNull();
   });
   it('kurulum: şube oluşur, ilçe pazarı açılır, kasa ≈ nakit kadar düşer, kadro/maaş/konsept/dekor/trafik işlenir', () => {

@@ -26,22 +26,19 @@ export interface Ctx { kur: { ilceId: number; tip: ShopTypeId; sc: KurSecim | nu
 export const ctx: Ctx = { kur: null, subeAcik: null, subeSekme: 'ozet', mapTip: 'mahalle', sirTab: 'zincir', ilSecili: null, ilSekme: 'ozet', panoIl: null, frIlce: null, frTip: 'cadde', mapWide: false, eper: 30, escope: 'all', ecurve: 'latte', anim: false, zoomIl: null, selIlce: null, vb: NAT_VB, fx: [], S: null, bid: 0, mapm: 'bolge', mapsel: 34, ilanTip: 'barista', sureGun: 30, menuKat: 'kahve', rapor: 7, fps: true };
 export interface Helpers { zoom: (vb: VB, done?: () => void) => void; res: (r: Result) => void; toast: (m: string) => void; refresh: () => void; show: () => void; go: (tab: string) => void; exit: () => void; wipe: () => void; save: () => void }
 
-export const NAV: Array<[string, string, string]> = [['ana', '🏠', 'Ana ekran'], ['harita', '🗺️', 'Harita'], ['subeler', '🏪', 'Şubeler'], ['online', '📱', 'Online'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarikçiler'], ['merkez', '🏭', 'Merkezi depo'], ['sosyal', '📸', 'Sosyal medya'], ['reklam', '📣', 'Reklam'], ['kampanya', '🏷️', 'Kampanyalar'], ['prestij', '⭐', 'Prestij'], ['hedefler', '🏆', 'Hedefler'], ['iller', '🏙️', 'İller'], ['franchise', '🤝', 'Franchise'], ['siralama', '🥇', 'Sıralama'], ['banka', '🏦', 'Banka'], ['finans', '💰', 'Finans'], ['ekonomi', '📈', 'Ekonomi'], ['rapor', '📊', 'Raporlar'], ['musteri', '🙂', 'Müşteriler'], ['ayar', '⚙️', 'Ayarlar'],
-  ['menu', '📋', 'Menü ve fiyat'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['gelisim', '🛠️', 'Dükkân ve POS'], ['genel', '🏠', 'Genel Bakış']];
-/** Alt menü: referans oyundaki gibi 11 ana sekme; sekme içindeki sayfalar üstte çip olur. */
+export const NAV: Array<[string, string, string]> = [['ana', '🏠', 'Merkez'], ['harita', '🗺️', 'Türkiye'], ['subeler', '🏪', 'Dükkânlar'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarikçiler'], ['merkez', '🏭', 'Merkezi depo'], ['sosyal', '📸', 'Sosyal medya'], ['reklam', '📣', 'Reklam'], ['kampanya', '🏷️', 'Kampanyalar'], ['online', '🛵', 'Teslimat'], ['prestij', '⭐', 'İtibar'], ['hedefler', '🎯', 'Hedefler'], ['iller', '🏙️', 'İller'], ['franchise', '🤝', 'Franchise'], ['siralama', '🥇', 'Liderlik'], ['banka', '🏦', 'Bankalar'], ['finans', '💰', 'Gelir-gider'], ['ekonomi', '📈', 'Ekonomi'], ['rapor', '📊', 'Raporlar'], ['musteri', '🙂', 'Müşteriler'], ['ayar', '⚙️', 'Ayarlar'],
+  ['menu', '📋', 'Menü ve fiyat'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['gelisim', '🛠️', 'Ekipman'], ['genel', '🏠', 'Genel Bakış']];
+/** Alt menü: 8 sekme; sekme içindeki sayfalar üstte çip olur. */
 export interface Grup { id: string; ik: string; ad: string; renk: string; tabs: string[] }
 export const GRUPLAR: Grup[] = [
-  { id: 'ana', ik: '🏠', ad: 'Ana ekran', renk: '#e9dc5a', tabs: ['ana'] },
-  { id: 'harita', ik: '🗺️', ad: 'Harita', renk: '#6aa7e0', tabs: ['harita'] },
-  { id: 'subeler', ik: '🏪', ad: 'Şubeler', renk: '#e0983c', tabs: ['subeler'] },
-  { id: 'online', ik: '📱', ad: 'Online', renk: '#5fb8e8', tabs: ['online'] },
-  { id: 'tedarik', ik: '🚚', ad: 'Tedarik', renk: '#5fd08a', tabs: ['stok', 'tedarik', 'merkez'] },
-  { id: 'pazarlama', ik: '📣', ad: 'Pazarlama', renk: '#e8718f', tabs: ['sosyal', 'reklam', 'kampanya'] },
-  { id: 'prestij', ik: '⭐', ad: 'Prestij', renk: '#a98be0', tabs: ['prestij', 'hedefler'] },
-  { id: 'yatirim', ik: '📈', ad: 'Yatırımlar', renk: '#5fd08a', tabs: ['iller', 'franchise'] },
-  { id: 'siralama', ik: '🏆', ad: 'Sıralama', renk: '#f0c040', tabs: ['siralama'] },
-  { id: 'banka', ik: '🏦', ad: 'Banka', renk: '#5fd0b0', tabs: ['banka', 'finans'] },
-  { id: 'sirket', ik: '🏢', ad: 'Şirket', renk: '#9aa4b8', tabs: ['ekonomi', 'rapor', 'musteri', 'ayar'] },
+  { id: 'ana', ik: '🏠', ad: 'Merkez', renk: '#ff8a4c', tabs: ['ana'] },
+  { id: 'harita', ik: '🗺️', ad: 'Türkiye', renk: '#5fb3ff', tabs: ['harita'] },
+  { id: 'subeler', ik: '🏪', ad: 'Dükkânlar', renk: '#ffb44c', tabs: ['subeler'] },
+  { id: 'depo', ik: '📦', ad: 'Depo', renk: '#4fd1a5', tabs: ['stok', 'tedarik', 'merkez'] },
+  { id: 'tanitim', ik: '📣', ad: 'Tanıtım', renk: '#ff7aa8', tabs: ['sosyal', 'reklam', 'kampanya', 'online'] },
+  { id: 'gelisim', ik: '🚀', ad: 'Gelişim', renk: '#b07cff', tabs: ['prestij', 'hedefler', 'iller', 'franchise', 'siralama'] },
+  { id: 'kasa', ik: '💰', ad: 'Kasa', renk: '#4fd1a5', tabs: ['banka', 'finans', 'ekonomi', 'rapor', 'musteri'] },
+  { id: 'ayar', ik: '⚙️', ad: 'Ayarlar', renk: '#9aa8b0', tabs: ['ayar'] },
 ];
 export const grupOf = (tab: string): Grup => GRUPLAR.find((g) => g.tabs.includes(tab)) ?? GRUPLAR[0]!;
 /** Şube gerektiren sayfalar (şubesiz başlangıçta "önce şube aç" kartı gösterilir). */

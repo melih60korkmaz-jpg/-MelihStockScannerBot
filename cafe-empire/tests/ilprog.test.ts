@@ -14,7 +14,7 @@ describe('il sekmeleri', () => {
     expect(kume.size).toBeGreaterThanOrEqual(4); expect(ilSekmeleri(34)).toEqual(expect.arrayContaining(['turizm', 'kampus', 'kurumsal'])); expect(ilSekmeleri(7)).toContain('turizm'); expect(ilSekmeleri(26)).toContain('kampus'); expect(ilSekmeleri(41)).toContain('kurumsal');
     expect(Object.keys(SEKME_AD).length).toBe(5);
   });
-  it('menüde İller sayfası Büyüme grubunda; rakipler sekmesi iller içinde', () => { expect(NAV.some((n) => n[0] === 'iller')).toBe(true); expect(GRUPLAR.find((g) => g.id === 'yatirim')!.tabs).toContain('iller'); expect(NAV.some((n) => n[0] === 'rakip')).toBe(false); });
+  it('menüde İller sayfası Büyüme grubunda; rakipler sekmesi iller içinde', () => { expect(NAV.some((n) => n[0] === 'iller')).toBe(true); expect(GRUPLAR.find((g) => g.id === 'gelisim')!.tabs).toContain('iller'); expect(NAV.some((n) => n[0] === 'rakip')).toBe(false); });
 });
 describe('ile özel eylemler', () => {
   it('turist paketi: yalnız turistik ilde ve şubesi varsa; talebi +%15 yapar; 30 gün sonra biter; üst üste alınmaz', () => {

@@ -97,12 +97,12 @@ function gunOzeti(): void {
 
 /* ===================== Eğitim turu ===================== */
 const TUR: Array<{ n?: string; t: string; ok?: [string, string] }> = [
-  { t: '👋 Hoş geldin! 2.000.000 ₺ ile İstanbul\'dan başlıyorsun. Üstteki ⏸ ▶ ⏩ düğmeleriyle zamanı yönetirsin (süreyi Şirket → Ayarlar\'dan değiştirebilirsin). Takıldığında ? ile bu rehberi açarsın.' },
-  { n: 'harita', t: '🗺️ Önce ilk dükkânını bul: Harita\'ya gir, bir semt seç, ilanlardan birini "Kirala ve kur" ile aç.', ok: ['tab', 'harita'] },
-  { n: 'menu', t: '📋 Dükkân açılınca Şubeler → Menü ve fiyat: fiyatları ayarla; Fiyat danışmanı öneri verir.', ok: ['tab', 'subeler'] },
-  { n: 'stok', t: '📦 Tedarik → Stok: stok bitince ürün satılamaz. Otomatik sipariş açık mı bak.', ok: ['tab', 'stok'] },
-  { n: 'sosyal', t: '📣 Pazarlama: sosyal medya paylaşımı, reklam ve kampanyalarla müşteri çek.', ok: ['tab', 'sosyal'] },
-  { n: 'hedefler', t: '⭐ Prestij → Hedefler: görevler nakit ödül, başarımlar kilometre taşı verir.', ok: ['tab', 'hedefler'] },
+  { t: '👋 Hoş geldin! 2.000.000 ₺ ile İstanbul\'dan başlıyorsun. Üstteki ⏸ ▶ ⏩ düğmeleriyle zamanı yönetirsin (süreyi Ayarlar\'dan değiştirebilirsin). Takıldığında ? ile bu rehberi açarsın.' },
+  { n: 'harita', t: '🗺️ Türkiye sekmesinden bir semt seç, ilanlardan birini "Açılış planı" ile planla ve aç.', ok: ['tab', 'harita'] },
+  { n: 'menu', t: '📋 Dükkân açılınca Dükkânlar → Menü ve fiyat: fiyatları ayarla; Fiyat danışmanı öneri verir.', ok: ['tab', 'subeler'] },
+  { n: 'stok', t: '📦 Depo → Stok: stok bitince ürün satılamaz. Otomatik sipariş açık mı bak.', ok: ['tab', 'stok'] },
+  { n: 'sosyal', t: '📣 Tanıtım: sosyal medya paylaşımı, reklam ve kampanyalarla müşteri çek.', ok: ['tab', 'sosyal'] },
+  { n: 'hedefler', t: '⭐ Gelişim → Hedefler: görevler nakit ödül, başarımlar kilometre taşı verir.', ok: ['tab', 'hedefler'] },
   { t: '🎉 Rehber bitti! Ekibi dengele, fiyatı ayarla, yeni semtler aç ve zincirini büyüt. İyi şanslar!' },
 ];
 function tourEvent(kind: string, id: string): void { if (!S || S.tur < 0 || S.tur >= TUR.length) return; const st = TUR[S.tur]!; if (st.ok && st.ok[0] === kind && st.ok[1] === id) { S.tur++; tour(); } }

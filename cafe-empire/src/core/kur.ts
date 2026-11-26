@@ -10,10 +10,10 @@ import { INVEST } from './invest';
 import { marketWage } from './hr';
 import type { GameState } from './types';
 
-export type Sinif = 'Lüks' | 'Premium' | 'Normal' | 'Düşük';
-export const SINIFLAR: Sinif[] = ['Lüks', 'Premium', 'Normal', 'Düşük'];
-export function sinifOf(d: Ilce): Sinif { const p = profilOf(d), sk = 0.5 * p.kira + 0.5 * p.gelir; return sk >= 1.25 ? 'Lüks' : sk >= 1.0 ? 'Premium' : sk >= 0.75 ? 'Normal' : 'Düşük'; }
-export const SINIF_ART: Record<Sinif, { sube: number; prestij: number }> = { Lüks: { sube: 4, prestij: 35 }, Premium: { sube: 2, prestij: 18 }, Normal: { sube: 0, prestij: 0 }, Düşük: { sube: 0, prestij: 0 } };
+export type Sinif = 'Seçkin' | 'Canlı' | 'Mahalle' | 'Ekonomik';
+export const SINIFLAR: Sinif[] = ['Seçkin', 'Canlı', 'Mahalle', 'Ekonomik'];
+export function sinifOf(d: Ilce): Sinif { const p = profilOf(d), sk = 0.5 * p.kira + 0.5 * p.gelir; return sk >= 1.25 ? 'Seçkin' : sk >= 1.0 ? 'Canlı' : sk >= 0.75 ? 'Mahalle' : 'Ekonomik'; }
+export const SINIF_ART: Record<Sinif, { sube: number; prestij: number }> = { Seçkin: { sube: 4, prestij: 35 }, Canlı: { sube: 2, prestij: 18 }, Mahalle: { sube: 0, prestij: 0 }, Ekonomik: { sube: 0, prestij: 0 } };
 /** Karşılanmayan şartlar (boşsa açılabilir). */
 export function sinifSartlari(s: GameState, d: Ilce): string[] { const r = SINIF_ART[sinifOf(d)], u: string[] = []; if (s.subeler.length < r.sube) u.push(`${r.sube} şube gerekiyor (şu an ${s.subeler.length})`); if (s.marka_puani < r.prestij) u.push(`Marka itibarı ${r.prestij} gerekiyor (şu an ${Math.round(s.marka_puani)})`); return u; }
 /** Mekân türleri: kilit şartı seviye ve il uygunluğu. */
