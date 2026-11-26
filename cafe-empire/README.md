@@ -17,6 +17,8 @@ Türkiye haritası üzerinde geçen, kapsamlı **kafe zinciri yönetim simülasy
 | **Semt** (🏘️): semt takvimi (bayram, sınav, derbi, festival… hazırlık kararı), müdavimler ve müşteri tipleri, komşu esnaf ve ortak kampanya, rakip zincirler (Koçak, Beanify, Dem & Demlik, Ay Çekirdek), dükkân kimliği ve günlüğü |
 | Krizler ve personel hikâyeleri: gıda denetimi, yorum fırtınası, makine arızası, tedarik krizi, hırsızlık, sendikal baskı, zam talebi, rakip barista kapması, bayi kalite sorunu; franchise sözleşmeleri (Standart/Premium/Esnek) |
 | Ekonomi dengesi: şirket genel yönetim gideri (şube arttıkça gelirin %0,9'u/şube, en çok %12), her 90 günde kira ve maaşın enflasyona endekslenmesi, marka etkisinin yüksek seviyede yumuşatılması, enflasyon olayının sınırlanması, şirket değeri çarpanlarının düşürülmesi |
+| Yönetim hissi: kademeli açılma (başta 4 sekme, ilerledikçe açılır; kilitli çipler nedenini söyler), Merkez'de "Sıradaki adım" şeridi, ilk 10 adımlık ödüllü yol haritası, "Kararlarının etkisi" (kararın 7 gün sonraki ciro/kâr/müşteri/memnuniyet farkı) |
+| Sağlamlık: çift katmanlı kayıt (localStorage + IndexedDB yedeği), tek sütun dikey kaydırma, ≥36 px dokunma hedefleri; 5 yatay iPhone boyutunda 46 sayfa denetimi (taşma, NaN, konsol hatası yok). iOS paketi: `../cafe-expo` |
 | Online platformlar (4, komisyonlu), sosyal medya (takipçi, paylaşım, ajans), sıralama (zincirler ve şehirler), 4 banka (faiz/komisyon/limit) | ✅ (testli; sıralamadaki rakip zincirler simüle edilir) |
 | 81 il haritası (gerçek sınırlar), il verileri (nüfus, gelir, turizm, öğrenci, rekabet, kira, maliyet, müşteri profili) | ✅ |
 | Kafe açma (marka adı, şehir, 8 dükkân türü, uygunluk kuralları) | ✅ (franchise türü kilitli) |
