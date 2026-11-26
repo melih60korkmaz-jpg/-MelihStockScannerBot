@@ -4,6 +4,7 @@ import { hooks, levelOf, olayIsleyici } from './sim';
 import { dateOf, dayOf } from './calendar';
 import { rand } from './rng';
 import { D, yaz, h32 } from './derin';
+import { toplamDeger } from './mulk';
 import type { GameState } from './types';
 
 export interface Res { ok: boolean; m: string }
@@ -32,7 +33,7 @@ export const MAX_DIS = 0.49;
 export function sirketDegeri(s: GameState): { deger: number; buyume: number; kar: number; ciro: number } {
   const r = s.rapor, son = r.slice(-90), n = Math.max(1, son.length), kar = son.reduce((a, x) => a + x.kar, 0) / n * 365, ciro = son.reduce((a, x) => a + x.toplamGelir, 0) / n * 365;
   const a = r.slice(-30), b = r.slice(-60, -30), ta = a.reduce((p, x) => p + x.toplamGelir, 0), tb = b.reduce((p, x) => p + x.toplamGelir, 0), buyume = b.length >= 20 && tb > 0 ? ta / tb - 1 : 0;
-  const mult = cl(4 + 15 * buyume, 2.5, 8), v = Math.max(0, kar) * mult + ciro * 0.3 + s.marka_puani * 40000 * F(s) + s.franchise.length * 300000 * F(s) + s.subeler.length * 250000 * F(s) + Math.max(0, s.kasa) * 0.8 - s.borc;
+  const mult = cl(4 + 15 * buyume, 2.5, 8), v = Math.max(0, kar) * mult + ciro * 0.3 + s.marka_puani * 40000 * F(s) + s.franchise.length * 300000 * F(s) + s.subeler.length * 250000 * F(s) + Math.max(0, s.kasa) * 0.8 + toplamDeger(s) * 0.9 - s.borc;
   return { deger: Math.max(s.subeler.length * 250000 * F(s), v), buyume, kar, ciro };
 }
 /* ---------- Teklifler ---------- */

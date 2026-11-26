@@ -34,13 +34,15 @@ export const KAVURMA = [
 ];
 const UYUM: Array<[string, string, number]> = [['brezilya', 'etiyopya', 0.04], ['kolombiya', 'guatemala', 0.03], ['brezilya', 'robusta', 0.02], ['etiyopya', 'guatemala', -0.03]];
 export function harmanUyum(a: string, b: string | null): number { if (!b) return 0; for (const [x, y, v] of UYUM) if ((x === a && y === b) || (x === b && y === a)) return v; return 0; }
+/** Kavurmahane gibi sistemlerin harman maliyet/kalitesine çarpan eklemesi için kanca. */
+export const harmanEk: { mal: (s: GameState) => number; kal: (s: GameState) => number } = { mal: () => 1, kal: () => 1 };
 export function harman(s: GameState, ay = dateOf(dayOf(s)).ay): { kal: number; mal: number; uyum: number; ad: string } {
   const c = D(s).cek, A = CEK[c.ana] ?? CEKIRDEKLER[0]!, B = c.ikinci ? CEK[c.ikinci] : undefined, o = B ? c.oran : 0, K = KAVURMA[c.kavurma] ?? KAVURMA[1]!;
   const sezon = (x: Cekirdek) => (x.hasat.includes(ay) ? 0.93 : 1);
   const uyum = B && o >= 0.2 && o <= 0.5 ? harmanUyum(A.id, B.id) : B ? -0.01 : 0;
   const kal = ((A.kal * (1 - o) + (B?.kal ?? 0) * o) * K.kal + uyum) * (c.gecis > 0 ? 0.97 : 1);
   const mal = (A.mal * sezon(A) * (1 - o) + (B ? B.mal * sezon(B) * o : 0)) * K.mal;
-  return { kal, mal, uyum, ad: c.ad };
+  return { kal: kal * harmanEk.kal(s), mal: mal * harmanEk.mal(s), uyum, ad: c.ad };
 }
 export function cekirdekAyarla(s: GameState, p: { ana?: string; ikinci?: string | null; oran?: number; kavurma?: 0 | 1 | 2; ad?: string }): Res {
   const c = D(s).cek; let degisti = false;
@@ -258,7 +260,7 @@ function olayUret(s: GameState, ev: OlayDef, b: Branch, c: Ctx = {}): void {
   D(s).son['o_' + ev.id] = dayOf(s);
 }
 olayIsleyici.push((s, p, secim) => {
-  if (!p.tip.startsWith('d_')) return null; const ev = OLAY[p.tip.slice(2)]; if (!ev) return ''; const d = D(s), c = d.bag[p.id] ?? {}; delete d.bag[p.id];
+  if (!p.tip.startsWith('d_')) return null; const ev = OLAY[p.tip.slice(2)]; if (!ev) return null; /* başka modüllerin (yatırım, afet, mevzuat…) olayları kendi işleyicisinde */ const d = D(s), c = d.bag[p.id] ?? {}; delete d.bag[p.id];
   const b = s.subeler.find((x) => x.id === p.branch) ?? s.subeler[0]; if (!b) return ''; const o = ev.opt[secim] ?? ev.opt[ev.opt.length - 1]!; const m = uygula(s, b, o.ef(s, b, c), c, dayOf(s)); if (!['semt', 'hikaye'].includes(ev.id)) d.say.kriz = (d.say.kriz ?? 0) + 1; yenile(s); const msg = m.join(' ') || 'Karar uygulandı.'; s.log.unshift(`📣 ${ev.ad}: ${msg}`); return msg;
 });
 const hikayeKitap: Record<string, string[]> = {
@@ -348,6 +350,7 @@ export const zaferTamam = (s: GameState): boolean => zaferMaddeleri(s).every((m)
 /* ===================== Durum ===================== */
 export interface TedIliski { sad: number; harc: number; son: number; soz?: { bas: number; bit: number; hedef: number; harc: number } }
 export interface Derin {
+  kav?: import('./kavurma').Kav; kur?: import('./kurye').Kur; mulk?: import('./mulk').Mulk; sad?: import('./sadakat').Sad; basin?: import('./basin').Basin; anket?: import('./anket').Anket; mev?: import('./mevzuat').Mev; surd?: import('./surdur').Surd; afet?: import('./afet').Afet;
   yat?: import('./yatirim').Yat;
   pilot?: Record<string, import('./sezon').Pilot>;
   donem?: import('./donem').DonemDurum;

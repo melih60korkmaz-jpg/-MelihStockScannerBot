@@ -30,24 +30,24 @@ export interface Helpers { zoom: (vb: VB, done?: () => void) => void; res: (r: R
 
 export const NAV: Array<[string, string, string]> = [['ana', '🏠', 'Merkez'], ['harita', '🗺️', 'Türkiye'], ['subeler', '🏪', 'Dükkânlar'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarikçiler'], ['merkez', '🏭', 'Merkezi depo'], ['sosyal', '📸', 'Sosyal medya'], ['reklam', '📣', 'Reklam'], ['kampanya', '🏷️', 'Kampanyalar'], ['online', '🛵', 'Teslimat'], ['prestij', '⭐', 'İtibar'], ['hedefler', '🎯', 'Hedefler'], ['iller', '🏙️', 'İller'], ['franchise', '🤝', 'Franchise'], ['siralama', '🥇', 'Liderlik'], ['banka', '🏦', 'Bankalar'], ['finans', '💰', 'Gelir-gider'], ['ekonomi', '📈', 'Ekonomi'], ['rapor', '📊', 'Raporlar'], ['musteri', '🙂', 'Müşteriler'], ['ayar', '⚙️', 'Ayarlar'],
   ['menu', '📋', 'Menü ve fiyat'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['gelisim', '🛠️', 'Ekipman'], ['genel', '🏠', 'Genel Bakış'],
-  ['cek', '🫘', 'Çekirdek ve kavurma'], ['tarif', '🧪', 'Tarif atölyesi'], ['usta', '🎓', 'Barista ustalığı'], ['fuar', '🏆', 'Kahve fuarı'], ['takvim', '📅', 'Semt takvimi'], ['mudavim', '☕', 'Müdavimler'], ['esnaf', '🤝', 'Komşu esnaf'], ['rakipler', '🏢', 'Rakip zincirler'], ['hikaye', '📖', 'Dükkân hikâyesi'], ['tedil', '🚛', 'Tedarikçi ilişkisi'], ['yorumlar', '💬', 'Yorumlar'], ['grafik', '📊', 'İstatistikler'], ['donem', '🎯', 'Meydan okumalar'], ['kariyer', '🏅', 'Kariyer özeti'], ['sezon', '🍂', 'Sezon ve menü'], ['yatirim', '💼', 'Yatırımcılar']];
+  ['cek', '🫘', 'Çekirdek ve kavurma'], ['tarif', '🧪', 'Tarif atölyesi'], ['usta', '🎓', 'Barista ustalığı'], ['fuar', '🏆', 'Kahve fuarı'], ['takvim', '📅', 'Semt takvimi'], ['mudavim', '☕', 'Müdavimler'], ['esnaf', '🤝', 'Komşu esnaf'], ['rakipler', '🏢', 'Rakip zincirler'], ['hikaye', '📖', 'Dükkân hikâyesi'], ['tedil', '🚛', 'Tedarikçi ilişkisi'], ['yorumlar', '💬', 'Yorumlar'], ['grafik', '📊', 'İstatistikler'], ['donem', '🎯', 'Meydan okumalar'], ['kariyer', '🏅', 'Kariyer özeti'], ['sezon', '🍂', 'Sezon ve menü'], ['yatirim', '💼', 'Yatırımcılar'], ['kavurmahane', '🔥', 'Kavurmahane'], ['kurye', '🛵', 'Kurye ve bulut'], ['mulk', '🏠', 'Mülkler'], ['sadakat', '📱', 'Sadakat uygulaması'], ['basin', '📰', 'Basın ve imaj'], ['anket', '📋', 'Anket ve A/B'], ['mevzuat', '⚖️', 'Mevzuat ve devlet'], ['surdur', '🌿', 'Sürdürülebilirlik'], ['sigorta', '🛡️', 'Sigorta ve afet']];
 /** Alt menü: 8 sekme; sekme içindeki sayfalar üstte çip olur. */
 export interface Grup { id: string; ik: string; ad: string; renk: string; tabs: string[] }
 export const GRUPLAR: Grup[] = [
   { id: 'ana', ik: '🏠', ad: 'Merkez', renk: '#ff8a4c', tabs: ['ana'] },
   { id: 'harita', ik: '🗺️', ad: 'Türkiye', renk: '#5fb3ff', tabs: ['harita'] },
-  { id: 'subeler', ik: '🏪', ad: 'Dükkânlar', renk: '#ffb44c', tabs: ['subeler', 'yorumlar'] },
-  { id: 'atolye', ik: '☕', ad: 'Atölye', renk: '#d9a066', tabs: ['cek', 'tarif', 'sezon', 'usta', 'fuar'] },
+  { id: 'subeler', ik: '🏪', ad: 'Dükkânlar', renk: '#ffb44c', tabs: ['subeler', 'mulk', 'yorumlar'] },
+  { id: 'atolye', ik: '☕', ad: 'Atölye', renk: '#d9a066', tabs: ['cek', 'tarif', 'sezon', 'kavurmahane', 'usta', 'fuar'] },
   { id: 'semt', ik: '🏘️', ad: 'Semt', renk: '#7fd0c7', tabs: ['takvim', 'mudavim', 'esnaf', 'rakipler', 'hikaye'] },
   { id: 'depo', ik: '📦', ad: 'Depo', renk: '#4fd1a5', tabs: ['stok', 'tedarik', 'tedil', 'merkez'] },
-  { id: 'tanitim', ik: '📣', ad: 'Tanıtım', renk: '#ff7aa8', tabs: ['sosyal', 'reklam', 'kampanya', 'online'] },
-  { id: 'gelisim', ik: '🚀', ad: 'Gelişim', renk: '#b07cff', tabs: ['prestij', 'hedefler', 'donem', 'kariyer', 'iller', 'franchise', 'siralama'] },
-  { id: 'kasa', ik: '💰', ad: 'Kasa', renk: '#4fd1a5', tabs: ['banka', 'yatirim', 'finans', 'ekonomi', 'grafik', 'rapor', 'musteri'] },
+  { id: 'tanitim', ik: '📣', ad: 'Tanıtım', renk: '#ff7aa8', tabs: ['sosyal', 'reklam', 'kampanya', 'online', 'kurye', 'sadakat', 'basin', 'anket'] },
+  { id: 'gelisim', ik: '🚀', ad: 'Gelişim', renk: '#b07cff', tabs: ['prestij', 'hedefler', 'donem', 'kariyer', 'surdur', 'iller', 'franchise', 'siralama'] },
+  { id: 'kasa', ik: '💰', ad: 'Kasa', renk: '#4fd1a5', tabs: ['banka', 'yatirim', 'mevzuat', 'sigorta', 'finans', 'ekonomi', 'grafik', 'rapor', 'musteri'] },
   { id: 'ayar', ik: '⚙️', ad: 'Ayarlar', renk: '#9aa8b0', tabs: ['ayar'] },
 ];
 export const grupOf = (tab: string): Grup => GRUPLAR.find((g) => g.tabs.includes(tab)) ?? GRUPLAR[0]!;
 /** Şube gerektiren sayfalar (şubesiz başlangıçta "önce şube aç" kartı gösterilir). */
-const BRANCH_TABS = new Set(['stok', 'tedarik', 'reklam', 'kampanya', 'online', 'sosyal', 'menu', 'personel', 'vardiya', 'gelisim', 'musteri', 'ekonomi', 'iller', 'subeler', 'franchise', 'rapor', 'genel', 'merkez', 'usta', 'takvim', 'mudavim', 'esnaf', 'hikaye', 'tedil', 'yorumlar', 'grafik', 'donem', 'sezon', 'yatirim']);
+const BRANCH_TABS = new Set(['stok', 'tedarik', 'reklam', 'kampanya', 'online', 'sosyal', 'menu', 'personel', 'vardiya', 'gelisim', 'musteri', 'ekonomi', 'iller', 'subeler', 'franchise', 'rapor', 'genel', 'merkez', 'usta', 'takvim', 'mudavim', 'esnaf', 'hikaye', 'tedil', 'yorumlar', 'grafik', 'donem', 'sezon', 'yatirim', 'kavurmahane', 'kurye', 'mulk', 'sadakat', 'basin', 'anket', 'mevzuat', 'surdur', 'sigorta']);
 export const isBranchTab = (t: string): boolean => BRANCH_TABS.has(t);
 
 export const S = (): GameState => ctx.S!;
