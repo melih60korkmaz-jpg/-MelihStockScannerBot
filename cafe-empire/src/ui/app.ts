@@ -95,7 +95,7 @@ function checkOpportunities(): void {
   if (!S) return; const yeniB = Object.keys(S.basarim).filter((k) => !lastAch.has(k)); if (yeniB.length) { lastAch = new Set(Object.keys(S.basarim)); sfx.ach(); toast(`🏆 Başarım: ${yeniB.map((k) => BASARIM[k]?.ad ?? k).join(', ')}`); if (TAB === 'hedefler' && PANEL_OPEN) panel(true); } const lv = levelOf(S), now = new Set(CITIES.filter((c) => ilDurum(S!, c.id, lv).d === 'satilik').map((c) => c.id));
   if (known.size === 0 && S.subeler.length && dayOf(S) < 2) { known = now; return; }
   const yeni = [...now].filter((id) => !known.has(id)); known = now;
-  if (yeni.length) { newOpp = true; nav(); toast(`🗺️ Yeni pazar fırsatı: ${yeni.slice(0, 3).map((id) => cityById(id).ad).join(', ')}${yeni.length > 3 ? ' +' + (yeni.length - 3) : ''}`); }
+  if (yeni.length) { newOpp = true; nav(); toast(yeni.length > 8 ? `🇹🇷 Ulusal zincir oldun: ${yeni.length} ilin pazarı artık açılabilir!` : `🗺️ Yeni pazar fırsatı: ${yeni.slice(0, 3).map((id) => cityById(id).ad).join(', ')}${yeni.length > 3 ? ' +' + (yeni.length - 3) : ''}`); }
 }
 /* ===================== Günlük özet ===================== */
 function gunOzeti(): void {
