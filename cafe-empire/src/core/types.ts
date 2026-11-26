@@ -37,7 +37,7 @@ export interface DayReport { gun: number; gelir: Money; gider: Costs; toplamGeli
 export interface Promo { sabah?: boolean; ogrenci?: boolean; mutlu?: boolean; kart?: boolean; yetkiFiyat?: boolean; gunun?: string | null; gununGun?: number }
 export interface Gorev { id: string; ad: string; ac: string; olc: string; hedef: number; bas: number; bit: number; odul: number; taban: number; tamam: boolean; basari?: number }
 export interface Stat { musteri: number; netKar: number; karGun: number; enIyiGun: number; fiyatDeg: number; seri?: number }
-export interface Franchise { id: number; ad: string; il: number; ilce: string; tip: string; acilis: number; kalite: number; memnuniyet: number; destek: number; ciro: number; royalty: number; toplam: number; dusukGun: number; denetim: number }
+export interface Franchise { id: number; ad: string; il: number; ilce: string; tip: string; acilis: number; kalite: number; memnuniyet: number; destek: number; ciro: number; royalty: number; toplam: number; dusukGun: number; denetim: number; sozlesme?: 'standart' | 'premium' | 'esnek' }
 export interface Ayar { gunSn: number; ozet: 'her' | 'hafta' | 'kapali'; ses: boolean; muzik: boolean; ses_vol: number }
 export interface Lot { q: number; son: number; kal: number }
 export interface Musteri { ortSiparis: number; ortBekleme: number; hizmet: number; urunKal: number; fiyatMemn: number; tekrar: number; sadik: number; sikayet: number }
@@ -57,6 +57,7 @@ export interface Mod { v: number; bit: number }
 export interface Market { enf: number; fiyat: number; bean: number; elektrik: number; mod: Record<string, Mod> }
 
 export interface GameState {
+  derin?: import('./derin').Derin;
   sosyal: { takipci: number; son: Record<string, number>; ajans?: boolean }; faiz?: number; ilanYenile: Record<string, number>;
   ilprog: Record<number, { kurumsal?: { gunluk: number; bit: number } }>;
   frBugun?: number;

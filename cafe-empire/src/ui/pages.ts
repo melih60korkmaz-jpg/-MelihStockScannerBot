@@ -163,7 +163,8 @@ export function pBanka(): string {
 }
 
 /* ===================== Sayfa haritası ===================== */
-export const PAGES: Record<string, () => string> = { ana: pAna, harita: pHarita, subeler: pSubeler2, online: pOnline, sosyal: pSosyal, prestij: pPrestij, siralama: pSiralama, banka: pBanka, kampanya: () => `${bchips()}${kontrolHtml(getS(), cur())}`, merkez: () => `${bchips()}${merkezSection()}`, franchise: () => frSection() };
+import { DERIN_PAGES } from './derin';
+export const PAGES: Record<string, () => string> = { ...DERIN_PAGES, ana: pAna, harita: pHarita, subeler: pSubeler2, online: pOnline, sosyal: pSosyal, prestij: pPrestij, siralama: pSiralama, banka: pBanka, kampanya: () => `${bchips()}${kontrolHtml(getS(), cur())}`, merkez: () => `${bchips()}${merkezSection()}`, franchise: () => frSection() };
 export const BOS_UYARI = (tab: string): string => bosKart(`${GRUPLAR.find((g) => g.tabs.includes(tab))?.ad ?? 'Bu sayfa'} için önce bir şube gerekir.`);
 
 /* ===================== Eylemler ===================== */

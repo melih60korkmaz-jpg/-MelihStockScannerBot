@@ -8,6 +8,8 @@ import { ilSekmeleri, SEKME_AD, SEKME_NEDEN, turistPaketi, turistMaliyet, kampus
 import { setAudio } from './audio';
 import { GUN_SN } from '../core/pace';
 import { BASARIMLAR, ilerleme } from '../core/goals';
+import { frSoz, sozlesmeHtml } from './derin';
+import { SOZLESME } from '../core/derin';
 import { franchiseVer, franchiseNeden, franchiseBedelleri, franchiseDestek, franchiseDenetim, franchiseSonlandir, tahminCiro, ROYALTY, PAZARLAMA, MAX_FR } from '../core/franchise';
 import { MERKEZ, merkezBedel, merkezYukselt } from '../core/merkez';
 import { setPromo, setGununUrunu } from '../core/actions';
@@ -27,13 +29,16 @@ export const ctx: Ctx = { kur: null, subeAcik: null, subeSekme: 'ozet', mapTip: 
 export interface Helpers { zoom: (vb: VB, done?: () => void) => void; res: (r: Result) => void; toast: (m: string) => void; refresh: () => void; show: () => void; go: (tab: string) => void; exit: () => void; wipe: () => void; save: () => void }
 
 export const NAV: Array<[string, string, string]> = [['ana', '🏠', 'Merkez'], ['harita', '🗺️', 'Türkiye'], ['subeler', '🏪', 'Dükkânlar'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarikçiler'], ['merkez', '🏭', 'Merkezi depo'], ['sosyal', '📸', 'Sosyal medya'], ['reklam', '📣', 'Reklam'], ['kampanya', '🏷️', 'Kampanyalar'], ['online', '🛵', 'Teslimat'], ['prestij', '⭐', 'İtibar'], ['hedefler', '🎯', 'Hedefler'], ['iller', '🏙️', 'İller'], ['franchise', '🤝', 'Franchise'], ['siralama', '🥇', 'Liderlik'], ['banka', '🏦', 'Bankalar'], ['finans', '💰', 'Gelir-gider'], ['ekonomi', '📈', 'Ekonomi'], ['rapor', '📊', 'Raporlar'], ['musteri', '🙂', 'Müşteriler'], ['ayar', '⚙️', 'Ayarlar'],
-  ['menu', '📋', 'Menü ve fiyat'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['gelisim', '🛠️', 'Ekipman'], ['genel', '🏠', 'Genel Bakış']];
+  ['menu', '📋', 'Menü ve fiyat'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['gelisim', '🛠️', 'Ekipman'], ['genel', '🏠', 'Genel Bakış'],
+  ['cek', '🫘', 'Çekirdek ve kavurma'], ['tarif', '🧪', 'Tarif atölyesi'], ['usta', '🎓', 'Barista ustalığı'], ['fuar', '🏆', 'Kahve fuarı'], ['takvim', '📅', 'Semt takvimi'], ['mudavim', '☕', 'Müdavimler'], ['esnaf', '🤝', 'Komşu esnaf'], ['rakipler', '🏢', 'Rakip zincirler'], ['hikaye', '📖', 'Dükkân hikâyesi']];
 /** Alt menü: 8 sekme; sekme içindeki sayfalar üstte çip olur. */
 export interface Grup { id: string; ik: string; ad: string; renk: string; tabs: string[] }
 export const GRUPLAR: Grup[] = [
   { id: 'ana', ik: '🏠', ad: 'Merkez', renk: '#ff8a4c', tabs: ['ana'] },
   { id: 'harita', ik: '🗺️', ad: 'Türkiye', renk: '#5fb3ff', tabs: ['harita'] },
   { id: 'subeler', ik: '🏪', ad: 'Dükkânlar', renk: '#ffb44c', tabs: ['subeler'] },
+  { id: 'atolye', ik: '☕', ad: 'Atölye', renk: '#d9a066', tabs: ['cek', 'tarif', 'usta', 'fuar'] },
+  { id: 'semt', ik: '🏘️', ad: 'Semt', renk: '#7fd0c7', tabs: ['takvim', 'mudavim', 'esnaf', 'rakipler', 'hikaye'] },
   { id: 'depo', ik: '📦', ad: 'Depo', renk: '#4fd1a5', tabs: ['stok', 'tedarik', 'merkez'] },
   { id: 'tanitim', ik: '📣', ad: 'Tanıtım', renk: '#ff7aa8', tabs: ['sosyal', 'reklam', 'kampanya', 'online'] },
   { id: 'gelisim', ik: '🚀', ad: 'Gelişim', renk: '#b07cff', tabs: ['prestij', 'hedefler', 'iller', 'franchise', 'siralama'] },
@@ -42,7 +47,7 @@ export const GRUPLAR: Grup[] = [
 ];
 export const grupOf = (tab: string): Grup => GRUPLAR.find((g) => g.tabs.includes(tab)) ?? GRUPLAR[0]!;
 /** Şube gerektiren sayfalar (şubesiz başlangıçta "önce şube aç" kartı gösterilir). */
-const BRANCH_TABS = new Set(['stok', 'tedarik', 'reklam', 'kampanya', 'online', 'sosyal', 'menu', 'personel', 'vardiya', 'gelisim', 'musteri', 'ekonomi', 'iller', 'subeler', 'franchise', 'rapor', 'genel', 'merkez']);
+const BRANCH_TABS = new Set(['stok', 'tedarik', 'reklam', 'kampanya', 'online', 'sosyal', 'menu', 'personel', 'vardiya', 'gelisim', 'musteri', 'ekonomi', 'iller', 'subeler', 'franchise', 'rapor', 'genel', 'merkez', 'usta', 'takvim', 'mudavim', 'esnaf', 'hikaye']);
 export const isBranchTab = (t: string): boolean => BRANCH_TABS.has(t);
 
 export const S = (): GameState => ctx.S!;
@@ -262,12 +267,12 @@ function pHedefler(): string {
 /* ===================== Franchise ===================== */
 export function frSection(): string {
   const s = S(), lv = levelOf(s), toplam = s.franchise.reduce((a, f) => a + f.royalty, 0);
-  const list = s.franchise.map((f) => { const d = ilceOf(f.ilce), ci = Math.round(f.ciro); return `<div class="card"><div class="row"><b>🤝 ${esc(f.ad)}</b><span class="pill">${esc(cityById(f.il).ad)}</span></div><div class="row small"><span>Günlük ciro · payın</span><b>${fmt(ci)} · <span class="good">${fmt(f.royalty)}</span></b></div><div class="row small"><span>Toplam kazancın</span><b>${fmt(f.toplam)}</b></div>${stat('Kalite', f.kalite)}${stat('Bayi memnuniyeti', f.memnuniyet)}<div class="row small"><span>Destek seviyesi</span><div class="stp"><button data-a="frdestek" data-id="${f.id}" data-d="-1">−</button><span>${f.destek}</span><button data-a="frdestek" data-id="${f.id}" data-d="1">+</button></div></div><div class="tiny muted">Destek günlük ${fmt(f.destek * 400 * s.market.fiyat)} maliyet; kaliteyi ve bayi memnuniyetini yükseltir. ${d ? '' : ''}</div><div class="chiprow" style="margin-top:6px"><button class="btn sm" data-a="frdenetim" data-id="${f.id}">🔍 Denetle · ${fmt(4000 * s.market.fiyat)}</button><button class="btn sm bad" data-a="frson" data-id="${f.id}">Sözleşmeyi feshet</button></div>${f.kalite < 45 ? '<div class="tiny badc">⚠️ Kalite düşük: marka zarar görüyor, bayi ayrılabilir.</div>' : ''}</div>`; }).join('');
+  const list = s.franchise.map((f) => { const d = ilceOf(f.ilce), ci = Math.round(f.ciro); return `<div class="card"><div class="row"><b>🤝 ${esc(f.ad)}</b><span class="pill">${esc(cityById(f.il).ad)} · ${SOZLESME[f.sozlesme ?? 'standart'].ad}</span></div><div class="row small"><span>Günlük ciro · payın</span><b>${fmt(ci)} · <span class="good">${fmt(f.royalty)}</span></b></div><div class="row small"><span>Toplam kazancın</span><b>${fmt(f.toplam)}</b></div>${stat('Kalite', f.kalite)}${stat('Bayi memnuniyeti', f.memnuniyet)}<div class="row small"><span>Destek seviyesi</span><div class="stp"><button data-a="frdestek" data-id="${f.id}" data-d="-1">−</button><span>${f.destek}</span><button data-a="frdestek" data-id="${f.id}" data-d="1">+</button></div></div><div class="tiny muted">Destek günlük ${fmt(f.destek * 400 * s.market.fiyat)} maliyet; kaliteyi ve bayi memnuniyetini yükseltir. ${d ? '' : ''}</div><div class="chiprow" style="margin-top:6px"><button class="btn sm" data-a="frdenetim" data-id="${f.id}">🔍 Denetle · ${fmt(4000 * s.market.fiyat)}</button><button class="btn sm bad" data-a="frson" data-id="${f.id}">Sözleşmeyi feshet</button></div>${f.kalite < 45 ? '<div class="tiny badc">⚠️ Kalite düşük: marka zarar görüyor, bayi ayrılabilir.</div>' : ''}</div>`; }).join('');
   let picker = '';
   if (lv >= 5) {
     const cand = ILCELER.filter((d) => ilceAcik(s, d) && !s.subeler.some((b) => b.ilce === ilceKey(d)) && !s.franchise.some((f) => f.ilce === ilceKey(d))).sort((a, b) => profilOf(b).talep - profilOf(a).talep).slice(0, 14), sel = ctx.frIlce !== null ? ILCELER[ctx.frIlce] : undefined;
-    let det = ''; if (sel) { const b = franchiseBedelleri(s, sel.il, ctx.frTip), nd = franchiseNeden(s, sel.id, ctx.frTip), tmp = { id: 0, ad: '', il: sel.il, ilce: ilceKey(sel), tip: ctx.frTip, acilis: dayOf(s), kalite: 55, memnuniyet: 65, destek: 1, ciro: 0, royalty: 0, toplam: 0, dusukGun: 0, denetim: dayOf(s) }, ci = tahminCiro(s, tmp);
-      det = `<div class="small"><b>${esc(sel.ad)}</b> · ${SHOP[ctx.frTip].ad}</div><div class="row small"><span>Giriş ücreti (sana)</span><b class="good">+${fmt(b.giris)}</b></div><div class="row small"><span>Kurulum desteği (sen ödersin)</span><b>−${fmt(b.destek)}</b></div><div class="row small"><span>Tahmini günlük ciro (yeni açılış)</span><b>${fmt(ci)}</b></div><div class="row small"><span>Payın (%${Math.round((ROYALTY + PAZARLAMA) * 100)} royalty + pazarlama)</span><b class="good">≈ ${fmt(ci * (ROYALTY + PAZARLAMA))}/gün</b></div>${nd ? `<div class="tiny badc">🔒 ${nd}</div>` : `<button class="btn sm pri" data-a="frver" style="margin-top:6px">Franchise ver</button>`}`; }
+    let det = ''; if (sel) { const b = franchiseBedelleri(s, sel.il, ctx.frTip, frSoz.v), nd = franchiseNeden(s, sel.id, ctx.frTip), tmp = { id: 0, ad: '', il: sel.il, ilce: ilceKey(sel), tip: ctx.frTip, acilis: dayOf(s), kalite: 55, memnuniyet: 65, destek: 1, ciro: 0, royalty: 0, toplam: 0, dusukGun: 0, denetim: dayOf(s) }, ci = tahminCiro(s, tmp);
+      det = `<div class="small"><b>${esc(sel.ad)}</b> · ${SHOP[ctx.frTip].ad}</div><div class="row small"><span>Giriş ücreti (sana)</span><b class="good">+${fmt(b.giris)}</b></div><div class="row small"><span>Kurulum desteği (sen ödersin)</span><b>−${fmt(b.destek)}</b></div><div class="row small"><span>Tahmini günlük ciro (yeni açılış)</span><b>${fmt(ci)}</b></div><div class="row small"><span>Payın (%${Math.round((SOZLESME[frSoz.v].royalty + SOZLESME[frSoz.v].pazarlama) * 100)} royalty + pazarlama)</span><b class="good">≈ ${fmt(ci * (SOZLESME[frSoz.v].royalty + SOZLESME[frSoz.v].pazarlama))}/gün</b></div>${sozlesmeHtml()}${nd ? `<div class="tiny badc">🔒 ${nd}</div>` : `<button class="btn sm pri" data-a="frver" style="margin-top:6px">Franchise ver</button>`}`; }
     picker = `<div class="card"><h3>Yeni bayi</h3><div class="tiny muted">Açık pazarındaki, kendi şuben olmayan bir ilçeyi seç. Bayi dükkânı kendi işletir; sen marka, kalite ve destek yönetirsin.</div><div class="chiprow" style="margin:6px 0">${cand.map((d) => `<button class="cx ${ctx.frIlce === d.id ? 'on' : ''}" data-a="frsec" data-id="${d.id}">${esc(d.ad)}</button>`).join('') || '<span class="small muted">Uygun ilçe yok: haritadan yeni ilçe aç.</span>'}</div><div class="chiprow" style="margin-bottom:6px">${SHOP_TYPES.filter((t) => t.id !== 'uni' || true).slice(0, 5).map((t) => `<button class="cx ${ctx.frTip === t.id ? 'on' : ''}" data-a="frtip" data-t="${t.id}">${t.ikon} ${t.ad}</button>`).join('')}</div>${det}</div>`;
   }
   return `<div class="eyebrow">🤝 Franchise (${s.franchise.length}/${MAX_FR(s)})</div>${lv < 5 ? '<div class="card small muted">Franchise vermek için kafe seviyesi 5 (ulusal zincir: birden fazla şube ve yüksek marka) gerekir. Bayiler giriş ücreti, royalty ve pazarlama payı öder; ama kalite düşerse markan zarar görür.</div>' : `<div class="card small"><div class="row"><span>Günlük franchise gelirin</span><b class="good">${fmt(toplam)}</b></div><div class="tiny muted">Royalty %${Math.round(ROYALTY * 100)} + pazarlama fonu %${Math.round(PAZARLAMA * 100)}. Gelir "Franchise" kaleminde görünür.</div></div>`}${list}${picker}`;
@@ -363,7 +368,7 @@ export function handle(a: string, d: DOMStringMap, h: Helpers): void {
     case 'tumfiyat': { for (const p of PRODUCTS) if (b.menu[p.id].aktif) setPrice(b, p.id, b.menu[p.id].fiyat * +d.k!); return h.res(ok(`Tüm menü fiyatları ${+d.k! < 1 ? 'düşürüldü' : 'artırıldı'}.`)); }
     case 'frsec': ctx.frIlce = +d.id!; return h.refresh();
     case 'frtip': ctx.frTip = d.t as ShopTypeId; return h.refresh();
-    case 'frver': { if (ctx.frIlce === null) return; const r = franchiseVer(s, ctx.frIlce, ctx.frTip); if (r.ok) ctx.frIlce = null; return h.res(r); }
+    case 'frver': { if (ctx.frIlce === null) return; const r = franchiseVer(s, ctx.frIlce, ctx.frTip, frSoz.v); if (r.ok) ctx.frIlce = null; return h.res(r); }
     case 'frdestek': return h.res(franchiseDestek(s, +d.id!, +d.d!));
     case 'frdenetim': return h.res(franchiseDenetim(s, +d.id!));
     case 'frson': return h.res(franchiseSonlandir(s, +d.id!));

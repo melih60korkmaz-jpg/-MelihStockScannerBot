@@ -15,9 +15,13 @@ describe('personel ve vardiya', () => {
     expect(coverage(b, 10, 0, now).barista).toBeGreaterThan(0); expect(coverage(b, 21, 0, now).barista).toBe(0); expect(gaps(b, 0, now).length).toBeGreaterThan(5); autoPlan(b); expect(weekGaps(b, now)).toBeLessThan(40);
   });
   it('izin gününde çalışmaz', () => { const s = mk(); const b = s.subeler[0]!; const e = staffOf(b, 'barista')[0]!; b.staff.forEach((x) => { x.vardiya = 'tam'; }); e.izin = 2; const now = dayOf(s); expect(coverage({ ...b, staff: [e] }, 12, 2, now).barista).toBe(0); expect(coverage({ ...b, staff: [e] }, 12, 3, now).barista).toBeGreaterThan(0); });
-  it('personel yetersizse hizmet yavaşlar: yarı kadro daha çok müşteri kaybeder, memnuniyet düşer', () => {
-    const a = mk(11), z = mk(11); for (const b of [a.subeler[0]!, z.subeler[0]!]) b.otoSiparis = true; const bz = z.subeler[0]!; bz.staff = bz.staff.filter((e) => e.tip !== 'barista').slice(0, 1); bz.staff.push(makeEmployee(z, 'barista')); autoPlan(bz); for (const e of bz.staff) e.vardiya = 'sabah';
-    run(a, 25); run(z, 25); const ky = (s: typeof a) => s.rapor.reduce((x, r) => x + r.kayip, 0), mm = (s: typeof a) => s.subeler[0]!.memnuniyet; expect(ky(z)).toBeGreaterThan(ky(a)); expect(mm(z)).toBeLessThan(mm(a) + 0.5);
+  it('personel yetersizse hizmet yavaşlar: yarı kadro daha çok müşteri kaybeder, memnuniyet düşer (birkaç tohumun toplamı)', () => {
+    let kyA = 0, kyZ = 0, mA = 0, mZ = 0; const ky = (s: ReturnType<typeof mk>) => s.rapor.reduce((x, r) => x + r.kayip, 0), mm = (s: ReturnType<typeof mk>) => s.subeler[0]!.memnuniyet;
+    for (const sd of [3, 5, 9, 12]) {
+      const a = mk(sd), z = mk(sd); for (const b of [a.subeler[0]!, z.subeler[0]!]) b.otoSiparis = true; const bz = z.subeler[0]!; bz.staff = bz.staff.filter((e) => e.tip !== 'barista').slice(0, 1); bz.staff.push(makeEmployee(z, 'barista')); autoPlan(bz); for (const e of bz.staff) e.vardiya = 'sabah';
+      run(a, 25); run(z, 25); kyA += ky(a); kyZ += ky(z); mA += mm(a); mZ += mm(z);
+    }
+    expect(kyZ).toBeGreaterThan(kyA); expect(mZ).toBeLessThan(mA);
   });
   it('yanlış plan yorgunluğu artırır; izinli plan dengeler', () => {
     const s = mk(5); const b = s.subeler[0]!; const e = b.staff[0]!; b.staff = [e, ...b.staff.slice(1)]; for (const x of b.staff) { x.vardiya = 'tam'; x.izin = -1; x.mesai = true; } run(s, 14); const yor = e.yorgunluk; expect(yor).toBeGreaterThan(55);

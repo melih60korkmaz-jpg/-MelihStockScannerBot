@@ -6,14 +6,14 @@ import { newGame } from '../src/core/actions';
 import { deserialize, serialize } from '../src/core/save';
 
 describe('menü yapısı', () => {
-  it('8 ana sekme; her grup sayfası tanımlı ve tek grupta; grup başına en çok 5 sayfa', () => {
-    const tabs = GRUPLAR.flatMap((g) => g.tabs); expect(GRUPLAR.length).toBe(8); expect(new Set(tabs).size).toBe(tabs.length); const tum = { ...PANELS, ...PAGES }; const nav = new Set(NAV.map((n) => n[0]));
+  it('10 ana sekme; her grup sayfası tanımlı ve tek grupta; grup başına en çok 5 sayfa', () => {
+    const tabs = GRUPLAR.flatMap((g) => g.tabs); expect(GRUPLAR.length).toBe(10); expect(new Set(tabs).size).toBe(tabs.length); const tum = { ...PANELS, ...PAGES }; const nav = new Set(NAV.map((n) => n[0]));
     for (const id of tabs) { expect(nav.has(id)).toBe(true); expect(tum[id]).toBeTypeOf('function'); expect(grupOf(id).tabs).toContain(id); }
     for (const g of GRUPLAR) expect(g.tabs.length).toBeLessThanOrEqual(5);
     for (const id of ['menu', 'personel', 'vardiya', 'gelisim']) expect(tum[id]).toBeTypeOf('function');   // Şubeler detayı içindeki sayfalar
   });
   it('sayfa başlıkları kısa ve benzersiz', () => { const ad = NAV.map((n) => n[2]); expect(new Set(ad).size).toBe(ad.length); for (const a of ad) expect(a.length).toBeLessThanOrEqual(20); });
-  it('alt menü sırası: Merkez, Türkiye, Dükkânlar, Depo, Tanıtım, Gelişim, Kasa, Ayarlar', () => { expect(GRUPLAR.map((g) => g.ad)).toEqual(['Merkez', 'Türkiye', 'Dükkânlar', 'Depo', 'Tanıtım', 'Gelişim', 'Kasa', 'Ayarlar']); });
+  it('alt menü sırası: Merkez, Türkiye, Dükkânlar, Depo, Tanıtım, Gelişim, Kasa, Ayarlar', () => { expect(GRUPLAR.map((g) => g.ad)).toEqual(['Merkez', 'Türkiye', 'Dükkânlar', 'Atölye', 'Semt', 'Depo', 'Tanıtım', 'Gelişim', 'Kasa', 'Ayarlar']); });
 });
 describe('gün süresi (hız)', () => {
   it('varsayılan gün 3 dakika; hız çarpanı orantılı; seçenekler artan', () => {

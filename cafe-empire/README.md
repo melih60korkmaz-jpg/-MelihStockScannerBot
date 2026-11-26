@@ -13,6 +13,9 @@ Türkiye haritası üzerinde geçen, kapsamlı **kafe zinciri yönetim simülasy
 |---|---|
 | Dükkân açma akışı: şubesiz başlangıç (2 M ₺, İstanbul) → Türkiye haritası → semt sınıfı (Seçkin/Canlı/Mahalle/Ekonomik) + şube/itibar şartları → 5 ilan → "Açılış planı" (Mekân ve tarz / Ekip ve donanım / Finansman), alt özet çubuğunda maliyet ve aylık tahmin |
 | Yüzen dock'ta 8 sekme (Merkez, Türkiye, Dükkânlar, Depo, Tanıtım, Gelişim, Kasa, Ayarlar); Dükkân detayı: salon doluluğu, müşteri profili, menü/personel/vardiya/gelişim |
+| **Atölye** (☕): çekirdek ve kavurma (5 çekirdek, harman uyumu, hasat mevsimi), tarif atölyesi (içecek tasarla, tattır, imza yap), barista ustalığı (seviye, yetenek, Ekim şampiyonası), Nisan kahve fuarı |
+| **Semt** (🏘️): semt takvimi (bayram, sınav, derbi, festival… hazırlık kararı), müdavimler ve müşteri tipleri, komşu esnaf ve ortak kampanya, rakip zincirler (Koçak, Beanify, Dem & Demlik, Ay Çekirdek), dükkân kimliği ve günlüğü |
+| Krizler ve personel hikâyeleri: gıda denetimi, yorum fırtınası, makine arızası, tedarik krizi, hırsızlık, sendikal baskı, zam talebi, rakip barista kapması, bayi kalite sorunu; franchise sözleşmeleri (Standart/Premium/Esnek) |
 | Online platformlar (4, komisyonlu), sosyal medya (takipçi, paylaşım, ajans), sıralama (zincirler ve şehirler), 4 banka (faiz/komisyon/limit) | ✅ (testli; sıralamadaki rakip zincirler simüle edilir) |
 | 81 il haritası (gerçek sınırlar), il verileri (nüfus, gelir, turizm, öğrenci, rekabet, kira, maliyet, müşteri profili) | ✅ |
 | Kafe açma (marka adı, şehir, 8 dükkân türü, uygunluk kuralları) | ✅ (franchise türü kilitli) |

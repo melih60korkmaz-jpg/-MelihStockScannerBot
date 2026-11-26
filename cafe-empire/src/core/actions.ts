@@ -1,3 +1,4 @@
+import './derin';
 import { buyInvest } from './invest';
 import { gorevleriGuncelle } from './goals';
 import { estimateUsage, autoOrder } from './supply';

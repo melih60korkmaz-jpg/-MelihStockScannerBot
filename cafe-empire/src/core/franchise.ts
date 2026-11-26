@@ -7,13 +7,14 @@ import { setupCost } from './actions';
 import { ilceAcik } from './region';
 import { dayOf } from './calendar';
 import { rand } from './rng';
+import { SOZLESME, type SozlesmeId } from './derin';
 import type { Franchise, GameState } from './types';
 
 export const ROYALTY = 0.08, PAZARLAMA = 0.02;
 export const MAX_FR = (s: GameState): number => levelOf(s) * 4;
 export interface FRes { ok: boolean; m: string }
 const ok = (m: string): FRes => ({ ok: true, m }), no = (m: string): FRes => ({ ok: false, m });
-export function franchiseBedelleri(s: GameState, il: number, tip: ShopTypeId): { giris: number; destek: number } { const base = setupCost(s, cityById(il), tip); return { giris: Math.round(base * 0.5 / 1000) * 1000, destek: Math.round(base * 0.12 / 1000) * 1000 }; }
+export function franchiseBedelleri(s: GameState, il: number, tip: ShopTypeId, soz: SozlesmeId = 'standart'): { giris: number; destek: number } { const base = setupCost(s, cityById(il), tip); return { giris: Math.round(base * 0.5 * SOZLESME[soz].giris / 1000) * 1000, destek: Math.round(base * 0.12 / 1000) * 1000 }; }
 export function franchiseNeden(s: GameState, ilceId: number, tip: ShopTypeId): string | null {
   const d = ILCELER[ilceId]; if (!d) return 'İlçe yok.'; const key = ilceKey(d);
   if (levelOf(s) < 5) return 'Franchise için kafe seviyesi 5 (ulusal zincir) gerekir.'; if (s.franchise.length >= MAX_FR(s)) return `Franchise sınırı dolu (${MAX_FR(s)}).`;
@@ -21,10 +22,10 @@ export function franchiseNeden(s: GameState, ilceId: number, tip: ShopTypeId): s
   const why = SHOP[tip].uygun(cityById(d.il)); if (why) return why; const { destek } = franchiseBedelleri(s, d.il, tip); if (s.kasa < destek) return `Kurulum desteği için ${destek} ₺ gerekir.`; return null;
 }
 let fid = 1;
-export function franchiseVer(s: GameState, ilceId: number, tip: ShopTypeId): FRes {
-  const neden = franchiseNeden(s, ilceId, tip); if (neden) return no(neden); const d = ILCELER[ilceId]!, { giris, destek } = franchiseBedelleri(s, d.il, tip), now = dayOf(s);
+export function franchiseVer(s: GameState, ilceId: number, tip: ShopTypeId, soz: SozlesmeId = 'standart'): FRes {
+  const neden = franchiseNeden(s, ilceId, tip); if (neden) return no(neden); const d = ILCELER[ilceId]!, { giris, destek } = franchiseBedelleri(s, d.il, tip, soz), now = dayOf(s);
   s.kasa -= destek; s.capexBugun += destek; s.frBugun = (s.frBugun ?? 0) + giris;
-  const f: Franchise = { id: Math.max(fid, ...s.franchise.map((x) => x.id + 1)), ad: `${s.marka.ad} ${d.ad} (Bayi)`, il: d.il, ilce: ilceKey(d), tip, acilis: now, kalite: 55, memnuniyet: 65, destek: 1, ciro: 0, royalty: 0, toplam: 0, dusukGun: 0, denetim: now }; fid = f.id + 1; s.franchise.push(f);
+  const f: Franchise = { id: Math.max(fid, ...s.franchise.map((x) => x.id + 1)), ad: `${s.marka.ad} ${d.ad} (Bayi)`, il: d.il, ilce: ilceKey(d), tip, acilis: now, kalite: 55 + SOZLESME[soz].kalite, memnuniyet: 65, destek: 1, ciro: 0, royalty: 0, toplam: 0, dusukGun: 0, denetim: now, sozlesme: soz }; fid = f.id + 1; s.franchise.push(f);
   s.log.unshift(`🤝 Yeni bayi: ${f.ad}`); return ok(`${f.ad} açıldı. Giriş ücreti ${giris} ₺ günün gelirine eklenecek; kurulum desteği −${destek} ₺.`);
 }
 export function franchiseDestek(s: GameState, id: number, d: number): FRes { const f = s.franchise.find((x) => x.id === id); if (!f) return no('Bayi yok.'); f.destek = Math.max(0, Math.min(3, f.destek + d)); return ok(`Destek seviyesi ${f.destek} (günlük ${Math.round(f.destek * 400 * s.market.fiyat)} ₺).`); }
@@ -40,9 +41,9 @@ export function tahminCiro(s: GameState, f: Franchise): number {
 hooks.gunOnce.push((s, toplam) => {
   let gelir = s.frBugun ?? 0; s.frBugun = 0; let destek = 0;
   for (const f of [...s.franchise]) {
-    const hedef = 45 + 0.35 * s.marka_puani + 12 * f.destek - (dayOf(s) - f.denetim > 45 ? 8 : 0);
+    const soz = SOZLESME[f.sozlesme ?? 'standart'], hedef = 45 + 0.35 * s.marka_puani + 12 * f.destek + soz.kalite - (dayOf(s) - f.denetim > 45 ? 8 : 0);
     f.kalite = Math.max(0, Math.min(100, f.kalite + (hedef - f.kalite) * 0.06 + (rand(s.rng, 'misc') - 0.5) * 1.2));
-    const ciro = tahminCiro(s, f) * (0.92 + 0.16 * rand(s.rng, 'misc')), pay = ciro * (ROYALTY + PAZARLAMA); f.ciro = ciro; f.royalty = pay; f.toplam += pay; gelir += pay; destek += f.destek * 400 * s.market.fiyat;
+    const ciro = tahminCiro(s, f) * (0.92 + 0.16 * rand(s.rng, 'misc')), pay = ciro * (soz.royalty + soz.pazarlama); f.ciro = ciro; f.royalty = pay; f.toplam += pay; gelir += pay; destek += f.destek * 400 * s.market.fiyat;
     const mh = 50 + (f.kalite - 50) * 0.4 + f.destek * 5 + (ciro > 8000 ? 6 : 0); f.memnuniyet = Math.max(0, Math.min(100, f.memnuniyet + (mh - f.memnuniyet) * 0.05));
     s.marka_puani = Math.max(0, Math.min(100, s.marka_puani + (f.kalite < 45 ? -0.02 : f.kalite > 75 ? 0.02 : 0)));
     f.dusukGun = f.kalite < 35 || f.memnuniyet < 30 ? f.dusukGun + 1 : 0;
