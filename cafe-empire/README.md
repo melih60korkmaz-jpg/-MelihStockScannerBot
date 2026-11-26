@@ -11,7 +11,9 @@ Türkiye haritası üzerinde geçen, kapsamlı **kafe zinciri yönetim simülasy
 ## Durum (dürüst liste)
 | Alan | Durum |
 |---|---|
-| Şube panosu (kartlarda günlük müşteri/gelir/memnuniyet, 14 günlük kâr grafiği, uyarılar), alt menü, gruplanmış sayfalar | ✅ |
+| Referans oyun akışı: şubesiz başlangıç (2 M ₺, İstanbul) → Harita → semt sınıfı (Lüks/Premium/Normal/Düşük) + şube/itibar şartları → ilanlar → "Kirala ve kur" sihirbazı (konsept, dekor, ekipman, personel, ödeme, açılış maliyeti dökümü, tahmini aylık sonuç) | ✅ (testli) |
+| Alt menüde 11 sekme (Ana ekran, Harita, Şubeler, Online, Tedarik, Pazarlama, Prestij, Yatırımlar, Sıralama, Banka, Şirket); Şube detayı: salon (masa doluluğu), "Kim geliyor?", menü/personel/vardiya/dükkân | ✅ |
+| Online platformlar (4, komisyonlu), sosyal medya (takipçi, paylaşım, ajans), sıralama (zincirler ve şehirler), 4 banka (faiz/komisyon/limit) | ✅ (testli; sıralamadaki rakip zincirler simüle edilir) |
 | 81 il haritası (gerçek sınırlar), il verileri (nüfus, gelir, turizm, öğrenci, rekabet, kira, maliyet, müşteri profili) | ✅ |
 | Kafe açma (marka adı, şehir, 8 dükkân türü, uygunluk kuralları) | ✅ (franchise türü kilitli) |
 | 15 menülü yönetim paneli (Genel Bakış, Personel, Vardiyalar, Menü ve Ürünler, Stok, Tedarikçiler, Finans, Müşteriler, Reklam, İşletme Geliştirme, Rakipler, Türkiye Haritası, Şubeler, Raporlar, Ayarlar) | ✅ tüm düğmeler gerçek simülasyona bağlı |

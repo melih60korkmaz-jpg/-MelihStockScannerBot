@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { NAV, GRUPLAR, grupOf, PANELS } from '../src/ui/panels';
+import { PAGES } from '../src/ui/pages';
 import { oyunDakikasi, GUN_SN, VARSAYILAN_GUN_SN } from '../src/core/pace';
 import { newGame } from '../src/core/actions';
 import { deserialize, serialize } from '../src/core/save';
 
 describe('menü yapısı', () => {
-  it('her sayfa tam bir grupta; en fazla 6 grup; her sayfanın paneli var', () => {
-    const tabs = GRUPLAR.flatMap((g) => g.tabs); expect(GRUPLAR.length).toBeLessThanOrEqual(6); expect(new Set(tabs).size).toBe(tabs.length); expect([...tabs].sort()).toEqual(NAV.map((n) => n[0]).sort());
-    for (const [id] of NAV) { expect(PANELS[id]).toBeTypeOf('function'); expect(grupOf(id).tabs).toContain(id); }
+  it('11 ana sekme; her grup sayfası tanımlı ve tek grupta; grup başına en çok 4 sayfa', () => {
+    const tabs = GRUPLAR.flatMap((g) => g.tabs); expect(GRUPLAR.length).toBe(11); expect(new Set(tabs).size).toBe(tabs.length); const tum = { ...PANELS, ...PAGES }; const nav = new Set(NAV.map((n) => n[0]));
+    for (const id of tabs) { expect(nav.has(id)).toBe(true); expect(tum[id]).toBeTypeOf('function'); expect(grupOf(id).tabs).toContain(id); }
     for (const g of GRUPLAR) expect(g.tabs.length).toBeLessThanOrEqual(4);
+    for (const id of ['menu', 'personel', 'vardiya', 'gelisim']) expect(tum[id]).toBeTypeOf('function');   // Şubeler detayı içindeki sayfalar
   });
   it('sayfa başlıkları kısa ve benzersiz', () => { const ad = NAV.map((n) => n[2]); expect(new Set(ad).size).toBe(ad.length); for (const a of ad) expect(a.length).toBeLessThanOrEqual(20); });
+  it('referanstaki 11 sekme sırası: Ana ekran, Harita, Şubeler, Online, Tedarik, Pazarlama, Prestij, Yatırımlar, Sıralama, Banka, Şirket', () => { expect(GRUPLAR.map((g) => g.ad)).toEqual(['Ana ekran', 'Harita', 'Şubeler', 'Online', 'Tedarik', 'Pazarlama', 'Prestij', 'Yatırımlar', 'Sıralama', 'Banka', 'Şirket']); });
 });
 describe('gün süresi (hız)', () => {
   it('varsayılan gün 3 dakika; hız çarpanı orantılı; seçenekler artan', () => {

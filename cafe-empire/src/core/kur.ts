@@ -62,7 +62,7 @@ export function tahmin(s: GameState, sc: KurSecim, d: Ilce): Tahmin {
   const marka = 0.4 + 0.012 * (0.5 * s.marka_puani + 3), dekorK = 1 + (sc.dekor - 1) * 0.05 * (pf.gelir >= 1.2 && sc.dekor === 0 ? 0.9 : 1);
   const talep = st.potansiyel * 1.9 * pf.talep * 0.9 * marka * TRAFIK_K[sc.ilan.trafik] * dekorK * (st.m2 > 0 ? Math.pow(sc.ilan.m2 / st.m2, 0.35) : 1);
   const servis = (k.barista ?? 0) + 0.5 * (k.kasiyer ?? 0) + (sc.ekipman.includes('espresso') ? 0.4 : 0) + (sc.ekipman.includes('pos') ? 0.25 : 0), kap = servis * 90 * ({ takeaway: 1.15, self: 1, garson: 0.9, karma: 1 } as const)[sc.konsept] * (sc.konsept === 'garson' && !(k.servis ?? 0) ? 0.85 : 1);
-  const musteri = Math.min(talep, kap), kacan = Math.max(0, talep - kap);
+  const gercek = talep * 0.65, musteri = Math.min(gercek, kap), kacan = Math.max(0, gercek - kap);   // kaçan müşteri, stok kesintisi, hava ve ilk aylar için gerçekçilik payı
   const son = s.rapor.slice(-30), ms = son.reduce((a, r) => a + r.musteri, 0), sepet0 = ms > 100 ? son.reduce((a, r) => a + r.toplamGelir - r.gelir.franchise, 0) / ms : 140 * (0.82 + 0.28 * c.gelir), sepet = sepet0 * (0.92 + 0.08 * pf.gelir) * ({ takeaway: 0.92, self: 1, garson: 1.18, karma: 1.08 } as const)[sc.konsept];
   const ciroG = musteri * sepet, sabitG = (st.m2 * (55 + 14 + 6 + 18) + 1200 * 0 + 3000 + 1900 + 900 + 1200) / 30 * F * (sc.ilan.m2 / st.m2), giderG = dk.maasAylik / 30 + sc.ilan.kira / 30 + sabitG + ciroG * 0.3;
   const karG = ciroG - giderG, ay = karG * 30; return { musteri: Math.round(musteri), kacan: Math.round(kacan), ciro: Math.round(ciroG * 30), kar: Math.round(ay), geriDonus: ay > 0 ? Math.ceil(dk.toplam / ay) : null };

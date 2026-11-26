@@ -42,8 +42,8 @@ export function seasonTourism(c: City, ay: number): number { // 0.4–1.7
   const yaz = [0.4, 0.4, 0.55, 0.8, 1.0, 1.4, 1.7, 1.7, 1.3, 0.9, 0.55, 0.5][ay] ?? 1; const dalga = c.kiyi ? 1 : 0.45;
   return 1 + (yaz - 1) * dalga;
 }
-const HOUR_CURVE = [0, 0, 0, 0, 0, 0, 0, 0, 0.6, 1.2, 1.4, 1.0, 1.2, 1.6, 1.2, 0.9, 1.0, 1.3, 1.5, 1.4, 1.1, 0.8, 0.5, 0.2];
-const HOUR_SUM = HOUR_CURVE.reduce((a, b) => a + b, 0);
+export const HOUR_CURVE = [0, 0, 0, 0, 0, 0, 0, 0, 0.6, 1.2, 1.4, 1.0, 1.2, 1.6, 1.2, 0.9, 1.0, 1.3, 1.5, 1.4, 1.1, 0.8, 0.5, 0.2];
+export const HOUR_SUM = HOUR_CURVE.reduce((a, b) => a + b, 0);
 
 /* ===================== Pazar ve talep ===================== */
 export function rivalPressure(s: GameState, b: Branch): number {

@@ -1,28 +1,27 @@
 import './style.css';
-import { panoHtml } from './pano';
 import { cityById, CITIES } from '../data/turkey';
 import { ilDurum } from '../core/region';
-import { SHOP, SHOP_TYPES, LEVELS, type ShopTypeId } from '../data/catalog';
-import { newGame, fmt, setupCost, rentOf, type Result } from '../core/actions';
+import { LEVELS } from '../data/catalog';
+import { newGame, fmt, type Result } from '../core/actions';
 import { step, dateText, timeText, dayOf, levelOf, resolveEvent } from '../core/sim';
 import { oyunDakikasi } from '../core/pace';
 import { save, load, wipe } from '../core/save';
-import { regionMap, zoomVb, NAT_VB, type VB } from './map';
-import { ILCELER, ilcelerOf, ilceKey, profilOf } from '../data/regions';
+import { NAT_VB, type VB } from './map';
 import type { GameState } from '../core/types';
 import { startAudio, setAudio, sfx, stopAudio } from './audio';
 import { BASARIM } from '../core/goals';
-import { ctx, cur, esc as _esc, NAV, GRUPLAR, grupOf, PANELS, LIVE_TABS, handle } from './panels';
+import { ctx, cur, esc as _esc, NAV, GRUPLAR, grupOf, PANELS, LIVE_TABS, handle, isBranchTab } from './panels';
+import { PAGES, handlePages, kurHtml, kisa, BOS_UYARI } from './pages';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 const esc = _esc;
 const root = document.getElementById('app') as HTMLElement;
-let S: GameState | null = null, TAB = 'genel', PANEL_OPEN = false;
-let lastDay = -1, lastSumDay = -1, lastAch = new Set<string>();
+let S: GameState | null = null, TAB = 'ana';
+let lastSumDay = -1, lastAch = new Set<string>();
 let known = new Set<number>(), newOpp = false, oppT = 0;
-let accMin = 0, uiT = 0, saveT = 0, modalOpen = false;
-const bar = (v: number, col = 'var(--am)') => `<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%;background:${col}"></i></div>`;
-function toast(m: string): void { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; root.appendChild(t); setTimeout(() => t.remove(), 2400); }
+let accMin = 0, uiT = 0, saveT = 0, modalOpen = false, rafId = 0;
+const ALL: Record<string, () => string> = { ...PANELS, ...PAGES };
+function toast(m: string): void { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; root.appendChild(t); setTimeout(() => t.remove(), 2600); }
 
 /* ===================== Başlangıç ekranları ===================== */
 function title(): void {
@@ -30,20 +29,13 @@ function title(): void {
   $('#yeni').onclick = setup; if (has) $('#devam').onclick = () => { S = has; enter(); };
 }
 function setup(): void {
-  let ad = 'Fincan Kahve', renk = '#c4722a', renk2 = '#2d1f14', logo = 0, ilceId = ilcelerOf(34).find((d) => d.ad === 'Kadıköy')!.id, tip: ShopTypeId = 'mahalle', first = true; const renkler: Array<[string, string]> = [['#c4722a', '#2d1f14'], ['#2e86c1', '#1b2a38'], ['#27ae60', '#1d3a2b'], ['#c0392b', '#3a1d1d'], ['#8e44ad', '#2d1d3a'], ['#d4a017', '#2a2415']];
-  const fake = { bolge: { il: { 34: 0 }, ilce: {} }, market: { fiyat: 1 }, subeler: [], rakipler: {} } as unknown as GameState; ctx.vb = NAT_VB; ctx.fx = [];
+  let ad = 'Korkmaz Kahve', renk = '#e0983c', renk2 = '#2d1f14', logo = 0; const renkler: Array<[string, string]> = [['#e0983c', '#2d1f14'], ['#2e86c1', '#1b2a38'], ['#27ae60', '#1d3a2b'], ['#c0392b', '#3a1d1d'], ['#8e44ad', '#2d1d3a'], ['#d4a017', '#2a2415']];
   const draw = (): void => {
     const inp = document.getElementById('ad') as HTMLInputElement | null; if (inp) ad = inp.value || ad;
-    const c = cityById(34), d = ILCELER[ilceId]!, pf = profilOf(d), probs = SHOP_TYPES.map((t) => { const why = t.uygun(c); return { t, why, cost: Math.round(setupCost(fake, c, t.id) * (0.85 + 0.15 * pf.kira) / 1000) * 1000 }; });
-    root.innerHTML = `<div class="screen"><div class="setup"><div><h2 style="font-family:var(--fd);margin:0 0 8px">1 · Markan</h2><div class="card"><div class="small muted">Kafe / şirket adı</div><input id="ad" maxlength="22" value="${esc(ad)}" style="width:100%;margin-top:5px;background:var(--p2);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:16px"><div class="small muted" style="margin-top:8px">Marka renkleri</div><div class="colors">${renkler.map((r, i) => `<i data-r="${i}" class="${r[0] === renk ? 'on' : ''}" style="background:${r[0]}"></i>`).join('')}</div><div class="small muted">Logo</div><div class="chiprow">${['☕', '🥐', '🌿', '⭐', '🔥', '🫘'].map((l, i) => `<button class="cx ${i === logo ? 'on' : ''}" data-l="${i}">${l}</button>`).join('')}</div></div>
-      <h2 style="font-family:var(--fd);margin:12px 0 8px">3 · Dükkân türü <span class="muted small">${esc(d.ad)}</span></h2>${probs.map((p) => `<button class="shopopt ${p.t.id === tip ? 'on' : ''} ${p.why || p.t.seviye > 1 ? 'dis' : ''}" data-t="${p.t.id}"><b>${p.t.ikon} ${p.t.ad}</b> <span class="small muted">· ${p.t.m2} m² · kira ${fmt(Math.round(rentOf(fake, c, p.t.id) * pf.kira / 500) * 500)}/ay</span><div class="tiny muted">${p.why ? '🔒 ' + p.why : p.t.seviye > 1 ? '🔒 Kafe seviyesi ' + p.t.seviye + ' gerekir' : p.t.ac + ' · Kurulum ' + fmt(p.cost)}</div></button>`).join('')}<button class="btn pri" id="basla" style="width:100%;min-height:48px">Kafeyi aç ☕</button><button class="btn" id="geri" style="width:100%;margin-top:6px">Geri</button></div>
-      <div><h2 style="font-family:var(--fd);margin:0 0 8px">2 · Başlangıç ilçesi <span class="muted small">(İstanbul)</span></h2><div class="card small muted">Türkiye'ye <b>İstanbul'dan</b> başlıyorsun. Diğer il ve ilçeleri oyun içinde parayla ve zamanla açacaksın. Haritada bir ilçeye dokun.</div><div class="mapbox zoomed">${regionMap(fake, { metric: 'talep', sel: 34, zoomIl: 34, selIlce: ilceId, vb: ctx.vb, fx: [], now: 0, lv: 1, start: true })}</div><div class="card" style="margin-top:8px"><h3>${esc(d.ad)}</h3>${pf.etiket ? `<div class="tiny muted">${esc(pf.etiket)}</div>` : ''}<div class="small muted">Kafe talebi ${pf.talep.toFixed(2).replace('.', ',')}×</div>${bar(Math.min(100, pf.talep / 2 * 100))}<div class="small muted">Gelir düzeyi ${pf.gelir.toFixed(2).replace('.', ',')}×</div>${bar(Math.min(100, pf.gelir / 1.5 * 100), 'var(--ok)')}<div class="small muted">Kira ${pf.kira.toFixed(2).replace('.', ',')}×</div>${bar(Math.min(100, pf.kira / 1.6 * 100), 'var(--bad)')}<div class="tiny muted">Yoğun ve zengin ilçe daha çok müşteri getirir ama kira ve rekabet de yüksektir. Sakin ilçede daha ucuza başlarsın.</div></div></div></div></div>`;
-    root.querySelectorAll<SVGElement>('path[data-ilce]').forEach((p) => { p.onclick = () => { ilceId = +p.dataset.ilce!; draw(); }; });
+    root.innerHTML = `<div class="screen"><div class="kurulum"><div class="kk"><div class="tiny muted">YENİ OYUN</div><h1>Zincirini kur</h1><p class="muted small">İstanbul'dan, 2.000.000 ₺ ile başlıyorsun. Önce markanı seç; sonra haritadan ilk dükkânını bul ve kirala.</p></div><div class="cardx"><div class="small muted">Kafe / şirket adı</div><input id="ad" class="kin" maxlength="22" value="${esc(ad)}"><div class="small muted" style="margin-top:10px">Marka rengi</div><div class="colors">${renkler.map((r, i) => `<i data-r="${i}" class="${r[0] === renk ? 'on' : ''}" style="background:${r[0]}"></i>`).join('')}</div><div class="small muted">Logo</div><div class="chiprow">${['☕', '🥐', '🌿', '⭐', '🔥', '🫘'].map((l, i) => `<button class="cx ${i === logo ? 'on' : ''}" data-l="${i}">${l}</button>`).join('')}</div></div><div class="kfoot2"><button class="btn" id="geri">Geri</button><button class="ybtn" id="basla">Başla ›</button></div></div></div>`;
     root.querySelectorAll<HTMLElement>('[data-r]').forEach((e) => { e.onclick = () => { const r = renkler[+e.dataset.r!]!; renk = r[0]; renk2 = r[1]; draw(); }; });
     root.querySelectorAll<HTMLElement>('[data-l]').forEach((e) => { e.onclick = () => { logo = +e.dataset.l!; draw(); }; });
-    root.querySelectorAll<HTMLElement>('[data-t]').forEach((e) => { e.onclick = () => { const t = SHOP[e.dataset.t as ShopTypeId]; if (!t.uygun(c) && t.seviye <= 1) tip = t.id; draw(); }; });
-    $('#geri').onclick = title; $('#basla').onclick = () => { ad = ($('#ad') as HTMLInputElement).value || ad; const g = newGame({ ad, renk, renk2, logo, sehir: 34, tip, ilce: ilceKey(d) }); if (!g.r.ok) return toast(g.r.m); S = g.s; wipe(); enter(); toast('Kafen açıldı! İyi şanslar.'); };
-    if (first) { first = false; zoomTo(zoomVb(34), () => { if (document.getElementById('basla')) draw(); }, 900); }
+    $('#geri').onclick = title; $('#basla').onclick = () => { ad = ($('#ad') as HTMLInputElement).value || ad; const g = newGame({ ad, renk, renk2, logo, sehir: 34, tip: 'cadde', bos: true }); S = g.s; wipe(); enter(); toast('Hoş geldin! Önce ilk dükkânını bul.'); };
   };
   draw();
 }
@@ -53,53 +45,42 @@ function zoomTo(vb: VB, done?: () => void, ms = 650): void {
   const tick = (now: number): void => { const k = Math.min(1, (now - t0) / ms), e = ease(k); ctx.vb = from.map((v, i) => v + (vb[i]! - v) * e) as VB; document.getElementById('mapsvg')?.setAttribute('viewBox', ctx.vb.map((v) => v.toFixed(2)).join(' ')); if (k < 1) zoomRaf = requestAnimationFrame(tick); else { ctx.vb = vb; done?.(); } };
   zoomRaf = requestAnimationFrame(tick);
 }
-function cityFacts(c: ReturnType<typeof cityById>): string {
-  const lv = (v: number) => bar(v * 100); return `<div class="row small"><span>Nüfus</span><b>${(c.nufus / 1000).toFixed(2).replace('.', ',')} M</b></div><div class="row small"><span>Gelir seviyesi</span><b>${c.gelir.toFixed(2).replace('.', ',')}×</b></div><div class="row small"><span>Kira endeksi</span><b>${c.kira.toFixed(2).replace('.', ',')}×</b></div><div class="small muted">Turizm</div>${lv(c.turizm)}<div class="small muted">Öğrenci</div>${lv(c.ogrenci)}<div class="small muted">Rekabet</div>${lv(c.rekabet)}<div class="tiny muted">Müşteri profili: öğrenci %${Math.round(c.profil.ogr * 100)} · çalışan %${Math.round(c.profil.cal * 100)} · turist %${Math.round(c.profil.tur * 100)} · aile %${Math.round(c.profil.aile * 100)} · emekli %${Math.round(c.profil.emk * 100)}</div>`;
-}
 
 /* ===================== Oyun ekranı ===================== */
 function enter(): void {
-  if (!S) return; cancelAnimationFrame(zoomRaf); ctx.S = S; ctx.bid = S.subeler[0]!.id; TAB = 'genel'; ctx.zoomIl = null; ctx.selIlce = null; ctx.vb = NAT_VB; ctx.fx = []; ctx.mapsel = 34; ctx.mapm = 'erisim'; known = new Set(); newOpp = false;
-  root.innerHTML = `<div id="pano"></div><div class="top"><b class="brand" id="tBrand"></b><span class="chip" id="tDate"></span><span class="chip">💰 <b id="tKasa"></b></span><span class="chip">⭐ <b id="tMarka"></b></span><span class="chip">🏅 <b id="tSev"></b></span><span class="sp"></span><button class="btn sm" id="tHelp" title="Rehber">?</button><span class="chip" id="tHava"></span><div class="spd" id="spd"></div></div><div class="nav" id="nav"></div><div class="panel hid" id="panel"></div>`;
-  setAudio({ ses: S.ayar.ses, muzik: S.ayar.muzik, vol: S.ayar.ses_vol }); root.onpointerdown = () => startAudio(); lastSumDay = dayOf(S); lastAch = new Set(Object.keys(S.basarim)); $('#tHelp').onclick = () => { S!.tur = 0; tour(); };
-  S.hiz = 1; nav(); spdBar(); hud(); panel(false); window.addEventListener('resize', layout); $('#pano').onclick = (e) => { const f = (e.target as HTMLElement).closest<HTMLElement>('[data-pf]'); if (f) { ctx.panoIl = f.dataset.pf === '' ? null : +f.dataset.pf!; hud(); return; } const k = (e.target as HTMLElement).closest<HTMLElement>('[data-p]'); if (k) { ctx.bid = +k.dataset.p!; hud(); panel(true); } };
+  if (!S) return; cancelAnimationFrame(zoomRaf); ctx.S = S; ctx.bid = S.subeler[0]?.id ?? 0; TAB = 'ana'; ctx.zoomIl = null; ctx.selIlce = null; ctx.vb = NAT_VB; ctx.fx = []; ctx.mapsel = 34; ctx.mapm = 'erisim'; ctx.kur = null; ctx.subeAcik = null; known = new Set(); newOpp = false;
+  root.innerHTML = `<div class="top"><div class="brandw"><i>☕</i><div><b id="tBrand"></b><small id="tSub"></small></div></div><span class="sp"></span><div class="chip tm" id="tTime"></div><button class="chip money" id="tKasa" title="Banka"></button><button class="chip star" id="tMarka" title="Prestij"></button><div class="spd" id="spd"></div><button class="ibtn" id="tHelp" title="Rehber">?</button><button class="ibtn" id="tSet" title="Ayarlar">⚙</button></div><div id="page" class="page"></div><div class="nav" id="nav"></div><div id="kur"></div>`;
+  setAudio({ ses: S.ayar.ses, muzik: S.ayar.muzik, vol: S.ayar.ses_vol }); root.onpointerdown = () => startAudio(); lastSumDay = dayOf(S); lastAch = new Set(Object.keys(S.basarim)); $('#tHelp').onclick = () => { S!.tur = 0; tour(); }; $('#tSet').onclick = () => sekmeAc('ayar'); $('#tKasa').onclick = () => sekmeAc('banka'); $('#tMarka').onclick = () => sekmeAc('prestij');
+  S.hiz = 1; nav(); spdBar(); hud(); page(false);
   cancelAnimationFrame(rafId); let son = performance.now(); const kare = (n: number): void => { rafId = requestAnimationFrame(kare); const dt = Math.min(0.1, (n - son) / 1000); son = n; loop(dt); }; rafId = requestAnimationFrame(kare); tour();
   document.addEventListener('visibilitychange', () => { if (document.hidden && S) { save(S); } });
 }
-function layout(): void {
-  const el = document.getElementById('pano'); if (!el) return; const land = innerWidth >= innerHeight, navH = 52, wide = PANEL_OPEN && TAB === 'harita' && ctx.mapWide, pw = PANEL_OPEN ? (wide ? innerWidth - 20 : Math.min(innerWidth * 0.48, 440)) : 0;
-  if (land) { el.style.right = pw + 'px'; el.style.bottom = `calc(${navH}px + env(safe-area-inset-bottom))`; } else { el.style.right = '0'; el.style.bottom = (PANEL_OPEN ? '58%' : '58px'); }
-  const p = document.getElementById('panel'); if (p) p.style.width = land ? (pw ? pw + 'px' : '') : '';
-}
-let rafId = 0;
 const sonSekme: Record<string, string> = {};
 function ipucu(): void {
   document.querySelectorAll('.hint').forEach((e) => e.classList.remove('hint')); if (!S || S.tur < 0) return; const st = TUR[S.tur]; if (!st?.n) return; const g = grupOf(st.n);
   document.querySelector(`.nav [data-g="${g.id}"]`)?.classList.add('hint'); if (grupOf(TAB).id === g.id) document.querySelector(`.subtabs [data-n="${st.n}"]`)?.classList.add('hint');
 }
-function sekmeAc(tab: string, ac = true): void { TAB = tab; sonSekme[grupOf(tab).id] = tab; if (ac) PANEL_OPEN = true; ctx.anim = true; sfx.tick(); if (tab === 'harita') newOpp = false; nav(); panel(false); tourEvent('tab', tab); }
+function sekmeAc(tab: string): void { TAB = tab; sonSekme[grupOf(tab).id] = tab; ctx.anim = true; sfx.tick(); if (tab === 'harita') newOpp = false; nav(); page(false); tourEvent('tab', tab); }
 function nav(): void {
   const gt = grupOf(TAB).id;
-  $('#nav').innerHTML = GRUPLAR.map((g) => `<button data-g="${g.id}" class="${gt === g.id && PANEL_OPEN ? 'on' : ''}"><i>${g.ik}</i>${g.ad}${g.id === 'buyume' && newOpp && TAB !== 'harita' ? '<span class="dot"></span>' : ''}</button>`).join('');
-  $('#nav').querySelectorAll<HTMLElement>('[data-g]').forEach((b) => { b.onclick = () => { const g = GRUPLAR.find((x) => x.id === b.dataset.g)!; if (gt === g.id && PANEL_OPEN && g.id !== 'ana') { PANEL_OPEN = false; nav(); panel(false); return; } sekmeAc(sonSekme[g.id] ?? g.tabs[0]!); }; });
+  $('#nav').innerHTML = GRUPLAR.map((g) => `<button data-g="${g.id}" class="${gt === g.id ? 'on' : ''}" style="--c:${g.renk}"><i>${g.ik}</i><span>${g.ad}</span>${g.id === 'harita' && newOpp && TAB !== 'harita' ? '<u class="dot"></u>' : ''}</button>`).join('');
+  $('#nav').querySelectorAll<HTMLElement>('[data-g]').forEach((b) => { b.onclick = () => { const g = GRUPLAR.find((x) => x.id === b.dataset.g)!; sekmeAc(sonSekme[g.id] ?? g.tabs[0]!); }; });
   queueMicrotask(ipucu);
 }
 function spdBar(): void { const V: Array<[number, string]> = [[0, '⏸'], [1, '▶'], [2, '⏩'], [4, '⏭']]; $('#spd').innerHTML = V.map(([v, t]) => `<button data-s="${v}" class="${S!.hiz === v ? 'on' : ''}">${t}</button>`).join(''); $('#spd').querySelectorAll<HTMLElement>('button').forEach((b) => { b.onclick = () => { S!.hiz = +b.dataset.s!; spdBar(); }; }); }
 function hud(): void {
-  if (!S) return; const b = cur(), c = cityById(b.city), t = S.rapor[S.rapor.length - 1];
-  $('#tBrand').textContent = S.marka.ad; $('#tDate').textContent = `${dateText(S)} · ${timeText(S)}`; $('#tKasa').textContent = fmt(S.kasa); $('#tMarka').textContent = String(Math.round(S.marka_puani)); $('#tSev').textContent = `Sv ${levelOf(S)}`; $('#tSev').parentElement!.title = LEVELS[levelOf(S) - 1]?.ad ?? '';
-  const hv = S.hava[b.city] ?? 'gunesli'; $('#tHava').textContent = `${{ gunesli: '☀️', bulutlu: '⛅', yagmur: '🌧️', kar: '❄️' }[hv]} ${c.ad}`;
-  const pn = $('#pano'), sc = pn.scrollTop; pn.innerHTML = panoHtml(S, ctx.bid, ctx.panoIl); pn.scrollTop = sc; void t;
+  if (!S) return; const b = S.subeler.length ? cur() : null, hv = b ? S.hava[b.city] ?? 'gunesli' : 'gunesli', ikon = { gunesli: '☀️', bulutlu: '⛅', yagmur: '🌧️', kar: '❄️' }[hv], gece = Math.floor((S.dk % 1440) / 60) >= 19 || Math.floor((S.dk % 1440) / 60) < 6;
+  $('#tBrand').textContent = S.marka.ad; $('#tSub').textContent = `Gün ${dayOf(S) + 1} · ${S.subeler.length} şube`; $('#tTime').innerHTML = `<span>${gece ? '🌙' : ikon}</span><div><b>${timeText(S)}</b><small>${dateText(S)}</small></div>`; $('#tKasa').innerHTML = `<i class="coin">₺</i><b>${kisa(S.kasa)}</b>`; $('#tMarka').innerHTML = `<i>★</i><b>${Math.round(S.marka_puani)}</b>`; $('#tKasa').title = `${fmt(S.kasa)} · ${LEVELS[levelOf(S) - 1]?.ad ?? ''}`;
 }
 function loop(dt: number): void {
   if (!S) return; const dk = oyunDakikasi(dt, S.hiz, S.ayar.gunSn); accMin += dk; let n = 0;
   while (accMin >= 10 && n < 8) { accMin -= 10; const ev = step(S, 10); if (ev.some((e) => e.t === 'musteri')) sfx.door(); if (ev.some((e) => e.t === 'olay')) sfx.warn(); n++; if (S.oyunBitti) break; }
-  if (dayOf(S) !== lastSumDay) { lastSumDay = dayOf(S); gunOzeti(); } if (TAB === 'ekonomi' && PANEL_OPEN && dayOf(S) !== lastDay) { lastDay = dayOf(S); panel(true); } oppT += dt; if (oppT > 2) { oppT = 0; checkOpportunities(); } uiT += dt; saveT += dt; if (uiT > 0.5) { uiT = 0; hud(); if (LIVE_TABS.has(TAB) && PANEL_OPEN) panel(true); if (S.bekleyen.length && !modalOpen) showEvent(); if (S.oyunBitti) gameOver(); }
+  if (dayOf(S) !== lastSumDay) { lastSumDay = dayOf(S); gunOzeti(); if (TAB === 'ekonomi') page(true); } oppT += dt; if (oppT > 2) { oppT = 0; checkOpportunities(); } uiT += dt; saveT += dt; if (uiT > 0.5) { uiT = 0; hud(); if (LIVE_TABS.has(TAB) && !(TAB === 'subeler' && ctx.subeAcik !== null && ctx.subeSekme !== 'ozet')) page(true); if (S.bekleyen.length && !modalOpen) showEvent(); if (S.oyunBitti) gameOver(); }
   if (saveT > 15) { saveT = 0; save(S); }
 }
 /** Seviye/komşuluk şartı sağlanan yeni pazarları bildirir (zamanla gelişen harita). */
 function checkOpportunities(): void {
-  if (!S) return; const yeniB = Object.keys(S.basarim).filter((k) => !lastAch.has(k)); if (yeniB.length) { lastAch = new Set(Object.keys(S.basarim)); sfx.ach(); toast(`🏆 Başarım: ${yeniB.map((k) => BASARIM[k]?.ad ?? k).join(', ')}`); if (TAB === 'hedefler' && PANEL_OPEN) panel(true); } const lv = levelOf(S), now = new Set(CITIES.filter((c) => ilDurum(S!, c.id, lv).d === 'satilik').map((c) => c.id));
+  if (!S) return; const yeniB = Object.keys(S.basarim).filter((k) => !lastAch.has(k)); if (yeniB.length) { lastAch = new Set(Object.keys(S.basarim)); sfx.ach(); toast(`🏆 Başarım: ${yeniB.map((k) => BASARIM[k]?.ad ?? k).join(', ')}`); if (TAB === 'hedefler') page(true); } const lv = levelOf(S), now = new Set(CITIES.filter((c) => ilDurum(S!, c.id, lv).d === 'satilik').map((c) => c.id));
   if (known.size === 0 && S.subeler.length && dayOf(S) < 2) { known = now; return; }
   const yeni = [...now].filter((id) => !known.has(id)); known = now;
   if (yeni.length) { newOpp = true; nav(); toast(yeni.length > 8 ? `🇹🇷 Ulusal zincir oldun: ${yeni.length} ilin pazarı artık açılabilir!` : `🗺️ Yeni pazar fırsatı: ${yeni.slice(0, 3).map((id) => cityById(id).ad).join(', ')}${yeni.length > 3 ? ' +' + (yeni.length - 3) : ''}`); }
@@ -111,18 +92,18 @@ function gunOzeti(): void {
   const tips: string[] = []; if (r.kar < 0) tips.push('Zarar ettin: Ekonomi Merkezi\'nde gider dağılımına ve fiyat eğrisine bak.'); if (r.musteri && r.kayip / (r.musteri + r.kayip) > 0.3) tips.push(`Müşterilerin %${Math.round(r.kayip / (r.musteri + r.kayip) * 100)}'ini kaybettin: stok, vardiya boşluğu ya da kuyruk olabilir.`);
   if (S.kasa < 150000) tips.push('Nakit azaldı: harcamaları ve siparişleri gözden geçir.'); if (!tips.length) tips.push(r.kar > 0 ? 'Gidiş iyi. Kasada birikeni yeni ilçe/şubeye ya da ekipmana yatırmayı düşün.' : 'Kampanyaları ve fiyatları yeniden dene.');
   const box = document.createElement('div'); box.className = 'gun'; box.innerHTML = `<div class="row"><b>📅 Gün ${d} özeti</b><button class="btn sm" id="gunk">✕</button></div><div class="grid2 small"><div>Müşteri <b>${r.musteri}</b> · kayıp ${r.kayip}</div><div>Net kâr <b class="${r.kar >= 0 ? 'good' : 'badc'}">${fmt(r.kar)}</b> ${p ? (dg >= 0 ? '<span class="good">▲</span>' : '<span class="badc">▼</span>') : ''}</div><div>Gelir <b>${fmt(r.toplamGelir)}</b></div><div>${top ? 'En çok satan: <b>' + esc(top[0]) + '</b> (' + top[1] + ')' : ''}</div></div><div class="small muted" style="margin-top:4px">💡 ${tips[0]}</div><button class="btn sm" id="gund" style="margin-top:6px">Ekonomi Merkezi</button>`;
-  document.querySelector('.gun')?.remove(); root.appendChild(box); sfx.gun(); const kill = (): void => box.remove(); $('#gunk').onclick = kill; $('#gund').onclick = () => { kill(); TAB = 'ekonomi'; PANEL_OPEN = true; ctx.anim = true; nav(); panel(false); }; setTimeout(kill, 15000);
+  document.querySelector('.gun')?.remove(); root.appendChild(box); sfx.gun(); const kill = (): void => box.remove(); $('#gunk').onclick = kill; $('#gund').onclick = () => { kill(); sekmeAc('ekonomi'); }; setTimeout(kill, 15000);
 }
+
 /* ===================== Eğitim turu ===================== */
 const TUR: Array<{ n?: string; t: string; ok?: [string, string] }> = [
-  { t: '👋 Hoş geldin! Dükkânlarını dışarıdan, bu panodan yönetirsin; asıl iş alttaki menülerde. Üstteki ⏸ ▶ ⏩ düğmeleriyle zamanı yönetirsin (1 gün birkaç dakika sürer; süreyi Ayarlar menüsünden değiştirebilirsin). Takıldığında üstteki ? ile bu turu yeniden açabilirsin.' },
-  { n: 'menu', t: '📋 Önce menüye bak: fiyatları ₺ olarak ayarla, Fiyat danışmanı hangi ürünün fiyatını değiştirmeni öneriyor? Menü ve Ürünler\'e gir.', ok: ['tab', 'menu'] },
-  { n: 'vardiya', t: '🗓️ Vardiyalar: kırmızı saatlerde barista yoktur ve o saatte müşteri kaybedersin. Vardiyalar menüsüne gir.', ok: ['tab', 'vardiya'] },
-  { n: 'stok', t: '📦 Stok bitince ürün satılamaz. Stok menüsünde otomatik sipariş açık mı ve minimum seviye yeterli mi bak.', ok: ['tab', 'stok'] },
-  { n: 'ekonomi', t: '📈 Ekonomi Merkezi: gelir-gider grafikleri, fiyat–kâr eğrisi ve kampanyalar burada. İncelemek için gir.', ok: ['tab', 'ekonomi'] },
-  { n: 'harita', t: '🗺️ Büyümek için Türkiye Haritası: İstanbul\'dan başlıyorsun; yeni ilçe ve il pazarlarını parayla açarsın. Haritaya gir.', ok: ['tab', 'harita'] },
-  { n: 'hedefler', t: '🏆 Hedefler: görevleri tamamlayınca nakit ödül, başarımlar ise kalıcı kilometre taşları. Son durak: Hedefler.', ok: ['tab', 'hedefler'] },
-  { t: '🎉 Tur bitti! Şimdi kendi stratejini kur: ekibi dengele, fiyatı ayarla, kampanya aç ve pazarını büyüt. İyi şanslar!' },
+  { t: '👋 Hoş geldin! 2.000.000 ₺ ile İstanbul\'dan başlıyorsun. Üstteki ⏸ ▶ ⏩ düğmeleriyle zamanı yönetirsin (süreyi Şirket → Ayarlar\'dan değiştirebilirsin). Takıldığında ? ile bu rehberi açarsın.' },
+  { n: 'harita', t: '🗺️ Önce ilk dükkânını bul: Harita\'ya gir, bir semt seç, ilanlardan birini "Kirala ve kur" ile aç.', ok: ['tab', 'harita'] },
+  { n: 'menu', t: '📋 Dükkân açılınca Şubeler → Menü ve fiyat: fiyatları ayarla; Fiyat danışmanı öneri verir.', ok: ['tab', 'subeler'] },
+  { n: 'stok', t: '📦 Tedarik → Stok: stok bitince ürün satılamaz. Otomatik sipariş açık mı bak.', ok: ['tab', 'stok'] },
+  { n: 'sosyal', t: '📣 Pazarlama: sosyal medya paylaşımı, reklam ve kampanyalarla müşteri çek.', ok: ['tab', 'sosyal'] },
+  { n: 'hedefler', t: '⭐ Prestij → Hedefler: görevler nakit ödül, başarımlar kilometre taşı verir.', ok: ['tab', 'hedefler'] },
+  { t: '🎉 Rehber bitti! Ekibi dengele, fiyatı ayarla, yeni semtler aç ve zincirini büyüt. İyi şanslar!' },
 ];
 function tourEvent(kind: string, id: string): void { if (!S || S.tur < 0 || S.tur >= TUR.length) return; const st = TUR[S.tur]!; if (st.ok && st.ok[0] === kind && st.ok[1] === id) { S.tur++; tour(); } }
 function tour(): void {
@@ -135,45 +116,51 @@ function tour(): void {
 function showEvent(): void {
   const p = S!.bekleyen[0]; if (!p) return; modalOpen = true; S!.hiz = 0; spdBar(); const m = document.createElement('div'); m.className = 'modal';
   m.innerHTML = `<div class="mbox"><div class="pill">Olay</div><h2>${p.ikon} ${esc(p.baslik)}</h2><p>${esc(p.metin)}</p>${p.secenek.map((c, i) => `<button class="btn" data-o="${i}" style="width:100%;margin-top:6px;justify-content:flex-start;text-align:left"><span><b>${esc(c.ad)}</b><br><small class="muted">${esc(c.ac)}</small></span></button>`).join('')}</div>`; root.appendChild(m);
-  m.querySelectorAll<HTMLElement>('[data-o]').forEach((b) => { b.onclick = () => { resolveEvent(S!, p.id, +b.dataset.o!); m.remove(); modalOpen = false; S!.hiz = 1; spdBar(); save(S!); hud(); panel(true); }; });
+  m.querySelectorAll<HTMLElement>('[data-o]').forEach((b) => { b.onclick = () => { resolveEvent(S!, p.id, +b.dataset.o!); m.remove(); modalOpen = false; S!.hiz = 1; spdBar(); save(S!); hud(); page(true); }; });
 }
 function gameOver(): void { if (modalOpen) return; modalOpen = true; S!.hiz = 0; const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div class="mbox"><h2>📉 İflas</h2><p>Kasa uzun süre eksi kaldı ve zincir kapandı. Bir dahaki sefere stok, ekip ve fiyat dengesini daha dikkatli kur.</p><div class="row"><span>Süre</span><b>${dayOf(S!)} gün</b></div><div class="row"><span>Şube</span><b>${S!.subeler.length}</b></div><button class="btn pri" id="y" style="width:100%;margin-top:8px">Ana menü</button></div>`; root.appendChild(m); $('#y').onclick = () => { wipe(); modalOpen = false; cancelAnimationFrame(rafId); stopAudio(); S = null; title(); }; }
 
-/* ===================== Paneller ===================== */
-function panel(keep: boolean): void {
-  if (!S) return; const el = $('#panel'); if (!PANEL_OPEN) { el.classList.add('hid'); layout(); return; }
-  const sc = keep ? el.querySelector<HTMLElement>('.pb')?.scrollTop ?? 0 : 0, nm = NAV.find((n) => n[0] === TAB)!;
-  el.classList.remove('hid'); el.classList.toggle('wide', TAB === 'harita' && ctx.mapWide); ctx.S = S; const body = (PANELS[TAB] ?? PANELS.genel!)(); const wasAnim = ctx.anim; ctx.anim = false;
+
+/* ===================== Sayfa ===================== */
+const FIT = new Set(['harita']);
+function page(keep: boolean): void {
+  if (!S) return; const el = $('#page'); const sc = keep ? el.querySelector<HTMLElement>('.pb')?.scrollTop ?? 0 : 0, nm = NAV.find((n) => n[0] === TAB)!; ctx.S = S;
+  const body = isBranchTab(TAB) && !S.subeler.length ? BOS_UYARI(TAB) : (ALL[TAB] ?? ALL.ana!)(); const wasAnim = ctx.anim; ctx.anim = false;
   const gr = grupOf(TAB), alt = gr.tabs.length > 1 ? `<div class="subtabs">${gr.tabs.map((id) => { const n = NAV.find((x) => x[0] === id)!; return `<button data-n="${id}" class="${id === TAB ? 'on' : ''}">${n[1]} ${n[2]}</button>`; }).join('')}</div>` : '';
-  const bas = alt ? `<div class="subbar"><div class="subtabs">${gr.tabs.map((id) => { const n = NAV.find((x) => x[0] === id)!; return `<button data-n="${id}" class="${id === TAB ? 'on' : ''}">${n[1]} ${n[2]}</button>`; }).join('')}</div><button class="xbtn" id="pclose" aria-label="Kapat">✕</button></div>` : `<div class="ph"><h2>${nm[1]} ${nm[2]}</h2><button class="btn sm" id="pclose">Kapat ✕</button></div>`;
-  el.innerHTML = `${bas}<div class="pb">${body}</div>`; $('#pclose').onclick = () => { PANEL_OPEN = false; nav(); panel(false); }; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); queueMicrotask(ipucu); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); layout(); if (wasAnim) animateCounters(pb);
+  el.innerHTML = `${alt}<div class="pb ${FIT.has(TAB) ? 'fit' : 'cols'}" data-tab="${TAB}">${body}</div>`; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); queueMicrotask(ipucu); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); if (wasAnim) animateCounters(pb); void nm;
 }
 function animateCounters(pb: HTMLElement): void {
   const els = [...pb.querySelectorAll<HTMLElement>('.cnt')]; if (!els.length) return; const t0 = performance.now(), ease = (t: number): number => 1 - Math.pow(1 - t, 3);
   const tick = (now: number): void => { const k = Math.min(1, (now - t0) / 1100); for (const e of els) e.textContent = fmt(+e.dataset.v! * ease(k)); if (k < 1) requestAnimationFrame(tick); else for (const e of els) e.textContent = fmt(+e.dataset.v!); };
   requestAnimationFrame(tick);
 }
+
 function bind(pb: HTMLElement): void {
   pb.querySelectorAll<HTMLElement>('[data-a]').forEach((e) => { e.onclick = () => act(e.dataset.a!, e.dataset); });
   pb.querySelectorAll<SVGElement>('path[data-il]').forEach((p) => { p.onclick = () => act('ilsec', p.dataset); });
   pb.querySelectorAll<SVGElement>('path[data-ilce]').forEach((p) => { p.onclick = () => act('ilcesec', { id: p.dataset.ilce }); });
 }
-function showBranch(): void { if (S) hud(); }
+function kurYenile(): void {
+  const k = $('#kur'); if (!ctx.kur) { k.innerHTML = ''; return; } ctx.S = S; k.innerHTML = kurHtml();
+  k.querySelectorAll<HTMLElement>('[data-a]').forEach((e) => { e.onclick = () => act(e.dataset.a!, e.dataset); }); const inp = k.querySelector<HTMLInputElement>('[data-kuradi]'); if (inp) inp.oninput = () => { if (ctx.kur?.sc) ctx.kur.sc.ad = inp.value; };
+}
 function act(a: string, d: DOMStringMap): void {
   if (!S) return; ctx.S = S;
-  handle(a, d, {
-    zoom: (vb, done) => zoomTo(vb, () => { done?.(); panel(true); }),
-    res: (r: Result) => { toast(r.m); if (r.ok) { if (['ilac', 'ilceac', 'sube', 'frver', 'merkez', 'invest', 'gel'].includes(a)) sfx.unlock(); else if (['kredi', 'siparis', 'ad', 'bonus'].includes(a)) sfx.coin(); else sfx.tick(); } else sfx.err(); save(S!); panel(true); hud(); tourEvent('act', a); },
-    toast, refresh: () => panel(true), show: () => { showBranch(); }, go: (t) => { sekmeAc(t); tour(); },
-    save: () => save(S!), exit: () => { save(S!); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); }, wipe: () => { wipe(); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); },
-  });
-  if (a === 'bsel') { hud(); panel(true); }
+  const h = {
+    zoom: (vb: VB, done?: () => void) => zoomTo(vb, () => { done?.(); page(true); }),
+    res: (r: Result) => { toast(r.m); if (r.ok) { if (['ilac', 'ilceac', 'sube', 'frver', 'merkez', 'invest', 'gel', 'kur_ac2', 'platKatil'].includes(a)) sfx.unlock(); else if (['kredi', 'siparis', 'ad', 'bonus', 'banka', 'paylas'].includes(a)) sfx.coin(); else sfx.tick(); } else sfx.err(); save(S!); page(true); hud(); tourEvent('act', a); },
+    toast, refresh: () => page(true), show: () => { hud(); }, go: (t: string) => { sekmeAc(t); tour(); },
+    save: () => save(S!), exit: () => { save(S!); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); }, wipe: () => { wipe(); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); }, kurYenile,
+  };
+  if (handlePages(a, d, h)) { return; }
+  handle(a, d, h);
+  if (a === 'bsel') { hud(); page(true); }
 }
 /** Dikey tutulunca oyunu duraklat, yatay olunca eski hıza dön; destekleyen tarayıcılarda yatay kilidi dene. */
 let hizEski = 1, dikeyde = false;
 function yonKontrol(): void {
   const dikey = innerHeight > innerWidth && innerWidth <= 900; if (dikey === dikeyde || !S) { dikeyde = dikey; return; } dikeyde = dikey;
-  if (dikey) { hizEski = S.hiz || 1; S.hiz = 0; } else { S.hiz = hizEski; spdBar(); layout(); }
+  if (dikey) { hizEski = S.hiz || 1; S.hiz = 0; } else { S.hiz = hizEski; spdBar(); }
 }
 function yatayKilit(): void { try { void (screen.orientation as unknown as { lock?: (o: string) => Promise<void> }).lock?.('landscape')?.catch(() => 0); } catch { /* desteklenmiyor */ } }
 export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); title(); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, openTab: (t: string) => sekmeAc(t) }; }

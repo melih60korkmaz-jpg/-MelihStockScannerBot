@@ -1,6 +1,7 @@
 import { CITIES, cityById, MAP_H, MAP_W, REGION_NAME, type City } from '../data/turkey';
 import type { GameState } from '../core/types';
 import { ilDurum } from '../core/region';
+import { sinifOf, sinifSartlari, type Sinif } from '../core/kur';
 import { ilceDurum } from '../core/region';
 import { ILCELER, ilcelerOf, ilceKey, ilceOf, profilOf, type Ilce } from '../data/regions';
 
@@ -36,7 +37,8 @@ export function zoomVb(il: number): VB {
   const [x0, y0, x1, y1] = pathBox(cityById(il)), r = MAP_W / MAP_H; let w = (x1 - x0) * 1.18, h = (y1 - y0) * 1.18; if (w / h < r) w = h * r; else h = w / r; const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2; return [cx - w / 2, cy - h / 2, w, h];
 }
 export interface RegOpts { metric: Metric; sel: number; zoomIl: number | null; selIlce: number | null; vb: VB; fx: Fx[]; now: number; lv: number; start?: boolean }
-const STATE_FILL = { acik: '#c98a3c', satilik: '#2f6b6f', kilitli: '#34404d' } as const;
+const STATE_FILL = { acik: '#b9a93a', satilik: '#2f6b6f', kilitli: '#2a303b' } as const;
+export const SINIF_RENK: Record<Sinif, string> = { Lüks: '#7a63c9', Premium: '#a8903a', Normal: '#3a78a8', Düşük: '#39445a' };
 export function regionMap(s: GameState, o: RegOpts): string {
   const recent = (k: Fx['k'], id: string): boolean => o.fx.some((f) => f.k === k && f.id === id && o.now - f.t < 1600);
   const by: Record<number, number> = {}, byI: Record<string, number> = {}; for (const b of s.subeler) { by[b.city] = (by[b.city] ?? 0) + 1; if (b.ilce) byI[b.ilce] = (byI[b.ilce] ?? 0) + 1; }
@@ -52,8 +54,8 @@ export function regionMap(s: GameState, o: RegOpts): string {
     const L = ilcelerOf(z);
     ilceLayer = L.map((d) => {
       const dd = o.start ? { d: 'satilik' as const } : ilceDurum(s, d), p = profilOf(d); let fill: string;
-      if (o.metric === 'talep') fill = ramp(Math.min(1, p.talep / 2)); else if (o.metric === 'gelir') fill = ramp((p.gelir - 0.5) / 1.0); else if (o.metric === 'kira') fill = ramp((p.kira - 0.5) / 1.1); else fill = o.start ? ramp(Math.min(1, p.talep / 2)) : STATE_FILL[dd.d];
-      const cl = `ilce ${dd.d === 'acik' ? 'open' : dd.d === 'satilik' ? 'buy' : 'lock'}${d.id === o.selIlce ? ' sel' : ''}${recent('ilce', ilceKey(d)) ? ' pop' : ''}`;
+      if (o.metric === 'talep') fill = ramp(Math.min(1, p.talep / 2)); else if (o.metric === 'gelir') fill = ramp((p.gelir - 0.5) / 1.0); else if (o.metric === 'kira') fill = ramp((p.kira - 0.5) / 1.1); else fill = o.start ? ramp(Math.min(1, p.talep / 2)) : SINIF_RENK[sinifOf(d)];
+      const unmet = !o.start && dd.d !== 'acik' && sinifSartlari(s, d).length > 0, cl = `ilce ${dd.d === 'acik' ? 'open' : dd.d === 'kilitli' || unmet ? 'lock' : 'buy'}${d.id === o.selIlce ? ' sel' : ''}${recent('ilce', ilceKey(d)) ? ' pop' : ''}`;
       return `<path class="${cl}" data-ilce="${d.id}" d="${d.path}" fill="${fill}"><title>${d.ad}</title></path>`;
     }).join('');
     const fs = (vbw / 52).toFixed(2); const med = [...L].map((d) => d.km2).sort((a, b) => a - b)[Math.floor(L.length / 2)] ?? 0; labels = vbw > MAP_W * 0.6 ? '' : L.filter((d) => d.km2 >= med * 1.3 || d.id === o.selIlce || byI[ilceKey(d)]).map((d) => `<text class="ilad" x="${d.c[0]}" y="${d.c[1]}" font-size="${fs}">${d.ad}</text>`).join('');

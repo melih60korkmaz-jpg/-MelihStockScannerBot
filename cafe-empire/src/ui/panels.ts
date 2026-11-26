@@ -2,7 +2,8 @@
 import { CITIES, cityById, REGION_NAME } from '../data/turkey';
 import { ADS, AD, INGREDIENTS, ING, PRODUCTS, SHOP, SHOP_TYPES, STAFF_TYPES, STAFF_TYPE, UPGRADES, LEVELS, type IngId, type ProductId, type ShopTypeId, type StaffTypeId, type AdId, type UpgradeId } from '../data/catalog';
 import { subeAc, ilanVer, iseAl, isCikar, setPrice, toggleProduct, upgrade, upgradeCost, startAd, adCost, orderIng, takeLoan, payLoan, closeBranch, fmt, setupCost, rentOf, staffLimit, invest, type Result } from '../core/actions';
-import { pEkonomi } from './eco';
+import { pEkonomi, kontrolHtml } from './eco';
+import type { KurSecim } from '../core/kur';
 import { ilSekmeleri, SEKME_AD, SEKME_NEDEN, turistPaketi, turistMaliyet, kampusAnlasma, kampusMaliyet, kurumsalSozlesme, kurumsalIptal, kurumsalGunluk, ildeSubeler, type IlSekme } from '../core/ilprog';
 import { setAudio } from './audio';
 import { GUN_SN } from '../core/pace';
@@ -21,37 +22,44 @@ import { ilceCost, ilAc, ilceAc, ilDurum, ilceDurum, ilAcik, ilceAcik, ilCost, i
 import { ILCELER, ilcelerOf, ilceKey, ilceOf, profilOf } from '../data/regions';
 import type { Branch, Employee, GameState, Vardiya } from '../core/types';
 
-export interface Ctx { ilSecili: number | null; ilSekme: IlSekme; panoIl: number | null; frIlce: number | null; frTip: ShopTypeId; mapWide: boolean; eper: number; escope: 'all' | 'sube'; ecurve: ProductId; anim: boolean; zoomIl: number | null; selIlce: number | null; vb: VB; fx: Fx[]; S: GameState | null; bid: number; mapm: Metric; mapsel: number; ilanTip: StaffTypeId; sureGun: number; menuKat: 'kahve' | 'yiyecek'; rapor: number; fps: boolean }
-export const ctx: Ctx = { ilSecili: null, ilSekme: 'ozet', panoIl: null, frIlce: null, frTip: 'cadde', mapWide: false, eper: 30, escope: 'all', ecurve: 'latte', anim: false, zoomIl: null, selIlce: null, vb: NAT_VB, fx: [], S: null, bid: 0, mapm: 'bolge', mapsel: 34, ilanTip: 'barista', sureGun: 30, menuKat: 'kahve', rapor: 7, fps: true };
+export interface Ctx { kur: { ilceId: number; tip: ShopTypeId; sc: KurSecim | null; adim: 1 | 2 | 3 } | null; subeAcik: number | null; subeSekme: 'ozet' | 'menu' | 'personel' | 'vardiya' | 'gelisim'; mapTip: ShopTypeId; sirTab: 'zincir' | 'sehir'; ilSecili: number | null; ilSekme: IlSekme; panoIl: number | null; frIlce: number | null; frTip: ShopTypeId; mapWide: boolean; eper: number; escope: 'all' | 'sube'; ecurve: ProductId; anim: boolean; zoomIl: number | null; selIlce: number | null; vb: VB; fx: Fx[]; S: GameState | null; bid: number; mapm: Metric; mapsel: number; ilanTip: StaffTypeId; sureGun: number; menuKat: 'kahve' | 'yiyecek'; rapor: number; fps: boolean }
+export const ctx: Ctx = { kur: null, subeAcik: null, subeSekme: 'ozet', mapTip: 'mahalle', sirTab: 'zincir', ilSecili: null, ilSekme: 'ozet', panoIl: null, frIlce: null, frTip: 'cadde', mapWide: false, eper: 30, escope: 'all', ecurve: 'latte', anim: false, zoomIl: null, selIlce: null, vb: NAT_VB, fx: [], S: null, bid: 0, mapm: 'bolge', mapsel: 34, ilanTip: 'barista', sureGun: 30, menuKat: 'kahve', rapor: 7, fps: true };
 export interface Helpers { zoom: (vb: VB, done?: () => void) => void; res: (r: Result) => void; toast: (m: string) => void; refresh: () => void; show: () => void; go: (tab: string) => void; exit: () => void; wipe: () => void; save: () => void }
 
-export const NAV: Array<[string, string, string]> = [['genel', '🏠', 'Genel Bakış'], ['hedefler', '🏆', 'Hedefler'], ['rapor', '📊', 'Raporlar'], ['menu', '📋', 'Menü ve Fiyat'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarik'], ['reklam', '📣', 'Reklam'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['ekonomi', '📈', 'Ekonomi'], ['finans', '💰', 'Finans'], ['musteri', '🙂', 'Müşteri'], ['harita', '🗺️', 'Harita'], ['iller', '🏙️', 'İller'], ['subeler', '🏬', 'Şubeler'], ['gelisim', '🛠️', 'Dükkân Geliştirme'], ['ayar', '⚙️', 'Ayarlar']];
-/** Sol menü: 17 sayfa 6 gruba toplanır; grup içindeki sayfalar panelin üstünde sekme olur. */
-export interface Grup { id: string; ik: string; ad: string; tabs: string[] }
+export const NAV: Array<[string, string, string]> = [['ana', '🏠', 'Ana ekran'], ['harita', '🗺️', 'Harita'], ['subeler', '🏪', 'Şubeler'], ['online', '📱', 'Online'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarikçiler'], ['merkez', '🏭', 'Merkezi depo'], ['sosyal', '📸', 'Sosyal medya'], ['reklam', '📣', 'Reklam'], ['kampanya', '🏷️', 'Kampanyalar'], ['prestij', '⭐', 'Prestij'], ['hedefler', '🏆', 'Hedefler'], ['iller', '🏙️', 'İller'], ['franchise', '🤝', 'Franchise'], ['siralama', '🥇', 'Sıralama'], ['banka', '🏦', 'Banka'], ['finans', '💰', 'Finans'], ['ekonomi', '📈', 'Ekonomi'], ['rapor', '📊', 'Raporlar'], ['musteri', '🙂', 'Müşteriler'], ['ayar', '⚙️', 'Ayarlar'],
+  ['menu', '📋', 'Menü ve fiyat'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['gelisim', '🛠️', 'Dükkân ve POS'], ['genel', '🏠', 'Genel Bakış']];
+/** Alt menü: referans oyundaki gibi 11 ana sekme; sekme içindeki sayfalar üstte çip olur. */
+export interface Grup { id: string; ik: string; ad: string; renk: string; tabs: string[] }
 export const GRUPLAR: Grup[] = [
-  { id: 'ana', ik: '🏠', ad: 'Ana', tabs: ['genel', 'hedefler', 'rapor'] },
-  { id: 'urun', ik: '☕', ad: 'Ürün', tabs: ['menu', 'stok', 'tedarik', 'reklam'] },
-  { id: 'ekip', ik: '👥', ad: 'Ekip', tabs: ['personel', 'vardiya'] },
-  { id: 'para', ik: '💰', ad: 'Para', tabs: ['ekonomi', 'finans', 'musteri'] },
-  { id: 'buyume', ik: '🚀', ad: 'Büyüme', tabs: ['harita', 'iller', 'subeler', 'gelisim'] },
-  { id: 'ayar', ik: '⚙️', ad: 'Ayarlar', tabs: ['ayar'] },
+  { id: 'ana', ik: '🏠', ad: 'Ana ekran', renk: '#e9dc5a', tabs: ['ana'] },
+  { id: 'harita', ik: '🗺️', ad: 'Harita', renk: '#6aa7e0', tabs: ['harita'] },
+  { id: 'subeler', ik: '🏪', ad: 'Şubeler', renk: '#e0983c', tabs: ['subeler'] },
+  { id: 'online', ik: '📱', ad: 'Online', renk: '#5fb8e8', tabs: ['online'] },
+  { id: 'tedarik', ik: '🚚', ad: 'Tedarik', renk: '#5fd08a', tabs: ['stok', 'tedarik', 'merkez'] },
+  { id: 'pazarlama', ik: '📣', ad: 'Pazarlama', renk: '#e8718f', tabs: ['sosyal', 'reklam', 'kampanya'] },
+  { id: 'prestij', ik: '⭐', ad: 'Prestij', renk: '#a98be0', tabs: ['prestij', 'hedefler'] },
+  { id: 'yatirim', ik: '📈', ad: 'Yatırımlar', renk: '#5fd08a', tabs: ['iller', 'franchise'] },
+  { id: 'siralama', ik: '🏆', ad: 'Sıralama', renk: '#f0c040', tabs: ['siralama'] },
+  { id: 'banka', ik: '🏦', ad: 'Banka', renk: '#5fd0b0', tabs: ['banka', 'finans'] },
+  { id: 'sirket', ik: '🏢', ad: 'Şirket', renk: '#9aa4b8', tabs: ['ekonomi', 'rapor', 'musteri', 'ayar'] },
 ];
 export const grupOf = (tab: string): Grup => GRUPLAR.find((g) => g.tabs.includes(tab)) ?? GRUPLAR[0]!;
-const BRANCH_TABS = new Set(['genel', 'ekonomi', 'iller', 'personel', 'vardiya', 'menu', 'stok', 'tedarik', 'musteri', 'reklam', 'gelisim', 'rakip', 'subeler']);
+/** Şube gerektiren sayfalar (şubesiz başlangıçta "önce şube aç" kartı gösterilir). */
+const BRANCH_TABS = new Set(['stok', 'tedarik', 'reklam', 'kampanya', 'online', 'sosyal', 'menu', 'personel', 'vardiya', 'gelisim', 'musteri', 'ekonomi', 'iller', 'subeler', 'franchise', 'rapor', 'genel', 'merkez']);
 export const isBranchTab = (t: string): boolean => BRANCH_TABS.has(t);
 
-const S = (): GameState => ctx.S!;
-export const cur = (): Branch => { const s = S(); const b = s.subeler.find((x) => x.id === ctx.bid) ?? s.subeler[0]!; ctx.bid = b.id; return b; };
+export const S = (): GameState => ctx.S!;
+export const cur = (): Branch => { const s = S(); const b = s.subeler.find((x) => x.id === ctx.bid) ?? s.subeler[0]!; if (b) ctx.bid = b.id; return b as Branch; };
 export const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } as Record<string, string>)[c] ?? c);
-const bar = (v: number, col = 'var(--am)'): string => `<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%;background:${col}"></i></div>`;
-const tr = (n: number, d = 1): string => n.toFixed(d).replace('.', ',');
-const sum = (o: object): number => Object.values(o as Record<string, number>).reduce((a, x) => a + x, 0);
-const cls = (v: number): string => (v >= 0 ? 'good' : 'badc');
-const stat = (l: string, v: number, inv = false): string => `<div class="small muted">${l} <b style="color:var(--tx)">${Math.round(v)}</b></div>${bar(v, (inv ? 100 - v : v) >= 60 ? 'var(--ok)' : (inv ? 100 - v : v) >= 35 ? 'var(--am)' : 'var(--bad)')}`;
-const note = (t: string): string => `<div class="card small muted">${t}</div>`;
-const bchips = (): string => (S().subeler.length > 1 ? `<div class="chiprow" style="margin-bottom:8px">${S().subeler.map((x) => `<button class="cx ${x.id === cur().id ? 'on' : ''}" data-a="bsel" data-id="${x.id}">${esc(cityById(x.city).ad)}${S().subeler.filter((y) => y.city === x.city).length > 1 ? ' ' + x.id : ''}</button>`).join('')}</div>` : '');
+export const bar = (v: number, col = 'var(--am)'): string => `<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%;background:${col}"></i></div>`;
+export const tr = (n: number, d = 1): string => n.toFixed(d).replace('.', ',');
+export const sum = (o: object): number => Object.values(o as Record<string, number>).reduce((a, x) => a + x, 0);
+export const cls = (v: number): string => (v >= 0 ? 'good' : 'badc');
+export const stat = (l: string, v: number, inv = false): string => `<div class="small muted">${l} <b style="color:var(--tx)">${Math.round(v)}</b></div>${bar(v, (inv ? 100 - v : v) >= 60 ? 'var(--ok)' : (inv ? 100 - v : v) >= 35 ? 'var(--am)' : 'var(--bad)')}`;
+export const note = (t: string): string => `<div class="card small muted">${t}</div>`;
+export const bchips = (): string => (S().subeler.length > 1 ? `<div class="chiprow" style="margin-bottom:8px">${S().subeler.map((x) => `<button class="cx ${x.id === cur().id ? 'on' : ''}" data-a="bsel" data-id="${x.id}">${esc(cityById(x.city).ad)}${S().subeler.filter((y) => y.city === x.city).length > 1 ? ' ' + x.id : ''}</button>`).join('')}</div>` : '');
 const sumRep = (a: Array<{ gelir: object; gider: object }>, key: 'gelir' | 'gider'): Record<string, number> => { const o: Record<string, number> = {}; for (const x of a) for (const k of Object.keys(x[key])) o[k] = (o[k] ?? 0) + (x[key] as Record<string, number>)[k]!; return o; };
-const rows = (o: Record<string, number>, names: Record<string, string>): string => Object.keys(names).filter((k) => (o[k] ?? 0) > 0.5).map((k) => `<div class="row small"><span>${names[k]}</span><b>${fmt(o[k] ?? 0)}</b></div>`).join('') || '<div class="small muted">—</div>';
+export const rows = (o: Record<string, number>, names: Record<string, string>): string => Object.keys(names).filter((k) => (o[k] ?? 0) > 0.5).map((k) => `<div class="row small"><span>${names[k]}</span><b>${fmt(o[k] ?? 0)}</b></div>`).join('') || '<div class="small muted">—</div>';
 const GELIR_AD = { kahve: 'Kahve satışları', yiyecek: 'Yiyecek satışları', ek: 'Ek satış (yanında alınan)', kampanya: 'Kampanyalı satış', paket: 'Paket servis', toplu: 'Toplu sipariş', etkinlik: 'Etkinlik', franchise: 'Franchise' };
 const GIDER_AD = { malzeme: 'Satılan malın maliyeti', fire: 'Fire / bozulan ürün', maas: 'Personel maaşları', prim: 'Prim', egitim: 'Eğitim', isealim: 'İşe alım / tazminat', sadakat: 'Sadakat kartı programı', komisyon: 'Online platform komisyonu', kira: 'Kira', elektrik: 'Elektrik', su: 'Su', internet: 'İnternet', vergi: 'Vergiler', bakim: 'Bakım ve ekipman', sigorta: 'Sigorta', reklam: 'Reklam', stok: 'Stok bekletme' };
 
@@ -180,7 +188,7 @@ function pRakip(ilArg?: number): string {
 }
 
 /* ===================== 12 · Türkiye Haritası ===================== */
-const fxPush = (k: Fx['k'], id: string): void => { ctx.fx = ctx.fx.filter((f) => Date.now() - f.t < 2500); ctx.fx.push({ k, id, t: Date.now() }); };
+export const fxPush = (k: Fx['k'], id: string): void => { ctx.fx = ctx.fx.filter((f) => Date.now() - f.t < 2500); ctx.fx.push({ k, id, t: Date.now() }); };
 const ZMETRICS: Array<[Metric, string]> = [['erisim', 'Erişim'], ['talep', 'Talep'], ['gelir', 'Gelir'], ['kira', 'Kira']];
 const dstat = (d: { d: string }): string => (d.d === 'acik' ? '<span class="pill" style="background:rgba(95,192,138,.2);color:var(--ok)">Açık</span>' : d.d === 'satilik' ? '<span class="pill">Satılık</span>' : '<span class="pill" style="background:rgba(255,255,255,.08);color:var(--mu)">🔒 Kilitli</span>');
 function pHarita(): string {
@@ -209,7 +217,7 @@ function pHarita(): string {
   const list = L.sort((a, b) => { const o = (d: typeof a) => (ilceAcik(s, d) ? 0 : ilceDurum(s, d).d === 'satilik' ? 1 : 2); return o(a) - o(b) || ilceCost(s, a) - ilceCost(s, b); }).map((d) => { const st = ilceDurum(s, d); return `<div class="row small" data-a="ilcesec" data-id="${d.id}" style="cursor:pointer;${d.id === ctx.selIlce ? 'background:rgba(224,152,60,.12);border-radius:8px;padding:4px 6px' : ''}"><span>${esc(d.ad)}</span><span>${st.d === 'acik' ? '<span class="good">açık</span>' : fmt(st.bedel) + (st.d === 'kilitli' ? ' 🔒' : '')}</span></div>`; }).join('');
   return `<div class="chiprow" style="margin-bottom:8px"><button class="btn sm" data-a="geri">← Türkiye</button><b style="align-self:center">${esc(c.ad)}</b><span class="tiny muted" style="align-self:center">${acik}/${L.length} ilçe açık</span></div><div class="chiprow" style="margin-bottom:6px">${metricRow}${wideBtn}</div>${map}${legend}${detay}<div class="card"><h3>İlçeler</h3>${list}</div>`;
 }
-function cityFacts(c: ReturnType<typeof cityById>): string {
+export function cityFacts(c: ReturnType<typeof cityById>): string {
   const L = (v: number) => bar(v * 100);
   return `<div class="row small"><span>Nüfus</span><b>${(c.nufus / 1000).toFixed(2).replace('.', ',')} M</b></div><div class="row small"><span>Gelir düzeyi</span><b>${tr(c.gelir, 2)}×</b></div><div class="row small"><span>Kira seviyesi</span><b>${tr(c.kira, 2)}×</b></div><div class="small muted">Turizm</div>${L(c.turizm)}<div class="small muted">Öğrenci</div>${L(c.ogrenci)}<div class="small muted">Rekabet</div>${bar(c.rekabet * 100, 'var(--bad)')}`;
 }
@@ -255,7 +263,7 @@ function pHedefler(): string {
   <div class="card"><h3>İstatistikler</h3><div class="row small"><span>Toplam müşteri</span><b>${s.stat.musteri.toLocaleString('tr-TR')}</b></div><div class="row small"><span>Toplam net kâr</span><b class="${cls(s.stat.netKar)}">${fmt(s.stat.netKar)}</b></div><div class="row small"><span>Kârlı gün</span><b>${s.stat.karGun}</b></div><div class="row small"><span>Şu anki kâr serisi</span><b>${s.stat.seri ?? 0} gün</b></div><div class="row small"><span>En iyi gün</span><b>${fmt(s.stat.enIyiGun)}</b></div></div>`;
 }
 /* ===================== Franchise ===================== */
-function frSection(): string {
+export function frSection(): string {
   const s = S(), lv = levelOf(s), toplam = s.franchise.reduce((a, f) => a + f.royalty, 0);
   const list = s.franchise.map((f) => { const d = ilceOf(f.ilce), ci = Math.round(f.ciro); return `<div class="card"><div class="row"><b>🤝 ${esc(f.ad)}</b><span class="pill">${esc(cityById(f.il).ad)}</span></div><div class="row small"><span>Günlük ciro · payın</span><b>${fmt(ci)} · <span class="good">${fmt(f.royalty)}</span></b></div><div class="row small"><span>Toplam kazancın</span><b>${fmt(f.toplam)}</b></div>${stat('Kalite', f.kalite)}${stat('Bayi memnuniyeti', f.memnuniyet)}<div class="row small"><span>Destek seviyesi</span><div class="stp"><button data-a="frdestek" data-id="${f.id}" data-d="-1">−</button><span>${f.destek}</span><button data-a="frdestek" data-id="${f.id}" data-d="1">+</button></div></div><div class="tiny muted">Destek günlük ${fmt(f.destek * 400 * s.market.fiyat)} maliyet; kaliteyi ve bayi memnuniyetini yükseltir. ${d ? '' : ''}</div><div class="chiprow" style="margin-top:6px"><button class="btn sm" data-a="frdenetim" data-id="${f.id}">🔍 Denetle · ${fmt(4000 * s.market.fiyat)}</button><button class="btn sm bad" data-a="frson" data-id="${f.id}">Sözleşmeyi feshet</button></div>${f.kalite < 45 ? '<div class="tiny badc">⚠️ Kalite düşük: marka zarar görüyor, bayi ayrılabilir.</div>' : ''}</div>`; }).join('');
   let picker = '';
@@ -267,7 +275,7 @@ function frSection(): string {
   }
   return `<div class="eyebrow">🤝 Franchise (${s.franchise.length}/${MAX_FR(s)})</div>${lv < 5 ? '<div class="card small muted">Franchise vermek için kafe seviyesi 5 (ulusal zincir: birden fazla şube ve yüksek marka) gerekir. Bayiler giriş ücreti, royalty ve pazarlama payı öder; ama kalite düşerse markan zarar görür.</div>' : `<div class="card small"><div class="row"><span>Günlük franchise gelirin</span><b class="good">${fmt(toplam)}</b></div><div class="tiny muted">Royalty %${Math.round(ROYALTY * 100)} + pazarlama fonu %${Math.round(PAZARLAMA * 100)}. Gelir "Franchise" kaleminde görünür.</div></div>`}${list}${picker}`;
 }
-function merkezSection(): string {
+export function merkezSection(): string {
   const s = S(), lv = levelOf(s);
   return `<div class="eyebrow">Merkezi depo ve mutfak (şirket geneli)</div>${MERKEZ.map((m) => { const l = s.merkez[m.id], son = l >= m.max, bedel = merkezBedel(s, m.id), neden = lv < m.seviye ? `Kafe seviyesi ${m.seviye} gerekir` : s.subeler.length + s.franchise.length < m.sube ? `En az ${m.sube} şube/bayi gerekir` : ''; return `<div class="card"><div class="row"><b>${m.ikon} ${m.ad}</b><span class="tiny muted">${'●'.repeat(l)}${'○'.repeat(m.max - l)}</span></div>${l ? `<div class="small good">Şu an: ${m.etki[l - 1]}</div>` : ''}${son ? '<span class="pill">✓ Tamam</span>' : `<div class="tiny muted">Sonraki: ${m.etki[l]} · bu seviye +${fmt(m.gunluk * s.market.fiyat)}/gün işletme gideri</div>${neden ? `<div class="tiny badc">🔒 ${neden}</div>` : `<button class="btn sm pri" style="margin-top:5px" data-a="merkez" data-id="${m.id}">Yükselt · ${fmt(bedel)}</button>`}`}</div>`; }).join('')}`;
 }
@@ -302,7 +310,7 @@ function pIller(): string {
   return `${chips}${tabs}${body}`;
 }
 export const PANELS: Record<string, () => string> = { iller: pIller, hedefler: pHedefler, genel: pGenel, ekonomi: () => pEkonomi(S(), cur(), { per: ctx.eper, scope: ctx.escope, curve: ctx.ecurve, anim: ctx.anim }), personel: pPersonel, vardiya: pVardiya, menu: pMenu, stok: pStok, tedarik: pTedarik, finans: pFinans, musteri: pMusteri, reklam: pReklam, gelisim: pGelisim, harita: pHarita, subeler: pSubeler, rapor: pRapor, ayar: pAyar };
-export const LIVE_TABS = new Set(['genel', 'stok', 'finans', 'subeler', 'musteri', 'vardiya', 'rapor']);
+export const LIVE_TABS = new Set(['ana', 'stok', 'finans', 'musteri', 'vardiya', 'rapor', 'subeler', 'banka', 'siralama', 'prestij']);
 export { regionName, CITIES };
 
 /* ===================== Eylemler ===================== */
@@ -319,7 +327,7 @@ export function handle(a: string, d: DOMStringMap, h: Helpers): void {
     case 'kurumsal': return h.res(kurumsalSozlesme(s, +d.il!));
     case 'kurumsaliptal': return h.res(kurumsalIptal(s, +d.il!));
     case 'git': return h.go(d.t!);
-    case 'bsel': ctx.bid = +d.id!; return h.show();
+    case 'bsel': ctx.bid = +d.id!; if (ctx.subeAcik !== null) ctx.subeAcik = +d.id!; return h.show();
     case 'metric': ctx.mapm = d.m as Metric; return h.refresh();
     case 'ilsec': { const il = +d.il!; ctx.mapsel = il; if (ilAcik(s, il) && ctx.zoomIl !== il) { ctx.zoomIl = il; ctx.selIlce = null; if (ctx.mapm !== 'erisim' && !['talep', 'gelir', 'kira'].includes(ctx.mapm)) ctx.mapm = 'erisim'; h.refresh(); return h.zoom(zoomVb(il)); } return h.refresh(); }
     case 'ilcesec': ctx.selIlce = +d.id!; return h.refresh();
