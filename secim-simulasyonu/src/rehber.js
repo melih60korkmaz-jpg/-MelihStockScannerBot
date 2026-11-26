@@ -19,7 +19,7 @@ var RH_METIN = [
 ];
 function rehberGuncelle() {
   var a = rhAdim();
-  if (a < 0 || sheetEl || document.querySelector('.splash,.mt')) { rhKaldir(); return; }
+  if (a < 0 || sheetEl || document.querySelector('.splash,.mt,.tut') || (typeof turGorulmus === 'function' && !turGorulmus() && !(navigator.webdriver && !/tur=1/.test(location.search)))) { rhKaldir(); return; }
   var m = RH_METIN[a], hedef = m[1] ? document.querySelector(m[1]) : null;
   if (m[1] && !hedef && a < 3) hedef = document.querySelector('.aks'); /* sekme/başka ekranda: genel hedefe düş */
   if (m[1] && !hedef) { rhKaldir(); return; }

@@ -134,7 +134,7 @@ function render() {
   var ct = $('.tab[aria-current=true]'); if (ct) ct.scrollIntoView({inline: 'center', block: 'nearest'});
   if (sc && $('#sc') && !enter) $('#sc').scrollTop = y; else if ($('#sc')) { $('#sc').scrollTop = 0; requestAnimationFrame(function () { var z = $('#sc'); if (z && LASTTAB === TAB) z.scrollTop = 0; }); }
   var a = $('#ay'); if (a) a.onclick = ayBitirTikla;
-  $('#ayar').onclick = ayarlar; bagla(); if (TAB === 'hakkinda') hakkindaBagla(); if (TAB === 'hedef') hedefBagla(); if (TAB === 'notlar') notBagla(); if (TAB === 'grafik') grafikBagla(); if (TAB === 'ittifak') ittifakBagla(); if (YENI_TAB.length) setTimeout(function () { YENI_TAB = []; }, 1300);
+  $('#ayar').onclick = ayarlar; bagla(); if (TAB === 'hakkinda') hakkindaBagla(); if (TAB === 'hedef') hedefBagla(); if (TAB === 'notlar') notBagla(); if (TAB === 'grafik') grafikBagla(); if (TAB === 'ittifak') ittifakBagla(); if (typeof yardimBagla === 'function') yardimBagla(); if (YENI_TAB.length) setTimeout(function () { YENI_TAB = []; }, 1300);
   if (S.sd && S.sd.length) sdGoster(S.sd.splice(0, 3));
   rozetKontrol(); kariyerBagla(); rehberGuncelle();
   var bars = [].slice.call(document.querySelectorAll('#sc .bar i,#sc .pbar i'));

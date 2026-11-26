@@ -507,3 +507,19 @@ details.dt summary::-webkit-details-marker{display:none}details.dt summary::afte
 details.dt[open] summary::after{content:'－'}details.dt p{margin:8px 0 0}
 
 .mz{flex-direction:row!important;top:auto!important;bottom:8px;right:8px}
+
+.yd-b{background:var(--gold,#e8b04b)!important;color:#1a1205;font-size:18px;font-weight:800;border:0!important}
+.yd-ul{margin:0;padding-left:20px}.yd-ul li{margin:6px 0;line-height:1.45}
+.stats .st[role=button]:active{transform:scale(.97)}
+.tut{position:fixed;inset:0;z-index:99998;animation:turin .3s ease-out}.tut.out{opacity:0;transition:opacity .2s}
+@keyframes turin{from{opacity:0}to{opacity:1}}
+.tut.noring{background:rgba(5,4,10,.72)}
+.tutring{position:absolute;display:none;border-radius:14px;box-shadow:0 0 0 9999px rgba(5,4,10,.68),0 0 0 3px var(--gold,#e8b04b),0 0 22px 4px rgba(232,176,75,.5);pointer-events:none;transition:left .28s,top .28s,width .28s,height .28s;animation:tutp 1.7s ease-in-out infinite}
+@keyframes tutp{50%{box-shadow:0 0 0 9999px rgba(5,4,10,.68),0 0 0 3px var(--gold,#e8b04b),0 0 30px 8px rgba(232,176,75,.7)}}
+.tutcard{position:absolute;left:12px;right:12px;display:flex;gap:12px;background:#17151f;border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:14px;box-shadow:0 14px 40px rgba(0,0,0,.55);max-width:440px;margin:0 auto}
+.tutcard.top{top:max(14px,env(safe-area-inset-top))}.tutcard.bot{bottom:max(14px,env(safe-area-inset-bottom))}.tutcard.mid{top:50%;transform:translateY(-50%)}
+.tutface{flex:0 0 64px;height:64px;border-radius:50%;overflow:hidden;border:2px solid var(--gold,#e8b04b)}.tutface svg{width:64px;height:64px;display:block}
+.tutbody{flex:1;min-width:0}.tutwho{display:block;color:var(--gold,#e8b04b);font-size:11px;font-weight:700;letter-spacing:.4px}
+.tutbody>b{display:block;font-family:var(--fd);font-size:18px;margin:2px 0 4px}.tutbody p b{color:#fff}.tutbody p{margin:0 0 10px;font-size:14.5px;line-height:1.5;color:#c9cddc}
+.tutbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.tutbar .tutdots{flex:0 0 100%;margin-bottom:4px}.tutbar .sp{flex:1;min-width:0}.tutbar .btn{min-height:38px;padding:6px 12px;font-size:14px;width:auto;margin:0}
+.tutdots{display:flex;gap:4px}.tutdots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2)}.tutdots i.done{background:rgba(232,176,75,.5)}.tutdots i.on{background:var(--gold,#e8b04b);width:16px;border-radius:4px}
