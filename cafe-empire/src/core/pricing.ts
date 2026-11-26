@@ -4,7 +4,7 @@ import { cityById } from '../data/turkey';
 import type { Branch, GameState } from './types';
 import { dateOf } from './calendar';
 import { dayOf } from './calendar';
-import { hooks, dailyDemand, priceFactor, refPrice, unitCost, levelOf, segWeights, SEG_KEYS, SEG_ESNEKLIK, adEffect } from './sim';
+import { hooks, dailyDemand, priceFactor, priceLevel, refPrice, unitCost, levelOf, segWeights, SEG_KEYS, SEG_ESNEKLIK, adEffect } from './sim';
 import { profilBranch } from './region';
 import { ILCELER, profilOf } from '../data/regions';
 import { SHOP, type ShopTypeId } from '../data/catalog';
@@ -16,7 +16,8 @@ const clamp = (v: number, a: number, z: number): number => Math.max(a, Math.min(
 function dayProfit(s: GameState, b: Branch, mult: Record<string, number>, aktif: ProductDef[], A0: number, f0: number): number {
   const c = cityById(b.city), pf = profilBranch(b), ae = adEffect(b, dayOf(s)), month = dateOf(dayOf(s)).ay, yaz = month >= 5 && month <= 8, kis = month <= 1 || month === 11;
   const real = Object.fromEntries(aktif.map((p) => [p.id, b.menu[p.id].fiyat])) as Record<string, number>; for (const p of aktif) b.menu[p.id].fiyat = mult[p.id]!;
-  const A = A0 * priceFactor(s, b, ae) / f0; for (const p of aktif) b.menu[p.id].fiyat = real[p.id]!;
+  const A = A0 * priceFactor(s, b, ae) / f0, plN = priceLevel(s, b, ae); for (const p of aktif) b.menu[p.id].fiyat = real[p.id]!;
+  const kalici = 1 / (1 + 1.6 * Math.max(0, plN - 1));   // pahalı fiyat memnuniyeti, markayı ve tekrar gelen müşteriyi zamanla düşürür
   const sw = segWeights(b, c), tot = SEG_KEYS.reduce((a, k) => a + sw[k], 0), rvAv = (s.rakipler[b.city] ?? []); const rv = rvAv.length ? rvAv.reduce((a, r) => a + (r.kampanya ? r.fiyat * (1 - r.kampanya.indirim) : r.fiyat), 0) / rvAv.length : 1;
   const refK = (0.92 + 0.08 * pf.gelir); let profit = 0;
   for (const kat of ['kahve', 'yiyecek'] as const) {
@@ -26,13 +27,14 @@ function dayProfit(s: GameState, b: Branch, mult: Record<string, number>, aktif:
       L.forEach((p, i) => { const fiyat = refPrice(s, p, c) * refK * mult[p.id]!; profit += A * itemsPerArrival * (sw[k] / tot) * (w[i]! / W) * (fiyat - unitCost(s, p.id, c)); });
     }
   }
-  return profit;
+  return profit * kalici;
 }
 /** Her aktif ürün için kâr artıran fiyat önerisi (koordinat inişi). */
 export function priceAdvice(s: GameState, b: Branch): Oneri[] {
   const lv = levelOf(s), c = cityById(b.city), aktif = PRODUCTS.filter((p) => b.menu[p.id].aktif && lv >= p.seviye); if (aktif.length < 2) return [];
   const A0 = dailyDemand(s, b), f0 = priceFactor(s, b, adEffect(b, dayOf(s))), cur: Record<string, number> = Object.fromEntries(aktif.map((p) => [p.id, b.menu[p.id].fiyat])), best = { ...cur };
-  for (let pass = 0; pass < 2; pass++) for (const p of aktif) { let bm = best[p.id]!, bv = dayProfit(s, b, best, aktif, A0, f0); for (let m = 0.7; m <= 1.4001; m += 0.05) { const t = { ...best, [p.id]: Math.round(m * 100) / 100 }; const v = dayProfit(s, b, t, aktif, A0, f0); if (v > bv + 1e-6) { bv = v; bm = t[p.id]!; } } best[p.id] = bm; }
+  const son = b.gecmis.slice(-7), ms = son.reduce((a, r) => a + r.musteri, 0), ky = son.reduce((a, r) => a + r.kayip, 0), bound = (ms + ky > 50 && ky / (ms + ky) > 0.2) || b.backlog > 300;   // kapasite doluysa fiyat indirimi hacim getirmez
+  for (let pass = 0; pass < 2; pass++) for (const p of aktif) { let bm = best[p.id]!, bv = dayProfit(s, b, best, aktif, A0, f0); for (let m = bound ? Math.max(0.7, cur[p.id]!) : Math.max(0.7, cur[p.id]! - 0.15); m <= Math.min(1.4, cur[p.id]! + 0.15) + 0.0001; m += 0.05) { const t = { ...best, [p.id]: Math.round(m * 100) / 100 }; const v = dayProfit(s, b, t, aktif, A0, f0); if (v > bv + 1e-6) { bv = v; bm = t[p.id]!; } } best[p.id] = bm; }
   const base = dayProfit(s, b, cur, aktif, A0, f0), res: Oneri[] = [];
   for (const p of aktif) { const pr = (m: number) => Math.round(refPrice(s, p, c) * (0.92 + 0.08 * profilBranch(b).gelir) * m), alone = { ...cur, [p.id]: best[p.id]! }, gain = dayProfit(s, b, alone, aktif, A0, f0) - base; const was = cur[p.id]!, now = best[p.id]!; if (Math.abs(now - was) < 0.03 || gain < 20) continue; res.push({ id: p.id, simdi: was, oneri: now, fiyatSimdi: pr(was), fiyatOneri: pr(now), kazanc: Math.round(gain), neden: now > was ? 'Müşteri bu üründe fiyata duyarsız; marjı artırmak kâr getirir.' : 'Fiyat yüksek: müşteri diğer ürünlere veya rakibe kayıyor; indirim hacimle telafi olur.' }); }
   return res.sort((a, z) => z.kazanc - a.kazanc);

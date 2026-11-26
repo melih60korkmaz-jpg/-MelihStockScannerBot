@@ -27,7 +27,7 @@ export interface ActiveAd { id: AdId; bit: number; tuttu: boolean }
 export interface Review { gun: number; yildiz: number; metin: string; kim: string }
 
 export interface Money { kahve: number; yiyecek: number; ek: number; kampanya: number; paket: number; toplu: number; etkinlik: number; franchise: number }
-export interface Costs { kira: number; elektrik: number; su: number; internet: number; maas: number; malzeme: number; fire: number; stok: number; vergi: number; bakim: number; reklam: number; sigorta: number; prim: number; egitim: number; isealim: number; sadakat: number }
+export interface Costs { kira: number; elektrik: number; su: number; internet: number; maas: number; malzeme: number; fire: number; stok: number; vergi: number; bakim: number; reklam: number; sigorta: number; prim: number; egitim: number; isealim: number; sadakat: number; komisyon: number }
 export interface DayAcc {
   gelir: Money; gider: Costs; musteri: number; kayip: number; stokYok: number; adet: Partial<Record<ProductId, number>>;
   satSum: number; satN: number; bekleme: number; beklemeN: number;
@@ -43,6 +43,7 @@ export interface Lot { q: number; son: number; kal: number }
 export interface Musteri { ortSiparis: number; ortBekleme: number; hizmet: number; urunKal: number; fiyatMemn: number; tekrar: number; sadik: number; sikayet: number }
 
 export interface Branch {
+  trafik?: number; masa?: number; konsept?: 'takeaway' | 'self' | 'garson' | 'karma'; dekor?: number; depozito?: number; online?: string[];
   promo?: Promo; id: number; ad: string; city: number; ilce?: string; tip: ShopTypeId; acilis: number; kira: number; m2: number;
   staff: Employee[]; menu: Record<ProductId, MenuItem>; stok: Record<IngId, number>; siparisler: Order[]; otoSiparis: boolean;
   yat: Record<string, number>; facade: Facade; hijyen: number; memnuniyet: number; marka: number; sadakat: number;
@@ -56,6 +57,7 @@ export interface Mod { v: number; bit: number }
 export interface Market { enf: number; fiyat: number; bean: number; elektrik: number; mod: Record<string, Mod> }
 
 export interface GameState {
+  sosyal: { takipci: number; son: Record<string, number>; ajans?: boolean }; faiz?: number; ilanYenile: Record<string, number>;
   ilprog: Record<number, { kurumsal?: { gunluk: number; bit: number } }>;
   frBugun?: number;
   basarim: Record<string, number>; gorevler: Gorev[]; stat: Stat; franchise: Franchise[]; merkez: { depo: number; mutfak: number }; tur: number; ayar: Ayar;

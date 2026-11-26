@@ -43,7 +43,7 @@ export function coverage(b: Branch, hour: number, haftaGun: number, now: number)
 import { capMult } from './invest';
 export function capacityAt(s: GameState, b: Branch, hour: number, haftaGun: number, now: number, yat = 1): number {
   const c = coverage(b, hour, haftaGun, now); const bolge = Math.min(0.09, 0.03 * s.subeler.flatMap((x) => x.staff).filter((e) => e.tip === 'bolge_muduru').length);
-  return (c.barista + 0.5 * c.kasiyer) * 0.9 * 600 * (c.sorumlu ? 1.05 : 1) * (c.mudur ? 1.06 : 1) * (1 + bolge) * yat * capMult(b);
+  return (c.barista + 0.5 * c.kasiyer) * 0.9 * 600 * (c.sorumlu ? 1.05 : 1) * (c.mudur ? 1.06 : 1) * (1 + bolge) * yat * capMult(b) * ({ takeaway: 1.15, self: 1, garson: 0.9, karma: 1 } as Record<string, number>)[b.konsept ?? 'self']!;
 }
 /** Boş saatlerin listesi (barista ya da kasiyer yok) — plan uyarısı için. */
 export function gaps(b: Branch, haftaGun: number, now: number): number[] { const g: number[] = []; for (let h = b.mesai.aci; h < b.mesai.kapa; h++) { const c = coverage(b, h + 0.5, haftaGun, now); if (c.barista + c.kasiyer <= 0) g.push(h); } return g; }

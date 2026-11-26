@@ -72,6 +72,16 @@ export function priceLevel(s: GameState, b: Branch, ae?: { indirim: boolean }): 
   for (const p of PRODUCTS) { const m = b.menu[p.id]; if (!m?.aktif) continue; w += p.talep; t += p.talep * m.fiyat * disc * (rv > 0 ? Math.pow(1 / rv, 0.25) : 1); } return w ? t / w : 1;
 }
 export function priceFactor(s: GameState, b: Branch, ae?: { indirim: boolean }): number { const c = cityById(b.city); const eks = 1.5 - 0.25 * (c.gelir - 1) - (b.tip === 'luks' ? 0.5 : 0); return Math.exp(-0.7 * eks * (priceLevel(s, b, ae) - 1)); }
+/** Yaya trafiği, dekor, online platformlar ve sosyal medya takipçisinden gelen talep çarpanı. */
+export function dekorTrafikCarpan(s: GameState, b: Branch): number {
+  const pf = profilBranch(b), dekor = b.dekor ?? 1, luksBasit = pf.gelir >= 1.2 && dekor === 0 ? 0.9 : 1, dekorK = 1 + (dekor - 1) * 0.05;
+  const online = 1 + (b.online ?? []).reduce((a, id) => a + (ONLINE_BOOST[id] ?? 0), 0), sosyal = 1 + Math.min(0.12, (s.sosyal?.takipci ?? 0) / 40000);
+  return (b.trafik ?? 1) * luksBasit * dekorK * online * sosyal * modValue(s, 'sosyal');
+}
+export const ONLINE_KOMISYON: Record<string, number> = { hemen: 0.22, kapinda: 0.18, sepetgo: 0.25, lezzet: 0.15 };
+/** Online platformlardan gelen cironun payı ≈ boost/(1+boost); komisyon bu paya uygulanır. */
+export function onlineKomisyon(b: Branch, gelir: number): number { const top = (b.online ?? []).reduce((a, id) => a + (ONLINE_BOOST[id] ?? 0), 0); if (!top) return 0; return (b.online ?? []).reduce((a, id) => a + gelir * ((ONLINE_BOOST[id] ?? 0) / (1 + top)) * (ONLINE_KOMISYON[id] ?? 0.2), 0); }
+export const ONLINE_BOOST: Record<string, number> = { hemen: 0.06, kapinda: 0.045, sepetgo: 0.09, lezzet: 0.03 };
 export function dailyDemand(s: GameState, b: Branch): number {
   const c0 = cityById(b.city), pf = profilBranch(b), st = SHOP[b.tip], now = dayOf(s), d = dateOf(now), ae = adEffect(b, now);
   const c = pf.turizm < 0 ? c0 : { ...c0, turizm: 0.5 * c0.turizm + 0.5 * pf.turizm, ogrenci: 0.5 * c0.ogrenci + 0.5 * pf.ogrenci };
@@ -79,7 +89,7 @@ export function dailyDemand(s: GameState, b: Branch): number {
   const marka = 0.4 + 0.012 * (0.6 * b.marka + 0.4 * s.marka_puani) + 0.12 * (b.yorumPuan - 3.5), hava = { gunesli: 1.05, bulutlu: 1, yagmur: 0.72, kar: 0.6 }[s.hava[b.city] ?? 'bulutlu'];
   const turizm = 1 + c.turizm * (seasonTourism(c, d.ay) - 1) * 0.9, hafta = d.haftaGun >= 5 ? 1.15 : 1;
   const ogr = SHOP[b.tip].id === 'uni' ? 1 + 0.5 * c.ogrenci : 1 + 0.2 * c.ogrenci, ogrTatil = (d.ay >= 5 && d.ay <= 7) ? 1 - 0.35 * c.ogrenci : 1;
-  const rv = 1 - Math.min(0.5, rivalPressure(s, b)), mod = modValue(s, 'talep') * modValue(s, 'talep_' + b.city) * modValue(s, 'turist_' + b.city) * modValue(s, 'kampus_' + b.city);
+  const rv = 1 - Math.min(0.5, rivalPressure(s, b)), mod = modValue(s, 'talep') * modValue(s, 'talep_' + b.city) * modValue(s, 'turist_' + b.city) * modValue(s, 'kampus_' + b.city) * dekorTrafikCarpan(s, b);
   return st.potansiyel * 1.9 * pf.talep * olgunluk(s, b) * talepIdx * marka * hava * turizm * hafta * ogr * ogrTatil * rv * mod * facadeAppeal(b) * (1 + ae.trafik) * priceFactor(s, b, ae) * (b.hijyen < 40 ? 0.85 : 1);
 }
 
@@ -121,7 +131,7 @@ function processCustomer(s: GameState, b: Branch, ev: SimEvent[], c: City): void
   const rivalAv = avgRivalPrice(s, b.city); let totalPrep = 0, totalGelir = 0, kahveG = 0, yiyG = 0, any = false, kaybettiFiyat = false;
   const items: Array<[ProductId, number]> = [];
   for (let k = 0; k < grup; k++) {
-    const nItem = rand(s.rng, 'customers') < (ae.ikinci ? 0.62 : 0.4) + (pr0(b).sabah && HOUR_LABEL(hourOf(s), 7, 11) ? 0.15 : 0) ? 2 : 1, wantFood = rand(s.rng, 'customers') < 0.42;
+    const nItem = rand(s.rng, 'customers') < ((ae.ikinci ? 0.62 : 0.4) * ({ takeaway: 0.9, self: 1, garson: 1.4, karma: 1.15 } as Record<string, number>)[b.konsept ?? 'self']!) + (pr0(b).sabah && HOUR_LABEL(hourOf(s), 7, 11) ? 0.15 : 0) ? 2 : 1, wantFood = rand(s.rng, 'customers') < 0.42;
     for (let q = 0; q < nItem; q++) {
       const food = q === 1 || (nItem === 1 && wantFood), cand: Array<[ProductDef, number]> = []; let tot = 0;
       for (const p of PRODUCTS) {
@@ -163,7 +173,7 @@ function processCustomer(s: GameState, b: Branch, ev: SimEvent[], c: City): void
 }
 
 /* ===================== Zaman adımı ===================== */
-export const emptyAcc = (): DayAcc => ({ gelir: { kahve: 0, yiyecek: 0, ek: 0, kampanya: 0, paket: 0, toplu: 0, etkinlik: 0, franchise: 0 }, gider: { kira: 0, elektrik: 0, su: 0, internet: 0, maas: 0, malzeme: 0, fire: 0, stok: 0, vergi: 0, bakim: 0, reklam: 0, sigorta: 0, prim: 0, egitim: 0, isealim: 0, sadakat: 0 }, musteri: 0, kayip: 0, stokYok: 0, adet: {}, satSum: 0, satN: 0, bekleme: 0, beklemeN: 0, cogs: 0, alim: 0, itemN: 0, kalSum: 0, fiyatSum: 0, tekrar: 0, sadik: 0, sikayet: 0, ort: 0 });
+export const emptyAcc = (): DayAcc => ({ gelir: { kahve: 0, yiyecek: 0, ek: 0, kampanya: 0, paket: 0, toplu: 0, etkinlik: 0, franchise: 0 }, gider: { kira: 0, elektrik: 0, su: 0, internet: 0, maas: 0, malzeme: 0, fire: 0, stok: 0, vergi: 0, bakim: 0, reklam: 0, sigorta: 0, prim: 0, egitim: 0, isealim: 0, sadakat: 0, komisyon: 0 }, musteri: 0, kayip: 0, stokYok: 0, adet: {}, satSum: 0, satN: 0, bekleme: 0, beklemeN: 0, cogs: 0, alim: 0, itemN: 0, kalSum: 0, fiyatSum: 0, tekrar: 0, sadik: 0, sikayet: 0, ort: 0 });
 const sumObj = (o: object) => Object.values(o as Record<string, number>).reduce((a, b) => a + b, 0);
 
 export function openHours(b: Branch): [number, number] { return b.tip === 'avm' ? [10, 22] : b.tip === 'sahil' ? [8, 24] : b.tip === 'luks' ? [9, 23] : [8, 23]; }
@@ -193,7 +203,7 @@ function dailyClose(s: GameState, ev: SimEvent[]): void {
     if (b.acik) {
       g.kira = b.kira / 30; g.elektrik = (st.m2 * 55 + 14000) / 30 * c.maliyet * el * F * (b.facade.led ? 1.12 : 1) * 0.8 * energyMult(b); g.su = (st.m2 * 14 + 3000) / 30 * c.maliyet * F;
       g.maas = b.staff.reduce((a, e) => a + e.maas * (e.mesai ? 1.12 : 1), 0) / 30; g.bakim = (st.m2 * 18 + 1200 * (b.facade.premium + b.facade.cam)) / 30 * F + maintenanceDaily(b) * F; g.sigorta = (st.m2 * 6 + 900) / 30 * F;
-      g.vergi = sumObj(acc.gelir) * 0.08; g.sadakat = b.promo?.kart ? sumObj(acc.gelir) * 0.006 : 0; g.internet = 1900 / 30 * F; g.stok = holdingCost(s, b);
+      g.vergi = sumObj(acc.gelir) * 0.08; g.komisyon = onlineKomisyon(b, sumObj(acc.gelir)); g.sadakat = b.promo?.kart ? sumObj(acc.gelir) * 0.006 : 0; g.internet = 1900 / 30 * F; g.stok = holdingCost(s, b);
     }
     g.fire = spoilage(s, b); g.malzeme = acc.cogs; for (const k of Object.keys(b.stok) as IngId[]) if ((b.stok[k] ?? 0) < 0) b.stok[k] = 0;
     for (const k of Object.keys(g) as Array<keyof typeof g>) s.kasa -= (k === 'malzeme' || k === 'fire' || k === 'reklam' || k === 'prim' || k === 'egitim' || k === 'isealim') ? 0 : g[k];   // bunlar işlem anında ödendi (malzeme: alımda)
@@ -220,7 +230,7 @@ function dailyClose(s: GameState, ev: SimEvent[]): void {
   toplam = finalize(toplam); s.rapor.push(toplam); if (s.rapor.length > 800) s.rapor.shift(); for (const f of hooks.gunSonu) f(s); s.ayKar += toplam.kar; s.ayGelir += toplam.toplamGelir;
   // ay sonu geliri vergisi
   const d = dateOf(dayOf(s)); if (d.ayGun === 1) { const vergi = Math.max(0, s.ayKar) * 0.10; s.kasa -= vergi; s.ayKar = 0; s.ayGelir = 0; s.log.unshift(`Ay sonu gelir vergisi ödendi: ${Math.round(vergi)} ₺`); s.log = s.log.slice(0, 40); }
-  s.kasa += toplam.toplamGelir; s.borc *= 1 + 0.002;   // borç faizi (günlük ≈ yıllık %70 değil: aylık %6'dan düşük)
+  s.kasa += toplam.toplamGelir; s.borc *= 1 + (s.faiz ?? 0.002);   // borç faizi (günlük ≈ yıllık %70 değil: aylık %6'dan düşük)
   marketDay(s); rivalsDay(s); deliverAll(s, (m) => { s.log.unshift(m); s.log = s.log.slice(0, 40); }); weatherDay(s); randomEvent(s, ev);
   s.marka_puani = clampN(s.marka_puani * 0.97 + 0.03 * (s.subeler.length ? 0.6 * Math.max(...s.subeler.map((b) => b.marka)) + 0.4 * (s.subeler.reduce((a, b) => a + b.marka, 0) / s.subeler.length) : 0), 0, 100);
   s.seviye = levelOf(s); if (s.kasa < -50000) s.negatifGun++; else s.negatifGun = 0; if (s.negatifGun >= 20) s.oyunBitti = 'iflas';

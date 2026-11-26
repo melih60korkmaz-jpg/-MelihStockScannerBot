@@ -8,7 +8,7 @@ import type { Branch, DayReport, GameState } from '../core/types';
 export interface EcoOpts { per: number; scope: 'all' | 'sube'; curve: ProductId; anim: boolean }
 const PAL = ['#e0983c', '#4aa3e8', '#5fc08a', '#e8665f', '#a98be0', '#f0d264', '#6fd3d3', '#c98a6f'];
 const GELIR: Record<string, string> = { kahve: 'Kahve', yiyecek: 'Yiyecek', ek: 'Ek satış', kampanya: 'Kampanyalı', paket: 'Paket servis', toplu: 'Toplu sipariş', etkinlik: 'Etkinlik', franchise: 'Franchise' };
-const GIDER: Record<string, string> = { malzeme: 'Malzeme (COGS)', maas: 'Personel', kira: 'Kira', elektrik: 'Elektrik', su: 'Su', internet: 'İnternet', vergi: 'Vergi', bakim: 'Bakım/ekipman', sigorta: 'Sigorta', reklam: 'Reklam', fire: 'Fire', stok: 'Stok bekletme', prim: 'Prim', egitim: 'Eğitim', isealim: 'İşe alım', sadakat: 'Sadakat kartı' };
+const GIDER: Record<string, string> = { malzeme: 'Malzeme (COGS)', maas: 'Personel', kira: 'Kira', elektrik: 'Elektrik', su: 'Su', internet: 'İnternet', vergi: 'Vergi', bakim: 'Bakım/ekipman', sigorta: 'Sigorta', reklam: 'Reklam', fire: 'Fire', stok: 'Stok bekletme', prim: 'Prim', egitim: 'Eğitim', isealim: 'İşe alım', sadakat: 'Sadakat kartı', komisyon: 'Platform komisyonu' };
 const sumK = (a: DayReport[], key: 'gelir' | 'gider'): Record<string, number> => { const o: Record<string, number> = {}; for (const r of a) for (const k of Object.keys(r[key])) o[k] = (o[k] ?? 0) + (r[key] as unknown as Record<string, number>)[k]!; return o; };
 const tr = (n: number, d = 0): string => n.toFixed(d).replace('.', ',');
 const cnt = (v: number, anim: boolean, cls = ''): string => `<b class="cnt ${cls}" data-v="${Math.round(v)}">${anim ? '0 ₺' : fmt(v)}</b>`;
