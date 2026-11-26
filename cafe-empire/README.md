@@ -15,12 +15,14 @@ Kural: **iç mekân yoktur** — kamera daima dükkânı dışarıdan gösterir.
 | Dış cephe geliştirmeleri görünüme yansır (tabela, cam, LED, premium, marka, kapı, oturma, peyzaj, vitrin, tente) | ✅ |
 | Gerçek zamanlı müşteri animasyonu (yürür, tabelaya bakar, kapıdan girer/çıkar, dış masada oturur, içer, telefon, sohbet, fotoğraf) — 8 müşteri tipi, çeşitli görünüm | ✅ |
 | Gece/gündüz, yağmur, kar, trafik, rüzgârda ağaç/tente, kamera (açılar, yakınlaştırma) | ✅ |
-| Personel (7 tür, işe alma/çıkarma, zam, motivasyon, performans), dışarıda görünen servis/temizlik | ✅ (bölge müdürü etkisi basit) |
-| Menü (19 ürün, fiyat/kalite, ekle/çıkar), stok (11 hammadde), tedarik ve otomatik sipariş | ✅ |
-| Finans (gelir/gider kalemleri, günlük-haftalık-aylık, grafik, kredi, vergi) | ✅ |
-| Reklam (8 tür, riskli), yorumlar, memnuniyet/marka/hijyen/sadakat | ✅ |
-| Ekonomik olaylar (11 tür, kararlı) ve rakipler (fiyat, reklam, şube, ürün, çalışan) | ✅ (rakipler basit modelli) |
-| Kayıt/yükleme | ✅ |
+| 15 menülü yönetim paneli (Genel Bakış, Personel, Vardiyalar, Menü ve Ürünler, Stok, Tedarikçiler, Finans, Müşteriler, Reklam, İşletme Geliştirme, Rakipler, Türkiye Haritası, Şubeler, Raporlar, Ayarlar) | ✅ tüm düğmeler gerçek simülasyona bağlı |
+| Personel: yetenek/motivasyon/yorgunluk/devam, ilan-aday-pazarlıklı işe alım, zam/prim/eğitim/terfi/değerlendirme, şikâyet kararları, şubeler arası nakil | ✅ (testli) |
+| Vardiyalar: sabah/öğle/akşam/tam, haftalık izin, mesai, çalışma saatleri, boşluk haritası; kapsama müşteri kaybını ve kapasiteyi gerçekten etkiler | ✅ (testli) |
+| Menü (21 ürün), fiyat esnekliği, kalite, ürün bazlı satış; stok (14 kalem, raf ömrü/fire, min seviye, otomatik+manuel sipariş), 3 tedarikçi (fiyat/gecikme/eksik teslimat/kalite), şubeler arası stok transferi | ✅ (testli) |
+| Finans: brüt/net kâr, nakit akışı, gider kalemleri, şube bazlı, kredi; tahakkuk-nakit tutarlılığı testle doğrulanır | ✅ |
+| Müşteri metrikleri (sepet, bekleme, tekrar, sadakat, kayıp nedenleri), reklam (10 tür incl. ikinci/paket), işletme geliştirme (8 ekipman/operasyon yatırımı: kapasite, kalite, raf ömrü, enerji, marka) | ✅ |
+| Rakipler: strateji, kampanya, tahmini pazar payı | ⚠️ pazar payı tahmini bir modeldir; rakipler tek tek şehre bağlı |
+| Eski kayıtlar yeni sürümde açılır (alan göçü) | ✅ (testli) |
 | **Franchise sistemi** | ❌ henüz yok |
 | Birden fazla şehirde şube aç ve haritadan yönet | ✅ (şube ağı), ✅ harita pinleri |
 | Uluslararası seviye, ek dükkân görsel stilleri (AVM/sahil/lüks/konsept farkları) | ⚠️ kısmi: tüm tipler aynı model ailesinden |
