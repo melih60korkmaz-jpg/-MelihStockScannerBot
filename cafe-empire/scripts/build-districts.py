@@ -47,6 +47,28 @@ from shapely.strtree import STRtree
 tree = STRtree(allg); nb = []
 for i, g in enumerate(allg):
     hits = [int(j) for j in tree.query(g.buffer(0.004)) if j != i and allg[int(j)].intersects(g.buffer(0.004))]; nb.append(sorted(hits))
+# deniz/boğaz ayırdığı ilçeleri (Boğaz, adalar) il içinde bağla: kopuk bileşenleri en yakın çiftle birleştir
+byp = {}
+for i, o in enumerate(out): byp.setdefault(o['p'], []).append(i)
+for pid, idx in byp.items():
+    while True:
+        seen, comps = set(), []
+        for s0 in idx:
+            if s0 in seen: continue
+            comp, st = set(), [s0]
+            while st:
+                x = st.pop()
+                if x in comp: continue
+                comp.add(x); st += [y for y in nb[x] if y in byp[pid] and y not in comp]
+            seen |= comp; comps.append(comp)
+        if len(comps) <= 1: break
+        best = None
+        for ci in range(1, len(comps)):
+            for a_ in comps[0]:
+                for b_ in comps[ci]:
+                    d_ = allg[a_].distance(allg[b_])
+                    if best is None or d_ < best[0]: best = (d_, a_, b_)
+        _, a_, b_ = best; nb[a_] = sorted(set(nb[a_]) | {b_}); nb[b_] = sorted(set(nb[b_]) | {a_})
 for i, o in enumerate(out): o['n'] = nb[i]
 keys = [f"{o['p']}:{o['a']}" for o in out]; assert len(set(keys)) == len(keys), 'tekrar eden ilçe adı'
 json.dump({'komsu': {str(k): v for k, v in kom.items()}, 'ilce': out}, open('src/data/districts.json', 'w'), ensure_ascii=False, separators=(',', ':'))

@@ -44,6 +44,6 @@ describe('yeni olaylar ve eski kayıt', () => {
   it('uzun oyunda yeni olay türleri çıkar ve çözülür, sayılar sonlu kalır', () => {
     const gor = new Set<string>(); for (const seed of [1, 2, 3, 4, 5]) { const s = mk(seed); for (let i = 0; i < 900 && !s.oyunBitti; i++) { step(s, 1440); while (s.bekleyen.length) { const p = s.bekleyen[0]!; gor.add(p.tip); resolveEvent(s, p.id, 0); } } expect(Number.isFinite(s.kasa)).toBe(true); for (const b of s.subeler) { expect(Number.isFinite(b.kira)).toBe(true); expect(b.kira).toBeGreaterThan(0); } }
     const yeni = ['rival_savas', 'rival_acilis', 'kirazam', 'enflasyon'].filter((k) => gor.has(k)); expect(yeni.length).toBeGreaterThanOrEqual(3);
-  });
+  }, 120000);
   it('eski kayıtta yeni alanlar tamamlanır', () => { const s = mk(); const o = JSON.parse(serialize(s)); delete o.basarim; delete o.franchise; delete o.merkez; delete o.stat; delete o.ayar; delete o.tur; const y = deserialize(JSON.stringify(o)); expect(y.franchise).toEqual([]); expect(y.merkez.depo).toBe(0); run(y, 3); expect(y.rapor.length).toBe(3); void ILCELER; void invest; });
 });

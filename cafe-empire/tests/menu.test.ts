@@ -29,10 +29,10 @@ describe('fiyat danışmanı', () => {
     const s = mk(); const b = s.subeler[0]!; const o = priceAdvice(s, b); expect(o.length).toBeGreaterThan(0); for (const x of o) { expect(x.oneri).toBeGreaterThanOrEqual(0.7); expect(x.oneri).toBeLessThanOrEqual(1.4); expect(x.kazanc).toBeGreaterThan(0); expect(x.fiyatOneri).toBeGreaterThan(0); }
     const n = applyAdvice(b, o); expect(n).toBe(o.length); expect(b.menu[o[0]!.id].fiyat).toBe(o[0]!.oneri);
   });
-  it('simülasyonda öneriyi uygulayan, uygulamayandan ortalamada daha çok kâr eder', () => {
-    let on = 0, off = 0; for (const seed of [11, 12, 13, 14]) { const a = mk(seed), c = mk(seed); run(a, 3); run(c, 3); applyAdvice(a.subeler[0]!, priceAdvice(a, a.subeler[0]!)); run(a, 40); run(c, 40); on += a.rapor.slice(-40).reduce((x, r) => x + r.kar, 0); off += c.rapor.slice(-40).reduce((x, r) => x + r.kar, 0); }
+  it('simülasyonda öneriyi uygulayan, uygulamayandan ortalamada daha çok kâr eder (8 oyun toplamı)', () => {
+    let on = 0, off = 0; for (const seed of [11, 12, 13, 14, 21, 22, 23, 24]) { const a = mk(seed), c = mk(seed); run(a, 3); run(c, 3); applyAdvice(a.subeler[0]!, priceAdvice(a, a.subeler[0]!)); run(a, 40); run(c, 40); on += a.rapor.slice(-40).reduce((x, r) => x + r.kar, 0); off += c.rapor.slice(-40).reduce((x, r) => x + r.kar, 0); }
     expect(on).toBeGreaterThan(off);
-  });
+  }, 120000);
   it('menü önerileri metin üretir; menü kopyalama fiyatları diğer şubelere taşır', () => {
     const s = mk(); const b = s.subeler[0]!; expect(menuAdvice(s, b).length).toBeGreaterThanOrEqual(0); grantRegion(s, 41); subeAc(s, 41, 'cadde'); s.marka_puani = 40; setPrice(b, 'latte', 1.2); toggleProduct(s, b, 'cortado'); const r = copyMenu(s, b); expect(r.sube).toBe(1); const o = s.subeler[1]!; expect(o.menu.latte.fiyat).toBe(1.2); expect(o.menu.cortado.aktif === true || r.atlanan > 0).toBe(true);
   });

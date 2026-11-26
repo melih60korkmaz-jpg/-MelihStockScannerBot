@@ -36,3 +36,9 @@ describe('bölge açma', () => {
   });
   it('ilçe verisi tutarlı: ilceOf anahtar çözümü', () => { expect(ilceOf('34:Kadıköy')!.ad).toBe('Kadıköy'); expect(ilceOf('99:yok')).toBeUndefined(); });
 });
+describe('ilçe komşuluk bağlantısı', () => {
+  it('her ilin ilçeleri tek parça: boğaz/ada ilçeleri de ulaşılabilir (İstanbul dahil)', () => {
+    for (let il = 1; il <= 81; il++) { const L = ilcelerOf(il); if (!L.length) continue; const ids = new Set(L.map((d) => d.id)), seen = new Set<number>(), st = [L[0]!.id]; while (st.length) { const x = st.pop()!; if (seen.has(x)) continue; seen.add(x); for (const y of ILCELER[x]!.komsu) if (ids.has(y)) st.push(y); } expect(seen.size).toBe(L.length); }
+    expect(ILCELER.every((d) => d.komsu.length > 0)).toBe(true);
+  });
+});

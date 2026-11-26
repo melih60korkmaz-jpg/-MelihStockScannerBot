@@ -25,8 +25,10 @@ Kural: **iç mekân yoktur** — kamera daima dükkânı dışarıdan gösterir.
 | Türkiye haritasında il ve ilçeleri parayla açma: yalnız İstanbul'dan başlanır; gerçek ilçe sınırları (973 ilçe), seviye + sınırdaş şartı, ilçe profili (talep/gelir/kira), pazarın zamanla olgunlaşması, zoom ve açılış animasyonları | ✅ (testli). İlçe profilleri tahmindir: yalnız İstanbul'un 39 ilçesi elle girildi, diğer illerde ilçe ağırlıkları türetilir |
 | 28 ürün (7 yeni kahve çeşidi: flat white, macchiato, cortado, iced latte, V60, dibek, sahlep); ₺ bazlı fiyat ayarı; tüm fiyatları birlikte artırınca müşteri sayısı da azalır; fiyat danışmanı (beklenen kâra göre öneri), menü önerileri, menüyü tüm şubelere kopyalama | ✅ (testli; öneriler beklenen değerdir) |
 | Ekonomi Merkezi: animasyonlu sayaçlar, para akışı çubuğu, gelir/gider halka grafikleri, günlük gelir-gider-net grafiği, birim ekonomisi (başabaş, nakit yeterlilik), şube sıralaması, fiyat–kâr eğrisi (dokunarak fiyat ayarı); kampanyalar (sabah paketi, mutlu saat, öğrenci indirimi, sadakat kartı, günün ürünü), müdür fiyat yetkisi, toplu fiyat | ✅ (testli) |
+| Merkezi depo ve mutfak (toplu alım indirimi, nakliye, raf ömrü), hedefler (görevler) ve 30 başarım, 4 yeni ekonomik olay (rakip fiyat savaşı, rakip şube açılışı, kira zammı, enflasyon sıçraması) | ✅ (testli) |
+| Geniş harita, günlük özet kartı, 8 adımlı eğitim turu (?), sentezlenmiş ses/müzik (açma/kapama, ses düzeyi) | ✅ ses cihazda kulakla denenmedi (kod ve tarayıcı hatası testi yapıldı) |
 | Eski kayıtlar yeni sürümde açılır (alan göçü) | ✅ (testli) |
-| **Franchise sistemi** | ❌ henüz yok |
+| Franchise: giriş ücreti, royalty+pazarlama payı, bayi kalitesi/memnuniyeti, destek ve denetim, bayi ayrılması ve marka zararı | ✅ (testli; seviye 5 şartı; bayi cirosu modelle tahmin edilir) |
 | Birden fazla şehirde şube aç ve haritadan yönet | ✅ (şube ağı), ✅ harita pinleri |
 | Uluslararası seviye, ek dükkân görsel stilleri (AVM/sahil/lüks/konsept farkları) | ⚠️ kısmi: tüm tipler aynı model ailesinden |
 | Ses/müzik, mağaza kaydı, ikon, iOS build | ❌ henüz yok |

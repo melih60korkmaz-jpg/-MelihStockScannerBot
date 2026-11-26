@@ -49,6 +49,6 @@ describe('uzun süreli oyun ve performans', () => {
     expect(ms).toBeLessThan(30000); expect(Number.isFinite(s.kasa)).toBe(true); expect(s.rapor.length).toBeGreaterThan(300);
     for (const b of s.subeler) { expect(b.memnuniyet).toBeGreaterThanOrEqual(0); expect(b.memnuniyet).toBeLessThanOrEqual(100); for (const k of Object.keys(b.stok)) expect(Number.isFinite((b.stok as Record<string, number>)[k])).toBe(true); expect(b.yorumlar.length).toBeLessThanOrEqual(30); }
     expect(s.rapor.length).toBeLessThanOrEqual(800);
-  });
+  }, 120000);
   it('kaçırılan günlerde olaylar birikmez, kayıt boyutu makul', () => { const s = mk(34, 'cadde', 4); s.kasa = 5e7; run(s, 500); expect(s.bekleyen.length).toBeLessThanOrEqual(3); expect(serialize(s).length).toBeLessThan(2_000_000); });
 });

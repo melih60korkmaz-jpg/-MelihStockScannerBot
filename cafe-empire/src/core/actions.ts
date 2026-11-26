@@ -1,4 +1,5 @@
 import { buyInvest } from './invest';
+import { gorevleriGuncelle } from './goals';
 import { estimateUsage, autoOrder } from './supply';
 import { emptyBolge, grantRegion, ilAcik, ilceAcik, ilceWeight } from './region';
 import { ilceKey, ilceOf, ilcelerOf, profilOf } from '../data/regions';
@@ -18,9 +19,9 @@ const emptyFacade = (): Facade => ({ tabela: 0, cam: 0, led: 0, premium: 0, mark
 export function newGame(o: { kasa?: number; ad: string; renk?: string; renk2?: string; logo?: number; seed?: number; sehir: number; tip: ShopTypeId; ilce?: string }): { s: GameState; r: Result } {
   const seed = o.seed ?? 20270301;
   const s: GameState = { v: 1, seed, rng: seedStreams(seed), marka: { ad: o.ad.trim().slice(0, 24) || 'Kafe', renk: o.renk ?? '#c4722a', renk2: o.renk2 ?? '#2d1f14', logo: o.logo ?? 0 }, dk: 7 * 60, hiz: 1, kasa: o.kasa ?? 1200000, borc: 0, marka_puani: 5, seviye: 1, subeler: [], rakipler: {}, market: { enf: 38, fiyat: 1, bean: 1, elektrik: 1, mod: {} }, hava: {}, rapor: [], bekleyen: [], sn: 1, en: 1, log: [], hedef: {}, oyunBitti: false, negatifGun: 0, ayKar: 0, ayGelir: 0, capexBugun: 0, bolge: emptyBolge(), basarim: {}, gorevler: [], stat: { musteri: 0, netKar: 0, karGun: 0, enIyiGun: 0, fiyatDeg: 0 }, franchise: [], merkez: { depo: 0, mutfak: 0 }, tur: 0, ayar: { ozet: 'her', ses: true, muzik: true, ses_vol: 0.6 } };
-  const ik = grantRegion(s, o.sehir, o.ilce); const r = subeAc(s, o.sehir, o.tip, o.ad, ik); if (!r.ok) return { s, r }; return { s, r: ok('Kafen açıldı!') };
+  const ik = grantRegion(s, o.sehir, o.ilce); const r = subeAc(s, o.sehir, o.tip, o.ad, ik); if (!r.ok) return { s, r }; gorevleriGuncelle(s); return { s, r: ok('Kafen açıldı!') };
 }
-export const rentOf = (s: GameState, c: City, tip: ShopTypeId): number => Math.round(SHOP[tip].kira * c.kira * 0.75 * inflationIdx(s) / 500) * 500;
+export const rentOf = (s: GameState, c: City, tip: ShopTypeId): number => Math.round(SHOP[tip].kira * Math.pow(c.kira, 0.8) * 0.75 * inflationIdx(s) / 500) * 500;
 export const setupCost = (s: GameState, c: City, tip: ShopTypeId): number => Math.round((SHOP[tip].kurulum * (0.9 + 0.2 * c.maliyet) + 3 * rentOf(s, c, tip)) / 1000) * 1000;
 
 export function subeAc(s: GameState, cityId: number, tip: ShopTypeId, ad?: string, ilceK?: string): Result {
