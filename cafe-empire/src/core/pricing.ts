@@ -62,8 +62,8 @@ export function profitCurve(s: GameState, b: Branch, id: ProductId): { m: number
   for (let m = 0.7; m <= 1.4001; m += 0.05) { const mm = Math.round(m * 100) / 100; out.push({ m: mm, fiyat: Math.round(refPrice(s, p0, c) * (0.92 + 0.08 * profilBranch(b).gelir) * mm), kar: set(mm) }); } return out;
 }
 /** Şube müdürü fiyat yetkisi: haftada bir önerileri (en çok ±%8) uygular. */
-hooks.gunSonu = (s: GameState): void => {
+hooks.gunSonu.push((s: GameState): void => {
   if (dayOf(s) % 7 !== 0) return;
   for (const b of s.subeler) { if (!b.promo?.yetkiFiyat) continue; const m = b.staff.find((e) => e.tip === 'sube_muduru'); if (!m) continue; let n = 0; for (const o of priceAdvice(s, b)) { b.menu[o.id].fiyat = Math.round(clamp(o.oneri, o.simdi - 0.08, o.simdi + 0.08) * 100) / 100; n++; } if (n) s.log.unshift(`${m.ad} (${b.ad}) ${n} ürünün fiyatını güncelledi.`); }
   s.log = s.log.slice(0, 40);
-};
+});

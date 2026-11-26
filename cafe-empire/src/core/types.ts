@@ -35,6 +35,10 @@ export interface DayAcc {
 }
 export interface DayReport { gun: number; gelir: Money; gider: Costs; toplamGelir: number; toplamGider: number; kar: number; musteri: number; kayip: number; memnuniyet: number; cogs: number; brut: number; alim: number; capex: number; nakit: number }
 export interface Promo { sabah?: boolean; ogrenci?: boolean; mutlu?: boolean; kart?: boolean; yetkiFiyat?: boolean; gunun?: string | null; gununGun?: number }
+export interface Gorev { id: string; ad: string; ac: string; olc: string; hedef: number; bas: number; bit: number; odul: number; taban: number; tamam: boolean; basari?: number }
+export interface Stat { musteri: number; netKar: number; karGun: number; enIyiGun: number; fiyatDeg: number; seri?: number }
+export interface Franchise { id: number; ad: string; il: number; ilce: string; tip: string; acilis: number; kalite: number; memnuniyet: number; destek: number; ciro: number; royalty: number; toplam: number; dusukGun: number; denetim: number }
+export interface Ayar { ozet: 'her' | 'hafta' | 'kapali'; ses: boolean; muzik: boolean; ses_vol: number }
 export interface Lot { q: number; son: number; kal: number }
 export interface Musteri { ortSiparis: number; ortBekleme: number; hizmet: number; urunKal: number; fiyatMemn: number; tekrar: number; sadik: number; sikayet: number }
 
@@ -52,6 +56,8 @@ export interface Mod { v: number; bit: number }
 export interface Market { enf: number; fiyat: number; bean: number; elektrik: number; mod: Record<string, Mod> }
 
 export interface GameState {
+  frBugun?: number;
+  basarim: Record<string, number>; gorevler: Gorev[]; stat: Stat; franchise: Franchise[]; merkez: { depo: number; mutfak: number }; tur: number; ayar: Ayar;
   bolge: { il: Record<string, number>; ilce: Record<string, number> };   // açık il / ilçe → açıldığı gün
   v: number; seed: number; rng: RngState;
   marka: { ad: string; renk: string; renk2: string; logo: number };
