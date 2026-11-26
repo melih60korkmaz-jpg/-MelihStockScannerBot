@@ -34,3 +34,30 @@ button{font:inherit;color:inherit;border:0;background:var(--p2);cursor:pointer}i
 .tutbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.tutdots{display:flex;gap:4px;flex:0 0 100%;margin-bottom:4px}.tutdots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2)}.tutdots i.done{background:rgba(224,152,60,.5)}.tutdots i.on{background:var(--am);width:16px;border-radius:4px}.tutbar .sp{flex:1}.tutbar .btn{width:auto;min-height:38px;padding:6px 12px;font-size:14px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 .mp .cx{white-space:nowrap}.mp .tiny{display:flex;gap:6px;flex-wrap:wrap}
+/* v2 animasyonlar */
+.fincan{display:inline-block;animation:fin 2.4s ease-in-out infinite}@keyframes fin{50%{transform:translateY(-6px) rotate(-4deg)}}
+.scroll>.card,.scroll>.sahne{animation:ci .38s both}.scroll>*:nth-child(2){animation-delay:.04s}.scroll>*:nth-child(3){animation-delay:.08s}.scroll>*:nth-child(4){animation-delay:.12s}.scroll>*:nth-child(5){animation-delay:.16s}.scroll>*:nth-child(n+6){animation-delay:.2s}@keyframes ci{from{opacity:0;transform:translateY(10px)}}
+.btn:active,.cx:active,.tab:active{transform:scale(.97)}.btn,.cx,.tab{transition:transform .08s}
+.pill{display:inline-block;padding:3px 10px;border-radius:12px;background:rgba(224,152,60,.18);color:var(--am2);font-size:12px;font-weight:700}
+.ozel{border-color:var(--am);background:linear-gradient(135deg,rgba(224,152,60,.16),var(--p))}.yorum{padding:6px 0;border-top:1px solid var(--line)}.yorum:first-of-type{border-top:0}
+.dalga{animation:dlg 3s linear infinite}@keyframes dlg{to{transform:translateX(-32px)}}
+.ucak{animation:uck 9s linear infinite;transform:translate(214px,34px)}@keyframes uck{from{transform:translate(206px,34px)}to{transform:translate(322px,22px)}}
+.gunes{animation:gn 4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes gn{50%{transform:scale(1.12)}}
+.kar{animation:kr 3.4s linear infinite}@keyframes kr{from{transform:translateY(0)}to{transform:translateY(66px)}}
+.yagmur{animation:ym .9s linear infinite}@keyframes ym{from{transform:translateY(0);opacity:1}to{transform:translateY(60px);opacity:.2}}
+.lamba{animation:lm 3s ease-in-out infinite}@keyframes lm{50%{opacity:.55}}
+.kuyruk{transform-box:fill-box;transform-origin:left bottom;animation:ky 1.6s ease-in-out infinite}@keyframes ky{50%{transform:rotate(14deg)}}
+.zz{animation:zzz 2.4s ease-in-out infinite}@keyframes zzz{0%{opacity:0;transform:translate(0,4px)}50%{opacity:1}100%{opacity:0;transform:translate(6px,-10px)}}
+.coin{animation:cn 2.7s ease-out infinite;transform-box:fill-box}@keyframes cn{0%{opacity:0;transform:translateY(8px)}20%{opacity:1}100%{opacity:0;transform:translateY(-20px)}}
+.balon{animation:bl 4s ease-in-out infinite;transform-box:fill-box}@keyframes bl{0%,100%{opacity:0;transform:translateY(6px)}20%,70%{opacity:1;transform:none}}
+.kol{transform-box:fill-box;transform-origin:top center;animation:kl 1.2s ease-in-out infinite}@keyframes kl{50%{transform:rotate(-26deg)}}
+.garson{animation:gr 9s ease-in-out infinite}@keyframes gr{0%{transform:translate(186px,178px)}50%{transform:translate(300px,184px)}100%{transform:translate(186px,178px)}}
+.yildiz{animation:yl 2.2s ease-in-out infinite}@keyframes yl{50%{opacity:.35;transform:scale(1.2)}}
+.nabiz{animation:nb 1.8s ease-in-out infinite}@keyframes nb{50%{stroke-width:4;opacity:.7}}
+.col{transform-box:fill-box;transform-origin:bottom;animation:cl .5s both}@keyframes cl{from{transform:scaleY(0)}}
+.olayik{display:inline-block;animation:oik .6s cubic-bezier(.2,.9,.3,1.3)}@keyframes oik{from{transform:scale(.4) rotate(-20deg);opacity:0}}
+.sahne.hizli .yur{animation-duration:2.4s!important}.sahne.hizli .zp{animation-duration:.5s}
+.zaman{position:fixed;inset:0;z-index:70;background:rgba(10,7,5,.92);display:flex;align-items:center;justify-content:center;padding:18px;animation:turin .25s}@keyframes turin{from{opacity:0}}
+.zk{width:100%;max-width:440px}.zay{font-family:var(--fd);font-size:34px;font-weight:800;text-align:center;margin-bottom:10px;animation:zay 2.3s linear}@keyframes zay{0%{opacity:0;transform:rotateX(90deg)}15%{opacity:1;transform:none}}
+.zst{display:flex;gap:10px;margin:12px 0}.zst>div{flex:1;background:var(--p);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}.zst span{display:block;color:var(--mu);font-size:12px}.zst b{font-size:22px;font-family:var(--fd)}
+.zpr{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden;margin-bottom:8px}.zpr i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c97b24,#f3b45a)}@keyframes zpr{to{width:100%}}
