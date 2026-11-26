@@ -160,4 +160,11 @@ function act(a: string, d: DOMStringMap): void {
   });
   if (a === 'bsel') { hud(); panel(true); }
 }
-export function boot(): void { title(); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, get view() { return view; } }; }
+/** Dikey tutulunca oyunu duraklat, yatay olunca eski hıza dön; destekleyen tarayıcılarda yatay kilidi dene. */
+let hizEski = 1, dikeyde = false;
+function yonKontrol(): void {
+  const dikey = innerHeight > innerWidth && innerWidth <= 900; if (dikey === dikeyde || !S) { dikeyde = dikey; return; } dikeyde = dikey;
+  if (dikey) { hizEski = S.hiz || 1; S.hiz = 0; } else { S.hiz = hizEski; spdBar(); layout(); }
+}
+function yatayKilit(): void { try { void (screen.orientation as unknown as { lock?: (o: string) => Promise<void> }).lock?.('landscape')?.catch(() => 0); } catch { /* desteklenmiyor */ } }
+export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); title(); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, get view() { return view; } }; }

@@ -76,3 +76,10 @@ button{font:inherit;color:inherit;border:0;background:var(--p2);cursor:pointer}i
 @media (max-aspect-ratio:1/1){.tourbox{left:50%;transform:translateX(-50%);width:92vw;bottom:calc(76px + env(safe-area-inset-bottom))}}
 /* dar ekran: üst çubuk sığsın */
 @media (max-width:620px){.top{gap:6px;overflow-x:auto;scrollbar-width:none}.top::-webkit-scrollbar{display:none}.top>*{flex:0 0 auto}.top b.brand,#tSev,#tHava,#tMarka{display:none}.top .chip:has(#tMarka),.top .chip:has(#tSev){display:none}.top .sp{display:none}.spd button{min-width:30px;height:30px}.chip{padding:3px 8px;font-size:12px}#tHelp{min-height:30px;padding:2px 9px}.top{padding-right:6px}}
+
+/* yatay zorunlu: dikeyde döndürme uyarısı */
+#rotate{display:none;position:fixed;inset:0;z-index:9999;background:radial-gradient(120% 90% at 50% 0%,#2a1d12,#120d09);color:#f6ecdf;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;font-family:-apple-system,'SF Pro Text',Helvetica,Arial,sans-serif}
+#rotate b{font-size:22px}#rotate span{color:#ab9b88;font-size:14px;max-width:280px}
+#rotate .ph{width:54px;height:92px;border:3px solid #e0983c;border-radius:12px;position:relative;animation:rotPhone 2.4s ease-in-out infinite}#rotate .ph i{position:absolute;left:50%;bottom:6px;width:16px;height:3px;margin-left:-8px;background:#e0983c;border-radius:2px}
+@keyframes rotPhone{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+@media (orientation:portrait) and (max-width:900px){#rotate{display:flex}}
