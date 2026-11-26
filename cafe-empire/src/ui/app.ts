@@ -67,8 +67,8 @@ function enter(): void {
   document.addEventListener('visibilitychange', () => { if (document.hidden && S) { save(S); } });
 }
 function layout(): void {
-  const el = document.getElementById('v3d'); if (!el || !view) return; const land = innerWidth >= innerHeight, navW = 62 + 0, wide = PANEL_OPEN && TAB === 'harita' && ctx.mapWide, pw = PANEL_OPEN ? (wide ? innerWidth - 62 - 40 : Math.min(innerWidth * 0.48, 440)) : 0;
-  if (land) { el.style.left = navW + 'px'; el.style.right = pw + 'px'; el.style.top = '0'; el.style.bottom = '0'; } else { el.style.left = '0'; el.style.right = '0'; el.style.top = '0'; el.style.bottom = (PANEL_OPEN ? '58%' : '58px'); }
+  const el = document.getElementById('v3d'); if (!el || !view) return; const land = innerWidth >= innerHeight, navH = 52, wide = PANEL_OPEN && TAB === 'harita' && ctx.mapWide, pw = PANEL_OPEN ? (wide ? innerWidth - 20 : Math.min(innerWidth * 0.48, 440)) : 0;
+  if (land) { el.style.left = '0'; el.style.right = pw + 'px'; el.style.top = '0'; el.style.bottom = `calc(${navH}px + env(safe-area-inset-bottom))`; } else { el.style.left = '0'; el.style.right = '0'; el.style.top = '0'; el.style.bottom = (PANEL_OPEN ? '58%' : '58px'); }
   view.resize(); const p = document.getElementById('panel'); if (p) p.style.width = land ? (pw ? pw + 'px' : '') : '';
 }
 const sonSekme: Record<string, string> = {};
@@ -83,11 +83,11 @@ function nav(): void {
   $('#nav').querySelectorAll<HTMLElement>('[data-g]').forEach((b) => { b.onclick = () => { const g = GRUPLAR.find((x) => x.id === b.dataset.g)!; if (gt === g.id && PANEL_OPEN && g.id !== 'ana') { PANEL_OPEN = false; nav(); panel(false); return; } sekmeAc(sonSekme[g.id] ?? g.tabs[0]!); }; });
   queueMicrotask(ipucu);
 }
-function camBar(): void { const P: Array<[CamPreset, string]> = [['cephe', 'Cephe'], ['sol', 'Sol açı'], ['sag', 'Sağ açı'], ['sokak', 'Sokak'], ['sehir', 'Şehir']]; $('#cam').innerHTML = P.map(([k, n]) => `<button data-c="${k}">${n}</button>`).join('') + '<button data-z="1">＋</button><button data-z="-1">－</button>'; $('#cam').querySelectorAll<HTMLElement>('button').forEach((b) => { b.onclick = () => { if (b.dataset.c) view?.setPreset(b.dataset.c as CamPreset); else view?.zoom(+b.dataset.z! > 0 ? 0.8 : 1.25); }; }); }
+function camBar(): void { const P: Array<[CamPreset, string]> = [['cephe', 'Cephe'], ['sol', 'Sol'], ['sag', 'Sağ'], ['sokak', 'Sokak'], ['sehir', 'Şehir']]; $('#cam').innerHTML = '<button id="camT">📷</button><div class="cl">' + P.map(([k, n]) => `<button data-c="${k}">${n}</button>`).join('') + '<button data-z="1">＋</button><button data-z="-1">－</button></div>'; $('#camT').onclick = () => $('#cam').classList.toggle('open'); $('#cam').querySelectorAll<HTMLElement>('.cl button').forEach((b) => { b.onclick = () => { if (b.dataset.c) view?.setPreset(b.dataset.c as CamPreset); else view?.zoom(+b.dataset.z! > 0 ? 0.8 : 1.25); }; }); }
 function spdBar(): void { const V: Array<[number, string]> = [[0, '⏸'], [1, '▶'], [2, '⏩'], [4, '⏭']]; $('#spd').innerHTML = V.map(([v, t]) => `<button data-s="${v}" class="${S!.hiz === v ? 'on' : ''}">${t}</button>`).join(''); $('#spd').querySelectorAll<HTMLElement>('button').forEach((b) => { b.onclick = () => { S!.hiz = +b.dataset.s!; spdBar(); }; }); }
 function hud(): void {
   if (!S) return; const b = cur(), c = cityById(b.city), t = S.rapor[S.rapor.length - 1];
-  $('#tBrand').textContent = S.marka.ad; $('#tDate').textContent = `${dateText(S)} · ${timeText(S)}`; $('#tKasa').textContent = fmt(S.kasa); $('#tMarka').textContent = String(Math.round(S.marka_puani)); $('#tSev').textContent = `${levelOf(S)} · ${LEVELS[levelOf(S) - 1]?.ad ?? ''}`;
+  $('#tBrand').textContent = S.marka.ad; $('#tDate').textContent = `${dateText(S)} · ${timeText(S)}`; $('#tKasa').textContent = fmt(S.kasa); $('#tMarka').textContent = String(Math.round(S.marka_puani)); $('#tSev').textContent = `Sv ${levelOf(S)}`; $('#tSev').parentElement!.title = LEVELS[levelOf(S) - 1]?.ad ?? '';
   const hv = S.hava[b.city] ?? 'gunesli'; $('#tHava').textContent = `${{ gunesli: '☀️', bulutlu: '⛅', yagmur: '🌧️', kar: '❄️' }[hv]} ${c.ad}`;
   $('#hud').innerHTML = `<span class="chip">Memnuniyet <b>${Math.round(b.memnuniyet)}</b></span><span class="chip">Bugün <b>${b.bugun.musteri}</b> müşteri</span><span class="chip">Bugün <b>${fmt(Object.values(b.bugun.gelir).reduce((a, x) => a + x, 0))}</b></span><span class="chip">Kayıp <b>${b.bugun.kayip}</b></span>`;
   $('#bsel').innerHTML = S.subeler.length > 1 ? S.subeler.map((x) => `<button data-b="${x.id}" class="${x.id === ctx.bid ? 'on' : ''}">${esc(x.ad.length > 18 ? x.ad.slice(0, 17) + '…' : x.ad)}</button>`).join('') : ''; $('#bsel').querySelectorAll<HTMLElement>('[data-b]').forEach((e) => { e.onclick = () => { ctx.bid = +e.dataset.b!; view!.show(S!, cur()); hud(); panel(true); }; });
@@ -147,7 +147,8 @@ function panel(keep: boolean): void {
   const sc = keep ? el.querySelector<HTMLElement>('.pb')?.scrollTop ?? 0 : 0, nm = NAV.find((n) => n[0] === TAB)!;
   el.classList.remove('hid'); el.classList.toggle('wide', TAB === 'harita' && ctx.mapWide); ctx.S = S; const body = (PANELS[TAB] ?? PANELS.genel!)(); const wasAnim = ctx.anim; ctx.anim = false;
   const gr = grupOf(TAB), alt = gr.tabs.length > 1 ? `<div class="subtabs">${gr.tabs.map((id) => { const n = NAV.find((x) => x[0] === id)!; return `<button data-n="${id}" class="${id === TAB ? 'on' : ''}">${n[1]} ${n[2]}</button>`; }).join('')}</div>` : '';
-  el.innerHTML = `<div class="ph"><h2>${nm[1]} ${nm[2]}</h2><button class="btn sm" id="pclose">Kapat ✕</button></div>${alt}<div class="pb">${body}</div>`; $('#pclose').onclick = () => { PANEL_OPEN = false; nav(); panel(false); }; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); queueMicrotask(ipucu); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); layout(); if (wasAnim) animateCounters(pb);
+  const bas = alt ? `<div class="subbar"><div class="subtabs">${gr.tabs.map((id) => { const n = NAV.find((x) => x[0] === id)!; return `<button data-n="${id}" class="${id === TAB ? 'on' : ''}">${n[1]} ${n[2]}</button>`; }).join('')}</div><button class="xbtn" id="pclose" aria-label="Kapat">✕</button></div>` : `<div class="ph"><h2>${nm[1]} ${nm[2]}</h2><button class="btn sm" id="pclose">Kapat ✕</button></div>`;
+  el.innerHTML = `${bas}<div class="pb">${body}</div>`; $('#pclose').onclick = () => { PANEL_OPEN = false; nav(); panel(false); }; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); queueMicrotask(ipucu); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); layout(); if (wasAnim) animateCounters(pb);
 }
 function animateCounters(pb: HTMLElement): void {
   const els = [...pb.querySelectorAll<HTMLElement>('.cnt')]; if (!els.length) return; const t0 = performance.now(), ease = (t: number): number => 1 - Math.pow(1 - t, 3);
