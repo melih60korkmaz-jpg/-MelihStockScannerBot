@@ -121,3 +121,4 @@ button{font:inherit;color:inherit;border:0;background:var(--p2);cursor:pointer}i
 .pkh{display:flex;flex-direction:column;gap:1px;margin-bottom:6px}.pkh b{font-size:14.5px}.pkg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}.pkg b{font-size:14px}
 .spk{width:100%;height:26px;display:block;margin:2px 0 6px}.pku{display:flex;flex-wrap:wrap;gap:4px}.uy{font-size:11px;padding:2px 7px;border-radius:9px;background:rgba(232,102,95,.16);color:#f3a29d}.uy.ok{background:rgba(95,192,138,.15);color:var(--ok)}
 .top b.brand{display:none}
+.pfl{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}.bchart{width:100%;height:auto;display:block}

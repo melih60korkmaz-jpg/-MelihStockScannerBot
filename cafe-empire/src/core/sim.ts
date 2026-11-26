@@ -79,7 +79,7 @@ export function dailyDemand(s: GameState, b: Branch): number {
   const marka = 0.4 + 0.012 * (0.6 * b.marka + 0.4 * s.marka_puani) + 0.12 * (b.yorumPuan - 3.5), hava = { gunesli: 1.05, bulutlu: 1, yagmur: 0.72, kar: 0.6 }[s.hava[b.city] ?? 'bulutlu'];
   const turizm = 1 + c.turizm * (seasonTourism(c, d.ay) - 1) * 0.9, hafta = d.haftaGun >= 5 ? 1.15 : 1;
   const ogr = SHOP[b.tip].id === 'uni' ? 1 + 0.5 * c.ogrenci : 1 + 0.2 * c.ogrenci, ogrTatil = (d.ay >= 5 && d.ay <= 7) ? 1 - 0.35 * c.ogrenci : 1;
-  const rv = 1 - Math.min(0.5, rivalPressure(s, b)), mod = modValue(s, 'talep') * modValue(s, 'talep_' + b.city);
+  const rv = 1 - Math.min(0.5, rivalPressure(s, b)), mod = modValue(s, 'talep') * modValue(s, 'talep_' + b.city) * modValue(s, 'turist_' + b.city) * modValue(s, 'kampus_' + b.city);
   return st.potansiyel * 1.9 * pf.talep * olgunluk(s, b) * talepIdx * marka * hava * turizm * hafta * ogr * ogrTatil * rv * mod * facadeAppeal(b) * (1 + ae.trafik) * priceFactor(s, b, ae) * (b.hijyen < 40 ? 0.85 : 1);
 }
 

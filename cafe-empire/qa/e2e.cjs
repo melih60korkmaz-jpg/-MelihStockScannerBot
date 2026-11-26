@@ -10,7 +10,7 @@ const fails = []; const ok = (c, m) => { if (!c) fails.push(m); console.log((c ?
   console.log('Kurulum'); await p.goto(URL); await p.click('#yeni'); await p.waitForTimeout(1500);
   ok((await ev(() => document.querySelectorAll('path.ilce').length)) === 39, 'İstanbul 39 ilçe haritada'); await p.click('#basla'); await p.waitForTimeout(2200);
   console.log('Menü yapısı'); ok((await ev(() => document.querySelectorAll('.nav [data-g]').length)) === 6, 'solda 6 grup düğmesi');
-  const tabs = ['genel', 'hedefler', 'rapor', 'menu', 'stok', 'tedarik', 'reklam', 'personel', 'vardiya', 'ekonomi', 'finans', 'musteri', 'harita', 'subeler', 'gelisim', 'rakip', 'ayar'];
+  const tabs = ['genel', 'hedefler', 'rapor', 'menu', 'stok', 'tedarik', 'reklam', 'personel', 'vardiya', 'ekonomi', 'finans', 'musteri', 'harita', 'subeler', 'gelisim', 'iller', 'ayar'];
   await p.click('#tX'); await ev(() => { const S = window.__app.S; S.kasa = 8e6; S.marka_puani = 40; S.hiz = 4; }); await p.waitForTimeout(5000); await ev(() => { window.__app.S.hiz = 1; });
   for (const t of tabs) { await tab(t); const r = await ev(() => { const e = document.getElementById('panel'); return { txt: e.innerText.length, bad: (e.innerText.match(/NaN|undefined|\[object|Infinity/) || [''])[0], sub: document.querySelectorAll('.subtabs [data-n]').length, ow: document.documentElement.scrollWidth > innerWidth + 2 }; }); ok(r.txt > 100 && !r.bad && !r.ow, `sayfa ${t}: dolu, NaN yok, taşma yok${r.bad ? ' (' + r.bad + ')' : ''}`); }
   await tab('menu'); ok((await ev(() => document.querySelectorAll('.subtabs [data-n]').length)) === 4, 'Ürün grubunda 4 alt sekme');

@@ -56,6 +56,7 @@ export interface Mod { v: number; bit: number }
 export interface Market { enf: number; fiyat: number; bean: number; elektrik: number; mod: Record<string, Mod> }
 
 export interface GameState {
+  ilprog: Record<number, { kurumsal?: { gunluk: number; bit: number } }>;
   frBugun?: number;
   basarim: Record<string, number>; gorevler: Gorev[]; stat: Stat; franchise: Franchise[]; merkez: { depo: number; mutfak: number }; tur: number; ayar: Ayar;
   bolge: { il: Record<string, number>; ilce: Record<string, number> };   // açık il / ilçe → açıldığı gün

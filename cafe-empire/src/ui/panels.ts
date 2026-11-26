@@ -3,6 +3,7 @@ import { CITIES, cityById, REGION_NAME } from '../data/turkey';
 import { ADS, AD, INGREDIENTS, ING, PRODUCTS, SHOP, SHOP_TYPES, STAFF_TYPES, STAFF_TYPE, UPGRADES, LEVELS, type IngId, type ProductId, type ShopTypeId, type StaffTypeId, type AdId, type UpgradeId } from '../data/catalog';
 import { subeAc, ilanVer, iseAl, isCikar, setPrice, toggleProduct, upgrade, upgradeCost, startAd, adCost, orderIng, takeLoan, payLoan, closeBranch, fmt, setupCost, rentOf, staffLimit, invest, type Result } from '../core/actions';
 import { pEkonomi } from './eco';
+import { ilSekmeleri, SEKME_AD, SEKME_NEDEN, turistPaketi, turistMaliyet, kampusAnlasma, kampusMaliyet, kurumsalSozlesme, kurumsalIptal, kurumsalGunluk, ildeSubeler, type IlSekme } from '../core/ilprog';
 import { setAudio } from './audio';
 import { GUN_SN } from '../core/pace';
 import { BASARIMLAR, ilerleme } from '../core/goals';
@@ -10,7 +11,7 @@ import { franchiseVer, franchiseNeden, franchiseBedelleri, franchiseDestek, fran
 import { MERKEZ, merkezBedel, merkezYukselt } from '../core/merkez';
 import { setPromo, setGununUrunu } from '../core/actions';
 import { priceAdvice, applyAdvice, menuAdvice, copyMenu, subeTahmini } from '../core/pricing';
-import { dateText, dayOf, hourOf, levelOf, dailyDemand, sellPrice, unitCost, outdoorSeats, openHours, marketShare, rivalFiyat } from '../core/sim';
+import { seasonTourism, dateText, dayOf, hourOf, levelOf, dailyDemand, sellPrice, unitCost, outdoorSeats, openHours, marketShare, rivalFiyat } from '../core/sim';
 import { maaslariGuncelle, maasGeride, autoPlan, coverage, gaps, giveBonus, evaluate, promote, resolveComplaint, setLeave, setShift, setWage, toggleOvertime, train, transferStaff, TRAININGS, SHIFT_NAME, DAYS, marketWage, shiftHours } from '../core/hr';
 import { suppliersOf, supplier, orderCost, stockValue, holdingCost, nearestExpiry, minLevel, transferStock } from '../core/supply';
 import { INVESTS, investCost, yl } from '../core/invest';
@@ -20,11 +21,11 @@ import { ilceCost, ilAc, ilceAc, ilDurum, ilceDurum, ilAcik, ilceAcik, ilCost, i
 import { ILCELER, ilcelerOf, ilceKey, ilceOf, profilOf } from '../data/regions';
 import type { Branch, Employee, GameState, Vardiya } from '../core/types';
 
-export interface Ctx { frIlce: number | null; frTip: ShopTypeId; mapWide: boolean; eper: number; escope: 'all' | 'sube'; ecurve: ProductId; anim: boolean; zoomIl: number | null; selIlce: number | null; vb: VB; fx: Fx[]; S: GameState | null; bid: number; mapm: Metric; mapsel: number; ilanTip: StaffTypeId; sureGun: number; menuKat: 'kahve' | 'yiyecek'; rapor: number; fps: boolean }
-export const ctx: Ctx = { frIlce: null, frTip: 'cadde', mapWide: false, eper: 30, escope: 'all', ecurve: 'latte', anim: false, zoomIl: null, selIlce: null, vb: NAT_VB, fx: [], S: null, bid: 0, mapm: 'bolge', mapsel: 34, ilanTip: 'barista', sureGun: 30, menuKat: 'kahve', rapor: 7, fps: true };
+export interface Ctx { ilSecili: number | null; ilSekme: IlSekme; panoIl: number | null; frIlce: number | null; frTip: ShopTypeId; mapWide: boolean; eper: number; escope: 'all' | 'sube'; ecurve: ProductId; anim: boolean; zoomIl: number | null; selIlce: number | null; vb: VB; fx: Fx[]; S: GameState | null; bid: number; mapm: Metric; mapsel: number; ilanTip: StaffTypeId; sureGun: number; menuKat: 'kahve' | 'yiyecek'; rapor: number; fps: boolean }
+export const ctx: Ctx = { ilSecili: null, ilSekme: 'ozet', panoIl: null, frIlce: null, frTip: 'cadde', mapWide: false, eper: 30, escope: 'all', ecurve: 'latte', anim: false, zoomIl: null, selIlce: null, vb: NAT_VB, fx: [], S: null, bid: 0, mapm: 'bolge', mapsel: 34, ilanTip: 'barista', sureGun: 30, menuKat: 'kahve', rapor: 7, fps: true };
 export interface Helpers { zoom: (vb: VB, done?: () => void) => void; res: (r: Result) => void; toast: (m: string) => void; refresh: () => void; show: () => void; go: (tab: string) => void; exit: () => void; wipe: () => void; save: () => void }
 
-export const NAV: Array<[string, string, string]> = [['genel', '🏠', 'Genel Bakış'], ['hedefler', '🏆', 'Hedefler'], ['rapor', '📊', 'Raporlar'], ['menu', '📋', 'Menü ve Fiyat'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarik'], ['reklam', '📣', 'Reklam'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['ekonomi', '📈', 'Ekonomi'], ['finans', '💰', 'Finans'], ['musteri', '🙂', 'Müşteri'], ['harita', '🗺️', 'Harita'], ['subeler', '🏬', 'Şubeler'], ['gelisim', '🛠️', 'Dükkân Geliştirme'], ['rakip', '🥊', 'Rakipler'], ['ayar', '⚙️', 'Ayarlar']];
+export const NAV: Array<[string, string, string]> = [['genel', '🏠', 'Genel Bakış'], ['hedefler', '🏆', 'Hedefler'], ['rapor', '📊', 'Raporlar'], ['menu', '📋', 'Menü ve Fiyat'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarik'], ['reklam', '📣', 'Reklam'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['ekonomi', '📈', 'Ekonomi'], ['finans', '💰', 'Finans'], ['musteri', '🙂', 'Müşteri'], ['harita', '🗺️', 'Harita'], ['iller', '🏙️', 'İller'], ['subeler', '🏬', 'Şubeler'], ['gelisim', '🛠️', 'Dükkân Geliştirme'], ['ayar', '⚙️', 'Ayarlar']];
 /** Sol menü: 17 sayfa 6 gruba toplanır; grup içindeki sayfalar panelin üstünde sekme olur. */
 export interface Grup { id: string; ik: string; ad: string; tabs: string[] }
 export const GRUPLAR: Grup[] = [
@@ -32,11 +33,11 @@ export const GRUPLAR: Grup[] = [
   { id: 'urun', ik: '☕', ad: 'Ürün', tabs: ['menu', 'stok', 'tedarik', 'reklam'] },
   { id: 'ekip', ik: '👥', ad: 'Ekip', tabs: ['personel', 'vardiya'] },
   { id: 'para', ik: '💰', ad: 'Para', tabs: ['ekonomi', 'finans', 'musteri'] },
-  { id: 'buyume', ik: '🚀', ad: 'Büyüme', tabs: ['harita', 'subeler', 'gelisim', 'rakip'] },
+  { id: 'buyume', ik: '🚀', ad: 'Büyüme', tabs: ['harita', 'iller', 'subeler', 'gelisim'] },
   { id: 'ayar', ik: '⚙️', ad: 'Ayarlar', tabs: ['ayar'] },
 ];
 export const grupOf = (tab: string): Grup => GRUPLAR.find((g) => g.tabs.includes(tab)) ?? GRUPLAR[0]!;
-const BRANCH_TABS = new Set(['genel', 'ekonomi', 'personel', 'vardiya', 'menu', 'stok', 'tedarik', 'musteri', 'reklam', 'gelisim', 'rakip', 'subeler']);
+const BRANCH_TABS = new Set(['genel', 'ekonomi', 'iller', 'personel', 'vardiya', 'menu', 'stok', 'tedarik', 'musteri', 'reklam', 'gelisim', 'rakip', 'subeler']);
 export const isBranchTab = (t: string): boolean => BRANCH_TABS.has(t);
 
 const S = (): GameState => ctx.S!;
@@ -172,9 +173,9 @@ function pGelisim(): string {
 
 /* ===================== 11 · Rakipler ===================== */
 const STRAT = { ucuz: 'Ucuz fiyat', kalite: 'Kalite odaklı', agresif: 'Agresif kampanyacı', dengeli: 'Dengeli' } as const;
-function pRakip(): string {
-  const s = S(), b = cur(), c = cityById(b.city), rv = s.rakipler[c.id] ?? [], my = Object.values(b.menu).reduce((a, m) => a + m.fiyat, 0) / PRODUCTS.length, ms = marketShare(s, c.id);
-  return `${bchips()}<div class="card"><h3>🥊 ${esc(c.ad)} kafe pazarı</h3><div class="row small"><span>Rekabet yoğunluğu</span><b>%${Math.round(c.rekabet * 100)}</b></div>${bar(c.rekabet * 100, 'var(--bad)')}<div class="row small"><span>Senin fiyat seviyen</span><b>${tr(my, 2)}×</b></div><div class="row small"><span>Tahmini pazar payın</span><b>%${Math.round(ms.sen * 100)}</b></div>${bar(ms.sen * 100, 'var(--ok)')}<div class="tiny muted">Pay; kalite, fiyat, reklam ve şube sayısına göre tahmindir, kesin ölçüm değildir.</div></div>
+function pRakip(ilArg?: number): string {
+  const s = S(), il0 = ilArg ?? cur().city, b = s.subeler.find((x) => x.city === il0) ?? cur(), c = cityById(il0), rv = s.rakipler[c.id] ?? [], my = Object.values(b.menu).reduce((a, m) => a + m.fiyat, 0) / PRODUCTS.length, ms = marketShare(s, c.id);
+  return `${ilArg === undefined ? bchips() : ''}<div class="card"><h3>🥊 ${esc(c.ad)} kafe pazarı</h3><div class="row small"><span>Rekabet yoğunluğu</span><b>%${Math.round(c.rekabet * 100)}</b></div>${bar(c.rekabet * 100, 'var(--bad)')}<div class="row small"><span>Senin fiyat seviyen</span><b>${tr(my, 2)}×</b></div><div class="row small"><span>Tahmini pazar payın</span><b>%${Math.round(ms.sen * 100)}</b></div>${bar(ms.sen * 100, 'var(--ok)')}<div class="tiny muted">Pay; kalite, fiyat, reklam ve şube sayısına göre tahmindir, kesin ölçüm değildir.</div></div>
   ${ms.rakipler.map(({ r, pay }) => `<div class="card"><div class="row"><b>☕ ${esc(r.ad)}</b><span class="pill">${r.sube} şube</span></div><div class="row small"><span>Strateji</span><b>${STRAT[r.strateji ?? 'dengeli']}</b></div><div class="row small"><span>Fiyat seviyesi</span><b class="${rivalFiyat(s, r) < my ? 'badc' : 'good'}">${tr(rivalFiyat(s, r), 2)}×${r.kampanya && r.kampanya.bit > dayOf(s) ? ` · kampanya (${r.kampanya.bit - dayOf(s)} gün)` : ''}</b></div><div class="row small"><span>Çeşit · çalışan · kalite</span><b>${r.cesit} · ${r.calisan} · ${'★'.repeat(r.kalite)}</b></div><div class="row small"><span>Tahmini pazar payı</span><b>%${Math.round(pay * 100)}</b></div>${bar(Math.min(100, r.reklam * 80), 'var(--bl)')}<div class="tiny muted">Reklam yoğunluğu${r.son ? ' · Son hareket: ' + esc(r.son) : ''}</div></div>`).join('') || '<div class="card small muted">Bu şehirde bilinen rakip yok.</div>'}`;
 }
 
@@ -270,7 +271,37 @@ function merkezSection(): string {
   const s = S(), lv = levelOf(s);
   return `<div class="eyebrow">Merkezi depo ve mutfak (şirket geneli)</div>${MERKEZ.map((m) => { const l = s.merkez[m.id], son = l >= m.max, bedel = merkezBedel(s, m.id), neden = lv < m.seviye ? `Kafe seviyesi ${m.seviye} gerekir` : s.subeler.length + s.franchise.length < m.sube ? `En az ${m.sube} şube/bayi gerekir` : ''; return `<div class="card"><div class="row"><b>${m.ikon} ${m.ad}</b><span class="tiny muted">${'●'.repeat(l)}${'○'.repeat(m.max - l)}</span></div>${l ? `<div class="small good">Şu an: ${m.etki[l - 1]}</div>` : ''}${son ? '<span class="pill">✓ Tamam</span>' : `<div class="tiny muted">Sonraki: ${m.etki[l]} · bu seviye +${fmt(m.gunluk * s.market.fiyat)}/gün işletme gideri</div>${neden ? `<div class="tiny badc">🔒 ${neden}</div>` : `<button class="btn sm pri" style="margin-top:5px" data-a="merkez" data-id="${m.id}">Yükselt · ${fmt(bedel)}</button>`}`}</div>`; }).join('')}`;
 }
-export const PANELS: Record<string, () => string> = { hedefler: pHedefler, genel: pGenel, ekonomi: () => pEkonomi(S(), cur(), { per: ctx.eper, scope: ctx.escope, curve: ctx.ecurve, anim: ctx.anim }), personel: pPersonel, vardiya: pVardiya, menu: pMenu, stok: pStok, tedarik: pTedarik, finans: pFinans, musteri: pMusteri, reklam: pReklam, gelisim: pGelisim, rakip: pRakip, harita: pHarita, subeler: pSubeler, rapor: pRapor, ayar: pAyar };
+/* ===================== İller (ile özel sekmeler) ===================== */
+function pIller(): string {
+  const s = S(), acik = Object.keys(s.bolge.il).map(Number).sort((a, b) => a - b); if (ctx.ilSecili === null || !acik.includes(ctx.ilSecili)) ctx.ilSecili = acik.includes(cur().city) ? cur().city : acik[0]!;
+  const il = ctx.ilSecili, c = cityById(il), sek = ilSekmeleri(il); if (!sek.includes(ctx.ilSekme)) ctx.ilSekme = 'ozet'; const subeler = ildeSubeler(s, il), now = dayOf(s);
+  const chips = `<div class="chiprow" style="margin-bottom:8px">${acik.map((i) => `<button class="cx ${i === il ? 'on' : ''}" data-a="iller_sec" data-il="${i}">${esc(cityById(i).ad)} <span class="tiny">${s.subeler.filter((b) => b.city === i).length}</span></button>`).join('')}</div>`;
+  const tabs = `<div class="chiprow" style="margin-bottom:8px">${sek.map((x) => `<button class="btn sm ${ctx.ilSekme === x ? 'on' : ''}" data-a="ilsekme" data-t="${x}">${SEKME_AD[x]}</button>`).join('')}</div>`;
+  const hepsi: IlSekme[] = ['ozet', 'turizm', 'kampus', 'kurumsal', 'rakip']; const kilitli = hepsi.filter((x) => !sek.includes(x));
+  let body = '';
+  if (ctx.ilSekme === 'ozet') {
+    const ms = marketShare(s, il), ilceAcikN = ilcelerOf(il).filter((d) => ilceAcik(s, d)).length, ciro = subeler.reduce((a, b) => a + Object.values(b.bugun.gelir).reduce((x, y) => x + y, 0), 0), kar30 = subeler.reduce((a, b) => a + b.gecmis.slice(-30).reduce((x, r) => x + r.kar, 0), 0);
+    body = `<div class="card"><h3>${esc(c.ad)} <span class="muted small">${REGION_NAME[c.region]}</span></h3>${cityFacts(c)}<div class="row small"><span>Açık ilçe</span><b>${ilceAcikN}/${ilcelerOf(il).length}</b></div><div class="row small"><span>Şubelerin</span><b>${subeler.length}</b></div><div class="row small"><span>Bugün ciro</span><b>${fmt(ciro)}</b></div><div class="row small"><span>30 gün net kâr</span><b class="${cls(kar30)}">${fmt(kar30)}</b></div><div class="row small"><span>Tahmini pazar payın</span><b>%${Math.round(ms.sen * 100)}</b></div></div>
+    <div class="card"><h3>Bu ilin sekmeleri</h3>${sek.map((x) => `<div class="row small"><span>${SEKME_AD[x]}</span><span class="good">açık</span></div><div class="tiny muted" style="margin-top:-2px">${SEKME_NEDEN[x]}</div>`).join('')}${kilitli.map((x) => `<div class="row small" style="opacity:.55"><span>${SEKME_AD[x]}</span><span>🔒 bu ilde yok</span></div><div class="tiny muted" style="margin-top:-2px">Gereken: ${SEKME_NEDEN[x]}</div>`).join('')}</div>
+    ${subeler.map((b) => `<div class="card"><div class="row"><b>${esc(b.ad)}</b><span class="small">${Math.round(b.memnuniyet)} ☺</span></div><div class="tiny muted">${esc(ilceOf(b.ilce)?.ad ?? '')} · ${SHOP[b.tip].ad}</div></div>`).join('') || '<div class="card small muted">Bu ilde henüz şuben yok. Harita menüsünden ilçe açıp şube kur.</div>'}`;
+  } else if (ctx.ilSekme === 'rakip') body = pRakip(il);
+  else if (ctx.ilSekme === 'turizm') {
+    const mod = s.market.mod['turist_' + il], on = (mod?.bit ?? 0) > now, ay = dateOf(now).ay, mx = 1.7, tot = c.profil.tur;
+    body = `<div class="card"><h3>🧳 ${esc(c.ad)} turizm</h3><div class="row small"><span>Turizm potansiyeli</span><b>%${Math.round(c.turizm * 100)}</b></div>${bar(c.turizm * 100, 'var(--bl)')}<div class="row small"><span>Turist müşteri payı</span><b>%${Math.round(tot * 100)}</b></div>${c.kiyi ? '<div class="tiny muted">Sahil şehri: yaz aylarında yoğunluk zirve yapar.</div>' : ''}
+      <div class="tiny muted" style="margin-top:6px">Aylara göre turizm yoğunluğu (şimdiki ay vurgulu)</div><svg viewBox="0 0 120 40" class="bchart">${Array.from({ length: 12 }, (_, m) => { const v = seasonTourism(c, m), h = v / mx * 30; return `<rect x="${m * 10 + 1}" y="${34 - h}" width="8" height="${h}" rx="1.5" fill="${m === ay ? '#f4b660' : '#4aa3e8'}" opacity="${m === ay ? 1 : .6}"/>`; }).join('')}<text x="1" y="39" class="cl" style="font-size:4px">Oca</text><text x="60" y="39" class="cl" style="font-size:4px">Tem</text><text x="112" y="39" class="cl" style="font-size:4px">Ara</text></svg></div>
+    <div class="card"><h3>Turist paketi</h3><div class="small muted">Otel/rehber anlaşmaları ve çok dilli menü. 30 gün boyunca ildeki tüm şubelerde talep +%15, marka +1.</div>${on ? `<div class="small good" style="margin-top:6px">▶ Sürüyor · ${mod!.bit - now} gün kaldı</div>` : subeler.length ? `<button class="btn sm pri" style="margin-top:6px" data-a="turist" data-il="${il}">Başlat · ${fmt(turistMaliyet(s, il))}</button>` : '<div class="tiny badc" style="margin-top:6px">Önce bu ilde şube aç.</div>'}</div>`;
+  } else if (ctx.ilSekme === 'kampus') {
+    const mod = s.market.mod['kampus_' + il], on = (mod?.bit ?? 0) > now;
+    body = `<div class="card"><h3>🎓 ${esc(c.ad)} kampüs</h3><div class="row small"><span>Öğrenci yoğunluğu</span><b>%${Math.round(c.ogrenci * 100)}</b></div>${bar(c.ogrenci * 100, 'var(--ok)')}<div class="tiny muted">Okullar yaz aylarında (Haz–Tem) tatilde: öğrenci müşteri %${Math.round(35 * c.ogrenci)} kadar azalır. Sınav dönemlerinde uzun oturma artar.</div></div>
+    <div class="card"><h3>Kampüs anlaşması</h3><div class="small muted">Öğrenci kulüpleri ve yurtlarla anlaşma: 30 gün boyunca ildeki şubelerde talep +%10.</div>${on ? `<div class="small good" style="margin-top:6px">▶ Sürüyor · ${mod!.bit - now} gün kaldı</div>` : subeler.length ? `<button class="btn sm pri" style="margin-top:6px" data-a="kampus" data-il="${il}">Başlat · ${fmt(kampusMaliyet(s, il))}</button>` : '<div class="tiny badc" style="margin-top:6px">Önce bu ilde şube aç.</div>'}<div class="tiny muted" style="margin-top:6px">Ayrıca Ekonomi menüsündeki "Öğrenci indirimi" kampanyası bu ilde daha çok işe yarar.</div></div>`;
+  } else {
+    const k = s.ilprog[il]?.kurumsal, on = !!k && k.bit > now, ort = subeler.length ? subeler.reduce((a, b) => a + b.memnuniyet, 0) / subeler.length : 0;
+    body = `<div class="card"><h3>🏢 ${esc(c.ad)} kurumsal</h3><div class="row small"><span>Sanayi / iş yoğunluğu</span><b>%${Math.round(c.sanayi * 100)}</b></div>${bar(c.sanayi * 100, 'var(--am)')}<div class="row small"><span>Şube memnuniyeti ortalaması</span><b class="${ort >= 55 ? 'good' : 'badc'}">${Math.round(ort)}</b></div><div class="tiny muted">Şirketler, toplantı ve ofis siparişi için düzenli sipariş verir; memnuniyet en az 55 olmalı, 45'in altına düşerse sözleşme iptal olur.</div></div>
+    <div class="card"><h3>Toplu sipariş sözleşmesi</h3>${on ? `<div class="row small"><span>Günlük ciro</span><b class="good">${fmt(k!.gunluk)}</b></div><div class="row small"><span>Günlük maliyet (%38)</span><b>${fmt(k!.gunluk * 0.38)}</b></div><div class="row small"><span>Kalan süre</span><b>${k!.bit - now} gün</b></div><button class="btn sm bad" style="margin-top:6px" data-a="kurumsaliptal" data-il="${il}">Sözleşmeyi bitir</button>` : subeler.length ? `<div class="small muted">30 günlük sözleşme: günlük ≈ ${fmt(kurumsalGunluk(s, il))} ciro, %38 maliyet.</div><button class="btn sm pri" style="margin-top:6px" data-a="kurumsal" data-il="${il}">Sözleşme yap</button>` : '<div class="tiny badc">Önce bu ilde şube aç.</div>'}</div>`;
+  }
+  return `${chips}${tabs}${body}`;
+}
+export const PANELS: Record<string, () => string> = { iller: pIller, hedefler: pHedefler, genel: pGenel, ekonomi: () => pEkonomi(S(), cur(), { per: ctx.eper, scope: ctx.escope, curve: ctx.ecurve, anim: ctx.anim }), personel: pPersonel, vardiya: pVardiya, menu: pMenu, stok: pStok, tedarik: pTedarik, finans: pFinans, musteri: pMusteri, reklam: pReklam, gelisim: pGelisim, harita: pHarita, subeler: pSubeler, rapor: pRapor, ayar: pAyar };
 export const LIVE_TABS = new Set(['genel', 'stok', 'finans', 'subeler', 'musteri', 'vardiya', 'rapor']);
 export { regionName, CITIES };
 
@@ -281,13 +312,19 @@ export function handle(a: string, d: DOMStringMap, h: Helpers): void {
   const s = S(), b = cur();
   switch (a) {
     case 'maasguncelle': { const r = maaslariGuncelle(s, b); return h.res(r.sayi ? ok(`${r.sayi} çalışanın maaşı piyasaya çıkarıldı (+${fmt(r.ekGider)}/ay).`) : no('Zaten piyasa düzeyinde.')); }
+    case 'iller_sec': ctx.ilSecili = +d.il!; ctx.ilSekme = 'ozet'; ctx.anim = true; return h.refresh();
+    case 'ilsekme': ctx.ilSekme = d.t as IlSekme; return h.refresh();
+    case 'turist': return h.res(turistPaketi(s, +d.il!));
+    case 'kampus': return h.res(kampusAnlasma(s, +d.il!));
+    case 'kurumsal': return h.res(kurumsalSozlesme(s, +d.il!));
+    case 'kurumsaliptal': return h.res(kurumsalIptal(s, +d.il!));
     case 'git': return h.go(d.t!);
     case 'bsel': ctx.bid = +d.id!; return h.show();
     case 'metric': ctx.mapm = d.m as Metric; return h.refresh();
     case 'ilsec': { const il = +d.il!; ctx.mapsel = il; if (ilAcik(s, il) && ctx.zoomIl !== il) { ctx.zoomIl = il; ctx.selIlce = null; if (ctx.mapm !== 'erisim' && !['talep', 'gelir', 'kira'].includes(ctx.mapm)) ctx.mapm = 'erisim'; h.refresh(); return h.zoom(zoomVb(il)); } return h.refresh(); }
     case 'ilcesec': ctx.selIlce = +d.id!; return h.refresh();
     case 'geri': ctx.selIlce = null; return h.zoom(NAT_VB, () => { ctx.zoomIl = null; h.refresh(); });
-    case 'ilac': { const r = ilAc(s, +d.il!, levelOf(s)); if (r.ok) { fxPush('il', d.il!); ctx.mapsel = +d.il!; } return h.res(r); }
+    case 'ilac': { const r = ilAc(s, +d.il!, levelOf(s)); if (r.ok) { fxPush('il', d.il!); ctx.mapsel = +d.il!; ctx.ilSecili = +d.il!; const ek = ilSekmeleri(+d.il!).filter((x) => x !== 'ozet' && x !== 'rakip').map((x) => SEKME_AD[x]); if (ek.length) r.m += ' Yeni sekmeler: ' + ek.join(', ') + ' (Büyüme → İller).'; } return h.res(r); }
     case 'ilceac': { const x = ILCELER[+d.id!]!; const r = ilceAc(s, x); if (r.ok) fxPush('ilce', ilceKey(x)); return h.res(r); }
     case 'sube': { const r = subeAc(s, +d.city!, d.tip as ShopTypeId, undefined, d.ilce); if (r.ok) { ctx.bid = s.subeler[s.subeler.length - 1]!.id; fxPush('sube', d.ilce ?? d.city!); fxPush('sube', d.city!); h.show(); } return h.res(r); }
     case 'ilantip': ctx.ilanTip = d.t as StaffTypeId; return h.refresh();

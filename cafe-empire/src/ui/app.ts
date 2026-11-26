@@ -62,7 +62,7 @@ function enter(): void {
   if (!S) return; cancelAnimationFrame(zoomRaf); ctx.S = S; ctx.bid = S.subeler[0]!.id; TAB = 'genel'; ctx.zoomIl = null; ctx.selIlce = null; ctx.vb = NAT_VB; ctx.fx = []; ctx.mapsel = 34; ctx.mapm = 'erisim'; known = new Set(); newOpp = false;
   root.innerHTML = `<div id="pano"></div><div class="top"><b class="brand" id="tBrand"></b><span class="chip" id="tDate"></span><span class="chip">💰 <b id="tKasa"></b></span><span class="chip">⭐ <b id="tMarka"></b></span><span class="chip">🏅 <b id="tSev"></b></span><span class="sp"></span><button class="btn sm" id="tHelp" title="Rehber">?</button><span class="chip" id="tHava"></span><div class="spd" id="spd"></div></div><div class="nav" id="nav"></div><div class="panel hid" id="panel"></div>`;
   setAudio({ ses: S.ayar.ses, muzik: S.ayar.muzik, vol: S.ayar.ses_vol }); root.onpointerdown = () => startAudio(); lastSumDay = dayOf(S); lastAch = new Set(Object.keys(S.basarim)); $('#tHelp').onclick = () => { S!.tur = 0; tour(); };
-  S.hiz = 1; nav(); spdBar(); hud(); panel(false); window.addEventListener('resize', layout); $('#pano').onclick = (e) => { const k = (e.target as HTMLElement).closest<HTMLElement>('[data-p]'); if (k) { ctx.bid = +k.dataset.p!; hud(); panel(true); } };
+  S.hiz = 1; nav(); spdBar(); hud(); panel(false); window.addEventListener('resize', layout); $('#pano').onclick = (e) => { const f = (e.target as HTMLElement).closest<HTMLElement>('[data-pf]'); if (f) { ctx.panoIl = f.dataset.pf === '' ? null : +f.dataset.pf!; hud(); return; } const k = (e.target as HTMLElement).closest<HTMLElement>('[data-p]'); if (k) { ctx.bid = +k.dataset.p!; hud(); panel(true); } };
   cancelAnimationFrame(rafId); let son = performance.now(); const kare = (n: number): void => { rafId = requestAnimationFrame(kare); const dt = Math.min(0.1, (n - son) / 1000); son = n; loop(dt); }; rafId = requestAnimationFrame(kare); tour();
   document.addEventListener('visibilitychange', () => { if (document.hidden && S) { save(S); } });
 }
@@ -89,7 +89,7 @@ function hud(): void {
   if (!S) return; const b = cur(), c = cityById(b.city), t = S.rapor[S.rapor.length - 1];
   $('#tBrand').textContent = S.marka.ad; $('#tDate').textContent = `${dateText(S)} · ${timeText(S)}`; $('#tKasa').textContent = fmt(S.kasa); $('#tMarka').textContent = String(Math.round(S.marka_puani)); $('#tSev').textContent = `Sv ${levelOf(S)}`; $('#tSev').parentElement!.title = LEVELS[levelOf(S) - 1]?.ad ?? '';
   const hv = S.hava[b.city] ?? 'gunesli'; $('#tHava').textContent = `${{ gunesli: '☀️', bulutlu: '⛅', yagmur: '🌧️', kar: '❄️' }[hv]} ${c.ad}`;
-  const pn = $('#pano'), sc = pn.scrollTop; pn.innerHTML = panoHtml(S, ctx.bid); pn.scrollTop = sc; void t;
+  const pn = $('#pano'), sc = pn.scrollTop; pn.innerHTML = panoHtml(S, ctx.bid, ctx.panoIl); pn.scrollTop = sc; void t;
 }
 function loop(dt: number): void {
   if (!S) return; const dk = oyunDakikasi(dt, S.hiz, S.ayar.gunSn); accMin += dk; let n = 0;
