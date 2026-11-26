@@ -27,18 +27,19 @@ export interface ActiveAd { id: AdId; bit: number; tuttu: boolean }
 export interface Review { gun: number; yildiz: number; metin: string; kim: string }
 
 export interface Money { kahve: number; yiyecek: number; ek: number; kampanya: number; paket: number; toplu: number; etkinlik: number; franchise: number }
-export interface Costs { kira: number; elektrik: number; su: number; internet: number; maas: number; malzeme: number; fire: number; stok: number; vergi: number; bakim: number; reklam: number; sigorta: number; prim: number; egitim: number; isealim: number }
+export interface Costs { kira: number; elektrik: number; su: number; internet: number; maas: number; malzeme: number; fire: number; stok: number; vergi: number; bakim: number; reklam: number; sigorta: number; prim: number; egitim: number; isealim: number; sadakat: number }
 export interface DayAcc {
   gelir: Money; gider: Costs; musteri: number; kayip: number; stokYok: number; adet: Partial<Record<ProductId, number>>;
   satSum: number; satN: number; bekleme: number; beklemeN: number;
   cogs: number; alim: number; itemN: number; kalSum: number; fiyatSum: number; tekrar: number; sadik: number; sikayet: number; ort: number;
 }
 export interface DayReport { gun: number; gelir: Money; gider: Costs; toplamGelir: number; toplamGider: number; kar: number; musteri: number; kayip: number; memnuniyet: number; cogs: number; brut: number; alim: number; capex: number; nakit: number }
+export interface Promo { sabah?: boolean; ogrenci?: boolean; mutlu?: boolean; kart?: boolean; yetkiFiyat?: boolean; gunun?: string | null; gununGun?: number }
 export interface Lot { q: number; son: number; kal: number }
 export interface Musteri { ortSiparis: number; ortBekleme: number; hizmet: number; urunKal: number; fiyatMemn: number; tekrar: number; sadik: number; sikayet: number }
 
 export interface Branch {
-  id: number; ad: string; city: number; ilce?: string; tip: ShopTypeId; acilis: number; kira: number; m2: number;
+  promo?: Promo; id: number; ad: string; city: number; ilce?: string; tip: ShopTypeId; acilis: number; kira: number; m2: number;
   staff: Employee[]; menu: Record<ProductId, MenuItem>; stok: Record<IngId, number>; siparisler: Order[]; otoSiparis: boolean;
   yat: Record<string, number>; facade: Facade; hijyen: number; memnuniyet: number; marka: number; sadakat: number;
   backlog: number; kullanim: Partial<Record<IngId, number>>; partiler: Partial<Record<IngId, Lot[]>>; minStok: Partial<Record<IngId, number>>; tedarikci: Partial<Record<IngId, string>>; malKalite: number; mus: Musteri; sonAdet: Partial<Record<ProductId, number>>; acilan: Partial<Record<ProductId, boolean>>; mesai: { aci: number; kapa: number }; ilanlar: Ilan[]; adaylar: Array<Employee & { ilan: number; son: number }>; sikayetler: Sikayet[]; reklam: ActiveAd[]; yorumlar: Review[]; yorumPuan: number;

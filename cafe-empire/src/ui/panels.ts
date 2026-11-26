@@ -2,6 +2,8 @@
 import { CITIES, cityById, REGION_NAME } from '../data/turkey';
 import { ADS, AD, INGREDIENTS, ING, PRODUCTS, SHOP, SHOP_TYPES, STAFF_TYPES, STAFF_TYPE, UPGRADES, LEVELS, type IngId, type ProductId, type ShopTypeId, type StaffTypeId, type AdId, type UpgradeId } from '../data/catalog';
 import { subeAc, ilanVer, iseAl, isCikar, setPrice, toggleProduct, upgrade, upgradeCost, startAd, adCost, orderIng, takeLoan, payLoan, closeBranch, fmt, setupCost, rentOf, staffLimit, invest, type Result } from '../core/actions';
+import { pEkonomi } from './eco';
+import { setPromo, setGununUrunu } from '../core/actions';
 import { priceAdvice, applyAdvice, menuAdvice, copyMenu } from '../core/pricing';
 import { dateText, dayOf, hourOf, levelOf, dailyDemand, sellPrice, unitCost, outdoorSeats, openHours, marketShare, rivalFiyat } from '../core/sim';
 import { autoPlan, coverage, gaps, giveBonus, evaluate, promote, resolveComplaint, setLeave, setShift, setWage, toggleOvertime, train, transferStaff, TRAININGS, SHIFT_NAME, DAYS, marketWage, shiftHours } from '../core/hr';
@@ -13,12 +15,12 @@ import { ilceCost, ilAc, ilceAc, ilDurum, ilceDurum, ilAcik, ilceAcik, ilCost, i
 import { ILCELER, ilcelerOf, ilceKey, ilceOf, profilOf } from '../data/regions';
 import type { Branch, Employee, GameState, Vardiya } from '../core/types';
 
-export interface Ctx { zoomIl: number | null; selIlce: number | null; vb: VB; fx: Fx[]; S: GameState | null; bid: number; mapm: Metric; mapsel: number; ilanTip: StaffTypeId; sureGun: number; menuKat: 'kahve' | 'yiyecek'; rapor: number; fps: boolean }
-export const ctx: Ctx = { zoomIl: null, selIlce: null, vb: NAT_VB, fx: [], S: null, bid: 0, mapm: 'bolge', mapsel: 34, ilanTip: 'barista', sureGun: 30, menuKat: 'kahve', rapor: 7, fps: true };
+export interface Ctx { eper: number; escope: 'all' | 'sube'; ecurve: ProductId; anim: boolean; zoomIl: number | null; selIlce: number | null; vb: VB; fx: Fx[]; S: GameState | null; bid: number; mapm: Metric; mapsel: number; ilanTip: StaffTypeId; sureGun: number; menuKat: 'kahve' | 'yiyecek'; rapor: number; fps: boolean }
+export const ctx: Ctx = { eper: 30, escope: 'all', ecurve: 'latte', anim: false, zoomIl: null, selIlce: null, vb: NAT_VB, fx: [], S: null, bid: 0, mapm: 'bolge', mapsel: 34, ilanTip: 'barista', sureGun: 30, menuKat: 'kahve', rapor: 7, fps: true };
 export interface Helpers { zoom: (vb: VB, done?: () => void) => void; res: (r: Result) => void; toast: (m: string) => void; refresh: () => void; show: () => void; go: (tab: string) => void; exit: () => void; wipe: () => void; save: () => void }
 
-export const NAV: Array<[string, string, string]> = [['genel', '🏠', 'Genel Bakış'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiyalar'], ['menu', '📋', 'Menü ve Ürünler'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarikçiler'], ['finans', '💰', 'Finans'], ['musteri', '🙂', 'Müşteriler'], ['reklam', '📣', 'Reklam'], ['gelisim', '🛠️', 'İşletme Geliştirme'], ['rakip', '🥊', 'Rakipler'], ['harita', '🗺️', 'Türkiye Haritası'], ['subeler', '🏬', 'Şubeler'], ['rapor', '📊', 'Raporlar'], ['ayar', '⚙️', 'Ayarlar']];
-const BRANCH_TABS = new Set(['genel', 'personel', 'vardiya', 'menu', 'stok', 'tedarik', 'musteri', 'reklam', 'gelisim', 'rakip', 'subeler']);
+export const NAV: Array<[string, string, string]> = [['genel', '🏠', 'Genel Bakış'], ['ekonomi', '📈', 'Ekonomi Merkezi'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiyalar'], ['menu', '📋', 'Menü ve Ürünler'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarikçiler'], ['finans', '💰', 'Finans'], ['musteri', '🙂', 'Müşteriler'], ['reklam', '📣', 'Reklam'], ['gelisim', '🛠️', 'İşletme Geliştirme'], ['rakip', '🥊', 'Rakipler'], ['harita', '🗺️', 'Türkiye Haritası'], ['subeler', '🏬', 'Şubeler'], ['rapor', '📊', 'Raporlar'], ['ayar', '⚙️', 'Ayarlar']];
+const BRANCH_TABS = new Set(['genel', 'ekonomi', 'personel', 'vardiya', 'menu', 'stok', 'tedarik', 'musteri', 'reklam', 'gelisim', 'rakip', 'subeler']);
 export const isBranchTab = (t: string): boolean => BRANCH_TABS.has(t);
 
 const S = (): GameState => ctx.S!;
@@ -34,7 +36,7 @@ const bchips = (): string => (S().subeler.length > 1 ? `<div class="chiprow" sty
 const sumRep = (a: Array<{ gelir: object; gider: object }>, key: 'gelir' | 'gider'): Record<string, number> => { const o: Record<string, number> = {}; for (const x of a) for (const k of Object.keys(x[key])) o[k] = (o[k] ?? 0) + (x[key] as Record<string, number>)[k]!; return o; };
 const rows = (o: Record<string, number>, names: Record<string, string>): string => Object.keys(names).filter((k) => (o[k] ?? 0) > 0.5).map((k) => `<div class="row small"><span>${names[k]}</span><b>${fmt(o[k] ?? 0)}</b></div>`).join('') || '<div class="small muted">—</div>';
 const GELIR_AD = { kahve: 'Kahve satışları', yiyecek: 'Yiyecek satışları', ek: 'Ek satış (yanında alınan)', kampanya: 'Kampanyalı satış', paket: 'Paket servis', toplu: 'Toplu sipariş', etkinlik: 'Etkinlik', franchise: 'Franchise' };
-const GIDER_AD = { malzeme: 'Satılan malın maliyeti', fire: 'Fire / bozulan ürün', maas: 'Personel maaşları', prim: 'Prim', egitim: 'Eğitim', isealim: 'İşe alım / tazminat', kira: 'Kira', elektrik: 'Elektrik', su: 'Su', internet: 'İnternet', vergi: 'Vergiler', bakim: 'Bakım ve ekipman', sigorta: 'Sigorta', reklam: 'Reklam', stok: 'Stok bekletme' };
+const GIDER_AD = { malzeme: 'Satılan malın maliyeti', fire: 'Fire / bozulan ürün', maas: 'Personel maaşları', prim: 'Prim', egitim: 'Eğitim', isealim: 'İşe alım / tazminat', sadakat: 'Sadakat kartı programı', kira: 'Kira', elektrik: 'Elektrik', su: 'Su', internet: 'İnternet', vergi: 'Vergiler', bakim: 'Bakım ve ekipman', sigorta: 'Sigorta', reklam: 'Reklam', stok: 'Stok bekletme' };
 
 /* ===================== 1 · Genel Bakış ===================== */
 function pGenel(): string {
@@ -220,7 +222,7 @@ function pAyar(): string {
   <div class="card"><h3>Veri kaynakları</h3><div class="tiny muted">İlçe sınırları: © OpenStreetMap contributors, Overture Maps Foundation (ODbL 1.0), basitleştirilmiş. İlçe ticari profilleri tahminidir; gerçek nüfus/gelir verisi değildir.</div></div><div class="chiprow"><button class="btn" data-a="kaydet">💾 Şimdi kaydet</button><button class="btn" data-a="cikis">Ana menü</button><button class="btn bad" data-a="sil">Oyunu sil</button></div>`;
 }
 
-export const PANELS: Record<string, () => string> = { genel: pGenel, personel: pPersonel, vardiya: pVardiya, menu: pMenu, stok: pStok, tedarik: pTedarik, finans: pFinans, musteri: pMusteri, reklam: pReklam, gelisim: pGelisim, rakip: pRakip, harita: pHarita, subeler: pSubeler, rapor: pRapor, ayar: pAyar };
+export const PANELS: Record<string, () => string> = { genel: pGenel, ekonomi: () => pEkonomi(S(), cur(), { per: ctx.eper, scope: ctx.escope, curve: ctx.ecurve, anim: ctx.anim }), personel: pPersonel, vardiya: pVardiya, menu: pMenu, stok: pStok, tedarik: pTedarik, finans: pFinans, musteri: pMusteri, reklam: pReklam, gelisim: pGelisim, rakip: pRakip, harita: pHarita, subeler: pSubeler, rapor: pRapor, ayar: pAyar };
 export const LIVE_TABS = new Set(['genel', 'stok', 'finans', 'subeler', 'musteri', 'vardiya', 'rapor']);
 export { regionName, CITIES };
 
@@ -260,6 +262,13 @@ export function handle(a: string, d: DOMStringMap, h: Helpers): void {
     case 'oneri': { const o = priceAdvice(s, b).find((x) => x.id === d.id); if (o) { b.menu[o.id].fiyat = o.oneri; return h.res(ok(`${PRODUCTS.find((p) => p.id === o.id)!.ad} fiyatı ${o.fiyatOneri} ₺ oldu.`)); } return h.refresh(); }
     case 'oneritum': { const n = applyAdvice(b, priceAdvice(s, b)); return h.res(ok(`${n} ürünün fiyatı önerilere göre güncellendi.`)); }
     case 'menukopya': { const r = copyMenu(s, b); return h.res(ok(`Menü ${r.sube} şubeye kopyalandı${r.atlanan ? ` (${r.atlanan} ürün açılış ücreti/seviye nedeniyle atlandı)` : ''}.`)); }
+    case 'eper': ctx.eper = +d.n!; ctx.anim = true; return h.refresh();
+    case 'escope': ctx.escope = d.k as 'all' | 'sube'; ctx.anim = true; return h.refresh();
+    case 'ecurve': ctx.ecurve = d.id as ProductId; ctx.anim = true; return h.refresh();
+    case 'fiyatset': { const id = d.id as ProductId; setPrice(b, id, +d.m!); return h.res(ok(`${PRODUCTS.find((p) => p.id === id)!.ad} fiyatı ${sellPrice(s, b, id)} ₺ oldu.`)); }
+    case 'promo': return h.res(setPromo(s, b, d.k as 'sabah' | 'ogrenci' | 'mutlu' | 'kart' | 'yetkiFiyat'));
+    case 'gunun': return h.res(setGununUrunu(s, b, d.id as ProductId));
+    case 'tumfiyat': { for (const p of PRODUCTS) if (b.menu[p.id].aktif) setPrice(b, p.id, b.menu[p.id].fiyat * +d.k!); return h.res(ok(`Tüm menü fiyatları ${+d.k! < 1 ? 'düşürüldü' : 'artırıldı'}.`)); }
     case 'urun': return h.res(toggleProduct(s, b, d.id as ProductId));
     case 'kalite': { const m = b.menu[d.id as ProductId], c = 8000 * m.kalite * s.market.fiyat; if (m.kalite >= 3) return; if (s.kasa < c) return h.res(no('Kasa yetersiz.')); s.kasa -= c; s.capexBugun += c; m.kalite++; return h.res(ok(`Ürün kalitesi arttı (−${fmt(c)}).`)); }
     case 'siparis': return h.res(orderIng(s, b, d.id as IngId, +d.n!));

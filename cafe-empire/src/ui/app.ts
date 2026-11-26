@@ -15,6 +15,7 @@ const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => document.quer
 const esc = _esc;
 const root = document.getElementById('app') as HTMLElement;
 let S: GameState | null = null, view: CafeView | null = null, TAB = 'genel', PANEL_OPEN = false;
+let lastDay = -1;
 let known = new Set<number>(), newOpp = false, oppT = 0;
 let accMin = 0, uiT = 0, saveT = 0, modalOpen = false;
 const bar = (v: number, col = 'var(--am)') => `<div class="bar"><i style="width:${Math.max(0, Math.min(100, v))}%;background:${col}"></i></div>`;
@@ -67,7 +68,7 @@ function layout(): void {
   view.resize(); const p = document.getElementById('panel'); if (p) p.style.width = land ? (pw ? pw + 'px' : '') : '';
 }
 function nav(): void {
-  $('#nav').innerHTML = NAV.map(([id, ic, nm]) => `<button data-n="${id}" class="${TAB === id ? 'on' : ''}"><i>${ic}</i>${nm}${id === 'harita' && newOpp && TAB !== 'harita' ? '<span class="dot"></span>' : ''}</button>`).join(''); $('#nav').querySelectorAll<HTMLElement>('[data-n]').forEach((b) => { b.onclick = () => { if (b.dataset.n === 'harita') newOpp = false; if (TAB === b.dataset.n && PANEL_OPEN && TAB !== 'genel') PANEL_OPEN = false; else { TAB = b.dataset.n!; PANEL_OPEN = true; } nav(); panel(false); }; });
+  $('#nav').innerHTML = NAV.map(([id, ic, nm]) => `<button data-n="${id}" class="${TAB === id ? 'on' : ''}"><i>${ic}</i>${nm}${id === 'harita' && newOpp && TAB !== 'harita' ? '<span class="dot"></span>' : ''}</button>`).join(''); $('#nav').querySelectorAll<HTMLElement>('[data-n]').forEach((b) => { b.onclick = () => { ctx.anim = true; if (b.dataset.n === 'harita') newOpp = false; if (TAB === b.dataset.n && PANEL_OPEN && TAB !== 'genel') PANEL_OPEN = false; else { TAB = b.dataset.n!; PANEL_OPEN = true; } nav(); panel(false); }; });
 }
 function camBar(): void { const P: Array<[CamPreset, string]> = [['cephe', 'Cephe'], ['sol', 'Sol açı'], ['sag', 'Sağ açı'], ['sokak', 'Sokak'], ['sehir', 'Şehir']]; $('#cam').innerHTML = P.map(([k, n]) => `<button data-c="${k}">${n}</button>`).join('') + '<button data-z="1">＋</button><button data-z="-1">－</button>'; $('#cam').querySelectorAll<HTMLElement>('button').forEach((b) => { b.onclick = () => { if (b.dataset.c) view?.setPreset(b.dataset.c as CamPreset); else view?.zoom(+b.dataset.z! > 0 ? 0.8 : 1.25); }; }); }
 function spdBar(): void { const V: Array<[number, string]> = [[0, '⏸'], [1, '▶'], [2, '⏩'], [4, '⏭']]; $('#spd').innerHTML = V.map(([v, t]) => `<button data-s="${v}" class="${S!.hiz === v ? 'on' : ''}">${t}</button>`).join(''); $('#spd').querySelectorAll<HTMLElement>('button').forEach((b) => { b.onclick = () => { S!.hiz = +b.dataset.s!; spdBar(); }; }); }
@@ -82,7 +83,7 @@ function hud(): void {
 function loop(dt: number): void {
   if (!S || !view) return; const dk = S.hiz * (MIN_PER_DAY / 60) * dt; accMin += dk; let n = 0;
   while (accMin >= 10 && n < 8) { accMin -= 10; const ev = step(S, 10); view.handleEvents(ev); n++; if (S.oyunBitti) break; }
-  view.tick(dt, S); oppT += dt; if (oppT > 2) { oppT = 0; checkOpportunities(); } uiT += dt; saveT += dt; if (uiT > 0.5) { uiT = 0; hud(); if (LIVE_TABS.has(TAB) && PANEL_OPEN) panel(true); if (S.bekleyen.length && !modalOpen) showEvent(); if (S.oyunBitti) gameOver(); }
+  view.tick(dt, S); if (TAB === 'ekonomi' && PANEL_OPEN && dayOf(S) !== lastDay) { lastDay = dayOf(S); panel(true); } oppT += dt; if (oppT > 2) { oppT = 0; checkOpportunities(); } uiT += dt; saveT += dt; if (uiT > 0.5) { uiT = 0; hud(); if (LIVE_TABS.has(TAB) && PANEL_OPEN) panel(true); if (S.bekleyen.length && !modalOpen) showEvent(); if (S.oyunBitti) gameOver(); }
   if (saveT > 15) { saveT = 0; save(S); }
 }
 /** Seviye/komşuluk şartı sağlanan yeni pazarları bildirir (zamanla gelişen harita). */
@@ -103,8 +104,13 @@ function gameOver(): void { if (modalOpen) return; modalOpen = true; S!.hiz = 0;
 function panel(keep: boolean): void {
   if (!S) return; const el = $('#panel'); if (!PANEL_OPEN) { el.classList.add('hid'); layout(); return; }
   const sc = keep ? el.querySelector<HTMLElement>('.pb')?.scrollTop ?? 0 : 0, nm = NAV.find((n) => n[0] === TAB)!;
-  el.classList.remove('hid'); ctx.S = S; const body = (PANELS[TAB] ?? PANELS.genel!)();
-  el.innerHTML = `<div class="ph"><h2>${nm[1]} ${nm[2]}</h2><button class="btn sm" id="pclose">Kapat ✕</button></div><div class="pb">${body}</div>`; $('#pclose').onclick = () => { PANEL_OPEN = false; panel(false); }; const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); layout();
+  el.classList.remove('hid'); ctx.S = S; const body = (PANELS[TAB] ?? PANELS.genel!)(); const wasAnim = ctx.anim; ctx.anim = false;
+  el.innerHTML = `<div class="ph"><h2>${nm[1]} ${nm[2]}</h2><button class="btn sm" id="pclose">Kapat ✕</button></div><div class="pb">${body}</div>`; $('#pclose').onclick = () => { PANEL_OPEN = false; panel(false); }; const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); layout(); if (wasAnim) animateCounters(pb);
+}
+function animateCounters(pb: HTMLElement): void {
+  const els = [...pb.querySelectorAll<HTMLElement>('.cnt')]; if (!els.length) return; const t0 = performance.now(), ease = (t: number): number => 1 - Math.pow(1 - t, 3);
+  const tick = (now: number): void => { const k = Math.min(1, (now - t0) / 1100); for (const e of els) e.textContent = fmt(+e.dataset.v! * ease(k)); if (k < 1) requestAnimationFrame(tick); else for (const e of els) e.textContent = fmt(+e.dataset.v!); };
+  requestAnimationFrame(tick);
 }
 function bind(pb: HTMLElement): void {
   pb.querySelectorAll<HTMLElement>('[data-a]').forEach((e) => { e.onclick = () => act(e.dataset.a!, e.dataset); });

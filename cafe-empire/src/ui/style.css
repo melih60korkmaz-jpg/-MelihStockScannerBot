@@ -50,3 +50,17 @@ button{font:inherit;color:inherit;border:0;background:var(--p2);cursor:pointer}i
 .pin{pointer-events:none}.pin.drop{transform-box:fill-box;transform-origin:center bottom;animation:pinDrop .9s cubic-bezier(.3,1.6,.5,1) both}
 @keyframes pinDrop{0%{transform:translateY(-45px) scale(.5);opacity:0}55%{opacity:1}100%{transform:none;opacity:1}}
 .legend{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:4px 2px 8px}.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:3px;vertical-align:-1px}.legend i.pinl{border-radius:50%}
+
+/* ===== ekonomi merkezi ===== */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}.kpi{background:var(--p);border:1px solid var(--line);border-radius:14px;padding:9px 11px}.kpi b{display:block;font-size:19px;font-family:var(--fd);margin:2px 0}
+.donutrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.donut{width:132px;height:132px;flex:0 0 auto}.donut .dt1{font-size:4.6px;font-weight:800;fill:#f6ecdf;text-anchor:middle}.donut .dt2{font-size:3px;fill:#ab9b88;text-anchor:middle}
+.legend2{flex:1;min-width:150px}.lg{display:flex;align-items:center;gap:6px;font-size:12.5px;padding:2px 0}.lg i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}.lg span{flex:1}.lg small{color:var(--mu);min-width:60px;text-align:right}
+.dseg.dgo{animation:dIn .9s ease-out both}@keyframes dIn{from{stroke-dasharray:0 100}}
+.bchart,.cchart{width:100%;height:auto;display:block}.bgr.bgo{transform-box:fill-box;transform-origin:bottom;animation:bGrow .7s cubic-bezier(.2,.9,.3,1) both}@keyframes bGrow{from{transform:scaleY(0)}}
+.nline.ngo{animation:nDraw 1.4s .3s ease-out both}@keyframes nDraw{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}.nline{stroke-dashoffset:0}
+.cpath{stroke-dashoffset:0}.cpath.cgo{animation:nDraw 1.2s ease-out both}.best.bgo2{animation:pop2 .8s 1s ease-out both}@keyframes pop2{from{transform:scale(0)}to{transform:scale(1)}}.best{transform-box:fill-box;transform-origin:center}
+.cl{font-size:6px;fill:#ab9b88;text-anchor:middle}.cpt{cursor:pointer}.cpt:hover{fill:rgba(255,255,255,.35)}
+.fbar{display:flex;height:22px;border-radius:7px;overflow:hidden;background:rgba(255,255,255,.07);margin:6px 0 4px}.fseg.fgo{transform-origin:left;animation:fGrow .9s ease-out both}@keyframes fGrow{from{transform:scaleX(0);opacity:.2}}.fseg{min-width:1px}
+.fbar2{height:6px;border-radius:3px;background:rgba(255,255,255,.07);margin-bottom:8px;overflow:hidden}.fline{height:100%;background:#f4b660;border-radius:3px}.fline.fgo{transform-origin:left;animation:fGrow 1.1s ease-out both}
+.rrow{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12.5px}.rn{flex:0 0 38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rbar{flex:1;height:10px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden}.rbar i{display:block;height:100%;border-radius:5px}.rbar i.rgo{transform-origin:left;animation:fGrow .9s ease-out both}.rrow b{min-width:72px;text-align:right}
+@media (prefers-reduced-motion:reduce){.dseg.dgo,.bgr.bgo,.nline.ngo,.fseg.fgo,.cpath.cgo,.best.bgo2,.rbar i.rgo,.fline.fgo{animation:none!important}}

@@ -71,3 +71,10 @@ export function transferStock(s: GameState, from: Branch, to: Branch, id: IngId,
 export function usageOf(b: Branch, recipes: (id: string) => Partial<Record<IngId, number>>): Partial<Record<IngId, number>> {
   const u: Partial<Record<IngId, number>> = {}; for (const id of Object.keys(b.bugun.adet)) { const r = recipes(id), n = (b.bugun.adet as Record<string, number>)[id] ?? 0; for (const k of Object.keys(r) as IngId[]) u[k] = (u[k] ?? 0) + (r[k] ?? 0) * n; } return u;
 }
+
+/** Yeni şube için beklenen günlük tüketim (beklenen talep × menü payları × reçeteler). */
+export function estimateUsage(b: Branch, demand: number, recipes: (id: string) => Partial<Record<IngId, number>>, aktif: Array<{ id: string; kat: string; talep: number }>): Partial<Record<IngId, number>> {
+  const u: Partial<Record<IngId, number>> = {};
+  for (const [kat, per] of [['kahve', 1.22 / 1.12], ['yiyecek', 1.06 / 1.12]] as const) { const L = aktif.filter((p) => p.kat === kat), tot = L.reduce((a, p) => a + p.talep, 0); if (!tot) continue; for (const p of L) { const r = recipes(p.id), n = demand * per * p.talep / tot; for (const k of Object.keys(r) as IngId[]) u[k] = (u[k] ?? 0) + (r[k] ?? 0) * n; } }
+  void b; return u;
+}

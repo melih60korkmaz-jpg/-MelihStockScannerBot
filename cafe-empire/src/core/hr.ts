@@ -58,7 +58,7 @@ export function autoPlan(b: Branch): void {
     else if (e.tip === 'kasiyer') e.vardiya = k % 2 === 0 ? 'sabah' : 'aksam'; else e.vardiya = order[k % order.length] ?? 'ogle';
     e.izin = (izinK * 2 + (e.tip === 'sube_muduru' ? 6 : 1)) % 7; izinK++;
   }
-  const bars = staffOf(b, 'barista'); if (bars.length === 1) bars[0]!.vardiya = 'tam';
+  const bars = staffOf(b, 'barista'); if (bars.length === 1) { bars[0]!.vardiya = 'tam'; bars[0]!.izin = -1; }   // tek barista varken izin günü yok (aksi halde o gün şube barista'sız kalır)
 }
 
 /* ----- günlük işler ----- */

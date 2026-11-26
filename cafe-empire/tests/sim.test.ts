@@ -28,7 +28,7 @@ describe('simülasyon', () => {
   it('stok biten ürün satılmaz; stok yok kaybı sayılır', () => {
     const s = mk(); const b = s.subeler[0]!; b.otoSiparis = false; for (const k of Object.keys(b.stok)) (b.stok as Record<string, number>)[k] = 0; run(s, 3); expect(s.rapor.reduce((a, x) => a + x.toplamGelir, 0)).toBe(0); expect(s.rapor.reduce((a, x) => a + x.kayip, 0)).toBeGreaterThan(0);
   });
-  it('sipariş teslimat süresiyle gelir', () => { const s = mk(); const b = s.subeler[0]!; b.otoSiparis = false; b.stok.bean = 0; expect(orderIng(s, b, 'bean', 2).ok).toBe(true); expect(b.siparisler).toHaveLength(1); run(s, 1); expect(b.siparisler).toHaveLength(1); run(s, 3); expect(b.siparisler).toHaveLength(0); expect(b.stok.bean).toBeGreaterThan(300); });
+  it('sipariş teslimat süresiyle gelir', () => { const s = mk(); const b = s.subeler[0]!; b.otoSiparis = false; b.acik = false; b.siparisler = []; b.stok.bean = 0; expect(orderIng(s, b, 'bean', 2).ok).toBe(true); expect(b.siparisler).toHaveLength(1); run(s, 1); expect(b.siparisler).toHaveLength(1); run(s, 3); expect(b.siparisler).toHaveLength(0); expect(b.stok.bean).toBeGreaterThan(300); });
   it('şehirler arası fark: İstanbul talebi ve kirası Tokat’tan çok yüksek', () => {
     const ist = mk(34, 'cadde'), tok = mk(60, 'cadde'); expect(dailyDemand(ist, ist.subeler[0]!)).toBeGreaterThan(dailyDemand(tok, tok.subeler[0]!) * 1.3); expect(ist.subeler[0]!.kira).toBeGreaterThan(tok.subeler[0]!.kira * 1.8);
   });

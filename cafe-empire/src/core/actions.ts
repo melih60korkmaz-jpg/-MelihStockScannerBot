@@ -1,10 +1,11 @@
 import { buyInvest } from './invest';
+import { estimateUsage, autoOrder } from './supply';
 import { emptyBolge, grantRegion, ilAcik, ilceAcik, ilceWeight } from './region';
 import { ilceKey, ilceOf, ilcelerOf, profilOf } from '../data/regions';
 import { cityById, type City } from '../data/turkey';
 import { AD, INGREDIENTS, PRODUCTS, PRODUCT, SHOP, STAFF_TYPE, UPGRADE, UPGRADES, type AdId, type IngId, type ProductId, type ShopTypeId, type StaffTypeId, type UpgradeId } from '../data/catalog';
 import { seedStreams } from './rng';
-import { dayOf, emptyAcc, initRivals, inflationIdx, levelOf, orderStock, outdoorSeats } from './sim';
+import { dailyDemand, dayOf, emptyAcc, initRivals, inflationIdx, levelOf, orderStock, outdoorSeats } from './sim';
 import { makeEmployee, autoPlan, postJob, hireCandidate, fireEmp, staffOf } from './hr';
 const openHours0 = (tip: ShopTypeId): [number, number] => tip === 'avm' ? [10, 22] : tip === 'sahil' ? [8, 24] : tip === 'luks' ? [9, 23] : [8, 23];
 import type { Branch, Employee, Facade, GameState, MenuItem } from './types';
@@ -19,7 +20,7 @@ export function newGame(o: { kasa?: number; ad: string; renk?: string; renk2?: s
   const s: GameState = { v: 1, seed, rng: seedStreams(seed), marka: { ad: o.ad.trim().slice(0, 24) || 'Kafe', renk: o.renk ?? '#c4722a', renk2: o.renk2 ?? '#2d1f14', logo: o.logo ?? 0 }, dk: 7 * 60, hiz: 1, kasa: o.kasa ?? 1200000, borc: 0, marka_puani: 5, seviye: 1, subeler: [], rakipler: {}, market: { enf: 38, fiyat: 1, bean: 1, elektrik: 1, mod: {} }, hava: {}, rapor: [], bekleyen: [], sn: 1, en: 1, log: [], hedef: {}, oyunBitti: false, negatifGun: 0, ayKar: 0, ayGelir: 0, capexBugun: 0, bolge: emptyBolge() };
   const ik = grantRegion(s, o.sehir, o.ilce); const r = subeAc(s, o.sehir, o.tip, o.ad, ik); if (!r.ok) return { s, r }; return { s, r: ok('Kafen açıldı!') };
 }
-export const rentOf = (s: GameState, c: City, tip: ShopTypeId): number => Math.round(SHOP[tip].kira * c.kira * inflationIdx(s) / 500) * 500;
+export const rentOf = (s: GameState, c: City, tip: ShopTypeId): number => Math.round(SHOP[tip].kira * c.kira * 0.75 * inflationIdx(s) / 500) * 500;
 export const setupCost = (s: GameState, c: City, tip: ShopTypeId): number => Math.round((SHOP[tip].kurulum * (0.9 + 0.2 * c.maliyet) + 3 * rentOf(s, c, tip)) / 1000) * 1000;
 
 export function subeAc(s: GameState, cityId: number, tip: ShopTypeId, ad?: string, ilceK?: string): Result {
@@ -34,8 +35,10 @@ export function subeAc(s: GameState, cityId: number, tip: ShopTypeId, ad?: strin
   const menu = {} as Record<ProductId, MenuItem>; for (const p of PRODUCTS) menu[p.id] = { aktif: ['espresso', 'americano', 'latte', 'cappuccino', 'filtre', 'turk', 'cay', 'kruvasan', 'cheesecake', 'sandvic', 'tost', 'kurabiye', 'pogaca'].includes(p.id), fiyat: 1, kalite: 1 };
   const stok = {} as Record<IngId, number>; const kat = Math.max(1, t.m2 / 35) * (1 + t.potansiyel / 200); for (const i of INGREDIENTS) stok[i.id] = Math.round((i.id === 'bean' ? 3000 : i.paket * (i.id === 'flour' ? 0.6 : 1)) * kat);
   const id = s.sn++; const b: Branch = { id, ad: ad && s.subeler.length === 0 ? `${ad}` : `${s.marka.ad} ${dk.ad}${s.subeler.some((x) => x.ilce === ilceKey(dk)) ? ' ' + (s.subeler.filter((x) => x.ilce === ilceKey(dk)).length + 1) : ''}`, city: cityId, ilce: ilceKey(dk), tip, acilis: dayOf(s), kira: Math.round(rentOf(s, c, tip) * pf.kira / 500) * 500, m2: t.m2, staff: [], menu, stok, siparisler: [], otoSiparis: true, yat: {}, facade: emptyFacade(), hijyen: 75, memnuniyet: 65, marka: s.subeler.length ? 6 : 8, sadakat: 20, backlog: 0, kullanim: {}, partiler: {}, minStok: {}, tedarikci: {}, malKalite: 1, mus: { ortSiparis: 0, ortBekleme: 0, hizmet: 80, urunKal: 1, fiyatMemn: 80, tekrar: 20, sadik: 10, sikayet: 0 }, sonAdet: {}, acilan: {}, mesai: { aci: openHours0(tip)[0], kapa: openHours0(tip)[1] }, ilanlar: [], adaylar: [], sikayetler: [], reklam: [], yorumlar: [], yorumPuan: 3.8, bugun: emptyAcc(), gecmis: [], acik: true, kuruldu: true };
-  const nb = t.m2 >= 150 ? 4 : t.m2 >= 75 ? 3 : t.m2 >= 45 ? 2 : 1, nk = t.m2 >= 75 ? 2 : 1; for (let i = 0; i < nb; i++) b.staff.push(makeEmployee(s, 'barista', 1, c.maliyet)); for (let i = 0; i < nk; i++) b.staff.push(makeEmployee(s, 'kasiyer', 1, c.maliyet)); if (t.m2 >= 75) b.staff.push(makeEmployee(s, 'servis', 0, c.maliyet)); if (t.m2 >= 150) b.staff.push(makeEmployee(s, 'sube_muduru', 3, c.maliyet)); autoPlan(b);
-  s.subeler.push(b); s.log.unshift(`${b.ad} açıldı.`); return ok(`${b.ad} açıldı! (−${fmt(cost)})`);
+  const nb = t.m2 >= 150 ? 4 : t.m2 >= 75 ? 3 : t.m2 >= 45 ? 2 : 2, nk = t.m2 >= 75 ? 2 : 1; for (let i = 0; i < nb; i++) b.staff.push(makeEmployee(s, 'barista', 1, c.maliyet)); for (let i = 0; i < nk; i++) b.staff.push(makeEmployee(s, 'kasiyer', 1, c.maliyet)); if (t.m2 >= 75) b.staff.push(makeEmployee(s, 'servis', 0, c.maliyet)); if (t.m2 >= 150) b.staff.push(makeEmployee(s, 'sube_muduru', 3, c.maliyet)); autoPlan(b);
+  s.subeler.push(b);
+  { const aktif = PRODUCTS.filter((p) => b.menu[p.id].aktif), u = estimateUsage(b, dailyDemand(s, b), (id) => PRODUCT[id as ProductId].recete, aktif); for (const i of INGREDIENTS) { if (i.id === 'clean') continue; const gun = u[i.id] ?? 0; if (gun > 0) { b.kullanim[i.id] = gun; b.stok[i.id] = Math.max(b.stok[i.id] ?? 0, Math.ceil(gun * 3.2 / i.paket) * i.paket); } } autoOrder(s, b); }
+  s.log.unshift(`${b.ad} açıldı.`); return ok(`${b.ad} açıldı! (−${fmt(cost)})`);
 }
 export const branchOf = (s: GameState, id: number): Branch => { const b = s.subeler.find((x) => x.id === id); if (!b) throw new Error('şube yok'); return b; };
 export const staffLimit = (b: Branch): number => Math.round(SHOP[b.tip].m2 / 6) + 3;
@@ -73,3 +76,10 @@ export { UPGRADES };
 export type { City };
 export function invest(s: GameState, b: Branch, id: string): Result { const r = buyInvest(s, b, id, levelOf(s)); return r.ok ? ok(r.m) : no(r.m); }
 export { ilAc, ilceAc } from './region';
+export function setPromo(s: GameState, b: Branch, key: 'sabah' | 'ogrenci' | 'mutlu' | 'kart' | 'yetkiFiyat'): Result {
+  b.promo ??= {}; if (key === 'yetkiFiyat' && !b.promo[key] && !b.staff.some((e) => e.tip === 'sube_muduru')) return no('Fiyat yetkisi için şubede bir şube müdürü olmalı.');
+  if (key === 'kart' && !b.promo[key] && levelOf(s) < 2) return no('Sadakat kartı için kafe seviyesi 2 gerekir.'); b.promo[key] = !b.promo[key]; return ok(`${{ sabah: 'Sabah paketi', ogrenci: 'Öğrenci indirimi', mutlu: 'Mutlu saat', kart: 'Sadakat kartı', yetkiFiyat: 'Müdür fiyat yetkisi' }[key]} ${b.promo[key] ? 'açıldı' : 'kapatıldı'}.`);
+}
+export function setGununUrunu(s: GameState, b: Branch, id: ProductId): Result {
+  const m = b.menu[id]; if (!m.aktif) return no('Ürün menüde değil.'); b.promo ??= {}; b.promo.gunun = id; b.promo.gununGun = dayOf(s); return ok(`Bugünün ürünü: ${PRODUCT[id].ad} (−%15 ve öne çıkarıldı, bugün geçerli).`);
+}

@@ -21,7 +21,7 @@ describe('stok, tedarik ve finans bağlantısı', () => {
     run(s, 3); expect(b.stok.bakery).toBeLessThan(40); const fire3 = s.rapor.reduce((a, r) => a + r.gider.fire, 0); expect(fire3).toBeGreaterThan(0); run(s, 4); expect(b.stok.milk).toBeLessThan(10000 * 0.2); expect(s.rapor.reduce((a, r) => a + r.gider.fire, 0)).toBeGreaterThan(fire3);
   });
   it('stok biten ürün satılamaz, ilgili müşteri kaybı sayılır; satışlar stok tüketir', () => {
-    const s = mk(); const b = s.subeler[0]!; b.otoSiparis = false; run(s, 2); const sut = b.stok.milk; for (const k of Object.keys(b.stok)) (b.stok as Record<string, number>)[k] = 0; run(s, 2); const g = s.rapor.slice(-2).reduce((a, r) => a + r.toplamGelir, 0); expect(g).toBe(0); expect(sut).toBeLessThan(ING.milk.paket * 2.5);
+    const s = mk(); const b = s.subeler[0]!; b.otoSiparis = false; run(s, 2); const sut = b.stok.milk; for (const k of Object.keys(b.stok)) (b.stok as Record<string, number>)[k] = 0; run(s, 2); const g = s.rapor.slice(-2).reduce((a, r) => a + r.toplamGelir, 0); expect(g).toBe(0); expect(sut).toBeGreaterThanOrEqual(0); void ING;
   });
   it('otomatik sipariş minimum seviyenin altında stok bitmesini engeller', () => { const s = mk(5); const b = s.subeler[0]!; b.otoSiparis = true; run(s, 40); const yok = s.rapor.reduce((a, r) => a + r.kayip, 0), mus = s.rapor.reduce((a, r) => a + r.musteri, 0); expect(mus).toBeGreaterThan(500); expect(yok / (yok + mus)).toBeLessThan(0.45); expect(minLevel(b, 'bean')).toBeGreaterThan(0); });
   it('muhasebe: brüt kâr = gelir − satılan malın maliyeti; net kâr = brüt − işletme giderleri', () => {

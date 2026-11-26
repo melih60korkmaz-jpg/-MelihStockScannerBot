@@ -4,7 +4,7 @@ import { cityById } from '../data/turkey';
 import type { Branch, GameState } from './types';
 import { dateOf } from './calendar';
 import { dayOf } from './calendar';
-import { dailyDemand, priceFactor, refPrice, unitCost, levelOf, segWeights, SEG_KEYS, SEG_ESNEKLIK, adEffect } from './sim';
+import { hooks, dailyDemand, priceFactor, refPrice, unitCost, levelOf, segWeights, SEG_KEYS, SEG_ESNEKLIK, adEffect } from './sim';
 import { profilBranch } from './region';
 
 export interface Oneri { id: ProductId; simdi: number; oneri: number; fiyatSimdi: number; fiyatOneri: number; kazanc: number; neden: string }
@@ -53,3 +53,17 @@ export function copyMenu(s: GameState, from: Branch): { sube: number; atlanan: n
   for (const to of s.subeler) { if (to === from) continue; n++; for (const p of PRODUCTS) { const f = from.menu[p.id], t = to.menu[p.id]; t.fiyat = f.fiyat; if (f.aktif !== t.aktif) { if (f.aktif && (lv < p.seviye || (p.kurulum && !to.acilan[p.id]))) { atlanan++; continue; } t.aktif = f.aktif; if (f.aktif) to.acilan[p.id] = true; } } if (PRODUCTS.filter((q) => to.menu[q.id].aktif).length < 3) for (const p of PRODUCTS.slice(0, 3)) to.menu[p.id].aktif = true; }
   return { sube: n, atlanan };
 }
+
+/** Seçilen ürün için fiyat çarpanına göre beklenen günlük brüt kâr eğrisi (diğer ürünler sabit). */
+export function profitCurve(s: GameState, b: Branch, id: ProductId): { m: number; fiyat: number; kar: number }[] {
+  const lv = levelOf(s), c = cityById(b.city), aktif = PRODUCTS.filter((p) => b.menu[p.id].aktif && lv >= p.seviye), p0 = PRODUCT[id]; if (!aktif.some((p) => p.id === id)) return [];
+  const A0 = dailyDemand(s, b), f0 = priceFactor(s, b, adEffect(b, dayOf(s))), cur: Record<string, number> = Object.fromEntries(aktif.map((p) => [p.id, b.menu[p.id].fiyat])), out: { m: number; fiyat: number; kar: number }[] = [];
+  const set = (m: number) => { const t = { ...cur, [id]: m }; return Math.round(dayProfit(s, b, t, aktif, A0, f0)); };
+  for (let m = 0.7; m <= 1.4001; m += 0.05) { const mm = Math.round(m * 100) / 100; out.push({ m: mm, fiyat: Math.round(refPrice(s, p0, c) * (0.92 + 0.08 * profilBranch(b).gelir) * mm), kar: set(mm) }); } return out;
+}
+/** Şube müdürü fiyat yetkisi: haftada bir önerileri (en çok ±%8) uygular. */
+hooks.gunSonu = (s: GameState): void => {
+  if (dayOf(s) % 7 !== 0) return;
+  for (const b of s.subeler) { if (!b.promo?.yetkiFiyat) continue; const m = b.staff.find((e) => e.tip === 'sube_muduru'); if (!m) continue; let n = 0; for (const o of priceAdvice(s, b)) { b.menu[o.id].fiyat = Math.round(clamp(o.oneri, o.simdi - 0.08, o.simdi + 0.08) * 100) / 100; n++; } if (n) s.log.unshift(`${m.ad} (${b.ad}) ${n} ürünün fiyatını güncelledi.`); }
+  s.log = s.log.slice(0, 40);
+};
