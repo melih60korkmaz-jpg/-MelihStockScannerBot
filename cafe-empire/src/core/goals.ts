@@ -39,14 +39,31 @@ export const BASARIMLAR: Basarim[] = [
   { id: 'franchise5', ad: '5 franchise', ac: '5 franchise şubesine ulaş.', ikon: '🏢', odul: 300000, ok: (s) => s.franchise.length >= 5 },
   { id: 'merkez', ad: 'Merkezi depo', ac: 'Merkezi depoyu kur.', ikon: '🏭', odul: 40000, ok: (s) => s.merkez.depo >= 1 },
   { id: 'seviye5', ad: 'Ulusal zincir', ac: 'Kafe seviyesi 5\'e ulaş.', ikon: '🏅', odul: 100000, ok: (s) => levelOf(s) >= 5 },
+  { id: 'tarif1', ad: 'Mutfak sanatçısı', ac: 'İlk tarifini yaz.', ikon: '🧪', odul: 8000, ok: (s) => (s.derin?.tarif.length ?? 0) >= 1 },
+  { id: 'imza1', ad: 'İmza içecek', ac: 'Bir tarifi imza içecek yap.', ikon: '⭐', odul: 20000, ok: (s) => s.derin?.imza != null },
+  { id: 'tat5', ad: 'Titiz damak', ac: 'Toplam 5 tadım turu yap.', ikon: '👅', odul: 12000, ok: (s) => (s.derin?.say?.tat ?? 0) >= 5 },
+  { id: 'harman', ad: 'Harman ustası', ac: 'Uyumlu bir harman karışımı yap.', ikon: '🫘', odul: 25000, ok: (s) => { const c = s.derin?.cek; return !!c?.ikinci && (c.oran ?? 0) >= 0.2 && (c.oran ?? 0) <= 0.5 && ((c.ana === 'brezilya' && (c.ikinci === 'etiyopya' || c.ikinci === 'robusta')) || (c.ana === 'etiyopya' && c.ikinci === 'brezilya') || (c.ana === 'robusta' && c.ikinci === 'brezilya') || (c.ana === 'kolombiya' && c.ikinci === 'guatemala') || (c.ana === 'guatemala' && c.ikinci === 'kolombiya')); } },
+  { id: 'usta5', ad: 'Usta barista', ac: 'Bir baristayı 5. seviyeye çıkar.', ikon: '🎓', odul: 30000, ok: (s) => Object.values(s.derin?.usta ?? {}).some((u) => Math.min(8, Math.floor(Math.sqrt(u.xp / 4))) >= 5) },
+  { id: 'sam1', ad: 'Şampiyonada', ac: 'Barista şampiyonasına katıl.', ikon: '🏆', odul: 15000, ok: (s) => (s.derin?.sam.length ?? 0) >= 1 },
+  { id: 'sam_madalya', ad: 'Madalyalı barista', ac: 'Şampiyonada ilk 3\'e gir.', ikon: '🥇', odul: 60000, ok: (s) => (s.derin?.sam ?? []).some((x) => x.derece <= 3) },
+  { id: 'mud5', ad: 'Müdavim kulübü', ac: 'Bir şubede 5 müdavime ulaş.', ikon: '☕', odul: 25000, ok: (s) => Object.values(s.derin?.mud ?? {}).some((l) => l.length >= 5) },
+  { id: 'mud_sadik', ad: 'Can dost', ac: 'Bir müdavimin bağını 90\'a çıkar.', ikon: '💞', odul: 30000, ok: (s) => Object.values(s.derin?.mud ?? {}).some((l) => l.some((m) => m.bag >= 90)) },
+  { id: 'esnaf3', ad: 'Mahallenin sevgilisi', ac: 'Bir şubede 3 esnafla ilişkiyi 60\'a çıkar.', ikon: '🤝', odul: 30000, ok: (s) => Object.values(s.derin?.esnaf ?? {}).some((m) => Object.values(m).filter((v) => v >= 60).length >= 3) },
+  { id: 'ortak1', ad: 'Ortak kampanya', ac: 'Bir komşu esnafla ortak kampanya yap.', ikon: '🎁', odul: 10000, ok: (s) => (s.derin?.say?.ortak ?? 0) >= 1 },
+  { id: 'kriz5', ad: 'Kriz yöneticisi', ac: '5 krizi ya da olayı kararla çöz.', ikon: '🛡️', odul: 30000, ok: (s) => (s.derin?.say?.kriz ?? 0) >= 5 },
+  { id: 'casus1', ad: 'Rakip avcısı', ac: 'Bir rakip zincire gizli müşteri gönder.', ikon: '🕵️', odul: 10000, ok: (s) => (s.derin?.say?.casus ?? 0) >= 1 },
+  { id: 'fuar1', ad: 'Fuar katılımcısı', ac: 'Kahve fuarına katıl.', ikon: '🎪', odul: 20000, ok: (s) => (s.derin?.fuar.gecmis.length ?? 0) >= 1 },
+  { id: 'fuar_altin', ad: 'Altın fincan', ac: 'Kahve fuarında altın madalya kazan.', ikon: '🏅', odul: 120000, ok: (s) => (s.derin?.fuar.kupa ?? 0) >= 1 },
+  { id: 'hik5', ad: 'Hikâye yazarı', ac: 'Dükkân günlüğünde 5 kayıt biriktir.', ikon: '📖', odul: 15000, ok: (s) => Object.values(s.derin?.hik ?? {}).some((l) => l.length >= 5) },
+  { id: 'zafer', ad: 'Kahve İmparatoru', ac: 'İmparatorluk hedeflerinin hepsini tamamla.', ikon: '👑', odul: 1000000, ok: (s) => (s.derin?.zafer ?? 0) > 0 },
   { id: 'yil1', ad: 'Bir yıl', ac: '365 gün ayakta kal.', ikon: '🎂', odul: 100000, ok: (s) => dayOf(s) >= 365 },
 ];
 export const BASARIM: Record<string, Basarim> = Object.fromEntries(BASARIMLAR.map((b) => [b.id, b]));
 
 /* ---------- Görevler ---------- */
-type GorevTur = 'kar' | 'musteri' | 'ilce' | 'sube' | 'kampanya' | 'memnun' | 'vardiya' | 'ilce_sube';
+type GorevTur = 'imza' | 'mud' | 'ortak' | 'kar' | 'musteri' | 'ilce' | 'sube' | 'kampanya' | 'memnun' | 'vardiya' | 'ilce_sube';
 const toplamKar = (s: GameState): number => s.stat.netKar, toplamMus = (s: GameState): number => s.stat.musteri;
-const olcum = (s: GameState, t: string): number => { switch (t as GorevTur) { case 'kar': return toplamKar(s); case 'musteri': return toplamMus(s); case 'ilce': return ilceSayisi(s); case 'sube': return s.subeler.length; case 'kampanya': return s.subeler.filter((b) => b.promo && (b.promo.sabah || b.promo.mutlu || b.promo.ogrenci || b.promo.kart)).length; case 'memnun': return Math.max(0, ...s.subeler.map((b) => b.memnuniyet)); case 'vardiya': return s.subeler.reduce((a, b) => a + weekGaps(b, dayOf(s)), 0); default: return 0; } };
+const olcum = (s: GameState, t: string): number => { switch (t as GorevTur) { case 'kar': return toplamKar(s); case 'musteri': return toplamMus(s); case 'ilce': return ilceSayisi(s); case 'sube': return s.subeler.length; case 'kampanya': return s.subeler.filter((b) => b.promo && (b.promo.sabah || b.promo.mutlu || b.promo.ogrenci || b.promo.kart)).length; case 'memnun': return Math.max(0, ...s.subeler.map((b) => b.memnuniyet)); case 'vardiya': return s.subeler.reduce((a, b) => a + weekGaps(b, dayOf(s)), 0); case 'imza': return s.derin?.imza != null ? 1 : 0; case 'mud': return Math.max(0, ...Object.values(s.derin?.mud ?? {}).map((l) => l.length)); case 'ortak': return s.derin?.say?.ortak ?? 0; default: return 0; } };
 /** Görev ilerlemesi 0–1. */
 export function ilerleme(s: GameState, g: Gorev): number {
   const v = olcum(s, g.olc); if (g.olc === 'vardiya') return g.hedef === 0 ? (v === 0 ? 1 : Math.max(0, 1 - v / Math.max(1, g.taban))) : 0;
@@ -62,6 +79,9 @@ function yeniGorev(s: GameState, n: number, mevcut: Set<string>): Gorev | null {
     () => ({ id: 'sube', ad: 'Büyüme', ac: 'Yeni bir şube aç.', olc: 'sube', hedef: 1, bas: now, bit: now + 60, odul: 40000, taban: s.subeler.length, tamam: false }),
     () => ({ id: 'kampanya', ad: 'Kampanya zamanı', ac: 'Bir şubede kampanya başlat.', olc: 'kampanya', hedef: 1, bas: now, bit: now + 20, odul: 8000, taban: olcum(s, 'kampanya'), tamam: false }),
     () => memn < 90 ? { id: 'memnun', ad: 'Memnuniyet', ac: `Bir şubede memnuniyeti ${Math.min(95, Math.round(memn + 8))}'e çıkar.`, olc: 'memnun', hedef: Math.min(95, Math.round(memn + 8)), bas: now, bit: now + 30, odul: 20000, taban: memn, tamam: false } : null,
+    () => (s.derin?.tarif.length && s.derin.imza == null ? { id: 'imza', ad: 'İmza içecek', ac: 'Bir tarifi tattır ve imza içecek yap.', olc: 'imza', hedef: 1, bas: now, bit: now + 30, odul: 15000, taban: 0, tamam: false } : null),
+    () => { const m = olcum(s, 'mud'); return s.subeler.length ? { id: 'mud', ad: 'Müdavim kazan', ac: `Bir şubede ${m + 2} müdavime ulaş.`, olc: 'mud', hedef: m + 2, bas: now, bit: now + 45, odul: 18000, taban: m, tamam: false } : null; },
+    () => ({ id: 'ortak', ad: 'Komşuluk', ac: 'Bir komşu esnafla ortak kampanya yap.', olc: 'ortak', hedef: 1, bas: now, bit: now + 40, odul: 10000, taban: olcum(s, 'ortak'), tamam: false }),
     () => { const v = olcum(s, 'vardiya'); return v > 0 ? { id: 'vardiya', ad: 'Eksiksiz vardiya', ac: 'Haftalık barista/kasiyer boşluğunu sıfırla (Vardiyalar).', olc: 'vardiya', hedef: 0, bas: now, bit: now + 14, odul: 12000, taban: v, tamam: false } : null; },
   ];
   for (let i = 0; i < sablon.length; i++) { const g = sablon[(n + i) % sablon.length]!(); if (g && !mevcut.has(g.id)) return g; } return null;

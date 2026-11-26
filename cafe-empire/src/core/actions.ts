@@ -1,4 +1,4 @@
-import './derin';
+import { D, ZORLUK } from './derin';
 import { buyInvest } from './invest';
 import { gorevleriGuncelle } from './goals';
 import { estimateUsage, autoOrder } from './supply';
@@ -17,10 +17,11 @@ const ok = (m: string): Result => ({ ok: true, m }), no = (m: string): Result =>
 export const fmt = (v: number): string => { const a = Math.abs(v), s = a >= 1e6 ? (a / 1e6).toFixed(2).replace('.', ',') + ' M' : a >= 1e4 ? Math.round(a / 1000) + ' B' : Math.round(a).toLocaleString('tr-TR'); return (v < 0 ? '−' : '') + s + ' ₺'; };
 const emptyFacade = (): Facade => ({ tabela: 0, cam: 0, led: 0, premium: 0, marka: 0, kapi: 0, oturma: 0, peyzaj: 0, vitrin: 0, tente: 0 });
 
-export function newGame(o: { kasa?: number; ad: string; renk?: string; renk2?: string; logo?: number; seed?: number; sehir: number; tip: ShopTypeId; ilce?: string; bos?: boolean }): { s: GameState; r: Result } {
+export function newGame(o: { kasa?: number; ad: string; renk?: string; renk2?: string; logo?: number; seed?: number; sehir: number; tip: ShopTypeId; ilce?: string; bos?: boolean; zorluk?: 'kolay' | 'normal' | 'zor' }): { s: GameState; r: Result } {
   const seed = o.seed ?? 20270301;
   const s: GameState = { v: 1, seed, rng: seedStreams(seed), marka: { ad: o.ad.trim().slice(0, 24) || 'Kafe', renk: o.renk ?? '#c4722a', renk2: o.renk2 ?? '#2d1f14', logo: o.logo ?? 0 }, dk: 7 * 60, hiz: 1, kasa: o.kasa ?? 1200000, borc: 0, marka_puani: 5, seviye: 1, subeler: [], rakipler: {}, market: { enf: 38, fiyat: 1, bean: 1, elektrik: 1, mod: {} }, hava: {}, rapor: [], bekleyen: [], sn: 1, en: 1, log: [], hedef: {}, oyunBitti: false, negatifGun: 0, ayKar: 0, ayGelir: 0, capexBugun: 0, bolge: emptyBolge(), sosyal: { takipci: 150, son: {} }, ilanYenile: {}, ilprog: {}, basarim: {}, gorevler: [], stat: { musteri: 0, netKar: 0, karGun: 0, enIyiGun: 0, fiyatDeg: 0 }, franchise: [], merkez: { depo: 0, mutfak: 0 }, tur: 0, ayar: { gunSn: 180, ozet: 'her', ses: true, muzik: true, ses_vol: 0.6 } };
-  if (o.bos) { s.bolge.il[o.sehir] = 0; s.kasa = o.kasa ?? 2000000; gorevleriGuncelle(s); return { s, r: ok('Hoş geldin! İlk dükkânını bul.') }; }
+  if (o.zorluk) { D(s).zorluk = o.zorluk; }
+  if (o.bos) { s.bolge.il[o.sehir] = 0; s.kasa = o.kasa ?? Math.round(2000000 * ZORLUK[o.zorluk ?? 'normal'].kasa); gorevleriGuncelle(s); return { s, r: ok('Hoş geldin! İlk dükkânını bul.') }; }
   const ik = grantRegion(s, o.sehir, o.ilce); const r = subeAc(s, o.sehir, o.tip, o.ad, ik); if (!r.ok) return { s, r }; gorevleriGuncelle(s); return { s, r: ok('Kafen açıldı!') };
 }
 export const rentOf = (s: GameState, c: City, tip: ShopTypeId): number => Math.round(SHOP[tip].kira * Math.pow(c.kira, 0.8) * 0.75 * inflationIdx(s) / 500) * 500;

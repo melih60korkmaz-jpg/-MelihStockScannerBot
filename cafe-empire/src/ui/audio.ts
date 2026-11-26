@@ -37,6 +37,13 @@ export const sfx = {
   ach: () => play((_c, t, d) => { [784, 988, 1175, 1568].forEach((f, i) => note(f, t + i * 0.1, 0.55, 0.1, 'triangle', d)); note(392, t, 0.9, 0.06, 'sine', d); }),
   warn: () => play((_c, t, d) => { note(330, t, 0.18, 0.08, 'sawtooth', d); note(262, t + 0.16, 0.3, 0.08, 'sawtooth', d); }),
   gun: () => play((_c, t, d) => { note(587, t, 0.5, 0.05, 'sine', d); note(784, t + 0.15, 0.6, 0.04, 'sine', d); }),
+  olay: () => play((_c, t, d) => { note(698, t, 0.2, 0.07, 'triangle', d); note(880, t + 0.12, 0.3, 0.07, 'triangle', d); note(1047, t + 0.26, 0.4, 0.06, 'triangle', d); }),
+  kriz: () => play((_c, t, d) => { note(220, t, 0.25, 0.09, 'sawtooth', d); note(196, t + 0.22, 0.25, 0.09, 'sawtooth', d); note(165, t + 0.44, 0.5, 0.09, 'sawtooth', d); }),
+  madalya: () => play((_c, t, d) => { [523, 659, 784, 659, 784, 1047, 1319].forEach((f, i) => note(f, t + i * 0.11, 0.5, 0.1, 'triangle', d)); note(262, t, 1.2, 0.07, 'sine', d); }),
+  zafer: () => play((_c, t, d) => { [392, 523, 659, 784, 1047, 1319, 1568].forEach((f, i) => note(f, t + i * 0.13, 0.9, 0.11, 'triangle', d)); [196, 262, 330].forEach((f, i) => note(f, t + i * 0.2, 1.8, 0.07, 'sine', d)); }),
+  kahve: () => play((_c, t, d) => { note(330, t, 0.08, 0.05, 'sine', d); note(392, t + 0.07, 0.1, 0.05, 'sine', d); note(494, t + 0.15, 0.2, 0.05, 'sine', d); }),
+  dogru: () => play((_c, t, d) => { note(988, t, 0.1, 0.08, 'triangle', d); note(1319, t + 0.07, 0.2, 0.08, 'triangle', d); }),
+  yanlis: () => play((_c, t, d) => note(147, t, 0.25, 0.08, 'square', d)),
   err: () => play((_c, t, d) => note(196, t, 0.2, 0.08, 'square', d)),
 };
 export const audioDurumu = (): { basladi: boolean; durum: string } => ({ basladi: started, durum: ac?.state ?? 'yok' });

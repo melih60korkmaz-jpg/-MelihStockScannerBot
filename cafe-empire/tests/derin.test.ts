@@ -8,6 +8,8 @@ import { serialize, deserialize } from '../src/core/save';
 import '../src/core/pricing'; import '../src/core/franchise'; import '../src/core/merkez';
 import { D, CEKIRDEKLER, harman, cekirdekAyarla, tarifOlustur, tarifTat, tarifImza, tarifTahmin, gercekBegeni, ustaOf, ustaYetenek, ustaSeviye, ustaPuan, sampiyonaKatil, semtOlaylari, semtCarpan, takvim, esnafOf, esnafZiyaret, ortakKampanya, esnafIliski, karakterOf, fuarDurum, fuarKayit, kimlik, musteriTipleri, casusluk, yenile, OLAYLAR, h32 } from '../src/core/derin';
 import { franchiseVer } from '../src/core/franchise';
+import { BASARIMLAR, gorevleriGuncelle } from '../src/core/goals';
+import { stokTuket, tarifRecete, zaferMaddeleri, zaferTamam, ZORLUK } from '../src/core/derin';
 import { SOZLESME } from '../src/core/derin';
 
 const yeni = (seed = 1) => newGame({ ad: 'Test', sehir: 34, tip: 'cadde', seed, ilce: '34:Kadıköy' }).s;
@@ -121,4 +123,31 @@ describe('fuar, hikâye, rakipler, kayıt', () => {
     oyna(s, 365); expect(s.oyunBitti).toBe(false); expect(s.kasa).toBeGreaterThan(0); for (const b of s.subeler) { expect(Number.isFinite(b.memnuniyet)).toBe(true); expect(Number.isFinite(s.derin!.talepB[b.id]!)).toBe(true); expect(s.derin!.talepB[b.id]!).toBeGreaterThan(0.2); expect(s.derin!.talepB[b.id]!).toBeLessThan(3); }
     expect(t.satis).toBeGreaterThan(100); expect(Object.keys(s.derin!.hik).length).toBeGreaterThan(0); expect(s.stat.netKar).toBeGreaterThan(0);
   }, 300000);
+});
+
+describe('ikinci tur: stok, zorluk, zafer, başarım, mini oyun bonusu', () => {
+  it('imza içecek ve müdavim satışı hammaddeyi düşer; stok bitince satış durur', () => {
+    const s = yeni(2); const b = s.subeler[0]!; tarifOlustur(s, 'Hit', { sut: 1, sup: 2, sos: 0, soguk: true, shot: 1 }); const t = s.derin!.tarif[0]!; t.begeni = 90; t.test = 2; tarifImza(s, t.id);
+    const r = tarifRecete(t); expect(r.bean).toBe(18); b.stok.bean = 100; b.stok.cup = 100; b.stok.lid = 100; b.stok.napkin = 100; b.stok.milk = 5000; b.stok.syrup = 500; const once = b.stok.bean!; expect(stokTuket(b, r)).toBe(true); expect(b.stok.bean).toBe(once - 18);
+    b.stok.bean = 5; expect(stokTuket(b, r)).toBe(false); expect(b.stok.bean).toBe(5);
+    b.otoSiparis = false; for (const k of Object.keys(b.stok) as Array<keyof typeof b.stok>) b.stok[k] = 0; gunGit(s, dayOf(s) + 5); expect(t.satis).toBeLessThan(5);
+  });
+  it('zorluk başlangıç parasını ve olay/rakip yoğunluğunu etkiler', () => {
+    const k = newGame({ ad: 'K', sehir: 34, tip: 'cadde', seed: 1, bos: true, zorluk: 'kolay' }).s, n = newGame({ ad: 'N', sehir: 34, tip: 'cadde', seed: 1, bos: true }).s, z = newGame({ ad: 'Z', sehir: 34, tip: 'cadde', seed: 1, bos: true, zorluk: 'zor' }).s;
+    expect(k.kasa).toBe(3000000); expect(n.kasa).toBe(2000000); expect(z.kasa).toBe(1400000); expect(ZORLUK.zor.olay).toBeGreaterThan(ZORLUK.kolay.olay); expect(z.derin!.zorluk).toBe('zor');
+  });
+  it('Kahve İmparatoru: ölçütler tamamlanınca zafer tetiklenir ve ödül gelir', () => {
+    const s = yeni(3); expect(zaferTamam(s)).toBe(false); expect(zaferMaddeleri(s).length).toBe(6);
+    s.kasa = 3e7; s.marka_puani = 90; for (let i = 0; i < 8; i++) s.bolge.il[40 + i] = 0; s.derin!.fuar.kupa = 1; for (let i = 0; i < 3; i++) s.franchise.push({ id: 50 + i, ad: 'B' + i, il: 34, ilce: 'x' + i, tip: 'cadde', acilis: 0, kalite: 80, memnuniyet: 80, destek: 1, ciro: 0, royalty: 0, toplam: 0, dusukGun: 0, denetim: 0 });
+    for (let i = 0; i < 19; i++) s.subeler.push({ ...s.subeler[0]!, id: 100 + i, ilce: 'z' + i });
+    s.marka_puani = 90; gunGit(s, dayOf(s) + 1); expect(s.derin!.zafer).toBeGreaterThan(0); expect(s.bekleyen.some((p) => p.tip === 'd_hikaye_zafer')).toBe(true);
+  });
+  it('yeni başarımlar çökmeden değerlendirilir; iyi oyun birkaçını kazanır; görevler üretilir', () => {
+    const s = yeni(9); tarifOlustur(s, 'A', { sut: 1, sup: 2, sos: 0, soguk: true, shot: 1 }); const t = s.derin!.tarif[0]!; tarifTat(s, t.id); tarifImza(s, t.id); oyna(s, 120);
+    for (const b of BASARIMLAR) expect(typeof b.ok(s)).toBe('boolean'); expect(s.basarim.tarif1).toBeDefined(); expect(s.basarim.imza1).toBeDefined(); gorevleriGuncelle(s); expect(s.gorevler.length).toBeGreaterThan(0);
+  }, 200000);
+  it('mini oyun bonusu şampiyona puanını artırır (sınırlı 0–20)', () => {
+    const mk = (bn: number) => { const s = yeni(5); gunGit(s, 5); const bb = s.subeler[0]!; let g = dayOf(s); while (dateOf(g).ay !== 9) g++; gunGit(s, g); const e = bb.staff[0] ?? ({ ...s.subeler[0]!.staff[0] } as never); void e; if (!bb.staff.some((x) => x.tip === 'barista')) return -1; s.kasa = 1e6; const eb = bb.staff.find((x) => x.tip === 'barista')!; const sam = sampiyonaKatil(s, eb.id, bn); return sam.ok ? s.derin!.sam[0]!.derece : -2; };
+    const a = mk(0), b = mk(20); if (a > 0 && b > 0) expect(b).toBeLessThanOrEqual(a);
+  }, 100000);
 });

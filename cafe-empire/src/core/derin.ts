@@ -4,7 +4,7 @@
  * Tüm durum `s.derin` içinde (JSON), her şey deterministik RNG akışlarıyla çalışır.
  */
 import { cityById } from '../data/turkey';
-import { PRODUCT, PRODUCTS, type ProductId } from '../data/catalog';
+import { PRODUCT, PRODUCTS, type IngId, type ProductId } from '../data/catalog';
 import { carpan, hooks, olayIsleyici, refPrice, sellPrice, unitCost, segWeights, newRival } from './sim';
 import { dateOf, dayOf } from './calendar';
 import { rand } from './rng';
@@ -53,6 +53,11 @@ export function cekirdekAyarla(s: GameState, p: { ana?: string; ikinci?: string 
   yenile(s); return ok('Ayar kaydedildi.');
 }
 
+/** Tarifin hammadde reçetesi (imza içecek satışı stoktan düşer). */
+export function tarifRecete(t: Pick<Tarif, 'sut' | 'sup' | 'sos' | 'shot'>): Partial<Record<IngId, number>> { return { bean: 18 * t.shot, cup: 1, lid: 1, napkin: 1, ...(t.sut < 3 ? { milk: 160 } : {}), ...(t.sup > 0 ? { syrup: 12 } : {}), ...(t.sos > 0 ? { choc: 15 } : {}) }; }
+/** Stok yetiyorsa düşer ve true döner. */
+export function stokTuket(b: Branch, r: Partial<Record<IngId, number>>): boolean { for (const k of Object.keys(r) as IngId[]) if ((b.stok[k] ?? 0) < (r[k] ?? 0)) return false; for (const k of Object.keys(r) as IngId[]) b.stok[k] = (b.stok[k] ?? 0) - (r[k] ?? 0); return true; }
+
 /* ===================== 2) Tarif laboratuvarı ===================== */
 export interface Tarif { id: number; ad: string; sut: number; sup: number; sos: number; soguk: boolean; shot: number; fiyat: number; test: number; begeni: number; satis: number; gelir: number }
 export const SUTLER = ['Tam yağlı süt', 'Yulaf sütü', 'Badem sütü', 'Süt yok'];
@@ -75,7 +80,7 @@ export function tarifOlustur(s: GameState, ad: string, c: { sut: number; sup: nu
   const id = Math.max(0, ...d.tarif.map((x) => x.id)) + 1, t: Tarif = { id, ad: ad.trim().slice(0, 22) || `Tarif ${id}`, ...c, fiyat: Math.round(tarifMaliyet(s, c) * 3.4 / 5) * 5, test: 0, begeni: gercekBegeni(s.seed + id, c), satis: 0, gelir: 0 };
   s.kasa -= bedel; s.capexBugun += bedel; d.tarif.push(t); return ok(`"${t.ad}" tarifi yazıldı (−${bedel} ₺). Önerilen satış fiyatı ${t.fiyat} ₺; önce müşterilere tattır.`);
 }
-export function tarifTat(s: GameState, id: number): Res { const t = D(s).tarif.find((x) => x.id === id); if (!t) return no('Tarif yok.'); const bedel = Math.round(1500 * s.market.fiyat); if (s.kasa < bedel) return no('Tadım için kasa yetersiz.'); s.kasa -= bedel; t.test++; const e = tarifTahmin(s, t); return ok(`Tadım ${t.test}. tur: müşteri puanı yaklaşık ${e.orta}/100 (±${e.pay}).`); }
+export function tarifTat(s: GameState, id: number): Res { const t = D(s).tarif.find((x) => x.id === id); if (!t) return no('Tarif yok.'); const bedel = Math.round(1500 * s.market.fiyat); if (s.kasa < bedel) return no('Tadım için kasa yetersiz.'); s.kasa -= bedel; t.test++; D(s).say.tat = (D(s).say.tat ?? 0) + 1; const e = tarifTahmin(s, t); return ok(`Tadım ${t.test}. tur: müşteri puanı yaklaşık ${e.orta}/100 (±${e.pay}).`); }
 export function tarifFiyat(s: GameState, id: number, d: number): Res { const t = D(s).tarif.find((x) => x.id === id); if (!t) return no('Tarif yok.'); t.fiyat = Math.max(20, t.fiyat + d); return ok(`${t.ad}: ${t.fiyat} ₺`); }
 export function tarifSil(s: GameState, id: number): Res { const d = D(s); d.tarif = d.tarif.filter((x) => x.id !== id); if (d.imza === id) d.imza = null; return ok('Tarif silindi.'); }
 export function tarifImza(s: GameState, id: number): Res {
@@ -86,7 +91,8 @@ function imzaGunluk(s: GameState, b: Branch, musteri: number): { gelir: number; 
   const d = D(s), t = d.tarif.find((x) => x.id === d.imza); if (!t || musteri <= 0) return { gelir: 0, gider: 0 };
   const ay = dateOf(dayOf(s)).ay, yaz = ay >= 5 && ay <= 8, kis = ay <= 1 || ay === 11, sez = t.soguk ? (yaz ? 1.6 : kis ? 0.4 : 1) : yaz ? 0.85 : kis ? 1.2 : 1;
   const ref = refPrice(s, PRODUCT.latte, cityById(b.city)), oran = (0.02 + 0.13 * t.begeni / 100) * sez * cl(Math.pow(ref / t.fiyat, 1.3), 0.3, 1.4);
-  const adet = musteri * oran * 0.6; t.satis += adet; t.gelir += adet * t.fiyat; if (t.begeni > 70) b.marka = cl(b.marka + 0.03, 0, 100);
+  const hedef = musteri * oran * 0.6, rc = tarifRecete(t); let adet = 0; for (let i = 0; i < Math.round(hedef) && i < 400; i++) { if (!stokTuket(b, rc)) break; adet++; } if (adet < Math.round(hedef)) D(s).say.imzaStok = (D(s).say.imzaStok ?? 0) + 1;
+  t.satis += adet; t.gelir += adet * t.fiyat; if (t.begeni > 70) b.marka = cl(b.marka + 0.03, 0, 100);
   return { gelir: adet * t.fiyat, gider: adet * tarifMaliyet(s, t) };
 }
 
@@ -108,11 +114,11 @@ export function ustaOrt(s: GameState, b: Branch): { art: number; sohbet: number;
   for (const e of l) { const u = d.usta[e.id]; if (u) { a += u.art; c += u.sohbet; t += u.tasarruf; } } return { art: a / l.length, sohbet: c / l.length, tasarruf: t / l.length };
 }
 export const DERECE = ['Altın', 'Gümüş', 'Bronz'];
-export function sampiyonaKatil(s: GameState, empId: number): Res {
+export function sampiyonaKatil(s: GameState, empId: number, bonus = 0): Res {
   const d = D(s), now = dayOf(s), dt = dateOf(now), e = s.subeler.flatMap((b) => b.staff).find((x) => x.id === empId);
   if (!e || e.tip !== 'barista') return no('Yalnızca baristalar katılabilir.'); if (dt.ay !== 9) return no('Şampiyona her yıl Ekim ayında yapılır.'); if (d.sam.some((x) => x.yil === dt.yil)) return no('Bu yılın şampiyonasına zaten katıldın.');
   const bedel = Math.round(8000 * s.market.fiyat); if (s.kasa < bedel) return no(`Kayıt ücreti ${bedel} ₺.`); s.kasa -= bedel;
-  const u = ustaOf(s, e), puan = 38 + u.art * 7 + ustaSeviye(u) * 3.5 + e.beceri * 0.18 + rand(s.rng, 'misc') * 22, rakip = Array.from({ length: 12 }, (_, i) => 42 + ((h32(s.seed, dt.yil, i) % 4400) / 100)), derece = 1 + rakip.filter((x) => x > puan).length;
+  const u = ustaOf(s, e), puan = 38 + u.art * 7 + ustaSeviye(u) * 3.5 + e.beceri * 0.18 + rand(s.rng, 'misc') * 22 + cl(bonus, 0, 20), rakip = Array.from({ length: 12 }, (_, i) => 42 + ((h32(s.seed, dt.yil, i) % 4400) / 100)), derece = 1 + rakip.filter((x) => x > puan).length;
   const ad = derece <= 3 ? `${DERECE[derece - 1]} madalya` : `${derece}. sıra`; d.sam.push({ yil: dt.yil, ad: `${e.ad} · ${ad}`, derece });
   const odul = derece === 1 ? [30000, 6, 1.08, 60] : derece === 2 ? [15000, 3, 1.05, 40] : derece === 3 ? [8000, 2, 1.03, 30] : [0, 0.5, 1, 0];
   s.kasa += odul[0]! * s.market.fiyat; for (const b of s.subeler) b.marka = cl(b.marka + odul[1]!, 0, 100); if (odul[3]) d.etki['g:talep:sam'] = { v: odul[2]!, bit: now + odul[3] }; e.motivasyon = cl(e.motivasyon + (derece <= 3 ? 25 : 8), 0, 100); u.xp += derece <= 3 ? 20 : 6;
@@ -133,7 +139,7 @@ function mudGunluk(s: GameState, b: Branch, musteri: number): { gelir: number; g
   for (const m of [...l]) {
     const mi = b.menu[m.urun], var_ = !!mi?.aktif, pahali = (mi?.fiyat ?? 1) > 1.2;
     m.bag = cl(m.bag + (var_ && !pahali && b.memnuniyet >= 52 ? 0.7 : 0) - (!var_ ? 1.8 : 0) - (pahali ? 0.8 : 0) - (b.memnuniyet < 45 ? 0.5 : 0) + (b.hijyen > 70 ? 0.1 : -0.1), 0, 100);
-    if (var_ && b.acik && rand(s.rng, 'misc') < m.bag / 140) { const fiyat = sellPrice(s, b, m.urun); m.gel++; gelir += fiyat; gider += unitCost(s, m.urun, cityById(b.city)); }
+    if (var_ && b.acik && rand(s.rng, 'misc') < m.bag / 140 && stokTuket(b, PRODUCT[m.urun].recete)) { const fiyat = sellPrice(s, b, m.urun); m.gel++; gelir += fiyat; gider += unitCost(s, m.urun, cityById(b.city)); }
     if (m.bag < 4) { l.splice(l.indexOf(m), 1); yaz(s, b, `${m.ad} artık uğramıyor… (${PRODUCT[m.urun].ad} bulunmadı ya da fiyat/hizmet hoşuna gitmedi)`); }
   }
   void now; if (l.filter((m) => m.bag >= 80).length >= 3) ms(s, b, 'sadik3', 'Üç sadık müdavim: dükkân artık bir mahalle ocağı.'); return { gelir, gider };
@@ -185,7 +191,7 @@ export function esnafZiyaret(s: GameState, b: Branch, id: string): Res {
 }
 export function ortakKampanya(s: GameState, b: Branch, id: string): Res {
   const d = D(s), e = ESNAFLAR.find((x) => x.id === id); if (!e) return no('Esnaf yok.'); if (esnafIliski(s, b, id) < 40) return no('Ortak kampanya için ilişki en az 40 olmalı.'); const now = dayOf(s); if ((d.ortak[b.id]?.[id] ?? 0) > now) return no('Bu ortak kampanya zaten sürüyor.');
-  const bedel = Math.round(4000 * s.market.fiyat); if (s.kasa < bedel) return no('Kasa yetersiz.'); s.kasa -= bedel; (d.ortak[b.id] ??= {})[id] = now + 14; yenile(s); yaz(s, b, `${e.ad} ile ortak kampanya başladı.`); return ok(`${e.ad} ile 14 günlük ortak kampanya (−${bedel} ₺).`);
+  const bedel = Math.round(4000 * s.market.fiyat); if (s.kasa < bedel) return no('Kasa yetersiz.'); s.kasa -= bedel; (d.ortak[b.id] ??= {})[id] = now + 14; d.say.ortak = (d.say.ortak ?? 0) + 1; yenile(s); yaz(s, b, `${e.ad} ile ortak kampanya başladı.`); return ok(`${e.ad} ile 14 günlük ortak kampanya (−${bedel} ₺).`);
 }
 function esnafCarpan(s: GameState, b: Branch): number {
   const d = D(s), now = dayOf(s); let k = 1; for (const e of esnafOf(s, b)) { const r = esnafIliski(s, b, e.id); k += e.talep * (r >= 60 ? 1 : 0.4 * r / 60); if ((d.ortak[b.id]?.[e.id] ?? 0) > now) k += 0.04 + r / 100 * 0.05; } return k;
@@ -233,7 +239,7 @@ const OLAY: Record<string, OlayDef> = Object.fromEntries(OLAYLAR.map((o) => [o.i
 function uygula(s: GameState, b: Branch, ef: Ef, c: Ctx, now: number): string[] {
   const d = D(s), m: string[] = [];
   if (ef.sans) { const r = rand(s.rng, 'events') < ef.sans[0]; m.push(...uygula(s, b, r ? ef.sans[1] : ef.sans[2], c, now)); }
-  if (ef.kasa) { s.kasa += ef.kasa; if (ef.kasa < 0) s.capexBugun += 0; }
+  if (ef.kasa) { s.kasa += ef.kasa; if (ef.kasa < 0) s.capexBugun += -ef.kasa; }
   if (ef.marka) b.marka = cl(b.marka + ef.marka, 0, 100); if (ef.hijyen) b.hijyen = cl(b.hijyen + ef.hijyen, 0, 100); if (ef.memn) b.memnuniyet = cl(b.memnuniyet + ef.memn, 0, 100);
   if (ef.etki) d.etki[`${ef.etki[0]}`] = { v: ef.etki[1], bit: now + ef.etki[2] };
   if (ef.mot) for (const e of b.staff) e.motivasyon = cl(e.motivasyon + ef.mot, 0, 100);
@@ -253,7 +259,7 @@ function olayUret(s: GameState, ev: OlayDef, b: Branch, c: Ctx = {}): void {
 }
 olayIsleyici.push((s, p, secim) => {
   if (!p.tip.startsWith('d_')) return null; const ev = OLAY[p.tip.slice(2)]; if (!ev) return ''; const d = D(s), c = d.bag[p.id] ?? {}; delete d.bag[p.id];
-  const b = s.subeler.find((x) => x.id === p.branch) ?? s.subeler[0]; if (!b) return ''; const o = ev.opt[secim] ?? ev.opt[ev.opt.length - 1]!; const m = uygula(s, b, o.ef(s, b, c), c, dayOf(s)); yenile(s); const msg = m.join(' ') || 'Karar uygulandı.'; s.log.unshift(`📣 ${ev.ad}: ${msg}`); return msg;
+  const b = s.subeler.find((x) => x.id === p.branch) ?? s.subeler[0]; if (!b) return ''; const o = ev.opt[secim] ?? ev.opt[ev.opt.length - 1]!; const m = uygula(s, b, o.ef(s, b, c), c, dayOf(s)); if (!['semt', 'hikaye'].includes(ev.id)) d.say.kriz = (d.say.kriz ?? 0) + 1; yenile(s); const msg = m.join(' ') || 'Karar uygulandı.'; s.log.unshift(`📣 ${ev.ad}: ${msg}`); return msg;
 });
 const hikayeKitap: Record<string, string[]> = {
   ogrenci: ['Üç öğrenci bütün öğleden sonra aynı masada ders çalıştı; biri çaydan sonra "bir yeni içecek önerebilir miyiz?" dedi.', 'Sınav öncesi masalar sabaha kadar dolu kalmak istiyor.'],
@@ -280,10 +286,10 @@ export function fuarDurum(s: GameState): { asama: 'bekle' | 'kayit' | 'fuar'; ka
   let g = now; for (let i = 0; i < 400; i++, g++) { const x = dateOf(g); if (x.ay === 3 && x.ayGun === 10) break; } const kalan = g - now;
   return { asama: (dt.ay === 2 && dt.ayGun >= 15) || (dt.ay === 3 && dt.ayGun < 10) ? 'kayit' : 'bekle', kalan, yil };
 }
-export function fuarKayit(s: GameState, tur: 'tarif' | 'harman', stant: 0 | 1): Res {
+export function fuarKayit(s: GameState, tur: 'tarif' | 'harman', stant: 0 | 1, bonus = 0): Res {
   const d = D(s), du = fuarDurum(s); if (du.asama !== 'kayit') return no('Kayıt dönemi 15 Mart – 9 Nisan arasında. Fuar 10–12 Nisan.'); if (d.fuar.kayit?.yil === du.yil) return no('Bu yıl zaten kayıt oldun.');
   let ad = '', puan = 0; if (tur === 'tarif') { const t = d.tarif.find((x) => x.id === d.imza); if (!t) return no('Fuara bir imza tarif götürmelisin (Tarif laboratuvarı).'); ad = t.ad; puan = t.begeni; } else { const h = harman(s); ad = h.ad; puan = cl((h.kal - 0.85) * 200, 0, 100); }
-  const bedel = Math.round((stant ? 15000 : 6000) * s.market.fiyat); if (s.kasa < bedel) return no(`Kayıt ve stant bedeli ${bedel} ₺.`); s.kasa -= bedel; d.fuar.kayit = { yil: du.yil, tur, ad, puan, stant }; return ok(`Fuara "${ad}" ile kayıt oldun (−${bedel} ₺).`);
+  const bedel = Math.round((stant ? 15000 : 6000) * s.market.fiyat); if (s.kasa < bedel) return no(`Kayıt ve stant bedeli ${bedel} ₺.`); s.kasa -= bedel; d.fuar.kayit = { yil: du.yil, tur, ad, puan: puan + cl(bonus, 0, 20) * 0.6, stant }; return ok(`Fuara "${ad}" ile kayıt oldun (−${bedel} ₺).`);
 }
 function fuarSonuc(s: GameState, toplam: { gelir: { etkinlik: number } }): void {
   const d = D(s), k = d.fuar.kayit, dt = dateOf(dayOf(s) - 1); if (!k || dt.ay !== 3 || dt.ayGun !== 12 || d.fuar.gecmis.some((x) => x.yil === k.yil)) return;
@@ -318,11 +324,11 @@ function rakipBaslat(): Kisi[] { return [
   { id: 'beanify', ad: 'Beanify', kisilik: 'kalite', sehirler: [], guc: 1.0, son: 'Henüz sahaya çıkmadı.', casus: -99, slogan: 'Her fincan bir hikâye.' },
   { id: 'dem', ad: 'Dem & Demlik', kisilik: 'gelenek', sehirler: [], guc: 0.8, son: 'Henüz sahaya çıkmadı.', casus: -99, slogan: 'Eski dost, eski tat.' },
   { id: 'ay', ad: 'Ay Çekirdek', kisilik: 'franchise', sehirler: [], guc: 1.1, son: 'Henüz sahaya çıkmadı.', casus: -99, slogan: 'Her köşeye bir Ay!' }]; }
-export function casusluk(s: GameState, id: string): Res { const r = D(s).rakip.find((x) => x.id === id); if (!r) return no('Rakip yok.'); const bedel = Math.round(6000 * s.market.fiyat); if (s.kasa < bedel) return no('Kasa yetersiz.'); s.kasa -= bedel; r.casus = dayOf(s); return ok(`${r.ad} hakkında gizli müşteri raporu alındı (−${bedel} ₺).`); }
+export function casusluk(s: GameState, id: string): Res { const r = D(s).rakip.find((x) => x.id === id); if (!r) return no('Rakip yok.'); const bedel = Math.round(6000 * s.market.fiyat); if (s.kasa < bedel) return no('Kasa yetersiz.'); s.kasa -= bedel; r.casus = dayOf(s); D(s).say.casus = (D(s).say.casus ?? 0) + 1; return ok(`${r.ad} hakkında gizli müşteri raporu alındı (−${bedel} ₺).`); }
 function rakipGunluk(s: GameState): void {
   const d = D(s), now = dayOf(s); if (!s.subeler.length || now < 20) return;
   for (const r of d.rakip) {
-    if (rand(s.rng, 'rivals') < 0.012 * r.guc * (r.kisilik === 'franchise' ? 1.6 : 1) && r.sehirler.length < 30) {
+    if (rand(s.rng, 'rivals') < 0.012 * ZORLUK[d.zorluk].rakip * r.guc * (r.kisilik === 'franchise' ? 1.6 : 1) && r.sehirler.length < 30) {
       const sehirler = [...new Set(s.subeler.map((b) => b.city))], hedef = rand(s.rng, 'rivals') < 0.7 ? sehirler[Math.floor(rand(s.rng, 'rivals') * sehirler.length)]! : -1; if (hedef < 0 || r.sehirler.includes(hedef)) continue;
       const c = cityById(hedef), rv = (s.rakipler[hedef] ??= []), x = newRival(s, c); x.ad = `${r.ad} ${c.ad}`; x.strateji = STRATEJI[r.kisilik]; x.kalite = r.kisilik === 'kalite' ? 3 : 2; x.fiyat = r.kisilik === 'agresif' ? 0.82 : r.kisilik === 'kalite' ? 1.18 : 1; x.sube = 1 + (r.kisilik === 'franchise' ? 1 : 0); rv.push(x); r.sehirler.push(hedef); r.guc = Math.min(2.5, r.guc + 0.05);
       r.son = `${c.ad} şehrinde yeni şube açtı.`; s.log.unshift(`🏁 ${r.ad}, ${c.ad} şehrinde şube açtı (${r.slogan})`); yaz(s, undefined, `${r.ad} ${c.ad} şehrine girdi.`);
@@ -330,6 +336,13 @@ function rakipGunluk(s: GameState): void {
     if (r.sehirler.length && rand(s.rng, 'rivals') < 0.006) r.son = r.kisilik === 'agresif' ? 'İndirim kampanyası başlattı.' : r.kisilik === 'kalite' ? 'Yeni çekirdek harmanı tanıttı.' : r.kisilik === 'gelenek' ? 'Eski müşterilerine ikram günü yaptı.' : 'Bayilik başvurularını açtı.';
   }
 }
+
+/* ===================== Zafer: Kahve İmparatoru ===================== */
+export interface ZaferMadde { ad: string; v: number; h: number; fmt?: 'para' }
+export function zaferMaddeleri(s: GameState): ZaferMadde[] { return [
+  { ad: 'Şube sayısı', v: s.subeler.length, h: 20 }, { ad: 'Açık il', v: Object.keys(s.bolge.il).length, h: 8 }, { ad: 'Marka itibarı', v: Math.round(s.marka_puani), h: 85 },
+  { ad: 'Kasa', v: s.kasa, h: 20e6, fmt: 'para' }, { ad: 'Fuarda altın madalya', v: D(s).fuar.kupa, h: 1 }, { ad: 'Franchise bayi', v: s.franchise.length, h: 3 }]; }
+export const zaferTamam = (s: GameState): boolean => zaferMaddeleri(s).every((m) => m.v >= m.h);
 
 /* ===================== Durum ===================== */
 export interface Derin {
@@ -339,9 +352,11 @@ export interface Derin {
   trait: Record<number, string>; hazir: Record<string, number>; etki: Record<string, { v: number; bit: number }>; son: Record<string, number>; kamera: Record<number, boolean>;
   bag: Record<number, Ctx & { tip?: string }>; fuar: { kayit: FuarKayit | null; kupa: number; gecmis: Array<{ yil: number; derece: string }> }; rakip: Kisi[];
   kalB: Record<number, number>; talepB: Record<number, number>;
+  say: Record<string, number>; zorluk: 'kolay' | 'normal' | 'zor'; zafer: number; ipucu: Record<string, number>;
 }
-export function derinInit(): Derin { return { cek: { ana: 'brezilya', ikinci: null, oran: 0.3, kavurma: 1, ad: 'Ev Karışımı', gecis: 0 }, tarif: [], imza: null, usta: {}, sam: [], mud: {}, esnaf: {}, ortak: {}, hik: {}, trait: {}, hazir: {}, etki: {}, son: {}, kamera: {}, bag: {}, fuar: { kayit: null, kupa: 0, gecmis: [] }, rakip: rakipBaslat(), kalB: {}, talepB: {} }; }
-export function D(s: GameState): Derin { const d = (s.derin ??= derinInit()); return d; }
+export function derinInit(): Derin { return { cek: { ana: 'brezilya', ikinci: null, oran: 0.3, kavurma: 1, ad: 'Ev Karışımı', gecis: 0 }, tarif: [], imza: null, usta: {}, sam: [], mud: {}, esnaf: {}, ortak: {}, hik: {}, trait: {}, hazir: {}, etki: {}, son: {}, kamera: {}, bag: {}, fuar: { kayit: null, kupa: 0, gecmis: [] }, rakip: rakipBaslat(), kalB: {}, talepB: {}, say: {}, zorluk: 'normal', zafer: 0, ipucu: {} }; }
+export function D(s: GameState): Derin { const d = (s.derin ??= derinInit()); d.say ??= {}; d.zorluk ??= 'normal'; d.ipucu ??= {}; d.zafer ??= 0; return d; }
+export const ZORLUK = { kolay: { ad: 'Kolay', kasa: 1.5, olay: 0.6, rakip: 0.7, ac: 'Fazla başlangıç parası, az kriz, yavaş rakipler.' }, normal: { ad: 'Normal', kasa: 1, olay: 1, rakip: 1, ac: 'Dengeli oyun.' }, zor: { ad: 'Zor', kasa: 0.7, olay: 1.4, rakip: 1.5, ac: 'Az başlangıç parası, sık kriz, saldırgan rakipler.' } } as const;
 
 /* ===================== Çarpanlar ve günlük döngü ===================== */
 function etkiCarpan(d: Derin, now: number, scope: string, tip: string): number { let k = 1; for (const [key, e] of Object.entries(d.etki)) { if (e.bit <= now) continue; const [sc, tp] = key.split(':'); if (sc === scope && tp === tip) k *= e.v; } return k; }
@@ -370,19 +385,20 @@ hooks.gunOnce.push((s, toplam) => {
       const t = d.trait[e.id]; if (t === 'caliskan') e.motivasyon = cl(e.motivasyon + 0.15, 0, 100); else if (t === 'tembel') e.motivasyon = cl(e.motivasyon - 0.1, 0, 100); else if (t === 'gergin') e.yorgunluk = cl(e.yorgunluk + 0.4, 0, 100); else if (t === 'dedikodu') for (const x of b.staff) if (x !== e) x.motivasyon = cl(x.motivasyon - 0.03, 0, 100); }
     const ust = ustaOrt(s, b); if (son) tasarruf += son.gider.malzeme * 0.01 * ust.tasarruf;
     // imza içecek ve müdavimler
-    const im = imzaGunluk(s, b, must), mu = mudGunluk(s, b, must); toplam.gelir.kahve += im.gelir; toplam.gelir.ek += mu.gelir; const g = im.gider + mu.gider; if (g) { toplam.gider.malzeme += g; s.kasa -= g; }
+    const im = imzaGunluk(s, b, must), mu = mudGunluk(s, b, must); toplam.gelir.kahve += im.gelir; toplam.gelir.ek += mu.gelir; const g = im.gider + mu.gider; if (g) toplam.gider.malzeme += g;   // hammadde stoktan düşer (nakit alımda ödendi)
     // esnaf ilişkisi azalır
     for (const e of esnafOf(s, b)) { const m = (d.esnaf[b.id] ??= {}); m[e.id] = cl((m[e.id] ?? 15) - 0.12, 0, 100); }
     donumNoktalari(s, b);
   }
-  if (tasarruf) { toplam.gider.malzeme -= tasarruf; s.kasa += tasarruf; }
+  if (tasarruf) toplam.gider.malzeme -= tasarruf;
   rakipGunluk(s); fuarSonuc(s, toplam);
   // hafta başı: barista fuarı değil — kimlik güncelle
   if (dateOf(now).haftaGun === 0) for (const b of s.subeler) { const k = kimlik(s, b); if (d.son[`kim${b.id}`] !== undefined && d.son[`kim${b.id}`] !== k.id.length * 1000 + k.id.charCodeAt(0)) yaz(s, b, `Dükkânın kimliği değişti: artık "${k.ad}".`); d.son[`kim${b.id}`] = k.id.length * 1000 + k.id.charCodeAt(0); }
   // olay üretimi (günde en çok 1; kuyruk doluysa üretme)
   if (s.bekleyen.length < 2 && s.subeler.length) {
     for (const b of s.subeler) { if (!b.kuruldu) continue; const ev0 = semtOlaylari(s, b, now).find((e) => e.sira === 1 && Math.abs(e.talep - 1) >= 0.07 && !(`${b.id}:${e.id}:${e.baslangic}` in d.hazir)); if (ev0 && (d.son['o_semt'] ?? -9) < now - 1) { const cc: Ctx = { olay: ev0.id, baslangic: ev0.baslangic, fiyat: 3000 * (1 + 5 * Math.abs(ev0.talep - 1)) }; const ev = { ...OLAY.semt!, ad: `${ev0.ikon} ${ev0.ad}`, metin: (): string => `${b.ad} çevresinde "${ev0.ad}" başlıyor (talep ${ev0.talep >= 1 ? '+' : ''}${Math.round((ev0.talep - 1) * 100)}%). Hazırlık yapmak etkiyi ${ev0.talep >= 1 ? 'büyütür' : 'hafifletir'}.` }; olayUret(s, ev, b, cc); break; } }
-    if (s.bekleyen.length < 2) { const adaylar = OLAYLAR.filter((o) => o.id !== 'semt' && o.sogu > 0); for (const b of s.subeler) { if (!b.kuruldu) continue; for (const o of adaylar) { if ((d.son['o_' + o.id] ?? -999) > now - o.sogu) continue; if (rand(s.rng, 'events') < o.olasi(s, b)) { const c: Ctx = {}; if (o.id === 'zam' || o.id === 'kapma') { const e = b.staff.find((x) => x.tip !== 'sube_muduru' && (o.id === 'zam' ? d.trait[x.id] === 'hirsli' || rand(s.rng, 'events') < 0.3 : x.tip === 'barista')); if (!e) continue; c.emp = e.id; if (o.id === 'kapma') c.zin = d.rakip.find((r) => r.kisilik === 'agresif')?.ad; } olayUret(s, o, b, c); break; } } if (s.bekleyen.length >= 2) break; } }
+    if (s.bekleyen.length < 2) { const adaylar = OLAYLAR.filter((o) => o.id !== 'semt' && o.sogu > 0); for (const b of s.subeler) { if (!b.kuruldu) continue; for (const o of adaylar) { if ((d.son['o_' + o.id] ?? -999) > now - o.sogu) continue; if (rand(s.rng, 'events') < o.olasi(s, b) * (o.id === 'semt' || o.id === 'hikaye' ? 1 : ZORLUK[d.zorluk].olay)) { const c: Ctx = {}; if (o.id === 'zam' || o.id === 'kapma') { const e = b.staff.find((x) => x.tip !== 'sube_muduru' && (o.id === 'zam' ? d.trait[x.id] === 'hirsli' || rand(s.rng, 'events') < 0.3 : x.tip === 'barista')); if (!e) continue; c.emp = e.id; if (o.id === 'kapma') c.zin = d.rakip.find((r) => r.kisilik === 'agresif')?.ad; } olayUret(s, o, b, c); break; } } if (s.bekleyen.length >= 2) break; } }
   }
+  if (!d.zafer && zaferTamam(s)) { d.zafer = dayOf(s); s.bekleyen.push({ id: s.en++, tip: 'd_hikaye_zafer', baslik: 'KAHVE İMPARATORU!', metin: `${s.marka.ad} Türkiye'nin kahve imparatorluğuna dönüştü: ${s.subeler.length} şube, ${Object.keys(s.bolge.il).length} il, ${s.franchise.length} bayi. Oyuna istediğin kadar devam edebilirsin.`, ikon: '👑', secenek: [{ ad: 'Devam et', ac: 'İmparatorluk büyümeye devam.' }] }); s.log.unshift('👑 Kahve İmparatoru oldun!'); yaz(s, undefined, '👑 Kahve İmparatoru unvanı kazanıldı.'); }
   yenile(s);
 });

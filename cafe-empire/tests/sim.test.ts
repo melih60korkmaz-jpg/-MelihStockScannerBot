@@ -1,3 +1,4 @@
+import { BASARIM } from '../src/core/goals';
 import { describe, expect, it } from 'vitest';
 import { grantRegion } from '../src/core/region';
 import { newGame, subeAc, setPrice, upgrade, startAd, orderIng, toggleProduct } from '../src/core/actions';
@@ -17,10 +18,12 @@ describe('simülasyon', () => {
     expect(s.subeler[0]!.stok.milk).not.toBe(stok0); expect(Number.isFinite(s.kasa)).toBe(true);
   });
   it('kasa değişimi gelir−gider ile uyumlu (muhasebe)', () => {
-    const s = mk(26, 'mahalle', 5); s.subeler[0]!.otoSiparis = false; const k0 = s.kasa; run(s, 20); const net = s.rapor.reduce((a, x) => a + x.kar, 0);
+    const s = mk(26, 'mahalle', 5); s.subeler[0]!.otoSiparis = false; const k0 = s.kasa; s.capexBugun = 0; run(s, 20); const net = s.rapor.reduce((a, x) => a + x.kar, 0);
     // malzeme alımı yok (otomatik sipariş kapalı) → kasa farkı ≈ kâr toplamı (ay sonu vergisi ayrı)
     const tahakkuk = s.rapor.reduce((a, x) => a + x.gider.malzeme + x.gider.fire, 0);   // alım yapılmadığı için malzeme/fire nakit çıkışı değildir
-    expect(Math.abs((s.kasa - k0) - (net + tahakkuk))).toBeLessThan(Math.abs(net) * 0.15 + 20000);
+    const capex = s.rapor.reduce((a, x) => a + x.capex, 0);   // olay kararları ve yatırımlar kâr tablosuna girmez, capex olarak yazılır
+    const odul = Object.keys(s.basarim).reduce((a, k) => a + (BASARIM[k]?.odul ?? 0), 0);   // başarım ödülleri nakit olarak gelir
+    expect(Math.abs((s.kasa - k0) - (net + tahakkuk - capex + odul))).toBeLessThan(Math.abs(net) * 0.15 + 20000);
   });
   it('yüksek fiyat talebi düşürür', () => {
     const a = mk(26, 'mahalle', 3), b = mk(26, 'mahalle', 3); for (const k of Object.keys(b.subeler[0]!.menu)) setPrice(b.subeler[0]!, k as never, 1.5);

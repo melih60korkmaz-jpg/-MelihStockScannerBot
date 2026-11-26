@@ -12,6 +12,8 @@ import { startAudio, setAudio, sfx, stopAudio } from './audio';
 import { BASARIM } from '../core/goals';
 import { ctx, cur, esc as _esc, NAV, GRUPLAR, grupOf, PANELS, LIVE_TABS, handle, isBranchTab } from './panels';
 import { handleDerin } from './derin';
+import { ZORLUK } from '../core/derin';
+import { confetti } from './juice';
 import { PAGES, handlePages, kurHtml, kisa, BOS_UYARI } from './pages';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => document.querySelector(sel) as T;
@@ -30,13 +32,14 @@ function title(): void {
   $('#yeni').onclick = setup; if (has) $('#devam').onclick = () => { S = has; enter(); };
 }
 function setup(): void {
-  let ad = 'Korkmaz Kahve', renk = '#e0983c', renk2 = '#2d1f14', logo = 0; const renkler: Array<[string, string]> = [['#e0983c', '#2d1f14'], ['#2e86c1', '#1b2a38'], ['#27ae60', '#1d3a2b'], ['#c0392b', '#3a1d1d'], ['#8e44ad', '#2d1d3a'], ['#d4a017', '#2a2415']];
+  let zor: 'kolay' | 'normal' | 'zor' = 'normal', ad = 'Korkmaz Kahve', renk = '#e0983c', renk2 = '#2d1f14', logo = 0; const renkler: Array<[string, string]> = [['#e0983c', '#2d1f14'], ['#2e86c1', '#1b2a38'], ['#27ae60', '#1d3a2b'], ['#c0392b', '#3a1d1d'], ['#8e44ad', '#2d1d3a'], ['#d4a017', '#2a2415']];
   const draw = (): void => {
     const inp = document.getElementById('ad') as HTMLInputElement | null; if (inp) ad = inp.value || ad;
-    root.innerHTML = `<div class="screen"><div class="kurulum"><div class="kk"><div class="tiny muted">YENİ OYUN</div><h1>Zincirini kur</h1><p class="muted small">İstanbul'dan, 2.000.000 ₺ ile başlıyorsun. Önce markanı seç; sonra haritadan ilk dükkânını bul ve kirala.</p></div><div class="cardx"><div class="small muted">Kafe / şirket adı</div><input id="ad" class="kin" maxlength="22" value="${esc(ad)}"><div class="small muted" style="margin-top:10px">Marka rengi</div><div class="colors">${renkler.map((r, i) => `<i data-r="${i}" class="${r[0] === renk ? 'on' : ''}" style="background:${r[0]}"></i>`).join('')}</div><div class="small muted">Logo</div><div class="chiprow">${['☕', '🥐', '🌿', '⭐', '🔥', '🫘'].map((l, i) => `<button class="cx ${i === logo ? 'on' : ''}" data-l="${i}">${l}</button>`).join('')}</div></div><div class="kfoot2"><button class="btn" id="geri">Geri</button><button class="ybtn" id="basla">Başla ›</button></div></div></div>`;
+    root.innerHTML = `<div class="screen"><div class="kurulum"><div class="kk"><div class="tiny muted">YENİ OYUN</div><h1>Zincirini kur</h1><p class="muted small">İstanbul'dan başlıyorsun (başlangıç parası zorluğa göre değişir). Önce markanı seç; sonra haritadan ilk dükkânını bul ve kirala.</p></div><div class="cardx"><div class="small muted">Kafe / şirket adı</div><input id="ad" class="kin" maxlength="22" value="${esc(ad)}"><div class="small muted" style="margin-top:10px">Marka rengi</div><div class="colors">${renkler.map((r, i) => `<i data-r="${i}" class="${r[0] === renk ? 'on' : ''}" style="background:${r[0]}"></i>`).join('')}</div><div class="small muted">Zorluk</div><div class="zorl">${(Object.keys(ZORLUK) as Array<keyof typeof ZORLUK>).map((z) => `<button data-z="${z}" class="${zor === z ? 'on' : ''}">${ZORLUK[z].ad}<small>${ZORLUK[z].ac}</small></button>`).join('')}</div><div class="small muted">Logo</div><div class="chiprow">${['☕', '🥐', '🌿', '⭐', '🔥', '🫘'].map((l, i) => `<button class="cx ${i === logo ? 'on' : ''}" data-l="${i}">${l}</button>`).join('')}</div></div><div class="kfoot2"><button class="btn" id="geri">Geri</button><button class="ybtn" id="basla">Başla ›</button></div></div></div>`;
     root.querySelectorAll<HTMLElement>('[data-r]').forEach((e) => { e.onclick = () => { const r = renkler[+e.dataset.r!]!; renk = r[0]; renk2 = r[1]; draw(); }; });
+    root.querySelectorAll<HTMLElement>('[data-z]').forEach((e) => { e.onclick = () => { zor = e.dataset.z as typeof zor; draw(); }; });
     root.querySelectorAll<HTMLElement>('[data-l]').forEach((e) => { e.onclick = () => { logo = +e.dataset.l!; draw(); }; });
-    $('#geri').onclick = title; $('#basla').onclick = () => { ad = ($('#ad') as HTMLInputElement).value || ad; const g = newGame({ ad, renk, renk2, logo, sehir: 34, tip: 'cadde', bos: true }); S = g.s; wipe(); enter(); toast('Hoş geldin! Önce ilk dükkânını bul.'); };
+    $('#geri').onclick = title; $('#basla').onclick = () => { ad = ($('#ad') as HTMLInputElement).value || ad; const g = newGame({ ad, renk, renk2, logo, sehir: 34, tip: 'cadde', bos: true, zorluk: zor }); S = g.s; wipe(); enter(); toast('Hoş geldin! Önce ilk dükkânını bul.'); };
   };
   draw();
 }
@@ -81,7 +84,7 @@ function loop(dt: number): void {
 }
 /** Seviye/komşuluk şartı sağlanan yeni pazarları bildirir (zamanla gelişen harita). */
 function checkOpportunities(): void {
-  if (!S) return; const yeniB = Object.keys(S.basarim).filter((k) => !lastAch.has(k)); if (yeniB.length) { lastAch = new Set(Object.keys(S.basarim)); sfx.ach(); toast(`🏆 Başarım: ${yeniB.map((k) => BASARIM[k]?.ad ?? k).join(', ')}`); if (TAB === 'hedefler') page(true); } const lv = levelOf(S), now = new Set(CITIES.filter((c) => ilDurum(S!, c.id, lv).d === 'satilik').map((c) => c.id));
+  if (!S) return; const yeniB = Object.keys(S.basarim).filter((k) => !lastAch.has(k)); if (yeniB.length) { lastAch = new Set(Object.keys(S.basarim)); sfx.ach(); confetti(50); toast(`🏆 Başarım: ${yeniB.map((k) => BASARIM[k]?.ad ?? k).join(', ')}`); if (TAB === 'hedefler') page(true); } const lv = levelOf(S), now = new Set(CITIES.filter((c) => ilDurum(S!, c.id, lv).d === 'satilik').map((c) => c.id));
   if (known.size === 0 && S.subeler.length && dayOf(S) < 2) { known = now; return; }
   const yeni = [...now].filter((id) => !known.has(id)); known = now;
   if (yeni.length) { newOpp = true; nav(); toast(yeni.length > 8 ? `🇹🇷 Ulusal zincir oldun: ${yeni.length} ilin pazarı artık açılabilir!` : `🗺️ Yeni pazar fırsatı: ${yeni.slice(0, 3).map((id) => cityById(id).ad).join(', ')}${yeni.length > 3 ? ' +' + (yeni.length - 3) : ''}`); }
@@ -104,6 +107,8 @@ const TUR: Array<{ n?: string; t: string; ok?: [string, string] }> = [
   { n: 'stok', t: '📦 Depo → Stok: stok bitince ürün satılamaz. Otomatik sipariş açık mı bak.', ok: ['tab', 'stok'] },
   { n: 'sosyal', t: '📣 Tanıtım: sosyal medya paylaşımı, reklam ve kampanyalarla müşteri çek.', ok: ['tab', 'sosyal'] },
   { n: 'tarif', t: '☕ Atölye: çekirdek karışımını seç, yeni içecek tasarla. Semt sekmesinde müdavimler, takvim, komşu esnaf ve rakipler var.', ok: ['tab', 'tarif'] },
+  { n: 'takvim', t: '🏘️ Semt: takvimdeki bayram/derbi/festival günlerine hazırlan, müdavimlerini tanı, komşu esnafla ortak kampanya yap, rakip zincirleri izle.', ok: ['tab', 'takvim'] },
+  { n: 'fuar', t: '🏆 Atölye → Kahve fuarı: Nisan\'da imza tarifinle yarış. Ekim\'de barista şampiyonası var. Hedefin: Kahve İmparatoru olmak (Merkez\'de yolun görünür).', ok: ['tab', 'fuar'] },
   { n: 'hedefler', t: '⭐ Gelişim → Hedefler: görevler nakit ödül, başarımlar kilometre taşı verir.', ok: ['tab', 'hedefler'] },
   { t: '🎉 Rehber bitti! Ekibi dengele, fiyatı ayarla, yeni semtler aç ve zincirini büyüt. İyi şanslar!' },
 ];
@@ -116,7 +121,8 @@ function tour(): void {
   $('#tN').onclick = () => { S!.tur = last ? -1 : S!.tur + 1; sfx.tick(); tour(); }; $('#tX').onclick = () => { S!.tur = -1; tour(); };
 }
 function showEvent(): void {
-  const p = S!.bekleyen[0]; if (!p) return; modalOpen = true; S!.hiz = 0; spdBar(); const m = document.createElement('div'); m.className = 'modal';
+  const p = S!.bekleyen[0]; if (!p) return; modalOpen = true; S!.hiz = 0; spdBar();
+  if (p.tip === 'd_hikaye_zafer') { sfx.zafer(); confetti(220); } else if (p.tip === 'd_hikaye_fuar') { if (/madalya/.test(p.metin)) { sfx.madalya(); confetti(130); } else sfx.olay(); } else if (p.tip.startsWith('d_')) { if (['denetim', 'yorum', 'ariza', 'tedarik', 'hirsizlik', 'sendika', 'kapma', 'bayi'].includes(p.tip.slice(2))) sfx.kriz(); else sfx.olay(); } const m = document.createElement('div'); m.className = 'modal';
   m.innerHTML = `<div class="mbox"><div class="pill">Olay</div><h2>${p.ikon} ${esc(p.baslik)}</h2><p>${esc(p.metin)}</p>${p.secenek.map((c, i) => `<button class="btn" data-o="${i}" style="width:100%;margin-top:6px;justify-content:flex-start;text-align:left"><span><b>${esc(c.ad)}</b><br><small class="muted">${esc(c.ac)}</small></span></button>`).join('')}</div>`; root.appendChild(m);
   m.querySelectorAll<HTMLElement>('[data-o]').forEach((b) => { b.onclick = () => { resolveEvent(S!, p.id, +b.dataset.o!); m.remove(); modalOpen = false; S!.hiz = 1; spdBar(); save(S!); hud(); page(true); }; });
 }
