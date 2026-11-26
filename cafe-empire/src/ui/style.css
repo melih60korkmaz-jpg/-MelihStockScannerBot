@@ -223,3 +223,7 @@ html,body{background:var(--bg)}
 .subtabs button,.innertabs button{transition:transform .12s,background .15s}.subtabs button:active,.innertabs button:active{transform:scale(.94)}
 .subtabs button.on,.innertabs button.on{box-shadow:0 0 12px rgba(227,135,74,.5);animation:navpop2 .25s ease-out}
 @keyframes navpop2{from{transform:scale(.9)}to{transform:scale(1)}}
+/* Türkiye sayfası: harita büyük, filtreler tek satır */
+.duoL .chiprow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;width:100%}.duoL .chiprow .cx{flex:0 0 auto;padding:5px 11px;font-size:12px}
+.pb .duo:has(.mapbox){grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+.pb .duoL .mapbox{padding:2px}.pb .duoL .mapbox svg{width:100%;height:auto;max-height:calc(100vh - 215px);display:block}
