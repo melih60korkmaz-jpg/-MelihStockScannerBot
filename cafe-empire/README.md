@@ -16,6 +16,7 @@ Türkiye haritası üzerinde geçen, kapsamlı **kafe zinciri yönetim simülasy
 | **Atölye** (☕): çekirdek ve kavurma (5 çekirdek, harman uyumu, hasat mevsimi), tarif atölyesi (içecek tasarla, tattır, imza yap), barista ustalığı (seviye, yetenek, Ekim şampiyonası), Nisan kahve fuarı |
 | **Semt** (🏘️): semt takvimi (bayram, sınav, derbi, festival… hazırlık kararı), müdavimler ve müşteri tipleri, komşu esnaf ve ortak kampanya, rakip zincirler (Koçak, Beanify, Dem & Demlik, Ay Çekirdek), dükkân kimliği ve günlüğü |
 | Krizler ve personel hikâyeleri: gıda denetimi, yorum fırtınası, makine arızası, tedarik krizi, hırsızlık, sendikal baskı, zam talebi, rakip barista kapması, bayi kalite sorunu; franchise sözleşmeleri (Standart/Premium/Esnek) |
+| Ekonomi dengesi: şirket genel yönetim gideri (şube arttıkça gelirin %0,9'u/şube, en çok %12), her 90 günde kira ve maaşın enflasyona endekslenmesi, marka etkisinin yüksek seviyede yumuşatılması, enflasyon olayının sınırlanması, şirket değeri çarpanlarının düşürülmesi |
 | Online platformlar (4, komisyonlu), sosyal medya (takipçi, paylaşım, ajans), sıralama (zincirler ve şehirler), 4 banka (faiz/komisyon/limit) | ✅ (testli; sıralamadaki rakip zincirler simüle edilir) |
 | 81 il haritası (gerçek sınırlar), il verileri (nüfus, gelir, turizm, öğrenci, rekabet, kira, maliyet, müşteri profili) | ✅ |
 | Kafe açma (marka adı, şehir, 8 dükkân türü, uygunluk kuralları) | ✅ (franchise türü kilitli) |

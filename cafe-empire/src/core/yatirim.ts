@@ -32,7 +32,7 @@ export const MAX_DIS = 0.49;
 export function sirketDegeri(s: GameState): { deger: number; buyume: number; kar: number; ciro: number } {
   const r = s.rapor, son = r.slice(-90), n = Math.max(1, son.length), kar = son.reduce((a, x) => a + x.kar, 0) / n * 365, ciro = son.reduce((a, x) => a + x.toplamGelir, 0) / n * 365;
   const a = r.slice(-30), b = r.slice(-60, -30), ta = a.reduce((p, x) => p + x.toplamGelir, 0), tb = b.reduce((p, x) => p + x.toplamGelir, 0), buyume = b.length >= 20 && tb > 0 ? ta / tb - 1 : 0;
-  const mult = cl(7 + 25 * buyume, 4, 14), v = Math.max(0, kar) * mult + ciro * 0.55 + s.marka_puani * 60000 * F(s) + s.franchise.length * 400000 * F(s) + s.subeler.length * 350000 * F(s) + Math.max(0, s.kasa) * 0.8 - s.borc;
+  const mult = cl(4 + 15 * buyume, 2.5, 8), v = Math.max(0, kar) * mult + ciro * 0.3 + s.marka_puani * 40000 * F(s) + s.franchise.length * 300000 * F(s) + s.subeler.length * 250000 * F(s) + Math.max(0, s.kasa) * 0.8 - s.borc;
   return { deger: Math.max(s.subeler.length * 250000 * F(s), v), buyume, kar, ciro };
 }
 /* ---------- Teklifler ---------- */
@@ -58,7 +58,7 @@ export function payGeriAl(s: GameState, id: string): Res {
 }
 /* ---------- Halka arz ---------- */
 export function halkaSart(s: GameState): Array<{ ad: string; v: number; h: number; ok: boolean; para?: boolean }> { const d = sirketDegeri(s).deger; return [
-  { ad: 'Kafe seviyesi', v: levelOf(s), h: 5, ok: levelOf(s) >= 5 }, { ad: 'Şirket değeri', v: d, h: 60e6 * F(s), ok: d >= 60e6 * F(s), para: true }, { ad: 'Şube sayısı', v: s.subeler.length, h: 12, ok: s.subeler.length >= 12 }, { ad: 'Dış pay payı (≤ %29)', v: disPay(s) * 100, h: 29, ok: disPay(s) <= 0.29 }]; }
+  { ad: 'Kafe seviyesi', v: levelOf(s), h: 5, ok: levelOf(s) >= 5 }, { ad: 'Şirket değeri', v: d, h: 300e6 * F(s), ok: d >= 300e6 * F(s), para: true }, { ad: 'Şube sayısı', v: s.subeler.length, h: 12, ok: s.subeler.length >= 12 }, { ad: 'Dış pay payı (≤ %29)', v: disPay(s) * 100, h: 29, ok: disPay(s) <= 0.29 }]; }
 export const HALKA_PAY = 0.2, HISSE = 1_000_000;
 export function halkaArz(s: GameState): Res {
   const y = Y(s); if (y.halka) return no('Şirket zaten halka açık.'); if (!halkaSart(s).every((x) => x.ok)) return no('Halka arz koşulları sağlanmadı.'); const d = sirketDegeri(s).deger, maliyet = Math.round(d * 0.03), sermaye = Math.round(d * HALKA_PAY * 0.92) - maliyet;
@@ -70,7 +70,7 @@ export function hisseGeriAlim(s: GameState): Res { const y = Y(s), h = y.halka; 
 export function satinAlBedel(s: GameState, id: string): number { const r = D(s).rakip.find((x) => x.id === id); return r ? Math.round(r.guc * 2.5e6 * F(s) * (1 + r.sehirler.length * 0.5) / 10000) * 10000 : 0; }
 export function rakipSatinAl(s: GameState, id: string): Res {
   const d = D(s), r = d.rakip.find((x) => x.id === id), y = Y(s); if (!r) return no('Rakip yok.'); if (r.satin) return no('Bu zincir zaten satın alındı.'); if (levelOf(s) < 4) return no('Satın alma için kafe seviyesi 4 gerekir.'); if (!r.sehirler.length) return no('Bu zincirin henüz şubesi yok; satın alınacak bir şey yok.');
-  if (sirketDegeri(s).deger < 15e6 * F(s)) return no('Satın alma için şirket değeri en az 15 M ₺ olmalı.'); const bedel = satinAlBedel(s, id); if (s.kasa < bedel) return no(`Satın alma bedeli ${bedel.toLocaleString('tr-TR')} ₺.`);
+  if (sirketDegeri(s).deger < 60e6 * F(s)) return no('Satın alma için şirket değeri en az 60 M ₺ olmalı.'); const bedel = satinAlBedel(s, id); if (s.kasa < bedel) return no(`Satın alma bedeli ${bedel.toLocaleString('tr-TR')} ₺.`);
   s.kasa -= bedel; s.capexBugun += bedel; r.satin = dayOf(s); for (const c of r.sehirler) s.rakipler[c] = (s.rakipler[c] ?? []).filter((x) => !x.ad.startsWith(r.ad)); r.son = 'Satın alındı.'; s.marka_puani = Math.min(100, s.marka_puani + 3); y.satin.push(r.id);
   const m = `${r.ad} satın alındı (−${bedel.toLocaleString('tr-TR')} ₺): ${r.sehirler.length} şehirde rekabet kalktı, günlük gelir ortaklığı başladı.`; s.log.unshift(`🏁 ${m}`); yaz(s, undefined, m); return ok(m);
 }

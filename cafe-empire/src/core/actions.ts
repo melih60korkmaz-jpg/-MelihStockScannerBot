@@ -1,5 +1,5 @@
 import { D, ZORLUK } from './derin';
-import './tedarik2'; import './analiz'; import './donem'; import './sezon'; import './yatirim';
+import './tedarik2'; import './analiz'; import './donem'; import './sezon'; import './yatirim'; import './denge';
 import { buyInvest } from './invest';
 import { gorevleriGuncelle } from './goals';
 import { estimateUsage, autoOrder } from './supply';
