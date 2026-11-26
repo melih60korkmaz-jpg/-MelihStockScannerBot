@@ -60,7 +60,7 @@ function ipucu(): void {
   document.querySelectorAll('.hint').forEach((e) => e.classList.remove('hint')); if (!S || S.tur < 0) return; const st = TUR[S.tur]; if (!st?.n) return; const g = grupOf(st.n);
   document.querySelector(`.nav [data-g="${g.id}"]`)?.classList.add('hint'); if (grupOf(TAB).id === g.id) document.querySelector(`.subtabs [data-n="${st.n}"]`)?.classList.add('hint');
 }
-function sekmeAc(tab: string): void { TAB = tab; sonSekme[grupOf(tab).id] = tab; ctx.anim = true; sfx.tick(); if (tab === 'harita') newOpp = false; nav(); page(false); tourEvent('tab', tab); }
+function sekmeAc(tab: string): void { TAB = tab; sonSekme[grupOf(tab).id] = tab; ctx.anim = true; sfx.tick(); if (tab === 'harita') newOpp = false; nav(); page(false); const pg = $('#page'); pg.classList.remove('gecis'); void pg.offsetWidth; pg.classList.add('gecis'); setTimeout(() => pg.classList.remove('gecis'), 350); tourEvent('tab', tab); }
 function nav(): void {
   const gt = grupOf(TAB).id;
   $('#nav').innerHTML = GRUPLAR.map((g) => `<button data-g="${g.id}" class="${gt === g.id ? 'on' : ''}" style="--c:${g.renk}"><i>${g.ik}</i><span>${g.ad}</span>${g.id === 'harita' && newOpp && TAB !== 'harita' ? '<u class="dot"></u>' : ''}</button>`).join('');
