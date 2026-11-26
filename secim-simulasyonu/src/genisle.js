@@ -89,8 +89,9 @@ var RK_HAMLE = [
 function rakipHamle(S) {
   var out = []; if (!S.rk || S.ay < 3 || rnd(S) > 0.38) return out;
   var ids = Object.keys(S.rk).filter(function (id) { return S.anket[id] >= 3; }); if (!ids.length) return out;
-  var id = pick(S, ids), r = S.rk[id], h = pick(S, RK_HAMLE), kin = (r.kin || 0) > 35, tip = h[0];
-  if (tip === 'sert' && !kin) h = RK_HAMLE[1];
+  var id = pick(S, ids), r = S.rk[id], h = pick(S, RK_HAMLE), kisi = typeof kisilik === 'function' ? kisilik(id)[0] : '', kin = (r.kin || 0) > 35, tip = h[0];
+  if (kisi === 'saldirgan' && rnd(S) < 0.5) { h = RK_HAMLE[0]; tip = 'sert'; } else if (kisi === 'populist' && rnd(S) < 0.5) { h = RK_HAMLE[1]; tip = 'miting'; } else if (kisi === 'sakin' && rnd(S) < 0.5) { h = RK_HAMLE[2]; tip = 'teklif'; }
+  if (tip === 'sert' && !kin && kisi !== 'saldirgan') h = RK_HAMLE[1];
   var m = h[1](esc_(r.lider), S.parti.ad), fx = h[2];
   if (fx.itibar) S.stat.itibar = clamp(S.stat.itibar + fx.itibar * (S.ay < 4 ? 0.3 : 1), 0, 100);
   if (fx.stres) S.stat.stres = clamp(S.stat.stres + fx.stres, 0, 100);
@@ -227,7 +228,7 @@ function grafikBagla() { document.querySelectorAll('.grf-t').forEach(function (b
 
 /* ---------- Aylık kanca ---------- */
 function genisleTick(S) {
-  var out = []; try { grafikKayit(S); out = out.concat(gorevAy(S)); out = out.concat(rakipHamle(S)); out = out.concat(ittifakTalepTick(S)); } catch (e) { /* oyunu durdurma */ }
+  var out = []; try { grafikKayit(S); out = out.concat(gorevAy(S)); out = out.concat(rakipHamle(S)); out = out.concat(ittifakTalepTick(S)); if (typeof derinTick === 'function') out = out.concat(derinTick(S)); } catch (e) { /* oyunu durdurma */ }
   return out;
 }
 
