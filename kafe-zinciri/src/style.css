@@ -61,3 +61,9 @@ button{font:inherit;color:inherit;border:0;background:var(--p2);cursor:pointer}i
 .zk{width:100%;max-width:440px}.zay{font-family:var(--fd);font-size:34px;font-weight:800;text-align:center;margin-bottom:10px;animation:zay 2.3s linear}@keyframes zay{0%{opacity:0;transform:rotateX(90deg)}15%{opacity:1;transform:none}}
 .zst{display:flex;gap:10px;margin:12px 0}.zst>div{flex:1;background:var(--p);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}.zst span{display:block;color:var(--mu);font-size:12px}.zst b{font-size:22px;font-family:var(--fd)}
 .zpr{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden;margin-bottom:8px}.zpr i{display:block;height:100%;width:0;background:linear-gradient(90deg,#c97b24,#f3b45a)}@keyframes zpr{to{width:100%}}
+
+.fis{animation:fs 3s ease-in-out infinite;transform-box:fill-box}@keyframes fs{50%{transform:translateY(-1.5px) rotate(3deg)}}
+.neon{animation:nn 2.6s ease-in-out infinite}@keyframes nn{0%,100%{opacity:1}45%{opacity:.35}52%{opacity:1}}
+.pervane{animation:pv 2.2s linear infinite;transform-box:fill-box;transform-origin:center}@keyframes pv{to{transform:rotate(360deg)}}
+.sa1,.sa2{transform-box:view-box;transform-origin:190px 20px}.sa1{animation:sa 20s linear infinite}.sa2{animation:sa 240s linear infinite}@keyframes sa{to{transform:rotate(360deg)}}
+.giris{animation:gi 5s ease-in-out infinite}@keyframes gi{0%,60%,100%{opacity:0}70%,85%{opacity:.5}}

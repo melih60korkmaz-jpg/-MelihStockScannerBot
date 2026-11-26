@@ -86,29 +86,24 @@ function sahneSvg(s, h) {
   if (s.dekor >= 2) o += '<rect x="322" y="94" width="22" height="50" rx="3" fill="#7a4a2a"/><circle cx="333" cy="86" r="15" fill="#3d9a5b"/><circle cx="324" cy="93" r="9" fill="#4bb06a"/>';
   if (s.dekor >= 3) [52, 118, 190].forEach(function (x, i) { o += '<line x1="' + x + '" y1="0" x2="' + x + '" y2="58" stroke="#2a1b12"/><path d="M' + (x - 11) + ' 70 Q' + x + ' 50 ' + (x + 11) + ' 70Z" fill="#f3b45a"/><circle class="lamba" cx="' + x + '" cy="76" r="22" fill="url(#ik)" style="animation-delay:' + (-i * .8) + 's"/>'; });
   if (s.dekor >= 4) o += '<rect x="130" y="46" width="30" height="38" fill="#c8a165" stroke="#2a1b12" stroke-width="3"/><circle cx="145" cy="62" r="7" fill="#d9573e"/><rect x="138" y="74" width="14" height="5" fill="#2f6b4a"/>';
-  if (s.dekor >= 2) o += '<g transform="translate(206 90)"><ellipse cx="0" cy="8" rx="9" ry="4" fill="#d89a52"/><circle cx="-4" cy="2" r="5" fill="#d89a52"/><path class="kuyruk" d="M8 8 q10 -2 6 -10" stroke="#d89a52" stroke-width="3" fill="none" stroke-linecap="round"/><text class="zz" x="-14" y="-6" font-size="7" fill="#fff">z</text></g>';
   /* tezgâh */
   o += '<rect x="8" y="98" width="140" height="52" rx="6" fill="#8a5a36"/><rect x="8" y="93" width="140" height="9" rx="4" fill="#d6a56a"/>';
   if (ek.firin || ek.dolap) { o += '<rect x="86" y="74" width="54" height="22" rx="4" fill="rgba(210,235,255,.28)" stroke="#cfe7f5" stroke-width="1.5"/><text x="92" y="90" font-size="11">' + (ek.firin ? '🥐🥟' : '') + (ek.dolap ? '🍰' : '') + '</text>'; }
   o += '<rect x="24" y="68" width="40" height="26" rx="5" fill="#9aa3ab"/><rect x="30" y="76" width="26" height="9" rx="2" fill="#2a2f34"/><circle cx="60" cy="72" r="2.4" fill="' + (ek.espresso ? '#5fe08a' : '#888') + '"/>' + (ek.degirmen ? '<rect x="68" y="76" width="9" height="18" rx="2" fill="#5b3a22"/>' : '') + (ek.pos ? '<rect x="124" y="82" width="18" height="12" rx="2" fill="#2d343b"/><rect x="126" y="84" width="14" height="6" fill="#5fe08a" opacity=".7"/>' : '<rect x="124" y="84" width="16" height="10" rx="2" fill="#555"/>');
   [32, 41, 50].forEach(function (x, i) { o += '<path class="bg bg' + (i + 1) + '" d="M' + x + ' 64 q4 -8 0 -16" stroke="#fff" stroke-width="2" fill="none" opacity=".6" stroke-linecap="round"/>'; });
-  /* barista(lar) */
-  o += kisiBarista(98, 98, 0) + (s.barista >= 3 ? kisiBarista(122, 98, 1) : '');
+  /* sipariş fişleri, para ve saat (karakter yok) */
   [0, 1, 2].forEach(function (k) { o += '<text class="coin" x="' + (126 + k * 6) + '" y="80" font-size="9" fill="#ffd45c" font-weight="800" style="animation-delay:' + (-k * .9) + 's">+₺</text>'; });
-  /* kuyruk */
-  var kq = clamp(Math.round(dl * 3 + (h.doluluk > 1 ? 2 : 0)), 1, 5), bal = ['☕', '🥐', '🍰', '🧊', '🍵'];
-  for (var q = 0; q < kq; q++) { o += '<g>' + kisi(112 + q * 15, 150 + (q % 2) * 4, q + 2) + '</g>'; if (q === 0) o += '<g class="balon" style="animation-delay:-.3s"><rect x="106" y="116" width="26" height="16" rx="8" fill="#fff"/><text x="119" y="128" text-anchor="middle" font-size="11">' + bal[(S.ay + 1) % 5] + '</text></g>'; }
+  var fis = clamp(Math.round(dl * 4 + (h.doluluk > 1 ? 2 : 0)), 1, 6); o += '<rect x="70" y="52" width="56" height="3" rx="1.5" fill="#cbb89c"/>'; for (var q = 0; q < fis; q++) o += '<g class="fis" style="animation-delay:' + (-q * .55) + 's"><rect x="' + (74 + q * 8) + '" y="55" width="6" height="12" rx="1" fill="#fff3d6"/><line x1="' + (75.5 + q * 8) + '" y1="59" x2="' + (78.5 + q * 8) + '" y2="59" stroke="#b9a37a" stroke-width=".8"/><line x1="' + (75.5 + q * 8) + '" y1="62" x2="' + (78.5 + q * 8) + '" y2="62" stroke="#b9a37a" stroke-width=".8"/></g>';
+  o += '<circle cx="190" cy="20" r="9" fill="#f4eadc" stroke="#2a1b12" stroke-width="2"/><line class="sa1" x1="190" y1="20" x2="190" y2="14" stroke="#2a1b12" stroke-width="1.6"/><line class="sa2" x1="190" y1="20" x2="194" y2="20" stroke="#2a1b12" stroke-width="1.4"/>';
+  o += '<rect x="322" y="52" width="30" height="16" rx="8" fill="#241a14" stroke="#5fe08a" stroke-width="1.5" class="neon"/><text x="337" y="63.5" text-anchor="middle" font-size="8" font-weight="800" fill="#5fe08a" font-family="sans-serif" class="neon">AÇIK</text>';
+  if (s.dekor >= 2) o += '<g transform="translate(265 11)"><circle class="fan" r="1.5" fill="#2a1b12"/><g class="pervane"><rect x="-14" y="-1" width="28" height="2" rx="1" fill="#6b4a30"/><rect x="-1" y="-14" width="2" height="28" rx="1" fill="#6b4a30"/></g></g>';
   /* masalar + oturan müşteriler */
   var pos = [], cols = masa <= 6 ? 3 : 4, i; for (i = 0; i < masa; i++) pos.push({x: Math.min(338, 176 + (i % cols) * 50 + (Math.floor(i / cols) % 2) * 14), y: Math.min(204, 168 + Math.floor(i / cols) * 24)});
-  pos.forEach(function (p, k) { var var1 = k < dolu; if (var1) o += '<g class="zp" style="animation-delay:' + (k * .17) + 's">' + kisi(p.x, p.y - 2, k, 1) + '</g>'; o += '<ellipse cx="' + p.x + '" cy="' + p.y + '" rx="17" ry="6.5" fill="#d6a56a" stroke="#4a3322" stroke-width="1.5"/><rect x="' + (p.x - 1.5) + '" y="' + p.y + '" width="3" height="9" fill="#4a3322"/>' + (var1 ? '<circle cx="' + (p.x + 6) + '" cy="' + (p.y - 1) + '" r="2.6" fill="#fff"/><path class="bg bg' + (k % 3 + 1) + '" d="M' + (p.x + 6) + ' ' + (p.y - 5) + ' q2 -4 0 -8" stroke="#fff" stroke-width="1.2" fill="none" opacity=".6"/>' : '') + (var1 && ek.wifi && k % 2 === 0 ? '<rect x="' + (p.x - 8) + '" y="' + (p.y - 5) + '" width="9" height="5" rx="1" fill="#2d343b"/>' : ''); });
+  pos.forEach(function (p, k) { var var1 = k < dolu; o += '<ellipse cx="' + p.x + '" cy="' + p.y + '" rx="17" ry="6.5" fill="' + (var1 ? '#e2b27a' : '#d6a56a') + '" stroke="#4a3322" stroke-width="1.5"/><rect x="' + (p.x - 1.5) + '" y="' + p.y + '" width="3" height="9" fill="#4a3322"/><ellipse cx="' + (p.x - 12) + '" cy="' + (p.y + 4) + '" rx="5" ry="2.4" fill="' + (var1 ? '#8a5a36' : '#5a4430') + '"/><ellipse cx="' + (p.x + 12) + '" cy="' + (p.y + 4) + '" rx="5" ry="2.4" fill="' + (var1 ? '#8a5a36' : '#5a4430') + '"/>'; if (var1) { o += '<ellipse cx="' + p.x + '" cy="' + (p.y - 1) + '" rx="9" ry="3.3" fill="#fff" opacity=".92"/><path d="M' + (p.x - 4) + ' ' + (p.y - 4) + ' h8 v-6 a4 4 0 0 1 -8 0z" fill="#fff"/><ellipse cx="' + p.x + '" cy="' + (p.y - 9) + '" rx="3.5" ry="1.2" fill="#6b3f1f"/><path class="bg bg' + (k % 3 + 1) + '" d="M' + p.x + ' ' + (p.y - 12) + ' q3 -5 0 -10" stroke="#fff" stroke-width="1.4" fill="none" opacity=".7" stroke-linecap="round"/>' + (ek.wifi && k % 2 === 0 ? '<rect x="' + (p.x + 8) + '" y="' + (p.y - 6) + '" width="10" height="6" rx="1" fill="#2d343b"/>' : ''); } });
   if (ek.teras) o += '<path d="M' + (pos[pos.length - 1].x - 26) + ' ' + (pos[pos.length - 1].y - 26) + ' Q' + pos[pos.length - 1].x + ' ' + (pos[pos.length - 1].y - 46) + ' ' + (pos[pos.length - 1].x + 26) + ' ' + (pos[pos.length - 1].y - 26) + 'Z" fill="#e0983c" opacity=".92"/>';
   if (s.hijyen < 50) for (var d = 0; d < 7; d++) o += '<circle cx="' + (30 + d * 47) + '" cy="' + (200 + (d % 3) * 6) + '" r="2" fill="rgba(0,0,0,.35)"/>';
-  /* garson */
-  o += '<g class="garson">' + kisi(0, 0, 4) + '<rect x="-8" y="-6" width="16" height="3" fill="#fff" opacity=".0"/></g>';
-  /* kapı ve yürüyen müşteriler */
-  o += '<rect x="338" y="104" width="18" height="46" rx="2" fill="#5b3a22" stroke="#2a1b12" stroke-width="2"/><circle cx="351" cy="128" r="1.5" fill="#f3b45a"/>';
-  var yur = clamp(Math.round(h.trafik / 500), 1, 8);
-  for (i = 0; i < yur; i++) o += '<g class="yur" style="--dx:-' + (130 + (i % 3) * 40) + 'px;--t:' + (7 + (i % 4) * 1.4) + 's;--d:' + (-i * 1.2) + 's">' + kisi(346, 172 + (i % 3) * 8, i + 3) + '</g>';
+  /* kapı */
+  o += '<rect x="338" y="104" width="18" height="46" rx="2" fill="#5b3a22" stroke="#2a1b12" stroke-width="2"/><circle cx="351" cy="128" r="1.5" fill="#f3b45a"/><rect class="giris" x="341" y="108" width="12" height="38" fill="#ffe9b0" opacity=".0"/>';
   if (S.marka > 40) o += '<text class="yildiz" x="24" y="56" font-size="11">⭐</text>';
   o += '</svg>'; return '<div class="sahne">' + o + '</div>';
 }
@@ -277,7 +272,7 @@ function yardimSheet(genel) {
   html += '<button class="btn" id="yt" style="margin-top:8px">🎬 Rehberi izle</button><button class="btn ghost" id="k">Kapat</button>'; sheet(html); $('#k').onclick = closeSheet; $('#yt').onclick = function () { closeSheet(); if (S) turAc(); else toast('Önce bir oyun başlat.'); };
 }
 var TUT = [
-  {b: 'Hoş geldin patron!', m: 'Ben Usta Barista Mina. Kafeni birkaç adımda tanıtayım. İstediğin an "Atla" diyebilirsin; <b>?</b> düğmesinden turu tekrar izlersin.'},
+  {b: 'Hoş geldin patron!', m: 'Kafeni birkaç adımda tanıtayım. İstediğin an "Atla" diyebilirsin; <b>?</b> düğmesinden turu tekrar izlersin.'},
   {b: 'Göstergeler', m: '<b>Kasa</b> paran, <b>Marka</b> tanınırlığın, <b>Memnuniyet</b> müşteri puanın, <b>Seviye</b> zincirinin büyüklüğü, <b>Tahmini kâr</b> bu ayın beklentisi.', hedef: function () { return $('.stats'); }},
   {b: 'Canlı kafe', m: 'Şubenin sahnesi: müşteriler gelir, kuyruk oluşur, masalar dolar. Mevsim, pencere ve dekor da değişir. Altındaki kart tahmini kârı ve darboğazı gösterir.', tab: 'kafe', hedef: function () { return $('.sahne'); }},
   {b: 'Menü', m: 'Fiyat ve kaliteyi buradan ayarlarsın. Fiyat artarsa kâr artar ama talep düşer. Kilitli ürünler için ekipman gerekir.', tab: 'menu', hedef: function () { return $('.tab[data-t="menu"]'); }},
@@ -300,7 +295,7 @@ function turYer() {
 }
 function turCiz() {
   var st = TUT[TUT_I], son = !!st.son; if (st.tab && TAB !== st.tab) { TAB = st.tab; render(); }
-  TUT_CARD.innerHTML = '<div class="tutface">☕</div><div class="tutbody"><small class="tutwho">Usta Barista Mina</small><b>' + st.b + '</b><p>' + st.m + '</p><div class="tutbar"><div class="tutdots">' + TUT.map(function (x, k) { return '<i class="' + (k === TUT_I ? 'on' : k < TUT_I ? 'done' : '') + '"></i>'; }).join('') + '</div><span class="sp"></span>' + (son ? '' : '<button class="btn" id="t-at">Atla</button>') + (TUT_I > 0 && !son ? '<button class="btn" id="t-g">‹</button>' : '') + '<button class="btn pri" id="t-i">' + (son ? 'Başla ▸' : 'İleri ▸') + '</button></div></div>';
+  TUT_CARD.innerHTML = '<div class="tutface">☕</div><div class="tutbody"><small class="tutwho">Kafe Rehberi</small><b>' + st.b + '</b><p>' + st.m + '</p><div class="tutbar"><div class="tutdots">' + TUT.map(function (x, k) { return '<i class="' + (k === TUT_I ? 'on' : k < TUT_I ? 'done' : '') + '"></i>'; }).join('') + '</div><span class="sp"></span>' + (son ? '' : '<button class="btn" id="t-at">Atla</button>') + (TUT_I > 0 && !son ? '<button class="btn" id="t-g">‹</button>' : '') + '<button class="btn pri" id="t-i">' + (son ? 'Başla ▸' : 'İleri ▸') + '</button></div></div>';
   var a = $('#t-at'); if (a) a.onclick = turBitir; var g = $('#t-g'); if (g) g.onclick = function () { TUT_I--; turCiz(); }; $('#t-i').onclick = function () { ses('tik'); if (son) turBitir(); else { TUT_I++; turCiz(); } };
   setTimeout(turYer, 80); setTimeout(turYer, 380); turYer();
 }
