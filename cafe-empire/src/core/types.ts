@@ -24,7 +24,7 @@ export type Facade = Record<UpgradeId, number>;
 export interface MenuItem { aktif: boolean; fiyat: number; kalite: number }   // fiyat: pazar fiyatına oran (1 = normal)
 export interface Order { id: number; ing: IngId; paket: number; teslim: number; odenen: number; kim: string; gecikti: boolean; eksik: boolean }
 export interface ActiveAd { id: AdId; bit: number; tuttu: boolean }
-export interface Review { gun: number; yildiz: number; metin: string; kim: string }
+export interface Review { gun: number; yildiz: number; metin: string; kim: string; neden?: string; yanit?: boolean }
 
 export interface Money { kahve: number; yiyecek: number; ek: number; kampanya: number; paket: number; toplu: number; etkinlik: number; franchise: number }
 export interface Costs { kira: number; elektrik: number; su: number; internet: number; maas: number; malzeme: number; fire: number; stok: number; vergi: number; bakim: number; reklam: number; sigorta: number; prim: number; egitim: number; isealim: number; sadakat: number; komisyon: number }

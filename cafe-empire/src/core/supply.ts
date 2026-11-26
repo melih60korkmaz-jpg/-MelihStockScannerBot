@@ -16,14 +16,16 @@ export function suppliersOf(c: City): Supplier[] {
     { id: 'premium', ad: 'Gurme Tedarik', fiyat: 1.17 + v, teslim: 0, guven: 0.97, kalite: 1.1, not: 'Pahalı; yüksek kalite, çok güvenilir.' },
   ];
 }
+/** Tedarikçi ilişkisi (tedarik2.ts) buraya bağlanır; varsayılan değerler hiçbir şeyi değiştirmez. */
+export const tedHook: { fiyat: (s: GameState, b: Branch, id: string) => number; guven: (s: GameState, b: Branch, id: string) => number; siparis: (s: GameState, b: Branch, id: string, tutar: number) => void; teslim: (s: GameState, b: Branch, id: string, sorun: boolean) => void } = { fiyat: () => 1, guven: () => 0, siparis: () => undefined, teslim: () => undefined };
 export const supplier = (c: City, id: string | undefined): Supplier => { const l = suppliersOf(c); return l.find((x) => x.id === id) ?? l[0]!; };
 /** Bir paketin piyasa fiyatı (tedarikçi çarpanı hariç). */
 export function ingPrice(s: GameState, id: IngId, c: City): number { const d = ING[id]; return d.fiyat * s.market.fiyat * (id === 'bean' ? s.market.bean : 1) * (0.9 + 0.2 * c.maliyet); }
-export function orderCost(s: GameState, b: Branch, id: IngId, paket: number): number { const c = cityById(b.city); return ingPrice(s, id, c) * supplier(c, b.tedarikci[id]).fiyat * paket * merkezIndirim(s, id); }
+export function orderCost(s: GameState, b: Branch, id: IngId, paket: number): number { const c = cityById(b.city); return ingPrice(s, id, c) * supplier(c, b.tedarikci[id]).fiyat * tedHook.fiyat(s, b, supplier(c, b.tedarikci[id]).id) * paket * merkezIndirim(s, id); }
 export function orderStock(s: GameState, b: Branch, id: IngId, paket: number): boolean {
-  const c = cityById(b.city), sup = supplier(c, b.tedarikci[id]), price = ingPrice(s, id, c) * sup.fiyat * paket * merkezIndirim(s, id); if (paket <= 0 || s.kasa < price) return false;
-  s.kasa -= price; b.bugun.alim += price; const gec = s.market.mod['gecikme'] && s.market.mod['gecikme'].bit > dayOf(s) ? 3 : 0, gecikti = rand(s.rng, 'market') > sup.guven, eksik = rand(s.rng, 'market') > sup.guven + (1 - sup.guven) * 0.4;
-  const o: Order = { id: s.sn++, ing: id, paket, teslim: dayOf(s) + ING[id].teslim + sup.teslim + gec + (gecikti ? 2 : 0), odenen: price, kim: sup.id, gecikti, eksik }; b.siparisler.push(o); return true;
+  const c = cityById(b.city), sup = supplier(c, b.tedarikci[id]), price = ingPrice(s, id, c) * sup.fiyat * tedHook.fiyat(s, b, sup.id) * paket * merkezIndirim(s, id); if (paket <= 0 || s.kasa < price) return false;
+  s.kasa -= price; b.bugun.alim += price; const gec = s.market.mod['gecikme'] && s.market.mod['gecikme'].bit > dayOf(s) ? 3 : 0, guv = Math.min(0.995, sup.guven + tedHook.guven(s, b, sup.id)), gecikti = rand(s.rng, 'market') > guv, eksik = rand(s.rng, 'market') > guv + (1 - guv) * 0.4;
+  const o: Order = { id: s.sn++, ing: id, paket, teslim: dayOf(s) + ING[id].teslim + sup.teslim + gec + (gecikti ? 2 : 0), odenen: price, kim: sup.id, gecikti, eksik }; b.siparisler.push(o); tedHook.siparis(s, b, sup.id, price); return true;
 }
 function addLot(b: Branch, id: IngId, q: number, son: number, kal: number): void { const l = (b.partiler[id] ??= []); l.push({ q, son, kal }); }
 export function syncLots(b: Branch, id: IngId, now: number): void {
@@ -39,6 +41,7 @@ export function deliverAll(s: GameState, log: (m: string) => void): void {
       if (o.teslim > now) { kal.push(o); continue; } const d = ING[o.ing], sup = supplier(c, o.kim); const q = o.paket * d.paket * (o.eksik ? 0.82 : 1);
       syncLots(b, o.ing, now); b.stok[o.ing] = (b.stok[o.ing] ?? 0) + q; addLot(b, o.ing, q, d.omur ? now + d.omur * shelfMult(b) * merkezRaf(s, d.id) : 1e9, sup.kalite);
       if (['bean', 'milk', 'bakery', 'raw', 'tea'].includes(o.ing)) b.malKalite = b.malKalite * 0.8 + sup.kalite * 0.2;
+      tedHook.teslim(s, b, sup.id, o.gecikti || o.eksik);
       if (o.gecikti || o.eksik) log(`${sup.ad}: ${d.ad} siparişi ${o.gecikti ? 'geç geldi' : ''}${o.gecikti && o.eksik ? ' ve ' : ''}${o.eksik ? 'eksik teslim edildi' : ''}.`);
     }
     b.siparisler = kal;

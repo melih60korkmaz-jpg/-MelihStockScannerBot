@@ -345,6 +345,7 @@ export function zaferMaddeleri(s: GameState): ZaferMadde[] { return [
 export const zaferTamam = (s: GameState): boolean => zaferMaddeleri(s).every((m) => m.v >= m.h);
 
 /* ===================== Durum ===================== */
+export interface TedIliski { sad: number; harc: number; son: number; soz?: { bas: number; bit: number; hedef: number; harc: number } }
 export interface Derin {
   cek: { ana: string; ikinci: string | null; oran: number; kavurma: 0 | 1 | 2; ad: string; gecis: number };
   tarif: Tarif[]; imza: number | null; usta: Record<number, Usta>; sam: Array<{ yil: number; ad: string; derece: number }>;
@@ -352,10 +353,10 @@ export interface Derin {
   trait: Record<number, string>; hazir: Record<string, number>; etki: Record<string, { v: number; bit: number }>; son: Record<string, number>; kamera: Record<number, boolean>;
   bag: Record<number, Ctx & { tip?: string }>; fuar: { kayit: FuarKayit | null; kupa: number; gecmis: Array<{ yil: number; derece: string }> }; rakip: Kisi[];
   kalB: Record<number, number>; talepB: Record<number, number>;
-  say: Record<string, number>; zorluk: 'kolay' | 'normal' | 'zor'; zafer: number; ipucu: Record<string, number>;
+  ted: Record<string, TedIliski>; say: Record<string, number>; zorluk: 'kolay' | 'normal' | 'zor'; zafer: number; ipucu: Record<string, number>;
 }
-export function derinInit(): Derin { return { cek: { ana: 'brezilya', ikinci: null, oran: 0.3, kavurma: 1, ad: 'Ev Karışımı', gecis: 0 }, tarif: [], imza: null, usta: {}, sam: [], mud: {}, esnaf: {}, ortak: {}, hik: {}, trait: {}, hazir: {}, etki: {}, son: {}, kamera: {}, bag: {}, fuar: { kayit: null, kupa: 0, gecmis: [] }, rakip: rakipBaslat(), kalB: {}, talepB: {}, say: {}, zorluk: 'normal', zafer: 0, ipucu: {} }; }
-export function D(s: GameState): Derin { const d = (s.derin ??= derinInit()); d.say ??= {}; d.zorluk ??= 'normal'; d.ipucu ??= {}; d.zafer ??= 0; return d; }
+export function derinInit(): Derin { return { cek: { ana: 'brezilya', ikinci: null, oran: 0.3, kavurma: 1, ad: 'Ev Karışımı', gecis: 0 }, tarif: [], imza: null, usta: {}, sam: [], mud: {}, esnaf: {}, ortak: {}, hik: {}, trait: {}, hazir: {}, etki: {}, son: {}, kamera: {}, bag: {}, fuar: { kayit: null, kupa: 0, gecmis: [] }, rakip: rakipBaslat(), kalB: {}, talepB: {}, ted: {}, say: {}, zorluk: 'normal', zafer: 0, ipucu: {} }; }
+export function D(s: GameState): Derin { const d = (s.derin ??= derinInit()); d.say ??= {}; d.ted ??= {}; d.zorluk ??= 'normal'; d.ipucu ??= {}; d.zafer ??= 0; return d; }
 export const ZORLUK = { kolay: { ad: 'Kolay', kasa: 1.5, olay: 0.6, rakip: 0.7, ac: 'Fazla başlangıç parası, az kriz, yavaş rakipler.' }, normal: { ad: 'Normal', kasa: 1, olay: 1, rakip: 1, ac: 'Dengeli oyun.' }, zor: { ad: 'Zor', kasa: 0.7, olay: 1.4, rakip: 1.5, ac: 'Az başlangıç parası, sık kriz, saldırgan rakipler.' } } as const;
 
 /* ===================== Çarpanlar ve günlük döngü ===================== */

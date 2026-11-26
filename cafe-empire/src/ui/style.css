@@ -261,3 +261,5 @@ html,body{background:var(--bg)}
 .hero2{display:flex;align-items:center;gap:14px}.hero2 h3{margin:0}
 .zafer{border:1px solid rgba(255,212,92,.5);background:linear-gradient(135deg,#3a2c10,#16282f)}.zafer .pm{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}.zafer .pm div{background:rgba(0,0,0,.25);border-radius:10px;padding:5px 8px;font-size:11px}.zafer .pm b{display:block;font-size:13px}.zafer .pm .tm{color:var(--ok)}
 .zorl{display:flex;gap:8px;margin:6px 0}.zorl button{flex:1;padding:8px 6px;border-radius:12px;background:var(--p2);border:1px solid var(--line);color:var(--tx);text-align:center}.zorl button.on{border-color:var(--am);background:#2e1d10}.zorl small{display:block;color:var(--mu);font-size:10.5px}
+
+.kamyon .tek{transform-box:fill-box;transform-origin:center;animation:donus 1.4s linear infinite}.kamyon{animation:zip 2.4s ease-in-out infinite}

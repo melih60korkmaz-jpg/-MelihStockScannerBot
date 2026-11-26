@@ -12,6 +12,7 @@ import { startAudio, setAudio, sfx, stopAudio } from './audio';
 import { BASARIM } from '../core/goals';
 import { ctx, cur, esc as _esc, NAV, GRUPLAR, grupOf, PANELS, LIVE_TABS, handle, isBranchTab } from './panels';
 import { handleDerin } from './derin';
+import { handleDerin2 } from './derin2';
 import { ZORLUK } from '../core/derin';
 import { confetti } from './juice';
 import { PAGES, handlePages, kurHtml, kisa, BOS_UYARI } from './pages';
@@ -160,7 +161,7 @@ function act(a: string, d: DOMStringMap): void {
     toast, refresh: () => page(true), show: () => { hud(); }, go: (t: string) => { sekmeAc(t); tour(); },
     save: () => save(S!), exit: () => { save(S!); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); }, wipe: () => { wipe(); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); }, kurYenile,
   };
-  if (handlePages(a, d, h) || handleDerin(a, d, h)) { return; }
+  if (handlePages(a, d, h) || handleDerin(a, d, h) || handleDerin2(a, d, h)) { return; }
   handle(a, d, h);
   if (a === 'bsel') { hud(); page(true); }
 }

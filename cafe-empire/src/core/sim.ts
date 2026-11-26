@@ -4,6 +4,7 @@ import { rand, randInt, pick } from './rng';
 import { profilBranch, olgunluk } from './region';
 import { qualMult, energyMult, maintenanceDaily, brandDaily } from './invest';
 import { capacityAt, coverage, dailyHr, shiftHours, staffOf, eff } from './hr';
+import { yorumNedeni, nedenMetinleri } from './yorum';
 import { autoOrder, deliverAll, holdingCost, ingPrice, orderStock, spoilage, syncLots, usageOf } from './supply';
 export { ingPrice, orderStock };
 import type { Branch, DayAcc, DayReport, Employee, GameState, SimEvent, Review, Rival } from './types';
@@ -247,8 +248,8 @@ function reportOf(gun: number, a: DayAcc, b: Branch): DayReport { const r = mkRe
 function makeReviews(s: GameState, b: Branch, sat: number, gun: number): void {
   const n = Math.min(3, Math.floor(b.bugun.musteri / 30) + (rand(s.rng, 'customers') < 0.4 ? 1 : 0)); const FN = ['Ayşe', 'Mehmet', 'Elif', 'Can', 'Zeynep', 'Burak', 'Selin', 'Emre'];
   for (let i = 0; i < n; i++) {
-    const x = sat + (rand(s.rng, 'customers') - 0.5) * 30, y = x >= 80 ? 5 : x >= 68 ? 4 : x >= 55 ? 3 : x >= 40 ? 2 : 1, list = y >= 4 ? reviewText.iyi : y === 3 ? reviewText.orta : reviewText.kotu;
-    const rv: Review = { gun, yildiz: y, metin: pick(s.rng, 'customers', list), kim: pick(s.rng, 'customers', FN) }; b.yorumlar.unshift(rv);
+    const x = sat + (rand(s.rng, 'customers') - 0.5) * 30, y = x >= 80 ? 5 : x >= 68 ? 4 : x >= 55 ? 3 : x >= 40 ? 2 : 1, neden = yorumNedeni(b, y, gun, i, s.derin?.imza != null, s.derin?.mud?.[b.id]?.length ?? 0), list = nedenMetinleri(neden);
+    const rv: Review = { gun, yildiz: y, metin: pick(s.rng, 'customers', list), kim: pick(s.rng, 'customers', FN), neden }; b.yorumlar.unshift(rv);
   }
   b.yorumlar = b.yorumlar.slice(0, 30); if (b.yorumlar.length) b.yorumPuan = Math.round((b.yorumlar.reduce((a, r) => a + r.yildiz, 0) / b.yorumlar.length) * 10) / 10;
 }

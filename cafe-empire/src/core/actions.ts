@@ -1,4 +1,5 @@
 import { D, ZORLUK } from './derin';
+import './tedarik2';
 import { buyInvest } from './invest';
 import { gorevleriGuncelle } from './goals';
 import { estimateUsage, autoOrder } from './supply';

@@ -151,3 +151,24 @@ describe('ikinci tur: stok, zorluk, zafer, başarım, mini oyun bonusu', () => {
     const a = mk(0), b = mk(20); if (a > 0 && b > 0) expect(b).toBeLessThanOrEqual(a);
   }, 100000);
 });
+
+describe('tedarikçi ilişkisi ve yorum nedenleri', () => {
+  it('başlangıçta fiyat çarpanı 1; sipariş sadakati artırır, seviye indirim sağlar', async () => {
+    const { orderCost, orderStock, suppliersOf } = await import('../src/core/supply'); const { iliski, tedSeviye, tedIndirim } = await import('../src/core/tedarik2'); const { cityById } = await import('../src/data/turkey');
+    const s = yeni(2), b = s.subeler[0]!; const sup = suppliersOf(cityById(b.city))[0]!; const c0 = orderCost(s, b, 'bean', 3); expect(tedIndirim(s, b.city, sup.id)).toBe(0); s.kasa = 5e7;
+    for (let i = 0; i < 150; i++) orderStock(s, b, 'bean', 8); const r = iliski(s, b.city, sup.id); expect(r.sad).toBeGreaterThan(20); expect(tedSeviye(r.sad).ind).toBeGreaterThan(0); const c1 = orderCost(s, b, 'bean', 3); expect(c1).toBeLessThan(c0);
+  });
+  it('ziyaret sadakati artırır (3 günde bir); sözleşme hedef/ceza ve sadakat kuralları', async () => {
+    const { tedZiyaret, tedSozlesme, iliski, sozlesmeHedef } = await import('../src/core/tedarik2'); const { suppliersOf } = await import('../src/core/supply'); const { cityById } = await import('../src/data/turkey');
+    const s = yeni(2), b = s.subeler[0]!, id = suppliersOf(cityById(b.city))[0]!.id; s.kasa = 1e6; expect(tedZiyaret(s, b.city, id).ok).toBe(true); expect(tedZiyaret(s, b.city, id).ok).toBe(false); expect(tedSozlesme(s, b.city, id).ok).toBe(false);
+    const r = iliski(s, b.city, id); r.sad = 30; expect(tedSozlesme(s, b.city, id).ok).toBe(true); expect(tedSozlesme(s, b.city, id).ok).toBe(false); expect(r.soz!.hedef).toBe(sozlesmeHedef(s)); const k0 = s.kasa, sad0 = r.sad; b.otoSiparis = false;
+    gunGit(s, dayOf(s) + 31); expect(r.soz).toBeUndefined(); expect(r.sad).toBeLessThan(sad0); expect(s.kasa).toBeLessThan(k0);
+  });
+  it('yorum nedenleri gerçek duruma bağlı; yorumlara neden yazılır, yanıt bir kez verilir', async () => {
+    const { yorumNedeni, nedenMetinleri, yorumYanit, NEDENLER } = await import('../src/core/yorum'); const s = yeni(4), b = s.subeler[0]!;
+    b.mus.ortBekleme = 12; expect(yorumNedeni(b, 1, 5, 0, false, 0)).toBe('bekleme'); b.mus.ortBekleme = 1; b.hijyen = 20; expect(yorumNedeni(b, 2, 5, 0, false, 0)).toBe('hijyen'); b.hijyen = 90; b.mus.fiyatMemn = 20; expect(yorumNedeni(b, 1, 5, 0, false, 0)).toBe('fiyat');
+    for (const id of Object.keys(NEDENLER)) expect(nedenMetinleri(id).length).toBeGreaterThan(1);
+    gunGit(s, 40); const l = s.subeler[0]!.yorumlar; expect(l.length).toBeGreaterThan(5); expect(l.every((r) => r.neden && NEDENLER[r.neden])).toBe(true); expect(l.every((r) => nedenMetinleri(r.neden!).includes(r.metin))).toBe(true);
+    const m0 = s.subeler[0]!.marka; expect(yorumYanit(s.subeler[0]!, 0).ok).toBe(true); expect(s.subeler[0]!.marka).toBeGreaterThan(m0 - 0.0001); expect(yorumYanit(s.subeler[0]!, 0).ok).toBe(false); expect(yorumYanit(s.subeler[0]!, 99).ok).toBe(false);
+  });
+});

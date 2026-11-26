@@ -68,3 +68,7 @@ export function latteArt(skor: number, boy = 140): string {
 }
 /** Takvim ikonu (animasyon için kapsayıcı). */
 export const hareketli = (ik: string, sinif = 'zip'): string => `<span class="${sinif}">${ik}</span>`;
+/** Tedarik kamyoneti: tekerlekler döner, kasa rengi tedarikçiye göre. */
+export function kamyon(renk: string, boy = 96): string {
+  return `<svg class="kamyon" viewBox="0 0 110 64" width="${boy}" height="${boy * 0.58}" aria-hidden="true"><rect x="4" y="12" width="62" height="34" rx="4" fill="${renk}"/><rect x="8" y="16" width="54" height="8" rx="2" fill="rgba(255,255,255,.28)"/><path d="M66 22 h22 l12 14 v10 h-34z" fill="#e8d6a8"/><path d="M72 26 h13 l8 9 h-21z" fill="#25363d"/><g class="tek"><circle cx="24" cy="48" r="8" fill="#222"/><circle cx="24" cy="48" r="3.5" fill="#999"/><path d="M24 41 v14 M17 48 h14" stroke="#777" stroke-width="1.4"/></g><g class="tek"><circle cx="84" cy="48" r="8" fill="#222"/><circle cx="84" cy="48" r="3.5" fill="#999"/><path d="M84 41 v14 M77 48 h14" stroke="#777" stroke-width="1.4"/></g></svg>`;
+}
