@@ -7,12 +7,14 @@ import { autoPlan, coverage, gaps, giveBonus, evaluate, promote, resolveComplain
 import { suppliersOf, supplier, orderCost, stockValue, holdingCost, nearestExpiry, minLevel, transferStock } from '../core/supply';
 import { INVESTS, investCost, yl } from '../core/invest';
 import { dateOf } from '../core/calendar';
-import { mapSvg, METRICS, regionName, type Metric } from './map';
+import { regionMap, METRICS, regionName, NAT_VB, zoomVb, type Metric, type Fx, type VB } from './map';
+import { ilceCost, ilAc, ilceAc, ilDurum, ilceDurum, ilAcik, ilceAcik, ilCost, ilLevel, ilSayisi, ilceSayisi } from '../core/region';
+import { ILCELER, ilcelerOf, ilceKey, ilceOf, profilOf } from '../data/regions';
 import type { Branch, Employee, GameState, Vardiya } from '../core/types';
 
-export interface Ctx { S: GameState | null; bid: number; mapm: Metric; mapsel: number; ilanTip: StaffTypeId; sureGun: number; menuKat: 'kahve' | 'yiyecek'; rapor: number; fps: boolean }
-export const ctx: Ctx = { S: null, bid: 0, mapm: 'bolge', mapsel: 34, ilanTip: 'barista', sureGun: 30, menuKat: 'kahve', rapor: 7, fps: true };
-export interface Helpers { res: (r: Result) => void; toast: (m: string) => void; refresh: () => void; show: () => void; go: (tab: string) => void; exit: () => void; wipe: () => void; save: () => void }
+export interface Ctx { zoomIl: number | null; selIlce: number | null; vb: VB; fx: Fx[]; S: GameState | null; bid: number; mapm: Metric; mapsel: number; ilanTip: StaffTypeId; sureGun: number; menuKat: 'kahve' | 'yiyecek'; rapor: number; fps: boolean }
+export const ctx: Ctx = { zoomIl: null, selIlce: null, vb: NAT_VB, fx: [], S: null, bid: 0, mapm: 'bolge', mapsel: 34, ilanTip: 'barista', sureGun: 30, menuKat: 'kahve', rapor: 7, fps: true };
+export interface Helpers { zoom: (vb: VB, done?: () => void) => void; res: (r: Result) => void; toast: (m: string) => void; refresh: () => void; show: () => void; go: (tab: string) => void; exit: () => void; wipe: () => void; save: () => void }
 
 export const NAV: Array<[string, string, string]> = [['genel', '🏠', 'Genel Bakış'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiyalar'], ['menu', '📋', 'Menü ve Ürünler'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarikçiler'], ['finans', '💰', 'Finans'], ['musteri', '🙂', 'Müşteriler'], ['reklam', '📣', 'Reklam'], ['gelisim', '🛠️', 'İşletme Geliştirme'], ['rakip', '🥊', 'Rakipler'], ['harita', '🗺️', 'Türkiye Haritası'], ['subeler', '🏬', 'Şubeler'], ['rapor', '📊', 'Raporlar'], ['ayar', '⚙️', 'Ayarlar']];
 const BRANCH_TABS = new Set(['genel', 'personel', 'vardiya', 'menu', 'stok', 'tedarik', 'musteri', 'reklam', 'gelisim', 'rakip', 'subeler']);
@@ -153,15 +155,37 @@ function pRakip(): string {
 }
 
 /* ===================== 12 · Türkiye Haritası ===================== */
+const fxPush = (k: Fx['k'], id: string): void => { ctx.fx = ctx.fx.filter((f) => Date.now() - f.t < 2500); ctx.fx.push({ k, id, t: Date.now() }); };
+const ZMETRICS: Array<[Metric, string]> = [['erisim', 'Erişim'], ['talep', 'Talep'], ['gelir', 'Gelir'], ['kira', 'Kira']];
+const dstat = (d: { d: string }): string => (d.d === 'acik' ? '<span class="pill" style="background:rgba(95,192,138,.2);color:var(--ok)">Açık</span>' : d.d === 'satilik' ? '<span class="pill">Satılık</span>' : '<span class="pill" style="background:rgba(255,255,255,.08);color:var(--mu)">🔒 Kilitli</span>');
+function pHarita(): string {
+  const s = S(), lv = levelOf(s), z = ctx.zoomIl, now = Date.now();
+  const metricRow = (z === null ? METRICS : ZMETRICS).map(([m, n]) => `<button class="cx ${ctx.mapm === m ? 'on' : ''}" data-a="metric" data-m="${m}">${n}</button>`).join('');
+  const map = `<div class="mapbox ${z !== null ? 'zoomed' : ''}">${regionMap(s, { metric: z !== null && !ZMETRICS.some(([m]) => m === ctx.mapm) ? 'erisim' : ctx.mapm, sel: ctx.mapsel, zoomIl: z, selIlce: ctx.selIlce, vb: ctx.vb, fx: ctx.fx, now, lv })}</div>`;
+  const legend = '<div class="tiny muted legend"><i style="background:#c98a3c"></i>açık <i style="background:#2f6b6f"></i>satın alınabilir <i style="background:#34404d"></i>kilitli <i style="background:var(--am)" class="pinl"></i>şube</div>';
+  const head = `<div class="card"><div class="row small"><span>Açık pazar</span><b>${ilSayisi(s)} il · ${ilceSayisi(s)} ilçe</b></div><div class="row small"><span>Şubelerin</span><b>${s.subeler.length}</b></div><div class="row small"><span>Kafe seviyesi</span><b>${lv}${lv < 5 ? ' · yeni iller yalnızca sınırdaş açılır' : ' · ulusal zincir: her ili açabilirsin'}</b></div></div>`;
+  if (z === null) {
+    const c = cityById(ctx.mapsel), st = ilDurum(s, c.id, lv), mine = s.subeler.filter((x) => x.city === c.id), rv = s.rakipler[c.id] ?? [];
+    const act = st.d === 'acik' ? `<button class="btn sm pri" data-a="ilsec" data-il="${c.id}">🔍 İlçeleri aç / yönet (${ilcelerOf(c.id).filter((d) => ilceAcik(s, d)).length}/${ilcelerOf(c.id).length})</button>` : st.d === 'satilik' ? `<button class="btn sm pri" data-a="ilac" data-il="${c.id}">Pazarı aç · ${fmt(st.bedel)}</button>` : `<div class="tiny badc">🔒 ${st.neden}</div><div class="tiny muted">Bedel: ${fmt(st.bedel)} · gereken seviye ${ilLevel(c.id)}</div>`;
+    const firsat = CITIES.filter((x) => ilDurum(s, x.id, lv).d === 'satilik').sort((a, b) => ilCost(s, a.id) - ilCost(s, b.id)).slice(0, 6);
+    return `${head}<div class="chiprow" style="margin:8px 0">${metricRow}</div>${map}${legend}
+    <div class="card"><h3>${esc(c.ad)} <span class="muted small">${REGION_NAME[c.region]}</span> ${dstat(st)}</h3>${cityFacts(c)}<div class="row small"><span>Şubelerin</span><b>${mine.length}</b></div><div class="row small"><span>Bilinen rakip kafe</span><b>${rv.length ? rv.length : 'bilinmiyor (pazar açılınca görünür)'}</b></div><div style="margin-top:8px">${act}</div></div>
+    <div class="eyebrow">Şu an satın alınabilir pazarlar</div>${firsat.length ? firsat.map((x) => `<div class="card" style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="flex:1"><b>${esc(x.ad)}</b><div class="tiny muted">${(x.nufus / 1000).toFixed(1).replace('.', ',')} M nüfus · ${ilcelerOf(x.id).length} ilçe</div></div><button class="btn sm" data-a="ilsec" data-il="${x.id}">İncele</button><button class="btn sm pri" data-a="ilac" data-il="${x.id}">${fmt(ilCost(s, x.id))}</button></div>`).join('') : '<div class="card small muted">Şu an satın alınabilir il yok: seviye atla (marka puanı ve şube sayısı) ya da önce sınırdaş bir il aç.</div>'}`;
+  }
+  const c = cityById(z), L = [...ilcelerOf(z)], acik = L.filter((d) => ilceAcik(s, d)).length, sel = ctx.selIlce !== null ? ILCELER[ctx.selIlce] : undefined;
+  let detay = '<div class="card small muted">Haritadan ya da listeden bir ilçe seç. Önce bir ilçeyi satın al, sonra orada şube aç; yeni ilçeler yalnızca sınırdaş açılır.</div>';
+  if (sel && sel.il === z) {
+    const st = ilceDurum(s, sel), p = profilOf(sel), key = ilceKey(sel), mineI = s.subeler.filter((x) => x.ilce === key);
+    const shops = st.d === 'acik' ? SHOP_TYPES.map((t) => { const why = t.uygun(c), cost = Math.round(setupCost(s, c, t.id) * (0.85 + 0.15 * p.kira) / 1000) * 1000, seviye = t.seviye > lv && s.subeler.length > 0; return `<div class="row small"><span>${t.ikon} ${t.ad} <span class="tiny muted">${t.m2} m² · kira ${fmt(Math.round(rentOf(s, c, t.id) * p.kira / 500) * 500)}/ay</span></span>${why ? `<span class="tiny badc">🔒</span>` : seviye ? `<span class="tiny badc">Sv ${t.seviye}</span>` : `<button class="btn sm pri" data-a="sube" data-city="${c.id}" data-ilce="${key}" data-tip="${t.id}">${fmt(cost)}</button>`}</div>`; }).join('') : '';
+    const buy = st.d === 'satilik' ? `<button class="btn sm pri" data-a="ilceac" data-id="${sel.id}">İlçeyi aç · ${fmt(st.bedel)}</button>` : st.d === 'kilitli' ? `<div class="tiny badc">🔒 ${st.neden}</div><div class="tiny muted">Bedel: ${fmt(st.bedel)}</div>` : '';
+    detay = `<div class="card"><h3>${esc(sel.ad)} ${dstat(st)}</h3>${p.etiket ? `<div class="tiny muted">${esc(p.etiket)}</div>` : ''}<div class="small muted">Kafe talebi ${tr(p.talep, 2)}×</div>${bar(Math.min(100, p.talep / 2 * 100), 'var(--am)')}<div class="small muted">Gelir düzeyi ${tr(p.gelir, 2)}×</div>${bar(Math.min(100, p.gelir / 1.5 * 100), 'var(--ok)')}<div class="small muted">Kira ${tr(p.kira, 2)}×</div>${bar(Math.min(100, p.kira / 1.6 * 100), 'var(--bad)')}<div class="tiny muted">Profil tahminidir${z === 34 ? '' : ' (ilçe nüfus verisi oyuna dahil değil; ilçe ağırlıkları il özelliklerinden türetilir)'}.</div>${mineI.length ? `<div class="small good" style="margin-top:4px">☕ Bu ilçede ${mineI.length} şuben var</div>` : ''}<div style="margin-top:8px">${buy}</div>${shops ? `<div class="eyebrow">Şube aç</div>${shops}` : ''}</div>`;
+  }
+  const list = L.sort((a, b) => { const o = (d: typeof a) => (ilceAcik(s, d) ? 0 : ilceDurum(s, d).d === 'satilik' ? 1 : 2); return o(a) - o(b) || ilceCost(s, a) - ilceCost(s, b); }).map((d) => { const st = ilceDurum(s, d); return `<div class="row small" data-a="ilcesec" data-id="${d.id}" style="cursor:pointer;${d.id === ctx.selIlce ? 'background:rgba(224,152,60,.12);border-radius:8px;padding:4px 6px' : ''}"><span>${esc(d.ad)}</span><span>${st.d === 'acik' ? '<span class="good">açık</span>' : fmt(st.bedel) + (st.d === 'kilitli' ? ' 🔒' : '')}</span></div>`; }).join('');
+  return `<div class="chiprow" style="margin-bottom:8px"><button class="btn sm" data-a="geri">← Türkiye</button><b style="align-self:center">${esc(c.ad)}</b><span class="tiny muted" style="align-self:center">${acik}/${L.length} ilçe açık</span></div><div class="chiprow" style="margin-bottom:6px">${metricRow}</div>${map}${legend}${detay}<div class="card"><h3>İlçeler</h3>${list}</div>`;
+}
 function cityFacts(c: ReturnType<typeof cityById>): string {
   const L = (v: number) => bar(v * 100);
-  return `<div class="row small"><span>Nüfus</span><b>${(c.nufus / 1000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} B</b></div><div class="row small"><span>Gelir düzeyi</span><b>${tr(c.gelir, 2)}×</b></div><div class="row small"><span>Kira seviyesi</span><b>${tr(c.kira, 2)}×</b></div><div class="small muted">Turizm</div>${L(c.turizm)}<div class="small muted">Öğrenci</div>${L(c.ogrenci)}<div class="small muted">Rekabet</div>${bar(c.rekabet * 100, 'var(--bad)')}`;
-}
-function pHarita(): string {
-  const s = S(), c = cityById(ctx.mapsel), mine = s.subeler.filter((x) => x.city === c.id), rv = s.rakipler[c.id] ?? [], lv = levelOf(s);
-  return `<div class="chiprow" style="margin-bottom:6px">${METRICS.map(([m, n]) => `<button class="cx ${ctx.mapm === m ? 'on' : ''}" data-a="metric" data-m="${m}">${n}</button>`).join('')}</div><div class="mapbox">${mapSvg(s, ctx.mapm, ctx.mapsel)}</div><div class="tiny muted" style="margin:3px 2px 8px">☕ = şubelerin · ${s.subeler.length} şube, ${new Set(s.subeler.map((x) => x.city)).size} şehir</div>
-  <div class="card"><h3>${esc(c.ad)} <span class="muted small">${REGION_NAME[c.region]}</span></h3>${cityFacts(c)}<div class="row small"><span>Şubelerin</span><b>${mine.length}</b></div><div class="row small"><span>Bilinen rakip kafe</span><b>${rv.length ? rv.length : 'bilinmiyor (şube açınca görünür)'}</b></div></div>
-  <div class="eyebrow">Yeni dükkân fırsatları</div>${SHOP_TYPES.map((t) => { const why = t.uygun(c), cost = setupCost(s, c, t.id), seviye = t.seviye > lv; return `<div class="card"><div class="row"><b>${t.ikon} ${t.ad}</b><span class="small">${fmt(cost)}</span></div><div class="tiny muted">${t.m2} m² · kira ${fmt(rentOf(s, c, t.id))}/ay · günlük ~${Math.round(t.potansiyel * 1.75)} potansiyel · rekabet %${Math.round(t.rekabet * 100)}</div>${why || seviye ? `<div class="tiny badc">🔒 ${why ?? 'Kafe seviyesi ' + t.seviye + ' gerekir'}</div>` : s.kasa < cost ? '<div class="tiny badc">Kasa yetersiz</div>' : `<button class="btn sm pri" data-a="sube" data-city="${c.id}" data-tip="${t.id}">Şube aç</button>`}</div>`; }).join('')}`;
+  return `<div class="row small"><span>Nüfus</span><b>${(c.nufus / 1000).toFixed(2).replace('.', ',')} M</b></div><div class="row small"><span>Gelir düzeyi</span><b>${tr(c.gelir, 2)}×</b></div><div class="row small"><span>Kira seviyesi</span><b>${tr(c.kira, 2)}×</b></div><div class="small muted">Turizm</div>${L(c.turizm)}<div class="small muted">Öğrenci</div>${L(c.ogrenci)}<div class="small muted">Rekabet</div>${bar(c.rekabet * 100, 'var(--bad)')}`;
 }
 
 /* ===================== 13 · Şubeler ===================== */
@@ -190,7 +214,7 @@ function pAyar(): string {
   const s = S();
   return `<div class="card"><h3>🏢 ${esc(s.marka.ad)}</h3><div class="row small"><span>Oyun süresi</span><b>${dayOf(s)} gün · ${dateText(s)}</b></div><div class="row small"><span>Şube · şehir</span><b>${s.subeler.length} · ${new Set(s.subeler.map((x) => x.city)).size}</b></div><div class="row small"><span>Saat</span><b>${hourOf(s).toFixed(0)}:00</b></div></div>
   <div class="card"><h3>Seçenekler</h3><div class="row small"><span>FPS göstergesi</span><button class="btn sm ${ctx.fps ? 'on' : ''}" data-a="fps">${ctx.fps ? 'Açık' : 'Kapalı'}</button></div><div class="tiny muted">Oyun her 15 saniyede ve sekme kapanırken otomatik kaydedilir (bu cihazda, tarayıcı depolamasında).</div></div>
-  <div class="chiprow"><button class="btn" data-a="kaydet">💾 Şimdi kaydet</button><button class="btn" data-a="cikis">Ana menü</button><button class="btn bad" data-a="sil">Oyunu sil</button></div>`;
+  <div class="card"><h3>Veri kaynakları</h3><div class="tiny muted">İlçe sınırları: © OpenStreetMap contributors, Overture Maps Foundation (ODbL 1.0), basitleştirilmiş. İlçe ticari profilleri tahminidir; gerçek nüfus/gelir verisi değildir.</div></div><div class="chiprow"><button class="btn" data-a="kaydet">💾 Şimdi kaydet</button><button class="btn" data-a="cikis">Ana menü</button><button class="btn bad" data-a="sil">Oyunu sil</button></div>`;
 }
 
 export const PANELS: Record<string, () => string> = { genel: pGenel, personel: pPersonel, vardiya: pVardiya, menu: pMenu, stok: pStok, tedarik: pTedarik, finans: pFinans, musteri: pMusteri, reklam: pReklam, gelisim: pGelisim, rakip: pRakip, harita: pHarita, subeler: pSubeler, rapor: pRapor, ayar: pAyar };
@@ -205,7 +229,12 @@ export function handle(a: string, d: DOMStringMap, h: Helpers): void {
   switch (a) {
     case 'bsel': ctx.bid = +d.id!; return h.show();
     case 'metric': ctx.mapm = d.m as Metric; return h.refresh();
-    case 'sube': { const r = subeAc(s, +d.city!, d.tip as ShopTypeId); if (r.ok) { ctx.bid = s.subeler[s.subeler.length - 1]!.id; h.show(); } return h.res(r); }
+    case 'ilsec': { const il = +d.il!; ctx.mapsel = il; if (ilAcik(s, il) && ctx.zoomIl !== il) { ctx.zoomIl = il; ctx.selIlce = null; if (ctx.mapm !== 'erisim' && !['talep', 'gelir', 'kira'].includes(ctx.mapm)) ctx.mapm = 'erisim'; h.refresh(); return h.zoom(zoomVb(il)); } return h.refresh(); }
+    case 'ilcesec': ctx.selIlce = +d.id!; return h.refresh();
+    case 'geri': ctx.selIlce = null; return h.zoom(NAT_VB, () => { ctx.zoomIl = null; h.refresh(); });
+    case 'ilac': { const r = ilAc(s, +d.il!, levelOf(s)); if (r.ok) { fxPush('il', d.il!); ctx.mapsel = +d.il!; } return h.res(r); }
+    case 'ilceac': { const x = ILCELER[+d.id!]!; const r = ilceAc(s, x); if (r.ok) fxPush('ilce', ilceKey(x)); return h.res(r); }
+    case 'sube': { const r = subeAc(s, +d.city!, d.tip as ShopTypeId, undefined, d.ilce); if (r.ok) { ctx.bid = s.subeler[s.subeler.length - 1]!.id; fxPush('sube', d.ilce ?? d.city!); fxPush('sube', d.city!); h.show(); } return h.res(r); }
     case 'ilantip': ctx.ilanTip = d.t as StaffTypeId; return h.refresh();
     case 'ilan': return h.res(ilanVer(s, b, ctx.ilanTip, Math.round(marketWage(ctx.ilanTip, 3, s.market.fiyat) * +d.k! / 500) * 500));
     case 'hire': { const c = b.adaylar.find((x) => x.id === +d.id!); if (!c) return h.res(no('Aday yok.')); const r = iseAl(s, b, c.id, Math.round(c.maasBeklenti * +d.k! / 500) * 500); if (r.ok) h.show(); return h.res(r); }

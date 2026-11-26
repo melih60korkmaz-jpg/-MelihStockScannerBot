@@ -22,8 +22,12 @@ Kural: **iç mekân yoktur** — kamera daima dükkânı dışarıdan gösterir.
 | Finans: brüt/net kâr, nakit akışı, gider kalemleri, şube bazlı, kredi; tahakkuk-nakit tutarlılığı testle doğrulanır | ✅ |
 | Müşteri metrikleri (sepet, bekleme, tekrar, sadakat, kayıp nedenleri), reklam (10 tür incl. ikinci/paket), işletme geliştirme (8 ekipman/operasyon yatırımı: kapasite, kalite, raf ömrü, enerji, marka) | ✅ |
 | Rakipler: strateji, kampanya, tahmini pazar payı | ⚠️ pazar payı tahmini bir modeldir; rakipler tek tek şehre bağlı |
+| Türkiye haritasında il ve ilçeleri parayla açma: yalnız İstanbul'dan başlanır; gerçek ilçe sınırları (973 ilçe), seviye + sınırdaş şartı, ilçe profili (talep/gelir/kira), pazarın zamanla olgunlaşması, zoom ve açılış animasyonları | ✅ (testli). İlçe profilleri tahmindir: yalnız İstanbul'un 39 ilçesi elle girildi, diğer illerde ilçe ağırlıkları türetilir |
 | Eski kayıtlar yeni sürümde açılır (alan göçü) | ✅ (testli) |
 | **Franchise sistemi** | ❌ henüz yok |
 | Birden fazla şehirde şube aç ve haritadan yönet | ✅ (şube ağı), ✅ harita pinleri |
 | Uluslararası seviye, ek dükkân görsel stilleri (AVM/sahil/lüks/konsept farkları) | ⚠️ kısmi: tüm tipler aynı model ailesinden |
 | Ses/müzik, mağaza kaydı, ikon, iOS build | ❌ henüz yok |
+
+## Veri kaynakları
+İlçe sınırları: [Pinlyx/turkiye-il-ilce](https://github.com/Pinlyx/turkiye-il-ilce) verisinden (© OpenStreetMap contributors, Overture Maps Foundation, ODbL 1.0) `scripts/build-districts.py` ile basitleştirilip `src/data/districts.json` üretildi.

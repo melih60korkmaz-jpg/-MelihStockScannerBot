@@ -38,7 +38,7 @@ export interface Lot { q: number; son: number; kal: number }
 export interface Musteri { ortSiparis: number; ortBekleme: number; hizmet: number; urunKal: number; fiyatMemn: number; tekrar: number; sadik: number; sikayet: number }
 
 export interface Branch {
-  id: number; ad: string; city: number; tip: ShopTypeId; acilis: number; kira: number; m2: number;
+  id: number; ad: string; city: number; ilce?: string; tip: ShopTypeId; acilis: number; kira: number; m2: number;
   staff: Employee[]; menu: Record<ProductId, MenuItem>; stok: Record<IngId, number>; siparisler: Order[]; otoSiparis: boolean;
   yat: Record<string, number>; facade: Facade; hijyen: number; memnuniyet: number; marka: number; sadakat: number;
   backlog: number; kullanim: Partial<Record<IngId, number>>; partiler: Partial<Record<IngId, Lot[]>>; minStok: Partial<Record<IngId, number>>; tedarikci: Partial<Record<IngId, string>>; malKalite: number; mus: Musteri; sonAdet: Partial<Record<ProductId, number>>; acilan: Partial<Record<ProductId, boolean>>; mesai: { aci: number; kapa: number }; ilanlar: Ilan[]; adaylar: Array<Employee & { ilan: number; son: number }>; sikayetler: Sikayet[]; reklam: ActiveAd[]; yorumlar: Review[]; yorumPuan: number;
@@ -51,6 +51,7 @@ export interface Mod { v: number; bit: number }
 export interface Market { enf: number; fiyat: number; bean: number; elektrik: number; mod: Record<string, Mod> }
 
 export interface GameState {
+  bolge: { il: Record<string, number>; ilce: Record<string, number> };   // açık il / ilçe → açıldığı gün
   v: number; seed: number; rng: RngState;
   marka: { ad: string; renk: string; renk2: string; logo: number };
   dk: number;                       // oyun başlangıcından beri geçen dakika

@@ -40,6 +40,7 @@ describe('personel ve vardiya', () => {
 });
 import { transferStaff } from '../src/core/hr';
 import { subeAc as _subeAc } from '../src/core/actions';
+import { grantRegion } from '../src/core/region';
 describe('şubeler arası personel nakli', () => {
-  it('çalışanı taşır, masraf öder, başka şehirde motivasyon düşer', () => { const s = newGame({ ad: 'T', sehir: 26, tip: 'cadde', seed: 2, kasa: 9e6 }).s; _subeAc(s, 6, 'cadde'); const a = s.subeler[0]!, b = s.subeler[1]!; const e = a.staff[0]!, n = a.staff.length, m0 = e.memnuniyet, k = s.kasa; const r = transferStaff(s, a, b, e.id); expect(r.ok).toBe(true); expect(a.staff.length).toBe(n - 1); expect(b.staff.includes(e)).toBe(true); expect(s.kasa).toBeLessThan(k); expect(e.memnuniyet).toBeLessThan(m0); expect(transferStaff(s, a, a, e.id).ok).toBe(false); });
+  it('çalışanı taşır, masraf öder, başka şehirde motivasyon düşer', () => { const s = newGame({ ad: 'T', sehir: 26, tip: 'cadde', seed: 2, kasa: 9e6 }).s; grantRegion(s, 6); _subeAc(s, 6, 'cadde'); const a = s.subeler[0]!, b = s.subeler[1]!; const e = a.staff[0]!, n = a.staff.length, m0 = e.memnuniyet, k = s.kasa; const r = transferStaff(s, a, b, e.id); expect(r.ok).toBe(true); expect(a.staff.length).toBe(n - 1); expect(b.staff.includes(e)).toBe(true); expect(s.kasa).toBeLessThan(k); expect(e.memnuniyet).toBeLessThan(m0); expect(transferStaff(s, a, a, e.id).ok).toBe(false); });
 });

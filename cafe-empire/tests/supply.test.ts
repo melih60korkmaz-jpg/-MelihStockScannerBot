@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { newGame, orderIng, subeAc } from '../src/core/actions';
+import { grantRegion } from '../src/core/region';
 import { step, dayOf, unitCost } from '../src/core/sim';
 import { deliverAll, spoilage, suppliersOf, syncLots, transferStock, orderCost, minLevel, stockValue, holdingCost } from '../src/core/supply';
 import { cityById } from '../src/data/turkey';
@@ -32,6 +33,6 @@ describe('stok, tedarik ve finans bağlantısı', () => {
   });
   it('gelir kalemleri: salon, ek satış, kampanyalı satış ve paket servis ayrı izlenir', () => { const s = mk(6); run(s, 15); const g = s.rapor.reduce((a, r) => { for (const k of Object.keys(r.gelir) as Array<keyof typeof r.gelir>) a[k] = (a[k] ?? 0) + r.gelir[k]; return a; }, {} as Record<string, number>); expect(g.kahve! + g.yiyecek!).toBeGreaterThan(0); expect(g.ek!).toBeGreaterThan(0); expect(g.paket!).toBeGreaterThan(0); });
   it('giderlerde internet, kira, elektrik, su, maaş ve vergi gerçekten oluşur', () => { const s = mk(8); run(s, 10); const g = s.rapor.reduce((a, r) => { for (const k of Object.keys(r.gider) as Array<keyof typeof r.gider>) a[k] = (a[k] ?? 0) + r.gider[k]; return a; }, {} as Record<string, number>); for (const k of ['kira', 'elektrik', 'su', 'internet', 'maas', 'vergi', 'bakim', 'sigorta', 'malzeme']) expect(g[k]!).toBeGreaterThan(0); });
-  it('şubeler arası stok transferi stoku taşır ve nakliye öder', () => { const s = mk(); subeAc(s, 6, 'cadde'); const a = s.subeler[0]!, b = s.subeler[1]!; a.stok.bean = 6000; b.stok.bean = 0; syncLots(a, 'bean', 0); const k0 = s.kasa; const r = transferStock(s, a, b, 'bean', 2000); expect(r.ok).toBe(true); expect(a.stok.bean).toBe(4000); expect(b.stok.bean).toBe(2000); expect(s.kasa).toBeLessThan(k0); expect(transferStock(s, a, b, 'bean', 99999).ok).toBe(false); });
+  it('şubeler arası stok transferi stoku taşır ve nakliye öder', () => { const s = mk(); grantRegion(s, 6); subeAc(s, 6, 'cadde'); const a = s.subeler[0]!, b = s.subeler[1]!; a.stok.bean = 6000; b.stok.bean = 0; syncLots(a, 'bean', 0); const k0 = s.kasa; const r = transferStock(s, a, b, 'bean', 2000); expect(r.ok).toBe(true); expect(a.stok.bean).toBe(4000); expect(b.stok.bean).toBe(2000); expect(s.kasa).toBeLessThan(k0); expect(transferStock(s, a, b, 'bean', 99999).ok).toBe(false); });
   it('stok değeri ve bekletme maliyeti hesaplanır; birim maliyet pozitif', () => { const s = mk(); const b = s.subeler[0]!; expect(stockValue(s, b)).toBeGreaterThan(0); expect(holdingCost(s, b)).toBeGreaterThan(0); expect(unitCost(s, 'latte', cityById(26))).toBeGreaterThan(10); void deliverAll; void spoilage; });
 });

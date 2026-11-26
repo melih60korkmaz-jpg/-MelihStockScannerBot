@@ -1,6 +1,7 @@
 import { CITIES, cityById, type City } from '../data/turkey';
 import { AD, ADS, INGREDIENTS, ING, PRODUCTS, PRODUCT, SHOP, STAFF_TYPE, type IngId, type ProductId, type ProductDef } from '../data/catalog';
 import { rand, randInt, pick } from './rng';
+import { profilBranch, olgunluk } from './region';
 import { qualMult, energyMult, maintenanceDaily, brandDaily } from './invest';
 import { capacityAt, coverage, dailyHr, shiftHours, staffOf, eff } from './hr';
 import { autoOrder, deliverAll, holdingCost, ingPrice, orderStock, spoilage, syncLots, usageOf } from './supply';
@@ -16,7 +17,7 @@ export const inflationIdx = (s: GameState) => s.market.fiyat;
 export function modValue(s: GameState, key: string, now = dayOf(s)): number { const m = s.market.mod[key]; return m && m.bit > now ? m.v : 1; }
 /** Pazardaki referans satış fiyatı (oyuncunun fiyat oranı bununla çarpılır). */
 export function refPrice(s: GameState, p: ProductDef, c: City): number { return Math.round(p.fiyat * inflationIdx(s) * (0.82 + 0.28 * c.gelir) * (0.96 + 0.06 * c.kira / 3)); }
-export function sellPrice(s: GameState, b: Branch, id: ProductId): number { const c = cityById(b.city); return Math.round(refPrice(s, PRODUCT[id], c) * b.menu[id].fiyat); }
+export function sellPrice(s: GameState, b: Branch, id: ProductId): number { const c = cityById(b.city); return Math.round(refPrice(s, PRODUCT[id], c) * (0.92 + 0.08 * profilBranch(b).gelir) * b.menu[id].fiyat); }
 export function unitCost(s: GameState, id: ProductId, c: City): number {
   let t = 0; const r = PRODUCT[id].recete; for (const k of Object.keys(r) as IngId[]) t += ((r[k] ?? 0) / ING[k].paket) * ingPrice(s, k, c); return t;
 }
@@ -57,13 +58,14 @@ export function adEffect(b: Branch, now: number): { trafik: number; marka: numbe
   let t = 0, m = 0, ind = false, pk = false, ik = false; for (const a of b.reklam) { if (a.bit <= now || !a.tuttu) continue; const d = AD[a.id]; t += d.trafik; m += d.marka / d.gun; if (a.id === 'indirim') ind = true; if (a.id === 'paket') pk = true; if (a.id === 'ikinci') ik = true; } return { trafik: t, marka: m, indirim: ind, paket: pk, ikinci: ik };
 }
 export function dailyDemand(s: GameState, b: Branch): number {
-  const c = cityById(b.city), st = SHOP[b.tip], now = dayOf(s), d = dateOf(now), ae = adEffect(b, now);
+  const c0 = cityById(b.city), pf = profilBranch(b), st = SHOP[b.tip], now = dayOf(s), d = dateOf(now), ae = adEffect(b, now);
+  const c = pf.turizm < 0 ? c0 : { ...c0, turizm: 0.5 * c0.turizm + 0.5 * pf.turizm, ogrenci: 0.5 * c0.ogrenci + 0.5 * pf.ogrenci };
   const talepIdx = clampN(0.5 + 0.28 * Math.log(1 + c.talep * 1.2), 0.5, 1.9);
   const marka = 0.4 + 0.012 * (0.6 * b.marka + 0.4 * s.marka_puani) + 0.12 * (b.yorumPuan - 3.5), hava = { gunesli: 1.05, bulutlu: 1, yagmur: 0.72, kar: 0.6 }[s.hava[b.city] ?? 'bulutlu'];
   const turizm = 1 + c.turizm * (seasonTourism(c, d.ay) - 1) * 0.9, hafta = d.haftaGun >= 5 ? 1.15 : 1;
   const ogr = SHOP[b.tip].id === 'uni' ? 1 + 0.5 * c.ogrenci : 1 + 0.2 * c.ogrenci, ogrTatil = (d.ay >= 5 && d.ay <= 7) ? 1 - 0.35 * c.ogrenci : 1;
   const rv = 1 - Math.min(0.5, rivalPressure(s, b)), mod = modValue(s, 'talep') * modValue(s, 'talep_' + b.city);
-  return st.potansiyel * 1.75 * talepIdx * marka * hava * turizm * hafta * ogr * ogrTatil * rv * mod * facadeAppeal(b) * (1 + ae.trafik) * (b.hijyen < 40 ? 0.85 : 1);
+  return st.potansiyel * 1.75 * pf.talep * olgunluk(s, b) * talepIdx * marka * hava * turizm * hafta * ogr * ogrTatil * rv * mod * facadeAppeal(b) * (1 + ae.trafik) * (b.hijyen < 40 ? 0.85 : 1);
 }
 
 /* ===================== Müşteri ve sipariş ===================== */
