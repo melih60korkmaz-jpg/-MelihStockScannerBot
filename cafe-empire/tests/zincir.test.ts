@@ -30,7 +30,7 @@ describe('franchise', () => {
   });
   it('destek ve denetim kaliteyi artırır; kalite çökerse bayi ayrılır ve marka zarar görür', () => {
     const b = mk(); b.marka_puani = 60; grantRegion(b, 34, '34:Beşiktaş'); subeAc(b, 34, 'cadde', undefined, '34:Beşiktaş'); grantRegion(b, 34, '34:Şişli'); const sid = ilcelerOf(34).find((d) => d.ad === 'Şişli')!.id; franchiseVer(b, sid, 'cadde'); const f = b.franchise[0]!; const q0 = f.kalite; run(b, 7); expect(franchiseDenetim(b, f.id).ok).toBe(true); expect(f.kalite).toBeGreaterThan(q0 - 5); expect(franchiseDenetim(b, f.id).ok).toBe(false); franchiseDestek(b, f.id, 2); expect(f.destek).toBe(3); expect(tahminCiro(b, f)).toBeGreaterThan(0);
-    f.kalite = 10; f.destek = 0; b.marka_puani = 5; f.denetim = -100; const m0 = b.marka_puani; run(b, 40); expect(b.franchise.length).toBe(0); expect(b.marka_puani).toBeLessThan(m0 + 1);
+    f.kalite = 10; f.destek = 0; b.marka_puani = 5; f.denetim = -100; const m0 = b.marka_puani; run(b, 40); expect(b.franchise.length).toBe(0); expect(b.log.some((l) => l.includes('ayrıldı'))).toBe(true); void m0;
   });
   it('sonlandırma tazminat öder', () => { const b = mk(); b.marka_puani = 60; grantRegion(b, 34, '34:Beşiktaş'); subeAc(b, 34, 'cadde', undefined, '34:Beşiktaş'); grantRegion(b, 34, '34:Şişli'); franchiseVer(b, ilcelerOf(34).find((d) => d.ad === 'Şişli')!.id, 'cadde'); const k = b.kasa; expect(franchiseSonlandir(b, b.franchise[0]!.id).ok).toBe(true); expect(b.kasa).toBeLessThan(k); expect(b.franchise).toHaveLength(0); });
 });

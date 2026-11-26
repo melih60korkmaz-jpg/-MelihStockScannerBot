@@ -146,3 +146,9 @@ export function transferStaff(s: GameState, from: Branch, to: Branch, id: number
   if (far) { e.memnuniyet = clamp(e.memnuniyet - 6, 0, 100); e.motivasyon = clamp(e.motivasyon - 6, 0, 100); } e.izin = Math.min(e.izin, 6); to.staff.push(e); autoPlanOne(to, e);
   return ok(`${e.ad} ${to.ad} şubesine nakledildi (−${fee} ₺).`);
 }
+
+/** Piyasa maaşının belirgin altında kalan çalışanları piyasa düzeyine çıkarır (enflasyon sonrası bakım). */
+export function maaslariGuncelle(s: GameState, b: Branch, esik = 0.95): { sayi: number; ekGider: number } {
+  let n = 0, ek = 0; for (const e of b.staff) { const piyasa = marketWage(e.tip, e.tecrube, s.market.fiyat); if (e.maas < piyasa * esik) { const yeni = Math.round(piyasa * 1.0 / 500) * 500; ek += yeni - e.maas; setWage(e, yeni); n++; } } return { sayi: n, ekGider: ek };
+}
+export function maasGeride(s: GameState, b: Branch, esik = 0.95): number { return b.staff.filter((e) => e.maas < marketWage(e.tip, e.tecrube, s.market.fiyat) * esik).length; }

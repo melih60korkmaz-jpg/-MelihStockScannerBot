@@ -3,6 +3,9 @@
 Türkiye haritası üzerinde geçen, **dışarıdan görülen 3B kafe dükkânları** ve kapsamlı işletme yönetimi içeren mobil tycoon oyunu.
 Kural: **iç mekân yoktur** — kamera daima dükkânı dışarıdan gösterir.
 
+## Test
+`npm test` (vitest: çekirdek, ekonomi, **oyun testi** — bot 1–2 yıl oynar, fuzz testi, menü yapısı) · `npm run build && npm run qa` (telefon boyutunda uçtan uca tarayıcı testi; playwright gerekir).
+
 ## Çalıştırma
 `npm install` · `npm run dev` · `npm test` · `npm run typecheck` · `npm run build` (tek dosya: `dist/index.html`) · `npm run sim` (ekonomi özeti)
 

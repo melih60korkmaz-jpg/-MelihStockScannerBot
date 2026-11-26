@@ -38,7 +38,7 @@ export interface Promo { sabah?: boolean; ogrenci?: boolean; mutlu?: boolean; ka
 export interface Gorev { id: string; ad: string; ac: string; olc: string; hedef: number; bas: number; bit: number; odul: number; taban: number; tamam: boolean; basari?: number }
 export interface Stat { musteri: number; netKar: number; karGun: number; enIyiGun: number; fiyatDeg: number; seri?: number }
 export interface Franchise { id: number; ad: string; il: number; ilce: string; tip: string; acilis: number; kalite: number; memnuniyet: number; destek: number; ciro: number; royalty: number; toplam: number; dusukGun: number; denetim: number }
-export interface Ayar { ozet: 'her' | 'hafta' | 'kapali'; ses: boolean; muzik: boolean; ses_vol: number }
+export interface Ayar { gunSn: number; ozet: 'her' | 'hafta' | 'kapali'; ses: boolean; muzik: boolean; ses_vol: number }
 export interface Lot { q: number; son: number; kal: number }
 export interface Musteri { ortSiparis: number; ortBekleme: number; hizmet: number; urunKal: number; fiyatMemn: number; tekrar: number; sadik: number; sikayet: number }
 

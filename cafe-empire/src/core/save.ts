@@ -13,7 +13,8 @@ export function migrate(s: GameState): GameState {
     b.mus ??= { ortSiparis: 0, ortBekleme: 0, hizmet: 70, urunKal: 70, fiyatMemn: 70, tekrar: 0, sadik: 0, sikayet: 0 } as never;
     for (const e of b.staff) { e.vardiya ??= 'tam'; e.izin ??= 0; e.mesai ??= false as never; e.yorgunluk ??= 0; e.motivasyon ??= e.memnuniyet ?? 70; e.devam ??= 90; e.hasta ??= 0; e.prim ??= 0; e.sikayet ??= 0; }
   }
-  s.basarim ??= {}; s.gorevler ??= []; s.stat ??= { musteri: 0, netKar: 0, karGun: 0, enIyiGun: 0, fiyatDeg: 0 }; s.franchise ??= []; s.merkez ??= { depo: 0, mutfak: 0 }; s.tur ??= -1; s.ayar ??= { ozet: 'her', ses: true, muzik: true, ses_vol: 0.6 };
+  s.basarim ??= {}; s.gorevler ??= []; s.stat ??= { musteri: 0, netKar: 0, karGun: 0, enIyiGun: 0, fiyatDeg: 0 }; s.franchise ??= []; s.merkez ??= { depo: 0, mutfak: 0 }; s.tur ??= -1; s.ayar ??= { gunSn: 180, ozet: 'her', ses: true, muzik: true, ses_vol: 0.6 };
+  s.ayar.gunSn ??= 180;
   migrateBolge(s); s.capexBugun ??= 0; s.rapor ??= []; for (const r of s.rapor) { r.gider.sadakat ??= 0; r.cogs ??= 0; r.brut ??= 0; r.alim ??= 0; r.capex ??= 0; r.nakit ??= 0; }
   return s;
 }

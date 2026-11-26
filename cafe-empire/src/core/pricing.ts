@@ -6,6 +6,9 @@ import { dateOf } from './calendar';
 import { dayOf } from './calendar';
 import { hooks, dailyDemand, priceFactor, refPrice, unitCost, levelOf, segWeights, SEG_KEYS, SEG_ESNEKLIK, adEffect } from './sim';
 import { profilBranch } from './region';
+import { ILCELER, profilOf } from '../data/regions';
+import { SHOP, type ShopTypeId } from '../data/catalog';
+import { rentOf } from './actions';
 
 export interface Oneri { id: ProductId; simdi: number; oneri: number; fiyatSimdi: number; fiyatOneri: number; kazanc: number; neden: string }
 const clamp = (v: number, a: number, z: number): number => Math.max(a, Math.min(z, v));
@@ -67,3 +70,14 @@ hooks.gunSonu.push((s: GameState): void => {
   for (const b of s.subeler) { if (!b.promo?.yetkiFiyat) continue; const m = b.staff.find((e) => e.tip === 'sube_muduru'); if (!m) continue; let n = 0; for (const o of priceAdvice(s, b)) { b.menu[o.id].fiyat = Math.round(clamp(o.oneri, o.simdi - 0.08, o.simdi + 0.08) * 100) / 100; n++; } if (n) s.log.unshift(`${m.ad} (${b.ad}) ${n} ürünün fiyatını güncelledi.`); }
   s.log = s.log.slice(0, 40);
 });
+
+/** Yeni bir şubenin (ilçe + tür) kabaca günlük kârlılık tahmini: açmadan önce risk görmek için. */
+export interface SubeTahmin { musteri: number; gelir: number; gider: number; net: number; etiket: 'Güçlü' | 'Dengeli' | 'Riskli' }
+export function subeTahmini(s: GameState, ilceId: number, tip: ShopTypeId): SubeTahmin {
+  const d = ILCELER[ilceId]!, c = cityById(d.il), st = SHOP[tip], pf = profilOf(d), F = s.market.fiyat;
+  const marka = 0.4 + 0.012 * (0.5 * s.marka_puani + 3), musteri = Math.min(st.potansiyel * 1.9 * pf.talep * 0.9 * marka * 1.0, st.potansiyel * 3);
+  const son = s.rapor.slice(-30), ms = son.reduce((a, r) => a + r.musteri, 0), sepet = ms > 100 ? son.reduce((a, r) => a + r.toplamGelir - r.gelir.franchise, 0) / ms : 140 * (0.82 + 0.28 * c.gelir);
+  const gelir = musteri * sepet * (0.92 + 0.08 * pf.gelir), nb = st.m2 >= 150 ? 4 : st.m2 >= 75 ? 3 : 2, nk = st.m2 >= 75 ? 2 : 1, personel = (nb * 36000 + nk * 30000 + (st.m2 >= 75 ? 29000 : 0)) * F / 30;
+  const kira = rentOf(s, c, tip) * pf.kira / 30, sabit = (st.m2 * 55 + 14000 + st.m2 * 14 + 3000 + 1900 + st.m2 * 6 + 900 + st.m2 * 18 + 1200) / 30 * F, gider = personel + kira + sabit + gelir * 0.22 + gelir * 0.08;
+  const net = gelir - gider; return { musteri: Math.round(musteri), gelir: Math.round(gelir), gider: Math.round(gider), net: Math.round(net), etiket: net > 6000 ? 'Güçlü' : net > -2000 ? 'Dengeli' : 'Riskli' };
+}

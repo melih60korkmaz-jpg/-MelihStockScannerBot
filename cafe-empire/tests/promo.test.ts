@@ -9,7 +9,7 @@ const run = (s: ReturnType<typeof mk>, g: number) => { for (let i = 0; i < g; i+
 const tot = (s: ReturnType<typeof mk>, f: (r: ReturnType<typeof mk>['rapor'][number]) => number) => s.rapor.reduce((a, r) => a + f(r), 0);
 describe('kampanyalar ve yönetim', () => {
   it('sabah paketi + mutlu saat müşteri ve kampanyalı satış getirir', () => {
-    let on = 0, off = 0, kp = 0; for (const seed of [1, 2, 3]) { const a = mk(seed), c = mk(seed); expect(setPromo(a, a.subeler[0]!, 'sabah').ok).toBe(true); setPromo(a, a.subeler[0]!, 'mutlu'); run(a, 30); run(c, 30); on += tot(a, (r) => r.musteri); off += tot(c, (r) => r.musteri); kp += tot(a, (r) => r.gelir.kampanya); }
+    let on = 0, off = 0, kp = 0; for (const seed of [1, 2, 3, 4, 5, 6]) { const a = mk(seed, 'cadde', '34:Çatalca'), c = mk(seed, 'cadde', '34:Çatalca'); expect(setPromo(a, a.subeler[0]!, 'sabah').ok).toBe(true); setPromo(a, a.subeler[0]!, 'mutlu'); run(a, 30); run(c, 30); on += tot(a, (r) => r.musteri); off += tot(c, (r) => r.musteri); kp += tot(a, (r) => r.gelir.kampanya); }
     expect(on).toBeGreaterThan(off * 1.02); expect(kp).toBeGreaterThan(0);
   });
   it('öğrenci indirimi öğrenci ağırlıklı şubede müşteriyi artırır', () => { let on = 0, off = 0; for (const seed of [1, 2, 3]) { const a = mk(seed, 'uni', '34:Kadıköy'), c = mk(seed, 'uni', '34:Kadıköy'); a.marka_puani = c.marka_puani = 60; setPromo(a, a.subeler[0]!, 'ogrenci'); run(a, 30); run(c, 30); on += tot(a, (r) => r.musteri); off += tot(c, (r) => r.musteri); } expect(on).toBeGreaterThan(off); });

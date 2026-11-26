@@ -83,3 +83,9 @@ button{font:inherit;color:inherit;border:0;background:var(--p2);cursor:pointer}i
 #rotate .ph{width:54px;height:92px;border:3px solid #e0983c;border-radius:12px;position:relative;animation:rotPhone 2.4s ease-in-out infinite}#rotate .ph i{position:absolute;left:50%;bottom:6px;width:16px;height:3px;margin-left:-8px;background:#e0983c;border-radius:2px}
 @keyframes rotPhone{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 @media (orientation:portrait) and (max-width:900px){#rotate{display:flex}}
+
+/* gruplanmış menü */
+.subtabs{display:flex;gap:6px;overflow-x:auto;padding:6px 12px 2px;border-bottom:1px solid var(--line);scrollbar-width:none;flex:0 0 auto}.subtabs::-webkit-scrollbar{display:none}
+.subtabs button{flex:0 0 auto;padding:6px 12px;border-radius:14px;background:var(--p2);border:1px solid var(--line);font-size:12.5px;font-weight:700;color:var(--mu);white-space:nowrap}.subtabs button.on{background:var(--am);color:#1b1006;border-color:transparent}
+.subtabs button.hint{box-shadow:0 0 0 2px #fff,0 0 14px rgba(244,182,96,.9);animation:hintPulse 1.2s ease-in-out infinite}
+.nav button{min-height:56px}.nav button i{font-size:22px}

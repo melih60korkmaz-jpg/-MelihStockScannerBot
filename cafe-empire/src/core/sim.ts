@@ -200,13 +200,13 @@ function dailyClose(s: GameState, ev: SimEvent[]): void {
     const rev = reportOf(gun, acc, b); rpts.push(rev); b.gecmis.push(rev); if (b.gecmis.length > 90) b.gecmis.shift();
     // hijyen, personel, memnuniyet, marka
     const tem = staffOf(b, 'temizlik').reduce((a, e) => a + (e.izin === dateOf(gun).haftaGun || e.hasta > 0 ? 0 : eff(e) * shiftHours(b, e) / 8), 0);
-    b.hijyen = clampN(b.hijyen - 1.2 - acc.musteri * 0.012 + 0.45 * Math.min(4, b.staff.length) + tem * 3.0 + (staffOf(b, 'sube_muduru').length ? 0.8 : 0), 0, 100);
+    b.hijyen = clampN(b.hijyen - 1.2 - acc.musteri * 0.012 + 0.8 * Math.min(4, b.staff.length) + tem * 3.0 + (staffOf(b, 'sube_muduru').length ? 0.8 : 0), 0, 100);
     const cleanUse = Math.max(0.5, st.m2 / 35 * 0.55) + acc.musteri * 0.004; const hadClean = (b.stok.clean ?? 0) >= cleanUse; b.stok.clean = Math.max(0, (b.stok.clean ?? 0) - cleanUse); b.kullanim.clean = (b.kullanim.clean ?? 0) * 0.7 + cleanUse * 0.3; if (!hadClean) b.hijyen = clampN(b.hijyen - 4, 0, 100);
     b.mus = { ortSiparis: acc.musteri ? acc.itemN / acc.musteri : 0, ortBekleme: acc.beklemeN ? acc.bekleme / acc.beklemeN : 0, hizmet: acc.satN ? Math.max(0, 100 - (acc.bekleme / Math.max(1, acc.beklemeN)) * 6) : b.mus.hizmet, urunKal: acc.itemN ? acc.kalSum / acc.itemN : b.mus.urunKal, fiyatMemn: acc.itemN ? clampN(100 - (acc.fiyatSum / acc.itemN - 1) * 120, 0, 100) : b.mus.fiyatMemn, tekrar: acc.musteri ? acc.tekrar / acc.musteri * 100 : b.mus.tekrar, sadik: acc.musteri ? acc.sadik / acc.musteri * 100 : b.mus.sadik, sikayet: acc.sikayet }; b.sonAdet = { ...acc.adet };
     const sat = acc.satN ? acc.satSum / acc.satN : b.memnuniyet; b.memnuniyet = Math.round((b.memnuniyet * 0.7 + sat * 0.3) * 10) / 10;
     const mkt = staffOf(b, 'pazarlama').length + s.subeler.reduce((a, x) => a + staffOf(x, 'pazarlama').length, 0) * 0.0, ae = adEffect(b, now);
     b.sadakat = clampN(b.sadakat + (b.promo?.kart ? 0.05 : 0) + (sat - 60) * 0.01 + (b.reklam.some((a) => a.id === 'sadakat' && a.bit > now) ? 0.08 : 0), 0, 100);
-    b.marka = clampN(b.marka + brandDaily(b) + (sat - 60) * 0.012 + ae.marka + 0.05 * mkt + (acc.musteri > 80 ? 0.05 : 0) - 0.05, 0, 100);
+    b.marka = clampN(b.marka + (brandDaily(b) + (sat - 55) * 0.02 + Math.min(0.2, acc.musteri * 0.0015) + ae.marka + 0.05 * mkt - 0.04) * (1 - b.marka / 120), 0, 100);
     dailyHr(s, b, { log: (m) => s.log.unshift(m) }); if (!b.staff.length && s.bekleyen.length < 3) s.bekleyen.push({ id: s.en++, tip: 'istifa', baslik: 'Şubede çalışan kalmadı', metin: `${b.ad} şubesinde personel kalmadı; yeni ilan ver.`, ikon: '🚪', secenek: [{ ad: 'Tamam', ac: 'İlan ver ve işe al.' }], branch: b.id });
     b.reklam = b.reklam.filter((a) => a.bit > now);
     makeReviews(s, b, sat, gun);
@@ -222,7 +222,7 @@ function dailyClose(s: GameState, ev: SimEvent[]): void {
   const d = dateOf(dayOf(s)); if (d.ayGun === 1) { const vergi = Math.max(0, s.ayKar) * 0.10; s.kasa -= vergi; s.ayKar = 0; s.ayGelir = 0; s.log.unshift(`Ay sonu gelir vergisi ödendi: ${Math.round(vergi)} ₺`); s.log = s.log.slice(0, 40); }
   s.kasa += toplam.toplamGelir; s.borc *= 1 + 0.002;   // borç faizi (günlük ≈ yıllık %70 değil: aylık %6'dan düşük)
   marketDay(s); rivalsDay(s); deliverAll(s, (m) => { s.log.unshift(m); s.log = s.log.slice(0, 40); }); weatherDay(s); randomEvent(s, ev);
-  s.marka_puani = clampN(s.marka_puani * 0.995 + 0.005 * (s.subeler.length ? s.subeler.reduce((a, b) => a + b.marka, 0) / s.subeler.length : 0), 0, 100);
+  s.marka_puani = clampN(s.marka_puani * 0.97 + 0.03 * (s.subeler.length ? 0.6 * Math.max(...s.subeler.map((b) => b.marka)) + 0.4 * (s.subeler.reduce((a, b) => a + b.marka, 0) / s.subeler.length) : 0), 0, 100);
   s.seviye = levelOf(s); if (s.kasa < -50000) s.negatifGun++; else s.negatifGun = 0; if (s.negatifGun >= 20) s.oyunBitti = 'iflas';
   ev.push({ t: 'gun', gun: dayOf(s) });
 }

@@ -4,14 +4,15 @@ import { cityById, CITIES } from '../data/turkey';
 import { ilDurum } from '../core/region';
 import { SHOP, SHOP_TYPES, LEVELS, type ShopTypeId } from '../data/catalog';
 import { newGame, fmt, setupCost, rentOf, type Result } from '../core/actions';
-import { step, dateText, timeText, dayOf, levelOf, resolveEvent, MIN_PER_DAY } from '../core/sim';
+import { step, dateText, timeText, dayOf, levelOf, resolveEvent } from '../core/sim';
+import { oyunDakikasi } from '../core/pace';
 import { save, load, wipe } from '../core/save';
 import { regionMap, zoomVb, NAT_VB, type VB } from './map';
 import { ILCELER, ilcelerOf, ilceKey, profilOf } from '../data/regions';
 import type { GameState } from '../core/types';
 import { startAudio, setAudio, sfx, stopAudio } from './audio';
 import { BASARIM } from '../core/goals';
-import { ctx, cur, esc as _esc, NAV, PANELS, LIVE_TABS, handle } from './panels';
+import { ctx, cur, esc as _esc, NAV, GRUPLAR, grupOf, PANELS, LIVE_TABS, handle } from './panels';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 const esc = _esc;
@@ -70,9 +71,17 @@ function layout(): void {
   if (land) { el.style.left = navW + 'px'; el.style.right = pw + 'px'; el.style.top = '0'; el.style.bottom = '0'; } else { el.style.left = '0'; el.style.right = '0'; el.style.top = '0'; el.style.bottom = (PANEL_OPEN ? '58%' : '58px'); }
   view.resize(); const p = document.getElementById('panel'); if (p) p.style.width = land ? (pw ? pw + 'px' : '') : '';
 }
+const sonSekme: Record<string, string> = {};
+function ipucu(): void {
+  document.querySelectorAll('.hint').forEach((e) => e.classList.remove('hint')); if (!S || S.tur < 0) return; const st = TUR[S.tur]; if (!st?.n) return; const g = grupOf(st.n);
+  document.querySelector(`.nav [data-g="${g.id}"]`)?.classList.add('hint'); if (grupOf(TAB).id === g.id) document.querySelector(`.subtabs [data-n="${st.n}"]`)?.classList.add('hint');
+}
+function sekmeAc(tab: string, ac = true): void { TAB = tab; sonSekme[grupOf(tab).id] = tab; if (ac) PANEL_OPEN = true; ctx.anim = true; sfx.tick(); if (tab === 'harita') newOpp = false; nav(); panel(false); tourEvent('tab', tab); }
 function nav(): void {
-  queueMicrotask(() => { if (S && S.tur >= 0) { document.querySelectorAll('.nav .hint').forEach((e) => e.classList.remove('hint')); const st = TUR[S.tur]; if (st?.n) document.querySelector(`.nav [data-n="${st.n}"]`)?.classList.add('hint'); } });
-  $('#nav').innerHTML = NAV.map(([id, ic, nm]) => `<button data-n="${id}" class="${TAB === id ? 'on' : ''}"><i>${ic}</i>${nm}${id === 'harita' && newOpp && TAB !== 'harita' ? '<span class="dot"></span>' : ''}</button>`).join(''); $('#nav').querySelectorAll<HTMLElement>('[data-n]').forEach((b) => { b.onclick = () => { ctx.anim = true; sfx.tick(); tourEvent('tab', b.dataset.n!); if (b.dataset.n === 'harita') newOpp = false; if (TAB === b.dataset.n && PANEL_OPEN && TAB !== 'genel') PANEL_OPEN = false; else { TAB = b.dataset.n!; PANEL_OPEN = true; } nav(); panel(false); }; });
+  const gt = grupOf(TAB).id;
+  $('#nav').innerHTML = GRUPLAR.map((g) => `<button data-g="${g.id}" class="${gt === g.id && PANEL_OPEN ? 'on' : ''}"><i>${g.ik}</i>${g.ad}${g.id === 'buyume' && newOpp && TAB !== 'harita' ? '<span class="dot"></span>' : ''}</button>`).join('');
+  $('#nav').querySelectorAll<HTMLElement>('[data-g]').forEach((b) => { b.onclick = () => { const g = GRUPLAR.find((x) => x.id === b.dataset.g)!; if (gt === g.id && PANEL_OPEN && g.id !== 'ana') { PANEL_OPEN = false; nav(); panel(false); return; } sekmeAc(sonSekme[g.id] ?? g.tabs[0]!); }; });
+  queueMicrotask(ipucu);
 }
 function camBar(): void { const P: Array<[CamPreset, string]> = [['cephe', 'Cephe'], ['sol', 'Sol açı'], ['sag', 'Sağ açı'], ['sokak', 'Sokak'], ['sehir', 'Şehir']]; $('#cam').innerHTML = P.map(([k, n]) => `<button data-c="${k}">${n}</button>`).join('') + '<button data-z="1">＋</button><button data-z="-1">－</button>'; $('#cam').querySelectorAll<HTMLElement>('button').forEach((b) => { b.onclick = () => { if (b.dataset.c) view?.setPreset(b.dataset.c as CamPreset); else view?.zoom(+b.dataset.z! > 0 ? 0.8 : 1.25); }; }); }
 function spdBar(): void { const V: Array<[number, string]> = [[0, '⏸'], [1, '▶'], [2, '⏩'], [4, '⏭']]; $('#spd').innerHTML = V.map(([v, t]) => `<button data-s="${v}" class="${S!.hiz === v ? 'on' : ''}">${t}</button>`).join(''); $('#spd').querySelectorAll<HTMLElement>('button').forEach((b) => { b.onclick = () => { S!.hiz = +b.dataset.s!; spdBar(); }; }); }
@@ -85,7 +94,7 @@ function hud(): void {
   const f = $('#fps'); if (f && view) f.textContent = ctx.fps ? `${view.fps} fps` : ""; void t;
 }
 function loop(dt: number): void {
-  if (!S || !view) return; const dk = S.hiz * (MIN_PER_DAY / 60) * dt; accMin += dk; let n = 0;
+  if (!S || !view) return; const dk = oyunDakikasi(dt, S.hiz, S.ayar.gunSn); accMin += dk; let n = 0;
   while (accMin >= 10 && n < 8) { accMin -= 10; const ev = step(S, 10); view.handleEvents(ev); if (ev.some((e) => e.t === 'musteri')) sfx.door(); if (ev.some((e) => e.t === 'olay')) sfx.warn(); n++; if (S.oyunBitti) break; }
   view.tick(dt, S); if (dayOf(S) !== lastSumDay) { lastSumDay = dayOf(S); gunOzeti(); } if (TAB === 'ekonomi' && PANEL_OPEN && dayOf(S) !== lastDay) { lastDay = dayOf(S); panel(true); } oppT += dt; if (oppT > 2) { oppT = 0; checkOpportunities(); } uiT += dt; saveT += dt; if (uiT > 0.5) { uiT = 0; hud(); if (LIVE_TABS.has(TAB) && PANEL_OPEN) panel(true); if (S.bekleyen.length && !modalOpen) showEvent(); if (S.oyunBitti) gameOver(); }
   if (saveT > 15) { saveT = 0; save(S); }
@@ -108,7 +117,7 @@ function gunOzeti(): void {
 }
 /* ===================== Eğitim turu ===================== */
 const TUR: Array<{ n?: string; t: string; ok?: [string, string] }> = [
-  { t: '👋 Hoş geldin! Dükkân dışarıdan görünür; asıl iş soldaki menülerde. Üstteki ⏸ ▶ ⏩ düğmeleriyle zamanı yönetirsin (1 gün ≈ 1 dakika). Takıldığında üstteki ? ile bu turu yeniden açabilirsin.' },
+  { t: '👋 Hoş geldin! Dükkân dışarıdan görünür; asıl iş soldaki menülerde. Üstteki ⏸ ▶ ⏩ düğmeleriyle zamanı yönetirsin (1 gün birkaç dakika sürer; süreyi Ayarlar menüsünden değiştirebilirsin). Takıldığında üstteki ? ile bu turu yeniden açabilirsin.' },
   { n: 'menu', t: '📋 Önce menüye bak: fiyatları ₺ olarak ayarla, Fiyat danışmanı hangi ürünün fiyatını değiştirmeni öneriyor? Menü ve Ürünler\'e gir.', ok: ['tab', 'menu'] },
   { n: 'vardiya', t: '🗓️ Vardiyalar: kırmızı saatlerde barista yoktur ve o saatte müşteri kaybedersin. Vardiyalar menüsüne gir.', ok: ['tab', 'vardiya'] },
   { n: 'stok', t: '📦 Stok bitince ürün satılamaz. Stok menüsünde otomatik sipariş açık mı ve minimum seviye yeterli mi bak.', ok: ['tab', 'stok'] },
@@ -119,10 +128,10 @@ const TUR: Array<{ n?: string; t: string; ok?: [string, string] }> = [
 ];
 function tourEvent(kind: string, id: string): void { if (!S || S.tur < 0 || S.tur >= TUR.length) return; const st = TUR[S.tur]!; if (st.ok && st.ok[0] === kind && st.ok[1] === id) { S.tur++; tour(); } }
 function tour(): void {
-  document.querySelector('.tour')?.remove(); document.querySelectorAll('.nav .hint').forEach((e) => e.classList.remove('hint')); if (!S || S.tur < 0) return; if (S.tur >= TUR.length) { S.tur = -1; return; }
+  document.querySelector('.tour')?.remove(); if (!S || S.tur < 0) return; if (S.tur >= TUR.length) { S.tur = -1; return; }
   const st = TUR[S.tur]!, box = document.createElement('div'); box.className = 'tour'; const last = S.tur === TUR.length - 1;
   box.innerHTML = `<div class="tourbox"><div class="tiny muted">Rehber ${S.tur + 1}/${TUR.length}</div><div class="small" style="margin:4px 0 8px">${st.t}</div><div class="chiprow"><button class="btn sm pri" id="tN">${last ? 'Bitir' : st.ok ? 'Geç' : 'Devam'}</button><button class="btn sm" id="tX">Turu kapat</button></div></div>`; root.appendChild(box);
-  if (st.n) document.querySelector(`.nav [data-n="${st.n}"]`)?.classList.add('hint');
+  ipucu();
   $('#tN').onclick = () => { S!.tur = last ? -1 : S!.tur + 1; sfx.tick(); tour(); }; $('#tX').onclick = () => { S!.tur = -1; tour(); };
 }
 function showEvent(): void {
@@ -137,7 +146,8 @@ function panel(keep: boolean): void {
   if (!S) return; const el = $('#panel'); if (!PANEL_OPEN) { el.classList.add('hid'); layout(); return; }
   const sc = keep ? el.querySelector<HTMLElement>('.pb')?.scrollTop ?? 0 : 0, nm = NAV.find((n) => n[0] === TAB)!;
   el.classList.remove('hid'); el.classList.toggle('wide', TAB === 'harita' && ctx.mapWide); ctx.S = S; const body = (PANELS[TAB] ?? PANELS.genel!)(); const wasAnim = ctx.anim; ctx.anim = false;
-  el.innerHTML = `<div class="ph"><h2>${nm[1]} ${nm[2]}</h2><button class="btn sm" id="pclose">Kapat ✕</button></div><div class="pb">${body}</div>`; $('#pclose').onclick = () => { PANEL_OPEN = false; panel(false); }; const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); layout(); if (wasAnim) animateCounters(pb);
+  const gr = grupOf(TAB), alt = gr.tabs.length > 1 ? `<div class="subtabs">${gr.tabs.map((id) => { const n = NAV.find((x) => x[0] === id)!; return `<button data-n="${id}" class="${id === TAB ? 'on' : ''}">${n[1]} ${n[2]}</button>`; }).join('')}</div>` : '';
+  el.innerHTML = `<div class="ph"><h2>${nm[1]} ${nm[2]}</h2><button class="btn sm" id="pclose">Kapat ✕</button></div>${alt}<div class="pb">${body}</div>`; $('#pclose').onclick = () => { PANEL_OPEN = false; nav(); panel(false); }; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); queueMicrotask(ipucu); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); layout(); if (wasAnim) animateCounters(pb);
 }
 function animateCounters(pb: HTMLElement): void {
   const els = [...pb.querySelectorAll<HTMLElement>('.cnt')]; if (!els.length) return; const t0 = performance.now(), ease = (t: number): number => 1 - Math.pow(1 - t, 3);
@@ -155,7 +165,7 @@ function act(a: string, d: DOMStringMap): void {
   handle(a, d, {
     zoom: (vb, done) => zoomTo(vb, () => { done?.(); panel(true); }),
     res: (r: Result) => { toast(r.m); if (r.ok) { if (['ilac', 'ilceac', 'sube', 'frver', 'merkez', 'invest', 'gel'].includes(a)) sfx.unlock(); else if (['kredi', 'siparis', 'ad', 'bonus'].includes(a)) sfx.coin(); else sfx.tick(); } else sfx.err(); save(S!); panel(true); hud(); tourEvent('act', a); },
-    toast, refresh: () => panel(true), show: () => { showBranch(); }, go: (t) => { TAB = t; nav(); panel(false); tour(); },
+    toast, refresh: () => panel(true), show: () => { showBranch(); }, go: (t) => { sekmeAc(t); tour(); },
     save: () => save(S!), exit: () => { save(S!); stopAudio(); view?.destroy(); view = null; S = null; ctx.S = null; title(); }, wipe: () => { wipe(); stopAudio(); view?.destroy(); view = null; S = null; ctx.S = null; title(); },
   });
   if (a === 'bsel') { hud(); panel(true); }
@@ -167,4 +177,4 @@ function yonKontrol(): void {
   if (dikey) { hizEski = S.hiz || 1; S.hiz = 0; } else { S.hiz = hizEski; spdBar(); layout(); }
 }
 function yatayKilit(): void { try { void (screen.orientation as unknown as { lock?: (o: string) => Promise<void> }).lock?.('landscape')?.catch(() => 0); } catch { /* desteklenmiyor */ } }
-export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); title(); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, get view() { return view; } }; }
+export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); title(); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, get view() { return view; }, openTab: (t: string) => sekmeAc(t) }; }
