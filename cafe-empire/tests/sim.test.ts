@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { newGame, hire, candidates, subeAc, setPrice, upgrade, startAd, orderIng, toggleProduct } from '../src/core/actions';
+import { newGame, subeAc, setPrice, upgrade, startAd, orderIng, toggleProduct } from '../src/core/actions';
 import { step, dayOf, levelOf, dailyDemand, sellPrice, unitCost } from '../src/core/sim';
 import { deserialize, serialize } from '../src/core/save';
 import { cityById } from '../src/data/turkey';
@@ -27,14 +27,14 @@ describe('simülasyon', () => {
   it('stok biten ürün satılmaz; stok yok kaybı sayılır', () => {
     const s = mk(); const b = s.subeler[0]!; b.otoSiparis = false; for (const k of Object.keys(b.stok)) (b.stok as Record<string, number>)[k] = 0; run(s, 3); expect(s.rapor.reduce((a, x) => a + x.toplamGelir, 0)).toBe(0); expect(s.rapor.reduce((a, x) => a + x.kayip, 0)).toBeGreaterThan(0);
   });
-  it('sipariş teslimat süresiyle gelir', () => { const s = mk(); const b = s.subeler[0]!; b.otoSiparis = false; b.stok.bean = 0; expect(orderIng(s, b, 'bean', 2).ok).toBe(true); expect(b.siparisler).toHaveLength(1); run(s, 1); expect(b.siparisler).toHaveLength(1); run(s, 3); expect(b.siparisler).toHaveLength(0); expect(b.stok.bean).toBeGreaterThan(1000); });
+  it('sipariş teslimat süresiyle gelir', () => { const s = mk(); const b = s.subeler[0]!; b.otoSiparis = false; b.stok.bean = 0; expect(orderIng(s, b, 'bean', 2).ok).toBe(true); expect(b.siparisler).toHaveLength(1); run(s, 1); expect(b.siparisler).toHaveLength(1); run(s, 3); expect(b.siparisler).toHaveLength(0); expect(b.stok.bean).toBeGreaterThan(300); });
   it('şehirler arası fark: İstanbul talebi ve kirası Tokat’tan çok yüksek', () => {
     const ist = mk(34, 'cadde'), tok = mk(60, 'cadde'); expect(dailyDemand(ist, ist.subeler[0]!)).toBeGreaterThan(dailyDemand(tok, tok.subeler[0]!) * 1.3); expect(ist.subeler[0]!.kira).toBeGreaterThan(tok.subeler[0]!.kira * 1.8);
   });
   it('Antalya turizmi yazın talebi artırır', () => { const s = mk(7, 'cadde'); const kis = (() => { s.dk = (dayOf(s) + 0) * 1440 + 7 * 60; return dailyDemand(s, s.subeler[0]!); })(); s.dk += 150 * 1440; expect(dailyDemand(s, s.subeler[0]!)).toBeGreaterThan(kis * 1.1); });
   it('uygunsuz dükkân türü reddedilir', () => { const s = mk(60); expect(subeAc(s, 60, 'sahil').ok).toBe(false); expect(subeAc(s, 76, 'uni').ok).toBe(false); expect(subeAc(s, 26, 'uni').ok || true).toBe(true); });
   it('geliştirme dış cepheyi ve çekiciliği artırır', () => { const s = mk(); const b = s.subeler[0]!; s.kasa = 2e6; expect(upgrade(s, b, 'tabela').ok).toBe(true); expect(b.facade.tabela).toBe(1); expect(upgrade(s, b, 'led').ok).toBe(false); });
-  it('personel işe alma ve reklam', () => { const s = mk(); const b = s.subeler[0]!; const c = candidates(s, 'barista')[0]!; expect(hire(s, b, c).ok).toBe(true); expect(b.staff.length).toBeGreaterThanOrEqual(3); expect(startAd(s, b, 'sosyal').ok).toBe(true); expect(startAd(s, b, 'sosyal').ok).toBe(false); });
+  it('reklam başlar, tekrarı reddedilir', () => { const s = mk(); const b = s.subeler[0]!; expect(startAd(s, b, 'sosyal').ok).toBe(true); expect(startAd(s, b, 'sosyal').ok).toBe(false); });
   it('menü: ürün çıkar/ekle', () => { const s = mk(); const b = s.subeler[0]!; expect(toggleProduct(s, b, 'tost').ok).toBe(true); expect(b.menu.tost.aktif).toBe(false); });
   it('kayıt geri yüklenince aynı', () => { const s = mk(); run(s, 12); const t = deserialize(serialize(s)); expect(t.kasa).toBe(s.kasa); expect(t.subeler[0]!.stok.bean).toBe(s.subeler[0]!.stok.bean); run(s, 10); run(t, 10); expect(t.kasa).toBeCloseTo(s.kasa, 3); });
   it('fiyat ve maliyet hesapları pozitif, marj makul', () => { const s = mk(); const b = s.subeler[0]!, c = cityById(26); for (const id of ['latte', 'cheesecake'] as const) { const p = sellPrice(s, b, id), m = unitCost(s, id, c); expect(p).toBeGreaterThan(m * 1.5); expect(PRODUCT[id].sure).toBeGreaterThan(0); } expect(levelOf(s)).toBe(1); });

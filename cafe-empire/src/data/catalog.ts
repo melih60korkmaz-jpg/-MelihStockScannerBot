@@ -1,26 +1,29 @@
 import type { City } from './turkey';
 
 /* ---------- Hammaddeler ---------- */
-export type IngId = 'bean' | 'milk' | 'sugar' | 'cup' | 'lid' | 'napkin' | 'syrup' | 'choc' | 'flour' | 'raw' | 'pack';
-export interface IngDef { id: IngId; ad: string; ikon: string; birim: string; paket: number; paketAd: string; fiyat: number; teslim: number }
+export type IngId = 'bean' | 'milk' | 'sugar' | 'cup' | 'lid' | 'napkin' | 'syrup' | 'choc' | 'flour' | 'raw' | 'pack' | 'tea' | 'bakery' | 'clean';
+export interface IngDef { id: IngId; ad: string; ikon: string; birim: string; paket: number; paketAd: string; fiyat: number; teslim: number; omur: number }
 /** paket: bir siparişteki temel birim sayısı; fiyat: bir paketin baz fiyatı (₺); teslim: gün. */
 export const INGREDIENTS: IngDef[] = [
-  { id: 'bean', ad: 'Kahve çekirdeği', ikon: '🫘', birim: 'g', paket: 1000, paketAd: '1 kg', fiyat: 900, teslim: 2 },
-  { id: 'milk', ad: 'Süt', ikon: '🥛', birim: 'ml', paket: 1000, paketAd: '1 L', fiyat: 45, teslim: 1 },
-  { id: 'sugar', ad: 'Şeker', ikon: '🍬', birim: 'g', paket: 1000, paketAd: '1 kg', fiyat: 60, teslim: 1 },
-  { id: 'cup', ad: 'Bardak', ikon: '🥤', birim: 'adet', paket: 100, paketAd: '100 adet', fiyat: 220, teslim: 2 },
-  { id: 'lid', ad: 'Kapak', ikon: '⚪', birim: 'adet', paket: 100, paketAd: '100 adet', fiyat: 120, teslim: 2 },
-  { id: 'napkin', ad: 'Peçete', ikon: '🧻', birim: 'adet', paket: 1000, paketAd: '1000 adet', fiyat: 180, teslim: 2 },
-  { id: 'syrup', ad: 'Şurup', ikon: '🍯', birim: 'ml', paket: 1000, paketAd: '1 L', fiyat: 320, teslim: 3 },
-  { id: 'choc', ad: 'Çikolata', ikon: '🍫', birim: 'g', paket: 1000, paketAd: '1 kg', fiyat: 450, teslim: 3 },
-  { id: 'flour', ad: 'Un', ikon: '🌾', birim: 'g', paket: 10000, paketAd: '10 kg', fiyat: 250, teslim: 2 },
-  { id: 'raw', ad: 'Ham madde (yumurta, tereyağı, krema)', ikon: '🥚', birim: 'g', paket: 5000, paketAd: '5 kg', fiyat: 600, teslim: 2 },
-  { id: 'pack', ad: 'Paketleme malzemesi', ikon: '📦', birim: 'adet', paket: 100, paketAd: '100 adet', fiyat: 350, teslim: 3 },
+  { id: 'bean', ad: 'Kahve çekirdeği', ikon: '🫘', birim: 'g', paket: 1000, paketAd: '1 kg', fiyat: 900, teslim: 2, omur: 120 },
+  { id: 'milk', ad: 'Süt', ikon: '🥛', birim: 'ml', paket: 1000, paketAd: '1 L', fiyat: 45, teslim: 1, omur: 5 },
+  { id: 'sugar', ad: 'Şeker', ikon: '🍬', birim: 'g', paket: 1000, paketAd: '1 kg', fiyat: 60, teslim: 1, omur: 0 },
+  { id: 'cup', ad: 'Bardak', ikon: '🥤', birim: 'adet', paket: 100, paketAd: '100 adet', fiyat: 220, teslim: 2, omur: 0 },
+  { id: 'lid', ad: 'Kapak', ikon: '⚪', birim: 'adet', paket: 100, paketAd: '100 adet', fiyat: 120, teslim: 2, omur: 0 },
+  { id: 'napkin', ad: 'Peçete', ikon: '🧻', birim: 'adet', paket: 1000, paketAd: '1000 adet', fiyat: 180, teslim: 2, omur: 0 },
+  { id: 'syrup', ad: 'Şurup', ikon: '🍯', birim: 'ml', paket: 1000, paketAd: '1 L', fiyat: 320, teslim: 3, omur: 180 },
+  { id: 'choc', ad: 'Çikolata', ikon: '🍫', birim: 'g', paket: 1000, paketAd: '1 kg', fiyat: 450, teslim: 3, omur: 150 },
+  { id: 'flour', ad: 'Un', ikon: '🌾', birim: 'g', paket: 10000, paketAd: '10 kg', fiyat: 250, teslim: 2, omur: 120 },
+  { id: 'raw', ad: 'Ham madde (yumurta, tereyağı, krema)', ikon: '🥚', birim: 'g', paket: 5000, paketAd: '5 kg', fiyat: 600, teslim: 2, omur: 7 },
+  { id: 'pack', ad: 'Paketleme malzemesi', ikon: '📦', birim: 'adet', paket: 100, paketAd: '100 adet', fiyat: 350, teslim: 3, omur: 0 },
+  { id: 'tea', ad: 'Çay', ikon: '🍵', birim: 'g', paket: 1000, paketAd: '1 kg', fiyat: 380, teslim: 2, omur: 365 },
+  { id: 'bakery', ad: 'Unlu mamuller (hazır)', ikon: '🥐', birim: 'adet', paket: 20, paketAd: '20 adet', fiyat: 300, teslim: 1, omur: 2 },
+  { id: 'clean', ad: 'Temizlik malzemeleri', ikon: '🧴', birim: 'set', paket: 10, paketAd: '10 set', fiyat: 400, teslim: 3, omur: 0 },
 ];
 export const ING: Record<IngId, IngDef> = Object.fromEntries(INGREDIENTS.map((i) => [i.id, i])) as Record<IngId, IngDef>;
 
 /* ---------- Ürünler ---------- */
-export type ProductId = 'espresso' | 'americano' | 'latte' | 'cappuccino' | 'mocha' | 'filtre' | 'turk' | 'soguk' | 'frappe' | 'coldbrew' | 'kruvasan' | 'cheesecake' | 'brownie' | 'kurabiye' | 'sandvic' | 'tost' | 'pasta' | 'pogaca' | 'tatli';
+export type ProductId = 'espresso' | 'americano' | 'latte' | 'cappuccino' | 'mocha' | 'filtre' | 'turk' | 'soguk' | 'frappe' | 'coldbrew' | 'kruvasan' | 'cheesecake' | 'brownie' | 'kurabiye' | 'sandvic' | 'tost' | 'pasta' | 'pogaca' | 'tatli' | 'cay' | 'kek';
 export type Aff = [number, number, number, number, number]; // ogr, cal, tur, aile, emk
 export interface ProductDef {
   id: ProductId; ad: string; ikon: string; kat: 'kahve' | 'yiyecek'; fiyat: number; recete: Partial<Record<IngId, number>>;
@@ -40,14 +43,16 @@ export const PRODUCTS: ProductDef[] = [
   { id: 'soguk', ad: 'Soğuk kahve', ikon: '🧊', kat: 'kahve', fiyat: 115, recete: c(18, { milk: 120, syrup: 12 }), sure: 40, talep: 0.55, aff: [1.4, 1, 1.2, 1, .4], soguk: true, seviye: 2, kurulum: 20000 },
   { id: 'frappe', ad: 'Frappé', ikon: '🥤', kat: 'kahve', fiyat: 125, recete: c(18, { milk: 150, syrup: 25, choc: 10 }), sure: 50, talep: 0.5, aff: [1.6, .8, 1.3, 1.2, .3], soguk: true, seviye: 2, kurulum: 25000 },
   { id: 'coldbrew', ad: 'Cold brew', ikon: '🧋', kat: 'kahve', fiyat: 120, recete: c(24), sure: 20, talep: 0.4, aff: [1.2, 1.3, 1.1, .7, .4], soguk: true, seviye: 3, kurulum: 35000 },
-  { id: 'kruvasan', ad: 'Kruvasan', ikon: '🥐', kat: 'yiyecek', fiyat: 85, recete: { flour: 70, raw: 40, napkin: 1, pack: 1 }, sure: 15, talep: 0.65, aff: [1, 1.3, 1.1, 1.1, 1], seviye: 1, kurulum: 12000 },
+  { id: 'kruvasan', ad: 'Kruvasan', ikon: '🥐', kat: 'yiyecek', fiyat: 85, recete: { bakery: 1, napkin: 1, pack: 1 }, sure: 15, talep: 0.65, aff: [1, 1.3, 1.1, 1.1, 1], seviye: 1, kurulum: 12000 },
   { id: 'cheesecake', ad: 'Cheesecake', ikon: '🍰', kat: 'yiyecek', fiyat: 135, recete: { flour: 30, raw: 90, sugar: 20, napkin: 1, pack: 1 }, sure: 15, talep: 0.55, aff: [1.2, .8, 1.3, 1.5, .8], seviye: 1, kurulum: 18000 },
   { id: 'brownie', ad: 'Brownie', ikon: '🍪', kat: 'yiyecek', fiyat: 95, recete: { flour: 40, raw: 50, choc: 40, sugar: 20, napkin: 1, pack: 1 }, sure: 12, talep: 0.5, aff: [1.4, .9, 1.1, 1.3, .6], seviye: 2, kurulum: 12000 },
   { id: 'kurabiye', ad: 'Kurabiye', ikon: '🍪', kat: 'yiyecek', fiyat: 45, recete: { flour: 40, raw: 25, sugar: 15, pack: 1 }, sure: 10, talep: 0.45, aff: [1, 1, 1, 1.3, 1.2], seviye: 1, kurulum: 6000 },
   { id: 'sandvic', ad: 'Sandviç', ikon: '🥪', kat: 'yiyecek', fiyat: 115, recete: { flour: 80, raw: 90, napkin: 1, pack: 1 }, sure: 60, talep: 0.55, aff: [1.3, 1.4, .8, 1.2, .7], seviye: 1, kurulum: 14000 },
   { id: 'tost', ad: 'Tost', ikon: '🥪', kat: 'yiyecek', fiyat: 95, recete: { flour: 70, raw: 80, napkin: 1, pack: 1 }, sure: 75, talep: 0.6, aff: [1.4, 1.3, .9, 1.1, 1], seviye: 1, kurulum: 10000 },
   { id: 'pasta', ad: 'Pasta', ikon: '🎂', kat: 'yiyecek', fiyat: 125, recete: { flour: 40, raw: 80, sugar: 20, napkin: 1, pack: 1 }, sure: 15, talep: 0.45, aff: [1.1, .8, 1.2, 1.5, 1], seviye: 2, kurulum: 20000 },
-  { id: 'pogaca', ad: 'Poğaça', ikon: '🥟', kat: 'yiyecek', fiyat: 50, recete: { flour: 80, raw: 30, napkin: 1, pack: 1 }, sure: 10, talep: 0.5, aff: [1.1, 1.1, .7, 1, 1.5], seviye: 1, kurulum: 6000 },
+  { id: 'pogaca', ad: 'Poğaça', ikon: '🥟', kat: 'yiyecek', fiyat: 50, recete: { bakery: 1, napkin: 1, pack: 1 }, sure: 10, talep: 0.5, aff: [1.1, 1.1, .7, 1, 1.5], seviye: 1, kurulum: 6000 },
+  { id: 'cay', ad: 'Çay', ikon: '🍵', kat: 'kahve', fiyat: 30, recete: { tea: 6, sugar: 8, cup: 1, napkin: 1 }, sure: 15, talep: 0.7, aff: [.8, .9, .9, 1, 1.8], sicak: true, seviye: 1, kurulum: 0 },
+  { id: 'kek', ad: 'Kek', ikon: '🧁', kat: 'yiyecek', fiyat: 70, recete: { flour: 50, raw: 45, sugar: 25, napkin: 1, pack: 1 }, sure: 12, talep: 0.5, aff: [1.1, .9, 1, 1.4, 1.2], seviye: 1, kurulum: 8000 },
   { id: 'tatli', ad: 'Sütlü tatlı', ikon: '🍮', kat: 'yiyecek', fiyat: 90, recete: { milk: 200, sugar: 25, raw: 30, napkin: 1, pack: 1 }, sure: 10, talep: 0.4, aff: [.9, .8, 1.2, 1.4, 1.4], seviye: 2, kurulum: 12000 },
 ];
 export const PRODUCT: Record<ProductId, ProductDef> = Object.fromEntries(PRODUCTS.map((p) => [p.id, p])) as Record<ProductId, ProductDef>;
@@ -72,13 +77,14 @@ export const SHOP_TYPES: ShopType[] = [
 export const SHOP: Record<ShopTypeId, ShopType> = Object.fromEntries(SHOP_TYPES.map((s) => [s.id, s])) as Record<ShopTypeId, ShopType>;
 
 /* ---------- Personel ---------- */
-export type StaffTypeId = 'barista' | 'kasiyer' | 'servis' | 'temizlik' | 'sube_muduru' | 'bolge_muduru' | 'pazarlama';
+export type StaffTypeId = 'barista' | 'kasiyer' | 'servis' | 'temizlik' | 'vardiya_sor' | 'sube_muduru' | 'bolge_muduru' | 'pazarlama';
 export interface StaffType { id: StaffTypeId; ad: string; ikon: string; maas: number; seviye: number; ac: string }
 export const STAFF_TYPES: StaffType[] = [
   { id: 'barista', ad: 'Barista', ikon: '🧑‍🍳', maas: 36000, seviye: 1, ac: 'Kahve hazırlama hızı ve kalitesi.' },
   { id: 'kasiyer', ad: 'Kasiyer', ikon: '🧾', maas: 30000, seviye: 1, ac: 'Sipariş alma hızı, müşteri ilişkisi.' },
   { id: 'servis', ad: 'Servis personeli', ikon: '🧑‍💼', maas: 29000, seviye: 1, ac: 'Dış masa servisi, memnuniyet.' },
   { id: 'temizlik', ad: 'Temizlik görevlisi', ikon: '🧹', maas: 27000, seviye: 1, ac: 'Hijyen puanı.' },
+  { id: 'vardiya_sor', ad: 'Vardiya sorumlusu', ikon: '📋', maas: 46000, seviye: 1, ac: 'Vardiyayı yönetir; ekibin verimini ve disiplinini artırır.' },
   { id: 'sube_muduru', ad: 'Şube müdürü', ikon: '🧑‍💻', maas: 65000, seviye: 2, ac: 'Şubenin verimi ve ekip motivasyonu.' },
   { id: 'bolge_muduru', ad: 'Bölge müdürü', ikon: '🗺️', maas: 110000, seviye: 5, ac: 'Bölgedeki tüm şubelere verim bonusu.' },
   { id: 'pazarlama', ad: 'Pazarlama personeli', ikon: '📣', maas: 45000, seviye: 2, ac: 'Marka bilinirliği ve reklam etkisi.' },
@@ -88,7 +94,7 @@ export const FIRST_NAMES = ['Ayşe', 'Mehmet', 'Elif', 'Can', 'Zeynep', 'Burak',
 export const LAST_NAMES = ['Yılmaz', 'Kaya', 'Demir', 'Çelik', 'Şahin', 'Yıldız', 'Aydın', 'Özdemir', 'Arslan', 'Doğan', 'Koç', 'Kurt', 'Polat', 'Aksoy', 'Erdem', 'Güneş'];
 
 /* ---------- Reklam ---------- */
-export type AdId = 'sosyal' | 'yerel' | 'acilis' | 'indirim' | 'sadakat' | 'influencer' | 'etkinlik' | 'uni';
+export type AdId = 'sosyal' | 'yerel' | 'acilis' | 'indirim' | 'sadakat' | 'influencer' | 'etkinlik' | 'uni' | 'ikinci' | 'paket';
 export interface AdDef { id: AdId; ad: string; ikon: string; maliyet: number; gun: number; trafik: number; marka: number; risk: number; ac: string; sehir?: boolean; seviye: number }
 export const ADS: AdDef[] = [
   { id: 'sosyal', ad: 'Sosyal medya reklamı', ikon: '📱', maliyet: 14000, gun: 14, trafik: 0.10, marka: 0.4, risk: 0.18, ac: 'Gençlere ulaşır; her zaman tutmaz.', seviye: 1 },
@@ -98,6 +104,8 @@ export const ADS: AdDef[] = [
   { id: 'sadakat', ad: 'Sadakat kartı', ikon: '💳', maliyet: 45000, gun: 60, trafik: 0.06, marka: 0.2, risk: 0.05, ac: 'Müşteri sadakati artar.', seviye: 2 },
   { id: 'influencer', ad: 'Influencer iş birliği', ikon: '🤳', maliyet: 70000, gun: 10, trafik: 0.30, marka: 1.6, risk: 0.35, ac: 'Büyük etki ama riskli.', seviye: 2 },
   { id: 'etkinlik', ad: 'Şehir etkinliği', ikon: '🎪', maliyet: 55000, gun: 5, trafik: 0.35, marka: 1.2, risk: 0.2, ac: 'Festival stantı, konser.', sehir: true, seviye: 3 },
+  { id: 'ikinci', ad: 'İkinci ürüne indirim', ikon: '🥐', maliyet: 7000, gun: 10, trafik: 0.05, marka: 0.15, risk: 0.05, ac: 'İkinci ürün %25 indirimli: sepet büyür, marj düşer.', seviye: 1 },
+  { id: 'paket', ad: 'Paket servis kampanyası', ikon: '🛵', maliyet: 12000, gun: 14, trafik: 0.04, marka: 0.2, risk: 0.15, ac: 'Paket servis payı artar; paketleme maliyeti yükselir.', seviye: 1 },
   { id: 'uni', ad: 'Üniversite kampanyası', ikon: '🎓', maliyet: 18000, gun: 14, trafik: 0.18, marka: 0.5, risk: 0.1, ac: 'Öğrencilere özel; öğrenci kentlerinde etkili.', seviye: 1 },
 ];
 export const AD: Record<AdId, AdDef> = Object.fromEntries(ADS.map((a) => [a.id, a])) as Record<AdId, AdDef>;

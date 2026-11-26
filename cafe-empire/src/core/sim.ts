@@ -1,23 +1,13 @@
 import { CITIES, cityById, type City } from '../data/turkey';
 import { AD, ADS, INGREDIENTS, ING, PRODUCTS, PRODUCT, SHOP, STAFF_TYPE, type IngId, type ProductId, type ProductDef } from '../data/catalog';
 import { rand, randInt, pick } from './rng';
+import { capacityAt, coverage, dailyHr, shiftHours, staffOf, eff } from './hr';
+import { autoOrder, deliverAll, holdingCost, ingPrice, orderStock, spoilage, syncLots, usageOf } from './supply';
+export { ingPrice, orderStock };
 import type { Branch, DayAcc, DayReport, Employee, GameState, SimEvent, Review, Rival } from './types';
 
-/* ===================== Takvim ===================== */
-export const MIN_PER_DAY = 1440;
-const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-const MONTH_NAMES = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-export const START_MONTH = 2;   // Mart 2027
-export const START_YEAR = 2027;
-export function dateOf(gun: number): { ay: number; ayGun: number; yil: number; haftaGun: number; ayAdi: string } {
-  let m = START_MONTH, y = START_YEAR, d = gun;
-  for (;;) { const n = m === 1 && y % 4 === 0 ? 29 : (MONTH_DAYS[m] ?? 30); if (d < n) break; d -= n; m++; if (m > 11) { m = 0; y++; } }
-  return { ay: m, ayGun: d + 1, yil: y, haftaGun: (gun + 0) % 7, ayAdi: MONTH_NAMES[m] ?? '' };      // 1 Mart 2027 = Pazartesi
-}
-export const dayOf = (s: GameState) => Math.floor(s.dk / MIN_PER_DAY);
-export const hourOf = (s: GameState) => (s.dk % MIN_PER_DAY) / 60;
-export const dateText = (s: GameState) => { const d = dateOf(dayOf(s)); return `${d.ayGun} ${d.ayAdi} ${d.yil}`; };
-export const timeText = (s: GameState) => { const h = Math.floor(hourOf(s)), m = Math.floor((hourOf(s) - h) * 60 / 10) * 10; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; };
+export { MIN_PER_DAY, START_MONTH, START_YEAR, dateOf, dayOf, hourOf, dateText, timeText } from './calendar';
+import { dateOf, dayOf, hourOf } from './calendar';
 export const isDay = (hour: number) => hour >= 6.5 && hour < 19.5;
 
 /* ===================== Piyasa ve fiyatlar ===================== */
@@ -26,9 +16,6 @@ export function modValue(s: GameState, key: string, now = dayOf(s)): number { co
 /** Pazardaki referans satış fiyatı (oyuncunun fiyat oranı bununla çarpılır). */
 export function refPrice(s: GameState, p: ProductDef, c: City): number { return Math.round(p.fiyat * inflationIdx(s) * (0.82 + 0.28 * c.gelir) * (0.96 + 0.06 * c.kira / 3)); }
 export function sellPrice(s: GameState, b: Branch, id: ProductId): number { const c = cityById(b.city); return Math.round(refPrice(s, PRODUCT[id], c) * b.menu[id].fiyat); }
-export function ingPrice(s: GameState, id: IngId, c: City): number { // bir paketin güncel fiyatı
-  const d = ING[id]; return d.fiyat * inflationIdx(s) * (id === 'bean' ? s.market.bean : 1) * (0.9 + 0.2 * c.maliyet);
-}
 export function unitCost(s: GameState, id: ProductId, c: City): number {
   let t = 0; const r = PRODUCT[id].recete; for (const k of Object.keys(r) as IngId[]) t += ((r[k] ?? 0) / ING[k].paket) * ingPrice(s, k, c); return t;
 }
@@ -41,27 +28,8 @@ export function levelOf(s: GameState): number {
   for (const [l, sb, mk] of rules) if (n >= sb && m >= mk) lv = l; return lv;
 }
 
-/* ===================== Personel ===================== */
-let empUid = 1;
-export function makeEmployee(s: GameState, tip: Employee['tip'], seedKey = 'hire'): Employee {
-  const t = STAFF_TYPE[tip], tecrube = randInt(s.rng, 'misc', 0, 8), hiz = 0.7 + tecrube * 0.07 + rand(s.rng, 'misc') * 0.35;
-  const FN = ['Ayşe', 'Mehmet', 'Elif', 'Can', 'Zeynep', 'Burak', 'Selin', 'Emre', 'Derya', 'Kerem', 'Merve', 'Onur', 'Gül', 'Barış', 'İpek', 'Tolga', 'Yasemin', 'Cem', 'Nur', 'Deniz', 'Ece', 'Murat', 'Pelin', 'Serkan'];
-  const LN = ['Yılmaz', 'Kaya', 'Demir', 'Çelik', 'Şahin', 'Yıldız', 'Aydın', 'Özdemir', 'Arslan', 'Doğan', 'Koç', 'Kurt', 'Polat', 'Aksoy', 'Erdem', 'Güneş'];
-  void seedKey;
-  return { id: empUid++, ad: `${pick(s.rng, 'misc', FN)} ${pick(s.rng, 'misc', LN)}`, tip, maas: Math.round(t.maas * (0.9 + tecrube * 0.04 + rand(s.rng, 'misc') * 0.1) / 500) * 500, tecrube, hiz: Math.round(hiz * 100) / 100, iliski: randInt(s.rng, 'misc', 40, 90), motivasyon: 70, memnuniyet: 70, performans: 70, gorunum: randInt(s.rng, 'misc', 0, 9999), ise: dayOf(s) };
-}
-export const effOf = (e: Employee) => e.hiz * (0.55 + 0.45 * (e.performans / 100));
-export function staffOf(b: Branch, tip: Employee['tip']): Employee[] { return b.staff.filter((e) => e.tip === tip); }
-function branchBonus(s: GameState, b: Branch): number {
-  const mud = staffOf(b, 'sube_muduru').length ? 1.08 : 1; const c = cityById(b.city);
-  const bolge = s.subeler.some((x) => x !== b) ? s.subeler.flatMap((x) => staffOf(x, 'bolge_muduru')).filter((e) => e && true).length : 0;
-  void c; return mud * (1 + Math.min(0.09, 0.03 * bolge));
-}
-export const serviceCapacity = (s: GameState, b: Branch): number => {       // 10 dakikada hazırlanabilen iş (saniye)
-  const bar = staffOf(b, 'barista').reduce((a, e) => a + effOf(e), 0), kas = staffOf(b, 'kasiyer').reduce((a, e) => a + effOf(e), 0);
-  return (bar + 0.5 * kas) * 0.9 * 600 * branchBonus(s, b);
-};
-
+/* ===================== Personel (hr.ts) ===================== */
+export { makeEmployee, staffOf, eff as effOf } from './hr';
 /* ===================== Hava ve mevsim ===================== */
 export function weatherFor(s: GameState, c: City, gun: number): GameState['hava'][number] {
   const m = dateOf(gun).ay, soguk = (c.region === 'D' || c.region === 'I' || c.region === 'K') ? 1 : 0.5, kis = m === 11 || m <= 1;
@@ -84,8 +52,8 @@ export function rivalPressure(s: GameState, b: Branch): number {
 const clampN = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 export function facadeAppeal(b: Branch): number { const f = b.facade; return 1 + 0.03 * f.tabela + 0.025 * f.cam + 0.03 * f.led + 0.06 * f.premium + 0.02 * f.marka + 0.015 * f.kapi + 0.02 * f.oturma + 0.015 * f.peyzaj + 0.04 * f.vitrin + 0.02 * f.tente; }
 export function outdoorSeats(b: Branch): number { return SHOP[b.tip].masa === 0 ? 0 : (SHOP[b.tip].masa + 2 * b.facade.oturma) * 4; }
-export function adEffect(b: Branch, now: number): { trafik: number; marka: number; indirim: boolean } {
-  let t = 0, m = 0, ind = false; for (const a of b.reklam) { if (a.bit <= now || !a.tuttu) continue; const d = AD[a.id]; t += d.trafik; m += d.marka / d.gun; if (a.id === 'indirim') ind = true; } return { trafik: t, marka: m, indirim: ind };
+export function adEffect(b: Branch, now: number): { trafik: number; marka: number; indirim: boolean; paket: boolean; ikinci: boolean } {
+  let t = 0, m = 0, ind = false, pk = false, ik = false; for (const a of b.reklam) { if (a.bit <= now || !a.tuttu) continue; const d = AD[a.id]; t += d.trafik; m += d.marka / d.gun; if (a.id === 'indirim') ind = true; if (a.id === 'paket') pk = true; if (a.id === 'ikinci') ik = true; } return { trafik: t, marka: m, indirim: ind, paket: pk, ikinci: ik };
 }
 export function dailyDemand(s: GameState, b: Branch): number {
   const c = cityById(b.city), st = SHOP[b.tip], now = dayOf(s), d = dateOf(now), ae = adEffect(b, now);
@@ -121,7 +89,7 @@ function processCustomer(s: GameState, b: Branch, ev: SimEvent[], c: City): void
   const rivalAv = avgRivalPrice(s, b.city); let totalPrep = 0, totalGelir = 0, kahveG = 0, yiyG = 0, any = false, kaybettiFiyat = false;
   const items: Array<[ProductId, number]> = [];
   for (let k = 0; k < grup; k++) {
-    const nItem = rand(s.rng, 'customers') < 0.4 ? 2 : 1, wantFood = rand(s.rng, 'customers') < 0.42;
+    const nItem = rand(s.rng, 'customers') < (ae.ikinci ? 0.62 : 0.4) ? 2 : 1, wantFood = rand(s.rng, 'customers') < 0.42;
     for (let q = 0; q < nItem; q++) {
       const food = q === 1 || (nItem === 1 && wantFood), cand: Array<[ProductDef, number]> = []; let tot = 0;
       for (const p of PRODUCTS) {
@@ -139,36 +107,39 @@ function processCustomer(s: GameState, b: Branch, ev: SimEvent[], c: City): void
   }
   if (!items.length) { acc.kayip++; ev.push({ t: 'kayip', branch: b.id, sebep: kaybettiFiyat ? 'fiyat' : 'stok' }); if (!kaybettiFiyat) acc.stokYok++; return; }
   // kapasite: iş birikmişse müşteri vazgeçebilir
-  const cap = Math.max(60, serviceCapacity(s, b)), bekle = (b.backlog / cap) * 10;        // dakika
-  const sabir = { ogr: 12, cal: 6, tur: 14, aile: 12, emk: 15 }[seg] + (staffOf(b, 'servis').length ? 2 : 0);
+  const hour = hourOf(s), hg = dateOf(dayOf(s)).haftaGun, cov = coverage(b, hour, hg, dayOf(s));
+  if (cov.barista + cov.kasiyer <= 0) { acc.kayip++; acc.satSum += 15; acc.satN++; ev.push({ t: 'kayip', branch: b.id, sebep: 'personel' }); return; }
+  const cap = Math.max(60, capacityAt(s, b, hour, hg, dayOf(s))), bekle = (b.backlog / cap) * 10;        // dakika
+  const sabir = { ogr: 12, cal: 6, tur: 14, aile: 12, emk: 15 }[seg] + (cov.servis > 0 ? 2 : 0);
   if (bekle > sabir) { acc.kayip++; acc.satSum += 25; acc.satN++; ev.push({ t: 'kayip', branch: b.id, sebep: 'kuyruk' }); return; }
-  const paket = rand(s.rng, 'customers') < 0.12;
-  for (const [id] of items) {
-    const p = PRODUCT[id], price = sellPrice(s, b, id) * (ae.indirim ? 0.9 : 1); totalPrep += p.sure; totalGelir += price; any = true;
+  const paket = rand(s.rng, 'customers') < (ae.paket ? 0.3 : 0.12); const gelirler: Array<[ProductId, number]> = [];
+  for (const [idx, [id]] of items.entries()) {
+    const p = PRODUCT[id], price = sellPrice(s, b, id) * (ae.indirim ? 0.9 : 1) * (ae.ikinci && idx > 0 ? 0.75 : 1); totalPrep += p.sure; totalGelir += price; any = true;
     for (const k of Object.keys(p.recete) as IngId[]) b.stok[k] = (b.stok[k] ?? 0) - (p.recete[k] ?? 0); if (paket) b.stok.pack = Math.max(0, (b.stok.pack ?? 0) - 1);
-    acc.adet[id] = (acc.adet[id] ?? 0) + 1; if (p.kat === 'kahve') kahveG += price; else yiyG += price;
+    acc.adet[id] = (acc.adet[id] ?? 0) + 1; acc.cogs += unitCost(s, id, c); acc.itemN++; acc.kalSum += b.menu[id].kalite * b.malKalite; acc.fiyatSum += b.menu[id].fiyat * (ae.indirim ? 0.9 : 1); gelirler.push([id, price]);
   }
   if (!any) return; b.backlog += totalPrep;
-  if (paket) { acc.gelir.paket += totalGelir; } else { acc.gelir.kahve += kahveG; acc.gelir.yiyecek += yiyG; }
+  if (paket) acc.gelir.paket += totalGelir; else gelirler.forEach(([id, pr], i) => { if (ae.indirim || ae.ikinci) acc.gelir.kampanya += pr; else if (i > 0) acc.gelir.ek += pr; else if (PRODUCT[id].kat === 'kahve') acc.gelir.kahve += pr; else acc.gelir.yiyecek += pr; });
+  void kahveG; void yiyG;
   acc.musteri++;
   // memnuniyet: bekleme, fiyat adaleti, kalite, hijyen, görünüm
   const kal = items.reduce((a, [id]) => a + b.menu[id].kalite, 0) / items.length, fiyatO = items.reduce((a, [id]) => a + b.menu[id].fiyat, 0) / items.length;
-  let sat = 62 + 8 * (kal - 1) - 28 * (fiyatO - 1) - Math.min(30, bekle * 3) + 0.15 * (b.hijyen - 60) + 3 * (facadeAppeal(b) - 1) * 10 + (staffOf(b, 'servis').length ? 3 : 0) + (staffOf(b, 'barista').reduce((a, e) => a + e.iliski, 0) / Math.max(1, staffOf(b, 'barista').length) - 60) * 0.08;
-  sat = clampN(sat + (rand(s.rng, 'customers') - 0.5) * 14, 0, 100); acc.satSum += sat; acc.satN++; acc.bekleme += bekle; acc.beklemeN++;
+  let sat = 62 + 8 * (kal - 1) - 28 * (fiyatO - 1) - Math.min(30, bekle * 3) + 0.15 * (b.hijyen - 60) + 3 * (facadeAppeal(b) - 1) * 10 + (cov.servis > 0 ? 3 : 0) + (cov.iliski - 60) * 0.08 + (cov.disiplin - 60) * 0.03 + (cov.sorumlu ? 2 : 0);
+  sat = clampN(sat + (b.malKalite - 1) * 30 + (rand(s.rng, 'customers') - 0.5) * 14, 0, 100); if (sat < 38) acc.sikayet++; if (rand(s.rng, 'customers') < 0.1 + b.sadakat * 0.006 + (sat - 60) * 0.004) acc.tekrar++; if (rand(s.rng, 'customers') < b.sadakat * 0.004) acc.sadik++; acc.satSum += sat; acc.satN++; acc.bekleme += bekle; acc.beklemeN++;
   const dis = outdoorSeats(b) > 0 && rand(s.rng, 'customers') < 0.45 && s.hava[b.city] !== 'yagmur' && s.hava[b.city] !== 'kar';
   ev.push({ t: 'musteri', branch: b.id, tip: TIP_NAME(seg, grup, b, rand(s.rng, 'customers')), grup, dis, sure: 12 + Math.floor(rand(s.rng, 'customers') * 35), paket, seed: Math.floor(rand(s.rng, 'customers') * 1e6) });
 }
 
 /* ===================== Zaman adımı ===================== */
-export const emptyAcc = (): DayAcc => ({ gelir: { kahve: 0, yiyecek: 0, paket: 0, toplu: 0, etkinlik: 0, franchise: 0 }, gider: { kira: 0, elektrik: 0, su: 0, maas: 0, malzeme: 0, vergi: 0, bakim: 0, reklam: 0, sigorta: 0 }, musteri: 0, kayip: 0, stokYok: 0, adet: {}, satSum: 0, satN: 0, bekleme: 0, beklemeN: 0 });
+export const emptyAcc = (): DayAcc => ({ gelir: { kahve: 0, yiyecek: 0, ek: 0, kampanya: 0, paket: 0, toplu: 0, etkinlik: 0, franchise: 0 }, gider: { kira: 0, elektrik: 0, su: 0, internet: 0, maas: 0, malzeme: 0, fire: 0, stok: 0, vergi: 0, bakim: 0, reklam: 0, sigorta: 0, prim: 0, egitim: 0, isealim: 0 }, musteri: 0, kayip: 0, stokYok: 0, adet: {}, satSum: 0, satN: 0, bekleme: 0, beklemeN: 0, cogs: 0, alim: 0, itemN: 0, kalSum: 0, fiyatSum: 0, tekrar: 0, sadik: 0, sikayet: 0, ort: 0 });
 const sumObj = (o: object) => Object.values(o as Record<string, number>).reduce((a, b) => a + b, 0);
 
 export function openHours(b: Branch): [number, number] { return b.tip === 'avm' ? [10, 22] : b.tip === 'sahil' ? [8, 24] : b.tip === 'luks' ? [9, 23] : [8, 23]; }
 function stepTen(s: GameState, ev: SimEvent[]): void {
   const hour = hourOf(s);
   for (const b of s.subeler) {
-    if (!b.acik || !b.kuruldu) continue; const c = cityById(b.city), [o, k] = openHours(b);
-    const cap = serviceCapacity(s, b); b.backlog = Math.max(0, b.backlog - cap);
+    if (!b.acik || !b.kuruldu) continue; const c = cityById(b.city), o = b.mesai.aci, k = b.mesai.kapa;
+    const cap = capacityAt(s, b, hour, dateOf(dayOf(s)).haftaGun, dayOf(s)); b.backlog = Math.max(0, b.backlog - cap);
     if (hour < o || hour >= k) continue;
     const idx = Math.floor(hour), w = HOUR_CURVE[idx] ?? 0, perTen = (dailyDemand(s, b) * (w / HOUR_SUM)) / 6;
     const n = poisson(s, perTen); for (let i = 0; i < n; i++) processCustomer(s, b, ev, c);
@@ -189,45 +160,42 @@ function dailyClose(s: GameState, ev: SimEvent[]): void {
     if (!b.kuruldu) continue; const c = cityById(b.city), st = SHOP[b.tip], acc = b.bugun, g = acc.gider;
     if (b.acik) {
       g.kira = b.kira / 30; g.elektrik = (st.m2 * 55 + 14000) / 30 * c.maliyet * el * F * (b.facade.led ? 1.12 : 1) * 0.8; g.su = (st.m2 * 14 + 3000) / 30 * c.maliyet * F;
-      g.maas = b.staff.reduce((a, e) => a + e.maas, 0) / 30; g.bakim = (st.m2 * 18 + 1200 * (b.facade.premium + b.facade.cam)) / 30 * F; g.sigorta = (st.m2 * 6 + 900) / 30 * F;
-      g.vergi = sumObj(acc.gelir) * 0.08;
+      g.maas = b.staff.reduce((a, e) => a + e.maas * (e.mesai ? 1.12 : 1), 0) / 30; g.bakim = (st.m2 * 18 + 1200 * (b.facade.premium + b.facade.cam)) / 30 * F; g.sigorta = (st.m2 * 6 + 900) / 30 * F;
+      g.vergi = sumObj(acc.gelir) * 0.08; g.internet = 1900 / 30 * F; g.stok = holdingCost(s, b);
     }
-    for (const k of Object.keys(g) as Array<keyof typeof g>) s.kasa -= k === 'malzeme' ? 0 : g[k];   // malzeme alım anında ödendi
+    g.fire = spoilage(s, b); g.malzeme = acc.cogs; for (const k of Object.keys(b.stok) as IngId[]) if ((b.stok[k] ?? 0) < 0) b.stok[k] = 0;
+    for (const k of Object.keys(g) as Array<keyof typeof g>) s.kasa -= (k === 'malzeme' || k === 'fire' || k === 'reklam' || k === 'prim' || k === 'egitim' || k === 'isealim') ? 0 : g[k];   // bunlar işlem anında ödendi (malzeme: alımda)
     const rev = reportOf(gun, acc, b); rpts.push(rev); b.gecmis.push(rev); if (b.gecmis.length > 90) b.gecmis.shift();
     // hijyen, personel, memnuniyet, marka
-    const tem = staffOf(b, 'temizlik').reduce((a, e) => a + effOf(e), 0);
+    const tem = staffOf(b, 'temizlik').reduce((a, e) => a + (e.izin === dateOf(gun).haftaGun || e.hasta > 0 ? 0 : eff(e) * shiftHours(b, e) / 8), 0);
     b.hijyen = clampN(b.hijyen - 1.2 - acc.musteri * 0.012 + 0.45 * Math.min(4, b.staff.length) + tem * 3.0 + (staffOf(b, 'sube_muduru').length ? 0.8 : 0), 0, 100);
+    const cleanUse = Math.max(0.5, st.m2 / 35 * 0.55) + acc.musteri * 0.004; const hadClean = (b.stok.clean ?? 0) >= cleanUse; b.stok.clean = Math.max(0, (b.stok.clean ?? 0) - cleanUse); b.kullanim.clean = (b.kullanim.clean ?? 0) * 0.7 + cleanUse * 0.3; if (!hadClean) b.hijyen = clampN(b.hijyen - 4, 0, 100);
+    b.mus = { ortSiparis: acc.musteri ? acc.itemN / acc.musteri : 0, ortBekleme: acc.beklemeN ? acc.bekleme / acc.beklemeN : 0, hizmet: acc.satN ? Math.max(0, 100 - (acc.bekleme / Math.max(1, acc.beklemeN)) * 6) : b.mus.hizmet, urunKal: acc.itemN ? acc.kalSum / acc.itemN : b.mus.urunKal, fiyatMemn: acc.itemN ? clampN(100 - (acc.fiyatSum / acc.itemN - 1) * 120, 0, 100) : b.mus.fiyatMemn, tekrar: acc.musteri ? acc.tekrar / acc.musteri * 100 : b.mus.tekrar, sadik: acc.musteri ? acc.sadik / acc.musteri * 100 : b.mus.sadik, sikayet: acc.sikayet }; b.sonAdet = { ...acc.adet };
     const sat = acc.satN ? acc.satSum / acc.satN : b.memnuniyet; b.memnuniyet = Math.round((b.memnuniyet * 0.7 + sat * 0.3) * 10) / 10;
     const mkt = staffOf(b, 'pazarlama').length + s.subeler.reduce((a, x) => a + staffOf(x, 'pazarlama').length, 0) * 0.0, ae = adEffect(b, now);
     b.sadakat = clampN(b.sadakat + (sat - 60) * 0.01 + (b.reklam.some((a) => a.id === 'sadakat' && a.bit > now) ? 0.08 : 0), 0, 100);
     b.marka = clampN(b.marka + (sat - 60) * 0.012 + ae.marka + 0.05 * mkt + (acc.musteri > 80 ? 0.05 : 0) - 0.05, 0, 100);
-    for (const e of b.staff) staffDay(s, b, e, acc);
+    dailyHr(s, b, { log: (m) => s.log.unshift(m) }); if (!b.staff.length && s.bekleyen.length < 3) s.bekleyen.push({ id: s.en++, tip: 'istifa', baslik: 'Şubede çalışan kalmadı', metin: `${b.ad} şubesinde personel kalmadı; yeni ilan ver.`, ikon: '🚪', secenek: [{ ad: 'Tamam', ac: 'İlan ver ve işe al.' }], branch: b.id });
     b.reklam = b.reklam.filter((a) => a.bit > now);
     makeReviews(s, b, sat, gun);
-    const us = usageOf(b); for (const ing of INGREDIENTS) b.kullanim[ing.id] = (b.kullanim[ing.id] ?? 0) * 0.7 + (us[ing.id] ?? 0) * 0.3;
-    if (b.otoSiparis) autoOrder(s, b);
+    const us = usageOf(b, (id) => PRODUCT[id as ProductId].recete); for (const ing of INGREDIENTS) if (ing.id !== 'clean') b.kullanim[ing.id] = (b.kullanim[ing.id] ?? 0) * 0.7 + (us[ing.id] ?? 0) * 0.3;
     b.bugun = emptyAcc();
+    if (b.otoSiparis) autoOrder(s, b);   // alım ertesi günün nakit akışına yazılır
   }
-  for (const r of rpts) { for (const k of Object.keys(r.gelir) as Array<keyof DayReport['gelir']>) toplam.gelir[k] += r.gelir[k]; for (const k of Object.keys(r.gider) as Array<keyof DayReport['gider']>) toplam.gider[k] += r.gider[k]; toplam.musteri += r.musteri; toplam.kayip += r.kayip; toplam.memnuniyet += r.memnuniyet / Math.max(1, rpts.length); }
+  for (const r of rpts) { for (const k of Object.keys(r.gelir) as Array<keyof DayReport['gelir']>) toplam.gelir[k] += r.gelir[k]; for (const k of Object.keys(r.gider) as Array<keyof DayReport['gider']>) toplam.gider[k] += r.gider[k]; toplam.musteri += r.musteri; toplam.kayip += r.kayip; toplam.alim += r.alim; toplam.memnuniyet += r.memnuniyet / Math.max(1, rpts.length); }
+  toplam.capex = s.capexBugun; s.capexBugun = 0;
   toplam = finalize(toplam); s.rapor.push(toplam); if (s.rapor.length > 800) s.rapor.shift(); s.ayKar += toplam.kar; s.ayGelir += toplam.toplamGelir;
   // ay sonu geliri vergisi
   const d = dateOf(dayOf(s)); if (d.ayGun === 1) { const vergi = Math.max(0, s.ayKar) * 0.10; s.kasa -= vergi; s.ayKar = 0; s.ayGelir = 0; s.log.unshift(`Ay sonu gelir vergisi ödendi: ${Math.round(vergi)} ₺`); s.log = s.log.slice(0, 40); }
   s.kasa += toplam.toplamGelir; s.borc *= 1 + 0.002;   // borç faizi (günlük ≈ yıllık %70 değil: aylık %6'dan düşük)
-  marketDay(s); rivalsDay(s); deliveries(s); weatherDay(s); randomEvent(s, ev);
+  marketDay(s); rivalsDay(s); deliverAll(s, (m) => { s.log.unshift(m); s.log = s.log.slice(0, 40); }); weatherDay(s); randomEvent(s, ev);
   s.marka_puani = clampN(s.marka_puani * 0.995 + 0.005 * (s.subeler.length ? s.subeler.reduce((a, b) => a + b.marka, 0) / s.subeler.length : 0), 0, 100);
   s.seviye = levelOf(s); if (s.kasa < -50000) s.negatifGun++; else s.negatifGun = 0; if (s.negatifGun >= 20) s.oyunBitti = 'iflas';
   ev.push({ t: 'gun', gun: dayOf(s) });
 }
-function mkReport(gun: number, b: Branch | null): DayReport { void b; return { gun, gelir: { kahve: 0, yiyecek: 0, paket: 0, toplu: 0, etkinlik: 0, franchise: 0 }, gider: { kira: 0, elektrik: 0, su: 0, maas: 0, malzeme: 0, vergi: 0, bakim: 0, reklam: 0, sigorta: 0 }, toplamGelir: 0, toplamGider: 0, kar: 0, musteri: 0, kayip: 0, memnuniyet: 0 }; }
-function finalize(r: DayReport): DayReport { r.toplamGelir = sumObj(r.gelir); r.toplamGider = sumObj(r.gider); r.kar = r.toplamGelir - r.toplamGider; return r; }
-function reportOf(gun: number, a: DayAcc, b: Branch): DayReport { const r = mkReport(gun, b); r.gelir = { ...a.gelir }; r.gider = { ...a.gider }; r.musteri = a.musteri; r.kayip = a.kayip; r.memnuniyet = a.satN ? a.satSum / a.satN : b.memnuniyet; return finalize(r); }
-function staffDay(s: GameState, b: Branch, e: Employee, acc: DayAcc): void {
-  const pazar = STAFF_TYPE[e.tip].maas * (1 + e.tecrube * 0.05), adil = clampN(e.maas / pazar, 0.7, 1.4), yuk = e.tip === 'barista' ? clampN(b.backlog / Math.max(60, serviceCapacity(s, b)), 0, 3) : 0;
-  const mud = staffOf(b, 'sube_muduru').length ? 1.2 : 0;
-  e.motivasyon = clampN(e.motivasyon + (adil - 1) * 6 - yuk * 1.2 + mud + (b.memnuniyet - 65) * 0.03 - 0.1, 0, 100); e.memnuniyet = Math.round((e.memnuniyet * 0.9 + e.motivasyon * 0.1) * 10) / 10;
-  e.performans = clampN(40 + e.tecrube * 4 + e.motivasyon * 0.35 + (e.iliski - 50) * 0.1, 20, 100); if (e.tecrube < 10 && rand(s.rng, 'misc') < 0.003) e.tecrube = Math.min(10, e.tecrube + 1);
-  void acc; if (e.motivasyon < 25 && rand(s.rng, 'misc') < 0.06) { b.staff = b.staff.filter((x) => x !== e); s.log.unshift(`${e.ad} (${STAFF_TYPE[e.tip].ad}) işten ayrıldı.`); if (s.bekleyen.length < 3) s.bekleyen.push({ id: s.en++, tip: 'istifa', baslik: 'Çalışan işi bıraktı', metin: `${e.ad}, motivasyonu çok düştüğü için ${b.ad} şubesinden ayrıldı.`, ikon: '🚪', secenek: [{ ad: 'Tamam', ac: 'Yeni personel al.' }], branch: b.id }); }
-}
+function mkReport(gun: number, b: Branch | null): DayReport { void b; const e = emptyAcc(); return { gun, gelir: e.gelir, gider: e.gider, toplamGelir: 0, toplamGider: 0, kar: 0, musteri: 0, kayip: 0, memnuniyet: 0, cogs: 0, brut: 0, alim: 0, capex: 0, nakit: 0 }; }
+function finalize(r: DayReport): DayReport { r.toplamGelir = sumObj(r.gelir); r.toplamGider = sumObj(r.gider); r.kar = r.toplamGelir - r.toplamGider; r.cogs = r.gider.malzeme; r.brut = r.toplamGelir - r.cogs; r.nakit = r.toplamGelir - (r.toplamGider - r.gider.malzeme - r.gider.fire) - r.alim - r.capex; return r; }
+function reportOf(gun: number, a: DayAcc, b: Branch): DayReport { const r = mkReport(gun, b); r.gelir = { ...a.gelir }; r.gider = { ...a.gider }; r.musteri = a.musteri; r.kayip = a.kayip; r.alim = a.alim; r.memnuniyet = a.satN ? a.satSum / a.satN : b.memnuniyet; return finalize(r); }
 function makeReviews(s: GameState, b: Branch, sat: number, gun: number): void {
   const n = Math.min(3, Math.floor(b.bugun.musteri / 30) + (rand(s.rng, 'customers') < 0.4 ? 1 : 0)); const FN = ['Ayşe', 'Mehmet', 'Elif', 'Can', 'Zeynep', 'Burak', 'Selin', 'Emre'];
   for (let i = 0; i < n; i++) {
@@ -236,20 +204,6 @@ function makeReviews(s: GameState, b: Branch, sat: number, gun: number): void {
   }
   b.yorumlar = b.yorumlar.slice(0, 30); if (b.yorumlar.length) b.yorumPuan = Math.round((b.yorumlar.reduce((a, r) => a + r.yildiz, 0) / b.yorumlar.length) * 10) / 10;
 }
-function autoOrder(s: GameState, b: Branch): void {
-  const c = cityById(b.city);
-  for (const ing of INGREDIENTS) {
-    const gelen = b.siparisler.filter((o) => o.ing === ing.id).reduce((a, o) => a + o.paket * ing.paket, 0), gunluk = Math.max(b.kullanim[ing.id] ?? 0, ing.paket * 0.04);
-    const esik = gunluk * (ING[ing.id].teslim + 1.2), hedef = gunluk * (ING[ing.id].teslim + 3.5), mevcut = (b.stok[ing.id] ?? 0) + gelen;
-    if (mevcut < esik) { const paket = Math.max(1, Math.ceil((hedef - mevcut) / ing.paket)); orderStock(s, b, ing.id, paket, c); }
-  }
-}
-function usageOf(b: Branch): Partial<Record<IngId, number>> { const u: Partial<Record<IngId, number>> = {}; for (const id of Object.keys(b.bugun.adet) as ProductId[]) { const r = PRODUCT[id].recete, n = b.bugun.adet[id] ?? 0; for (const k of Object.keys(r) as IngId[]) u[k] = (u[k] ?? 0) + (r[k] ?? 0) * n; } return u; }
-export function orderStock(s: GameState, b: Branch, ing: IngId, paket: number, c = cityById(b.city)): boolean {
-  const price = ingPrice(s, ing, c) * paket; if (paket <= 0 || s.kasa < price) return false; s.kasa -= price; b.bugun.gider.malzeme += price;
-  const gecik = modValue(s, 'gecikme') > 1 ? 3 : 0; b.siparisler.push({ id: s.sn++, ing, paket, teslim: dayOf(s) + ING[ing].teslim + gecik, odenen: price }); return true;
-}
-function deliveries(s: GameState): void { const now = dayOf(s); for (const b of s.subeler) { const kal = []; for (const o of b.siparisler) { if (o.teslim <= now) b.stok[o.ing] = (b.stok[o.ing] ?? 0) + o.paket * ING[o.ing].paket; else kal.push(o); } b.siparisler = kal; } }
 function marketDay(s: GameState): void {
   const m = s.market; m.fiyat *= 1 + m.enf / 100 / 365 * (0.8 + 0.4 * rand(s.rng, 'market')); m.bean = clampN(m.bean * (1 + (rand(s.rng, 'market') - 0.5) * 0.012) + (1 - m.bean) * 0.01, 0.8, 1.8);
   m.elektrik = clampN(m.elektrik * (1 + (rand(s.rng, 'market') - 0.5) * 0.006) + (1 - m.elektrik) * 0.01, 0.9, 1.7); m.enf = clampN(m.enf + (rand(s.rng, 'market') - 0.5) * 0.4, 18, 85);
