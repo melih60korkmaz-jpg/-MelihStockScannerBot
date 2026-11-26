@@ -1,6 +1,7 @@
 import { CITIES, cityById, type City } from '../data/turkey';
 import { AD, ADS, INGREDIENTS, ING, PRODUCTS, PRODUCT, SHOP, STAFF_TYPE, type IngId, type ProductId, type ProductDef } from '../data/catalog';
 import { rand, randInt, pick } from './rng';
+import { qualMult, energyMult, maintenanceDaily, brandDaily } from './invest';
 import { capacityAt, coverage, dailyHr, shiftHours, staffOf, eff } from './hr';
 import { autoOrder, deliverAll, holdingCost, ingPrice, orderStock, spoilage, syncLots, usageOf } from './supply';
 export { ingPrice, orderStock };
@@ -46,7 +47,7 @@ const HOUR_SUM = HOUR_CURVE.reduce((a, b) => a + b, 0);
 /* ===================== Pazar ve talep ===================== */
 export function rivalPressure(s: GameState, b: Branch): number {
   const rv = s.rakipler[b.city] ?? []; let p = 0;
-  for (const r of rv) { const ucuz = (1 / Math.max(0.7, r.fiyat)); p += 0.045 * (1 + 0.5 * r.reklam) * (0.7 + 0.15 * r.kalite) * Math.pow(r.sube, 0.4) * clampN(ucuz, 0.8, 1.3); }
+  for (const r of rv) { const ucuz = (1 / Math.max(0.7, rivalFiyat(s, r))); p += 0.045 * (1 + 0.5 * r.reklam) * (0.7 + 0.15 * r.kalite) * Math.pow(r.sube, 0.4) * clampN(ucuz, 0.8, 1.3); }
   return p * (0.6 + SHOP[b.tip].rekabet);
 }
 const clampN = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -80,7 +81,17 @@ const TIP_NAME = (seg: typeof SEG_KEYS[number], grup: number, b: Branch, r: numb
 export function productAvailable(b: Branch, p: ProductDef, lv: number): boolean {
   if (!b.menu[p.id].aktif || lv < p.seviye) return false; const r = p.recete; for (const k of Object.keys(r) as IngId[]) if ((b.stok[k] ?? 0) < (r[k] ?? 0)) return false; return true;
 }
-function avgRivalPrice(s: GameState, city: number): number { const rv = s.rakipler[city] ?? []; return rv.length ? rv.reduce((a, r) => a + r.fiyat, 0) / rv.length : 1; }
+/** Rakibin o günkü etkin fiyat oranı (kampanya varsa indirimli). */
+export function rivalFiyat(s: GameState, r: Rival): number { return r.kampanya && r.kampanya.bit > dayOf(s) ? r.fiyat * (1 - r.kampanya.indirim) : r.fiyat; }
+function avgRivalPrice(s: GameState, city: number): number { const rv = s.rakipler[city] ?? []; return rv.length ? rv.reduce((a, r) => a + rivalFiyat(s, r), 0) / rv.length : 1; }
+/** Tahmini yerel pazar payı: aynı şehirdeki kafelerin çekicilik puanına göre (şehirdeki oyuncu şubeleri toplanır). */
+export function marketShare(s: GameState, city: number): { sen: number; rakipler: Array<{ r: Rival; pay: number }> } {
+  const rv = s.rakipler[city] ?? [], mine = s.subeler.filter((b) => b.city === city);
+  const puan = (kal: number, fiyat: number, rek: number, sube: number) => Math.max(0.01, kal * (1 / Math.max(0.7, fiyat)) * (1 + 0.4 * rek) * Math.pow(sube, 0.5));
+  const me = mine.reduce((a, b) => a + puan(0.6 + b.memnuniyet / 100 * 0.8 + b.marka / 250, b.menu.latte?.fiyat ?? 1, b.reklam.length ? 0.8 : 0.2, 1) * 1.1, 0);
+  const rs = rv.map((r) => ({ r, p: puan(0.7 + 0.15 * r.kalite, rivalFiyat(s, r), r.reklam, r.sube) })), tot = me + rs.reduce((a, x) => a + x.p, 0);
+  return { sen: tot ? me / tot : 0, rakipler: rs.map((x) => ({ r: x.r, pay: tot ? x.p / tot : 0 })) };
+}
 
 function processCustomer(s: GameState, b: Branch, ev: SimEvent[], c: City): void {
   const seg = pickSegment(s, b, c), r0 = rand(s.rng, 'customers'), grup = r0 < 0.58 ? 1 : r0 < 0.84 ? 2 : r0 < 0.95 ? 3 : 4, lv = levelOf(s), ae = adEffect(b, dayOf(s));
@@ -116,7 +127,7 @@ function processCustomer(s: GameState, b: Branch, ev: SimEvent[], c: City): void
   for (const [idx, [id]] of items.entries()) {
     const p = PRODUCT[id], price = sellPrice(s, b, id) * (ae.indirim ? 0.9 : 1) * (ae.ikinci && idx > 0 ? 0.75 : 1); totalPrep += p.sure; totalGelir += price; any = true;
     for (const k of Object.keys(p.recete) as IngId[]) b.stok[k] = (b.stok[k] ?? 0) - (p.recete[k] ?? 0); if (paket) b.stok.pack = Math.max(0, (b.stok.pack ?? 0) - 1);
-    acc.adet[id] = (acc.adet[id] ?? 0) + 1; acc.cogs += unitCost(s, id, c); acc.itemN++; acc.kalSum += b.menu[id].kalite * b.malKalite; acc.fiyatSum += b.menu[id].fiyat * (ae.indirim ? 0.9 : 1); gelirler.push([id, price]);
+    acc.adet[id] = (acc.adet[id] ?? 0) + 1; acc.cogs += unitCost(s, id, c); acc.itemN++; acc.kalSum += b.menu[id].kalite * b.malKalite * qualMult(b); acc.fiyatSum += b.menu[id].fiyat * (ae.indirim ? 0.9 : 1); gelirler.push([id, price]);
   }
   if (!any) return; b.backlog += totalPrep;
   if (paket) acc.gelir.paket += totalGelir; else gelirler.forEach(([id, pr], i) => { if (ae.indirim || ae.ikinci) acc.gelir.kampanya += pr; else if (i > 0) acc.gelir.ek += pr; else if (PRODUCT[id].kat === 'kahve') acc.gelir.kahve += pr; else acc.gelir.yiyecek += pr; });
@@ -125,7 +136,7 @@ function processCustomer(s: GameState, b: Branch, ev: SimEvent[], c: City): void
   // memnuniyet: bekleme, fiyat adaleti, kalite, hijyen, görünüm
   const kal = items.reduce((a, [id]) => a + b.menu[id].kalite, 0) / items.length, fiyatO = items.reduce((a, [id]) => a + b.menu[id].fiyat, 0) / items.length;
   let sat = 62 + 8 * (kal - 1) - 28 * (fiyatO - 1) - Math.min(30, bekle * 3) + 0.15 * (b.hijyen - 60) + 3 * (facadeAppeal(b) - 1) * 10 + (cov.servis > 0 ? 3 : 0) + (cov.iliski - 60) * 0.08 + (cov.disiplin - 60) * 0.03 + (cov.sorumlu ? 2 : 0);
-  sat = clampN(sat + (b.malKalite - 1) * 30 + (rand(s.rng, 'customers') - 0.5) * 14, 0, 100); if (sat < 38) acc.sikayet++; if (rand(s.rng, 'customers') < 0.1 + b.sadakat * 0.006 + (sat - 60) * 0.004) acc.tekrar++; if (rand(s.rng, 'customers') < b.sadakat * 0.004) acc.sadik++; acc.satSum += sat; acc.satN++; acc.bekleme += bekle; acc.beklemeN++;
+  sat = clampN(sat + (b.malKalite * qualMult(b) - 1) * 30 + (rand(s.rng, 'customers') - 0.5) * 14, 0, 100); if (sat < 38) acc.sikayet++; if (rand(s.rng, 'customers') < 0.1 + b.sadakat * 0.006 + (sat - 60) * 0.004) acc.tekrar++; if (rand(s.rng, 'customers') < b.sadakat * 0.004) acc.sadik++; acc.satSum += sat; acc.satN++; acc.bekleme += bekle; acc.beklemeN++;
   const dis = outdoorSeats(b) > 0 && rand(s.rng, 'customers') < 0.45 && s.hava[b.city] !== 'yagmur' && s.hava[b.city] !== 'kar';
   ev.push({ t: 'musteri', branch: b.id, tip: TIP_NAME(seg, grup, b, rand(s.rng, 'customers')), grup, dis, sure: 12 + Math.floor(rand(s.rng, 'customers') * 35), paket, seed: Math.floor(rand(s.rng, 'customers') * 1e6) });
 }
@@ -159,8 +170,8 @@ function dailyClose(s: GameState, ev: SimEvent[]): void {
   for (const b of s.subeler) {
     if (!b.kuruldu) continue; const c = cityById(b.city), st = SHOP[b.tip], acc = b.bugun, g = acc.gider;
     if (b.acik) {
-      g.kira = b.kira / 30; g.elektrik = (st.m2 * 55 + 14000) / 30 * c.maliyet * el * F * (b.facade.led ? 1.12 : 1) * 0.8; g.su = (st.m2 * 14 + 3000) / 30 * c.maliyet * F;
-      g.maas = b.staff.reduce((a, e) => a + e.maas * (e.mesai ? 1.12 : 1), 0) / 30; g.bakim = (st.m2 * 18 + 1200 * (b.facade.premium + b.facade.cam)) / 30 * F; g.sigorta = (st.m2 * 6 + 900) / 30 * F;
+      g.kira = b.kira / 30; g.elektrik = (st.m2 * 55 + 14000) / 30 * c.maliyet * el * F * (b.facade.led ? 1.12 : 1) * 0.8 * energyMult(b); g.su = (st.m2 * 14 + 3000) / 30 * c.maliyet * F;
+      g.maas = b.staff.reduce((a, e) => a + e.maas * (e.mesai ? 1.12 : 1), 0) / 30; g.bakim = (st.m2 * 18 + 1200 * (b.facade.premium + b.facade.cam)) / 30 * F + maintenanceDaily(b) * F; g.sigorta = (st.m2 * 6 + 900) / 30 * F;
       g.vergi = sumObj(acc.gelir) * 0.08; g.internet = 1900 / 30 * F; g.stok = holdingCost(s, b);
     }
     g.fire = spoilage(s, b); g.malzeme = acc.cogs; for (const k of Object.keys(b.stok) as IngId[]) if ((b.stok[k] ?? 0) < 0) b.stok[k] = 0;
@@ -174,7 +185,7 @@ function dailyClose(s: GameState, ev: SimEvent[]): void {
     const sat = acc.satN ? acc.satSum / acc.satN : b.memnuniyet; b.memnuniyet = Math.round((b.memnuniyet * 0.7 + sat * 0.3) * 10) / 10;
     const mkt = staffOf(b, 'pazarlama').length + s.subeler.reduce((a, x) => a + staffOf(x, 'pazarlama').length, 0) * 0.0, ae = adEffect(b, now);
     b.sadakat = clampN(b.sadakat + (sat - 60) * 0.01 + (b.reklam.some((a) => a.id === 'sadakat' && a.bit > now) ? 0.08 : 0), 0, 100);
-    b.marka = clampN(b.marka + (sat - 60) * 0.012 + ae.marka + 0.05 * mkt + (acc.musteri > 80 ? 0.05 : 0) - 0.05, 0, 100);
+    b.marka = clampN(b.marka + brandDaily(b) + (sat - 60) * 0.012 + ae.marka + 0.05 * mkt + (acc.musteri > 80 ? 0.05 : 0) - 0.05, 0, 100);
     dailyHr(s, b, { log: (m) => s.log.unshift(m) }); if (!b.staff.length && s.bekleyen.length < 3) s.bekleyen.push({ id: s.en++, tip: 'istifa', baslik: 'Şubede çalışan kalmadı', metin: `${b.ad} şubesinde personel kalmadı; yeni ilan ver.`, ikon: '🚪', secenek: [{ ad: 'Tamam', ac: 'İlan ver ve işe al.' }], branch: b.id });
     b.reklam = b.reklam.filter((a) => a.bit > now);
     makeReviews(s, b, sat, gun);
@@ -211,6 +222,10 @@ function marketDay(s: GameState): void {
 }
 function rivalsDay(s: GameState): void {
   for (const key of Object.keys(s.rakipler)) { const rv = s.rakipler[+key]!; for (const r of rv) {
+    if (!r.strateji) r.strateji = pick(s.rng, 'rivals', ['ucuz', 'kalite', 'agresif', 'dengeli'] as const);
+    if (r.kampanya && r.kampanya.bit <= dayOf(s)) { r.kampanya = undefined; r.son = 'Kampanyası bitti.'; }
+    if (!r.kampanya) { const pr = r.strateji === 'agresif' ? 0.05 : r.strateji === 'ucuz' ? 0.04 : 0.015; if (rand(s.rng, 'rivals') < pr) { r.kampanya = { bit: dayOf(s) + randInt(s.rng, 'rivals', 4, 8), indirim: 0.08 + rand(s.rng, 'rivals') * 0.1 }; r.son = `İndirim kampanyası (−%${Math.round(r.kampanya.indirim * 100)}).`; } }
+    if (r.strateji === 'kalite' && rand(s.rng, 'rivals') < 0.02) { r.kalite = Math.min(3, r.kalite + 1); r.son = 'Ürün kalitesini artırdı.'; }
     const x = rand(s.rng, 'rivals'); if (x < 0.04) r.fiyat = clampN(r.fiyat + (rand(s.rng, 'rivals') < 0.5 ? -0.04 : 0.04), 0.75, 1.35); else if (x < 0.07) r.reklam = clampN(r.reklam + 0.4, 0, 1.6); else if (x < 0.08) r.sube = Math.min(8, r.sube + 1);
     else if (x < 0.095) r.cesit = Math.min(19, r.cesit + 1); else if (x < 0.105) r.calisan = Math.min(30, r.calisan + 1); else if (x < 0.115) r.kalite = Math.min(3, r.kalite + 1); r.reklam = Math.max(0, r.reklam - 0.02);
   } }
@@ -251,7 +266,7 @@ export function resolveEvent(s: GameState, id: number, secim: number): string {
     default: return '';
   }
 }
-export function newRival(s: GameState, c: City): Rival { const nm = ['Moka', 'Bean', 'Aroma', 'Fincan', 'Latte', 'Çekirdek', 'Demlik', 'Kahveci'], sf = ['Kafe', 'Coffee', 'House', 'Lab', 'Cafe', 'Roasters']; return { id: s.en++, ad: `${pick(s.rng, 'rivals', nm)} ${pick(s.rng, 'rivals', sf)}`, fiyat: 0.9 + rand(s.rng, 'rivals') * 0.25, kalite: randInt(s.rng, 'rivals', 1, 2), reklam: rand(s.rng, 'rivals') * 0.6, sube: randInt(s.rng, 'rivals', 1, 2), cesit: randInt(s.rng, 'rivals', 5, 12), calisan: randInt(s.rng, 'rivals', 3, 9) } ; void c; }
+export function newRival(s: GameState, c: City): Rival { const nm = ['Moka', 'Bean', 'Aroma', 'Fincan', 'Latte', 'Çekirdek', 'Demlik', 'Kahveci'], sf = ['Kafe', 'Coffee', 'House', 'Lab', 'Cafe', 'Roasters']; return { id: s.en++, ad: `${pick(s.rng, 'rivals', nm)} ${pick(s.rng, 'rivals', sf)}`, strateji: pick(s.rng, 'rivals', ['ucuz', 'kalite', 'agresif', 'dengeli'] as const), fiyat: 0.9 + rand(s.rng, 'rivals') * 0.25, kalite: randInt(s.rng, 'rivals', 1, 2), reklam: rand(s.rng, 'rivals') * 0.6, sube: randInt(s.rng, 'rivals', 1, 2), cesit: randInt(s.rng, 'rivals', 5, 12), calisan: randInt(s.rng, 'rivals', 3, 9) } ; void c; }
 export function initRivals(s: GameState, c: City): void { if (s.rakipler[c.id]) return; const n = Math.max(1, Math.round(1 + c.rekabet * 4)); s.rakipler[c.id] = Array.from({ length: n }, () => newRival(s, c)); }
 
 /* ===================== Dış API ===================== */

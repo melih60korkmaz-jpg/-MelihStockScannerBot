@@ -1,4 +1,5 @@
-import { STAFF_TYPE, STAFF_TYPES, type StaffTypeId } from '../data/catalog';
+import { SHOP, STAFF_TYPE, STAFF_TYPES, type StaffTypeId } from '../data/catalog';
+const SHOP_M2 = (b: Branch): number => SHOP[b.tip].m2;
 import { dateOf, dayOf } from './calendar';
 import { pick, rand, randInt } from './rng';
 import type { Branch, Employee, GameState, Ilan, Sikayet, Vardiya } from './types';
@@ -39,9 +40,10 @@ export function coverage(b: Branch, hour: number, haftaGun: number, now: number)
   c.iliski = c.sayi ? il / c.sayi : 0; c.disiplin = c.sayi ? di / c.sayi : 0; return c;
 }
 /** 10 dakikada hazırlanabilen iş (saniye) — bu saatte vardiyada olanlara göre. */
+import { capMult } from './invest';
 export function capacityAt(s: GameState, b: Branch, hour: number, haftaGun: number, now: number, yat = 1): number {
   const c = coverage(b, hour, haftaGun, now); const bolge = Math.min(0.09, 0.03 * s.subeler.flatMap((x) => x.staff).filter((e) => e.tip === 'bolge_muduru').length);
-  return (c.barista + 0.5 * c.kasiyer) * 0.9 * 600 * (c.sorumlu ? 1.05 : 1) * (c.mudur ? 1.06 : 1) * (1 + bolge) * yat;
+  return (c.barista + 0.5 * c.kasiyer) * 0.9 * 600 * (c.sorumlu ? 1.05 : 1) * (c.mudur ? 1.06 : 1) * (1 + bolge) * yat * capMult(b);
 }
 /** Boş saatlerin listesi (barista ya da kasiyer yok) — plan uyarısı için. */
 export function gaps(b: Branch, haftaGun: number, now: number): number[] { const g: number[] = []; for (let h = b.mesai.aci; h < b.mesai.kapa; h++) { const c = coverage(b, h + 0.5, haftaGun, now); if (c.barista + c.kasiyer <= 0) g.push(h); } return g; }
@@ -135,3 +137,12 @@ export function resolveComplaint(s: GameState, b: Branch, id: number, secim: 'za
   if (secim === 'dinle') { e.memnuniyet = clamp(e.memnuniyet + 3, 0, 100); return ok('Dinlendin; çalışan biraz rahatladı.'); } e.sikayet++; e.memnuniyet = clamp(e.memnuniyet - 4, 0, 100); return ok('Şikâyet yok sayıldı; çalışan memnuniyeti düştü.');
 }
 export { STAFF_TYPES };
+/** Çalışanı başka şubeye nakleder; farklı şehirse taşınma masrafı ve motivasyon kaybı olur. */
+export function transferStaff(s: GameState, from: Branch, to: Branch, id: number): HrResult {
+  const e = from.staff.find((x) => x.id === id); if (!e) return no('Çalışan yok.'); if (from === to) return no('Aynı şube.'); if (from.staff.length <= 1) return no('Şubede en az bir çalışan kalmalı.');
+  if (to.staff.length >= (Math.round(SHOP_M2(to) / 6) + 3)) return no('Hedef şubenin personel sınırı dolu.');
+  const far = from.city !== to.city, fee = Math.round((far ? 9000 : 1500) * s.market.fiyat); if (s.kasa < fee) return no('Nakil masrafı için kasa yetersiz.');
+  s.kasa -= fee; from.bugun.gider.isealim += fee; from.staff = from.staff.filter((x) => x !== e); from.sikayetler = from.sikayetler.filter((q) => q.emp !== id);
+  if (far) { e.memnuniyet = clamp(e.memnuniyet - 6, 0, 100); e.motivasyon = clamp(e.motivasyon - 6, 0, 100); } e.izin = Math.min(e.izin, 6); to.staff.push(e); autoPlanOne(to, e);
+  return ok(`${e.ad} ${to.ad} şubesine nakledildi (−${fee} ₺).`);
+}

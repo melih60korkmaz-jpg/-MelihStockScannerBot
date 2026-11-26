@@ -1,3 +1,4 @@
+import { shelfMult } from './invest';
 import { INGREDIENTS, ING, type IngId } from '../data/catalog';
 import { cityById, type City } from '../data/turkey';
 import { dayOf } from './calendar';
@@ -26,7 +27,7 @@ export function orderStock(s: GameState, b: Branch, id: IngId, paket: number): b
 function addLot(b: Branch, id: IngId, q: number, son: number, kal: number): void { const l = (b.partiler[id] ??= []); l.push({ q, son, kal }); }
 export function syncLots(b: Branch, id: IngId, now: number): void {
   const l = (b.partiler[id] ??= []), stok = b.stok[id] ?? 0; let tot = l.reduce((a, x) => a + x.q, 0);
-  if (tot > stok + 0.01) { let fazla = tot - stok; for (const x of l) { const d = Math.min(x.q, fazla); x.q -= d; fazla -= d; if (fazla <= 0) break; } b.partiler[id] = l.filter((x) => x.q > 0.01); } else if (tot < stok - 0.01) { const o = ING[id].omur; addLot(b, id, stok - tot, o ? now + o : 1e9, 1); }
+  if (tot > stok + 0.01) { let fazla = tot - stok; for (const x of l) { const d = Math.min(x.q, fazla); x.q -= d; fazla -= d; if (fazla <= 0) break; } b.partiler[id] = l.filter((x) => x.q > 0.01); } else if (tot < stok - 0.01) { const o = ING[id].omur * shelfMult(b); addLot(b, id, stok - tot, o ? now + o : 1e9, 1); }
 }
 /** Teslimat: gecikmiş/eksik siparişler dahil. Bozulan partileri düşer; bozulan ürünün maliyetini döndürür. */
 export function deliverAll(s: GameState, log: (m: string) => void): void {
@@ -35,7 +36,7 @@ export function deliverAll(s: GameState, log: (m: string) => void): void {
     const kal: Order[] = []; const c = cityById(b.city);
     for (const o of b.siparisler) {
       if (o.teslim > now) { kal.push(o); continue; } const d = ING[o.ing], sup = supplier(c, o.kim); const q = o.paket * d.paket * (o.eksik ? 0.82 : 1);
-      syncLots(b, o.ing, now); b.stok[o.ing] = (b.stok[o.ing] ?? 0) + q; addLot(b, o.ing, q, d.omur ? now + d.omur : 1e9, sup.kalite);
+      syncLots(b, o.ing, now); b.stok[o.ing] = (b.stok[o.ing] ?? 0) + q; addLot(b, o.ing, q, d.omur ? now + d.omur * shelfMult(b) : 1e9, sup.kalite);
       if (['bean', 'milk', 'bakery', 'raw', 'tea'].includes(o.ing)) b.malKalite = b.malKalite * 0.8 + sup.kalite * 0.2;
       if (o.gecikti || o.eksik) log(`${sup.ad}: ${d.ad} siparişi ${o.gecikti ? 'geç geldi' : ''}${o.gecikti && o.eksik ? ' ve ' : ''}${o.eksik ? 'eksik teslim edildi' : ''}.`);
     }

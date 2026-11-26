@@ -1,3 +1,4 @@
+import { buyInvest } from './invest';
 import { cityById, type City } from '../data/turkey';
 import { AD, INGREDIENTS, PRODUCTS, PRODUCT, SHOP, STAFF_TYPE, UPGRADE, UPGRADES, type AdId, type IngId, type ProductId, type ShopTypeId, type StaffTypeId, type UpgradeId } from '../data/catalog';
 import { seedStreams } from './rng';
@@ -27,7 +28,7 @@ export function subeAc(s: GameState, cityId: number, tip: ShopTypeId, ad?: strin
   s.kasa -= cost; s.capexBugun += cost; initRivals(s, c);
   const menu = {} as Record<ProductId, MenuItem>; for (const p of PRODUCTS) menu[p.id] = { aktif: ['espresso', 'americano', 'latte', 'cappuccino', 'filtre', 'turk', 'cay', 'kruvasan', 'cheesecake', 'sandvic', 'tost', 'kurabiye', 'pogaca'].includes(p.id), fiyat: 1, kalite: 1 };
   const stok = {} as Record<IngId, number>; const kat = Math.max(1, t.m2 / 35) * (1 + t.potansiyel / 200); for (const i of INGREDIENTS) stok[i.id] = Math.round((i.id === 'bean' ? 3000 : i.paket * (i.id === 'flour' ? 0.6 : 1)) * kat);
-  const id = s.sn++; const b: Branch = { id, ad: ad && s.subeler.length === 0 ? `${ad}` : `${s.marka.ad} ${c.ad}${s.subeler.some((x) => x.city === cityId) ? ' ' + (s.subeler.filter((x) => x.city === cityId).length + 1) : ''}`, city: cityId, tip, acilis: dayOf(s), kira: rentOf(s, c, tip), m2: t.m2, staff: [], menu, stok, siparisler: [], otoSiparis: true, facade: emptyFacade(), hijyen: 75, memnuniyet: 65, marka: s.subeler.length ? 6 : 8, sadakat: 20, backlog: 0, kullanim: {}, partiler: {}, minStok: {}, tedarikci: {}, malKalite: 1, mus: { ortSiparis: 0, ortBekleme: 0, hizmet: 80, urunKal: 1, fiyatMemn: 80, tekrar: 20, sadik: 10, sikayet: 0 }, sonAdet: {}, acilan: {}, mesai: { aci: openHours0(tip)[0], kapa: openHours0(tip)[1] }, ilanlar: [], adaylar: [], sikayetler: [], reklam: [], yorumlar: [], yorumPuan: 3.8, bugun: emptyAcc(), gecmis: [], acik: true, kuruldu: true };
+  const id = s.sn++; const b: Branch = { id, ad: ad && s.subeler.length === 0 ? `${ad}` : `${s.marka.ad} ${c.ad}${s.subeler.some((x) => x.city === cityId) ? ' ' + (s.subeler.filter((x) => x.city === cityId).length + 1) : ''}`, city: cityId, tip, acilis: dayOf(s), kira: rentOf(s, c, tip), m2: t.m2, staff: [], menu, stok, siparisler: [], otoSiparis: true, yat: {}, facade: emptyFacade(), hijyen: 75, memnuniyet: 65, marka: s.subeler.length ? 6 : 8, sadakat: 20, backlog: 0, kullanim: {}, partiler: {}, minStok: {}, tedarikci: {}, malKalite: 1, mus: { ortSiparis: 0, ortBekleme: 0, hizmet: 80, urunKal: 1, fiyatMemn: 80, tekrar: 20, sadik: 10, sikayet: 0 }, sonAdet: {}, acilan: {}, mesai: { aci: openHours0(tip)[0], kapa: openHours0(tip)[1] }, ilanlar: [], adaylar: [], sikayetler: [], reklam: [], yorumlar: [], yorumPuan: 3.8, bugun: emptyAcc(), gecmis: [], acik: true, kuruldu: true };
   const nb = t.m2 >= 150 ? 4 : t.m2 >= 75 ? 3 : t.m2 >= 45 ? 2 : 1, nk = t.m2 >= 75 ? 2 : 1; for (let i = 0; i < nb; i++) b.staff.push(makeEmployee(s, 'barista', 1, c.maliyet)); for (let i = 0; i < nk; i++) b.staff.push(makeEmployee(s, 'kasiyer', 1, c.maliyet)); if (t.m2 >= 75) b.staff.push(makeEmployee(s, 'servis', 0, c.maliyet)); if (t.m2 >= 150) b.staff.push(makeEmployee(s, 'sube_muduru', 3, c.maliyet)); autoPlan(b);
   s.subeler.push(b); s.log.unshift(`${b.ad} açıldı.`); return ok(`${b.ad} açıldı! (−${fmt(cost)})`);
 }
@@ -65,3 +66,4 @@ export function closeBranch(s: GameState, id: number): Result { if (s.subeler.le
 export const outdoorCount = outdoorSeats;
 export { UPGRADES };
 export type { City };
+export function invest(s: GameState, b: Branch, id: string): Result { const r = buyInvest(s, b, id, levelOf(s)); return r.ok ? ok(r.m) : no(r.m); }

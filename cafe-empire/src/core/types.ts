@@ -40,11 +40,11 @@ export interface Musteri { ortSiparis: number; ortBekleme: number; hizmet: numbe
 export interface Branch {
   id: number; ad: string; city: number; tip: ShopTypeId; acilis: number; kira: number; m2: number;
   staff: Employee[]; menu: Record<ProductId, MenuItem>; stok: Record<IngId, number>; siparisler: Order[]; otoSiparis: boolean;
-  facade: Facade; hijyen: number; memnuniyet: number; marka: number; sadakat: number;
+  yat: Record<string, number>; facade: Facade; hijyen: number; memnuniyet: number; marka: number; sadakat: number;
   backlog: number; kullanim: Partial<Record<IngId, number>>; partiler: Partial<Record<IngId, Lot[]>>; minStok: Partial<Record<IngId, number>>; tedarikci: Partial<Record<IngId, string>>; malKalite: number; mus: Musteri; sonAdet: Partial<Record<ProductId, number>>; acilan: Partial<Record<ProductId, boolean>>; mesai: { aci: number; kapa: number }; ilanlar: Ilan[]; adaylar: Array<Employee & { ilan: number; son: number }>; sikayetler: Sikayet[]; reklam: ActiveAd[]; yorumlar: Review[]; yorumPuan: number;
   bugun: DayAcc; gecmis: DayReport[]; acik: boolean; kuruldu: boolean;
 }
-export interface Rival { id: number; ad: string; fiyat: number; kalite: number; reklam: number; sube: number; cesit: number; calisan: number }
+export interface Rival { id: number; ad: string; fiyat: number; kalite: number; reklam: number; sube: number; cesit: number; calisan: number; strateji?: 'ucuz' | 'kalite' | 'agresif' | 'dengeli'; kampanya?: { bit: number; indirim: number }; son?: string }
 export interface Choice { ad: string; ac: string }
 export interface Pending { id: number; tip: string; baslik: string; metin: string; ikon: string; secenek: Choice[]; city?: number; branch?: number }
 export interface Mod { v: number; bit: number }

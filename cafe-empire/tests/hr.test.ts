@@ -38,3 +38,8 @@ describe('personel ve vardiya', () => {
   it('memnuniyeti çok düşen çalışan ayrılır', () => { const s = mk(21); const b = s.subeler[0]!; const n = b.staff.length; for (const e of b.staff) { e.memnuniyet = 5; e.motivasyon = 5; } run(s, 60); expect(b.staff.length).toBeLessThan(n + 0.5); expect(s.log.some((l) => l.includes('ayrıldı')) || b.staff.length < n).toBe(true); });
   it('fazla mesai kapasiteyi uzatır ama maliyeti ve yorgunluğu artırır', () => { const s = mk(); const b = s.subeler[0]!; const e = staffOf(b, 'barista')[0]!; setShift(e, 'sabah'); setLeave(e, -1); const h0 = shiftHours(b, e); toggleOvertime(e); expect(shiftHours(b, e)).toBe(h0 + 3); expect(dateOf(0).haftaGun).toBe(0); expect(capacityAt(s, b, 12, 1, dayOf(s))).toBeGreaterThan(0); });
 });
+import { transferStaff } from '../src/core/hr';
+import { subeAc as _subeAc } from '../src/core/actions';
+describe('şubeler arası personel nakli', () => {
+  it('çalışanı taşır, masraf öder, başka şehirde motivasyon düşer', () => { const s = newGame({ ad: 'T', sehir: 26, tip: 'cadde', seed: 2, kasa: 9e6 }).s; _subeAc(s, 6, 'cadde'); const a = s.subeler[0]!, b = s.subeler[1]!; const e = a.staff[0]!, n = a.staff.length, m0 = e.memnuniyet, k = s.kasa; const r = transferStaff(s, a, b, e.id); expect(r.ok).toBe(true); expect(a.staff.length).toBe(n - 1); expect(b.staff.includes(e)).toBe(true); expect(s.kasa).toBeLessThan(k); expect(e.memnuniyet).toBeLessThan(m0); expect(transferStaff(s, a, a, e.id).ok).toBe(false); });
+});
