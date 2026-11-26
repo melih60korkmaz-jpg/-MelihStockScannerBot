@@ -139,7 +139,7 @@ function mudGunluk(s: GameState, b: Branch, musteri: number): { gelir: number; g
   for (const m of [...l]) {
     const mi = b.menu[m.urun], var_ = !!mi?.aktif, pahali = (mi?.fiyat ?? 1) > 1.2;
     m.bag = cl(m.bag + (var_ && !pahali && b.memnuniyet >= 52 ? 0.7 : 0) - (!var_ ? 1.8 : 0) - (pahali ? 0.8 : 0) - (b.memnuniyet < 45 ? 0.5 : 0) + (b.hijyen > 70 ? 0.1 : -0.1), 0, 100);
-    if (var_ && b.acik && rand(s.rng, 'misc') < m.bag / 140 && stokTuket(b, PRODUCT[m.urun].recete)) { const fiyat = sellPrice(s, b, m.urun); m.gel++; gelir += fiyat; gider += unitCost(s, m.urun, cityById(b.city)); }
+    if (var_ && b.acik && rand(s.rng, 'misc') < m.bag / 140 && stokTuket(b, PRODUCT[m.urun].recete)) { const fiyat = sellPrice(s, b, m.urun); m.gel++; d.say.mudGel = (d.say.mudGel ?? 0) + 1; gelir += fiyat; gider += unitCost(s, m.urun, cityById(b.city)); }
     if (m.bag < 4) { l.splice(l.indexOf(m), 1); yaz(s, b, `${m.ad} artık uğramıyor… (${PRODUCT[m.urun].ad} bulunmadı ya da fiyat/hizmet hoşuna gitmedi)`); }
   }
   void now; if (l.filter((m) => m.bag >= 80).length >= 3) ms(s, b, 'sadik3', 'Üç sadık müdavim: dükkân artık bir mahalle ocağı.'); return { gelir, gider };
@@ -316,7 +316,7 @@ function donumNoktalari(s: GameState, b: Branch): void {
 }
 
 /* ===================== 12) Rakip zincirler ===================== */
-export interface Kisi { id: string; ad: string; kisilik: 'agresif' | 'kalite' | 'gelenek' | 'franchise'; sehirler: number[]; guc: number; son: string; casus: number; slogan: string }
+export interface Kisi { satin?: number; id: string; ad: string; kisilik: 'agresif' | 'kalite' | 'gelenek' | 'franchise'; sehirler: number[]; guc: number; son: string; casus: number; slogan: string }
 export const KISILIK_AD = { agresif: 'Agresif fiyat', kalite: 'Kalite odaklı', gelenek: 'Geleneksel', franchise: 'Hızlı büyüme' } as const;
 const STRATEJI = { agresif: 'agresif', kalite: 'kalite', gelenek: 'dengeli', franchise: 'ucuz' } as const;
 function rakipBaslat(): Kisi[] { return [
@@ -328,6 +328,7 @@ export function casusluk(s: GameState, id: string): Res { const r = D(s).rakip.f
 function rakipGunluk(s: GameState): void {
   const d = D(s), now = dayOf(s); if (!s.subeler.length || now < 20) return;
   for (const r of d.rakip) {
+    if (r.satin) continue;
     if (rand(s.rng, 'rivals') < 0.012 * ZORLUK[d.zorluk].rakip * r.guc * (r.kisilik === 'franchise' ? 1.6 : 1) && r.sehirler.length < 30) {
       const sehirler = [...new Set(s.subeler.map((b) => b.city))], hedef = rand(s.rng, 'rivals') < 0.7 ? sehirler[Math.floor(rand(s.rng, 'rivals') * sehirler.length)]! : -1; if (hedef < 0 || r.sehirler.includes(hedef)) continue;
       const c = cityById(hedef), rv = (s.rakipler[hedef] ??= []), x = newRival(s, c); x.ad = `${r.ad} ${c.ad}`; x.strateji = STRATEJI[r.kisilik]; x.kalite = r.kisilik === 'kalite' ? 3 : 2; x.fiyat = r.kisilik === 'agresif' ? 0.82 : r.kisilik === 'kalite' ? 1.18 : 1; x.sube = 1 + (r.kisilik === 'franchise' ? 1 : 0); rv.push(x); r.sehirler.push(hedef); r.guc = Math.min(2.5, r.guc + 0.05);
@@ -347,6 +348,10 @@ export const zaferTamam = (s: GameState): boolean => zaferMaddeleri(s).every((m)
 /* ===================== Durum ===================== */
 export interface TedIliski { sad: number; harc: number; son: number; soz?: { bas: number; bit: number; hedef: number; harc: number } }
 export interface Derin {
+  yat?: import('./yatirim').Yat;
+  pilot?: Record<string, import('./sezon').Pilot>;
+  donem?: import('./donem').DonemDurum;
+  gun90?: Array<import('./analiz').GunKayit>;
   cek: { ana: string; ikinci: string | null; oran: number; kavurma: 0 | 1 | 2; ad: string; gecis: number };
   tarif: Tarif[]; imza: number | null; usta: Record<number, Usta>; sam: Array<{ yil: number; ad: string; derece: number }>;
   mud: Record<number, Mudavim[]>; esnaf: Record<number, Record<string, number>>; ortak: Record<number, Record<string, number>>; hik: Record<number, string[]>;

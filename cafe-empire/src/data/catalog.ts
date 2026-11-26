@@ -23,13 +23,14 @@ export const INGREDIENTS: IngDef[] = [
 export const ING: Record<IngId, IngDef> = Object.fromEntries(INGREDIENTS.map((i) => [i.id, i])) as Record<IngId, IngDef>;
 
 /* ---------- Ürünler ---------- */
-export type ProductId = 'espresso' | 'americano' | 'latte' | 'cappuccino' | 'mocha' | 'filtre' | 'turk' | 'soguk' | 'frappe' | 'coldbrew' | 'kruvasan' | 'cheesecake' | 'brownie' | 'kurabiye' | 'sandvic' | 'tost' | 'pasta' | 'pogaca' | 'tatli' | 'cay' | 'kek' | 'flatwhite' | 'macchiato' | 'cortado' | 'icedlatte' | 'v60' | 'dibek' | 'sahlep';
+export type ProductId = 'espresso' | 'americano' | 'latte' | 'cappuccino' | 'mocha' | 'filtre' | 'turk' | 'soguk' | 'frappe' | 'coldbrew' | 'kruvasan' | 'cheesecake' | 'brownie' | 'kurabiye' | 'sandvic' | 'tost' | 'pasta' | 'pogaca' | 'tatli' | 'cay' | 'kek' | 'flatwhite' | 'macchiato' | 'cortado' | 'icedlatte' | 'v60' | 'dibek' | 'sahlep' | 'sicakcik' | 'kestane' | 'limonata' | 'buzlucay' | 'sevgilipasta' | 'yilbasi';
 export type Aff = [number, number, number, number, number]; // ogr, cal, tur, aile, emk
 export interface ProductDef {
   id: ProductId; ad: string; ikon: string; kat: 'kahve' | 'yiyecek'; fiyat: number; recete: Partial<Record<IngId, number>>;
   sure: number;        // hazırlama süresi (sn)
   talep: number;       // baz popülerlik 0–1
   aff: Aff; sicak?: boolean; soguk?: boolean; seviye: number; kurulum: number;
+  sezon?: number[];    // yalnız bu aylarda yüksek talep (0 = Ocak); dışında düşük
 }
 const c = (bean: number, extra: Partial<Record<IngId, number>> = {}): Partial<Record<IngId, number>> => ({ bean, cup: 1, lid: 1, napkin: 1, ...extra });
 export const PRODUCTS: ProductDef[] = [
@@ -61,6 +62,12 @@ export const PRODUCTS: ProductDef[] = [
   { id: 'dibek', ad: 'Dibek kahvesi', ikon: '☕', kat: 'kahve', fiyat: 80, recete: { bean: 10, sugar: 5, cup: 1, napkin: 1 }, sure: 75, talep: 0.35, aff: [.6, .8, 1.6, .7, 1.4], sicak: true, seviye: 2, kurulum: 8000 },
   { id: 'sahlep', ad: 'Sahlep', ikon: '🥣', kat: 'kahve', fiyat: 90, recete: { milk: 200, sugar: 12, syrup: 10, cup: 1, napkin: 1 }, sure: 40, talep: 0.4, aff: [1, .9, 1.2, 1.3, 1.3], sicak: true, seviye: 2, kurulum: 12000 },
   { id: 'tatli', ad: 'Sütlü tatlı', ikon: '🍮', kat: 'yiyecek', fiyat: 90, recete: { milk: 200, sugar: 25, raw: 30, napkin: 1, pack: 1 }, sure: 10, talep: 0.4, aff: [.9, .8, 1.2, 1.4, 1.4], seviye: 2, kurulum: 12000 },
+  { id: 'sicakcik', ad: 'Sıcak çikolata', ikon: '🍫', kat: 'kahve', fiyat: 95, recete: { milk: 220, choc: 40, sugar: 8, cup: 1, lid: 1, napkin: 1 }, sure: 40, talep: 0.5, aff: [1.3, .8, 1.1, 1.5, 1], sicak: true, seviye: 1, kurulum: 6000, sezon: [9, 10, 11, 0, 1, 2] },
+  { id: 'kestane', ad: 'Kestane latte', ikon: '🌰', kat: 'kahve', fiyat: 125, recete: c(18, { milk: 180, syrup: 18 }), sure: 55, talep: 0.4, aff: [1.2, 1.2, 1.3, 1, .8], sicak: true, seviye: 2, kurulum: 9000, sezon: [8, 9, 10, 11] },
+  { id: 'limonata', ad: 'Ev limonatası', ikon: '🍋', kat: 'kahve', fiyat: 70, recete: { syrup: 45, sugar: 15, cup: 1, lid: 1, napkin: 1 }, sure: 20, talep: 0.6, aff: [1.6, 1, 1.5, 1.3, .6], soguk: true, seviye: 1, kurulum: 4000, sezon: [4, 5, 6, 7, 8] },
+  { id: 'buzlucay', ad: 'Şeftalili buzlu çay', ikon: '🧊', kat: 'kahve', fiyat: 75, recete: { tea: 8, syrup: 25, sugar: 8, cup: 1, lid: 1, napkin: 1 }, sure: 20, talep: 0.55, aff: [1.5, 1.1, 1.4, 1.2, .7], soguk: true, seviye: 1, kurulum: 5000, sezon: [5, 6, 7, 8] },
+  { id: 'sevgilipasta', ad: 'Sevgililer pastası', ikon: '💝', kat: 'yiyecek', fiyat: 150, recete: { flour: 50, raw: 90, choc: 30, sugar: 25, napkin: 1, pack: 1 }, sure: 15, talep: 0.5, aff: [1.2, 1, 1.5, 1.4, .8], seviye: 2, kurulum: 8000, sezon: [1] },
+  { id: 'yilbasi', ad: 'Yılbaşı kurabiyesi', ikon: '🎄', kat: 'yiyecek', fiyat: 60, recete: { flour: 40, raw: 25, sugar: 20, choc: 10, pack: 1 }, sure: 10, talep: 0.5, aff: [1.1, 1, 1.2, 1.5, 1.2], seviye: 1, kurulum: 4000, sezon: [11] },
 ];
 export const PRODUCT: Record<ProductId, ProductDef> = Object.fromEntries(PRODUCTS.map((p) => [p.id, p])) as Record<ProductId, ProductDef>;
 

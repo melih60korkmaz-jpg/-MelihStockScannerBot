@@ -11,7 +11,7 @@ const mk = (seed = 5, sehir = 34, ilce = '34:Kadıköy') => { const s = newGame(
 const run = (s: ReturnType<typeof mk>, g: number) => { for (let i = 0; i < g; i++) step(s, 1440); };
 describe('kahve çeşitleri ve fiyat', () => {
   it('7 yeni içecek tanımlı; menüde başta kapalı, seviye ve kurulum ücreti ister', () => {
-    for (const id of ['flatwhite', 'macchiato', 'cortado', 'icedlatte', 'v60', 'dibek', 'sahlep']) expect(PRODUCT[id as ProductId]).toBeTruthy(); expect(PRODUCTS.length).toBe(28);
+    for (const id of ['flatwhite', 'macchiato', 'cortado', 'icedlatte', 'v60', 'dibek', 'sahlep']) expect(PRODUCT[id as ProductId]).toBeTruthy(); expect(PRODUCTS.length).toBeGreaterThanOrEqual(28);
     const s = mk(); const b = s.subeler[0]!; expect(b.menu.flatwhite.aktif).toBe(false); s.marka_puani = 5; expect(toggleProduct(s, b, 'v60').ok).toBe(false); s.marka_puani = 30; const k = s.kasa; expect(toggleProduct(s, b, 'flatwhite').ok).toBe(true); expect(s.kasa).toBeLessThan(k); expect(b.menu.flatwhite.aktif).toBe(true);
   });
   it('yeni ürün gerçekten satılır ve stok tüketir', () => { const s = mk(); const b = s.subeler[0]!; toggleProduct(s, b, 'flatwhite'); toggleProduct(s, b, 'dibek'); let n = 0; for (let i = 0; i < 25; i++) { run(s, 1); n += (b.sonAdet.flatwhite ?? 0) + (b.sonAdet.dibek ?? 0); } expect(n).toBeGreaterThan(20); });

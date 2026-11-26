@@ -23,7 +23,7 @@ export const sozlesmeHedef = (s: GameState): number => Math.round(80000 * s.mark
 export function tedIndirim(s: GameState, city: number, id: string): number { const r = D(s).ted[anahtar(city, id)]; if (!r) return 0; return tedSeviye(r.sad).ind + (r.soz && r.soz.bit > dayOf(s) ? SOZ_INDIRIM : 0); }
 tedHook.fiyat = (s, b, id) => 1 - tedIndirim(s, b.city, id);
 tedHook.guven = (s, b, id) => { const r = D(s).ted[anahtar(b.city, id)]; return r ? tedSeviye(r.sad).guv : 0; };
-tedHook.siparis = (s, b, id, tutar) => { const r = iliski(s, b.city, id); r.harc += tutar; r.son = dayOf(s); r.sad = Math.min(100, r.sad + Math.min(2.5, tutar / (25000 * s.market.fiyat))); if (r.soz && r.soz.bit > dayOf(s)) r.soz.harc += tutar; };
+tedHook.siparis = (s, b, id, tutar) => { D(s).say.ted = (D(s).say.ted ?? 0) + 1; const r = iliski(s, b.city, id); r.harc += tutar; r.son = dayOf(s); r.sad = Math.min(100, r.sad + Math.min(2.5, tutar / (25000 * s.market.fiyat))); if (r.soz && r.soz.bit > dayOf(s)) r.soz.harc += tutar; };
 tedHook.teslim = (s, b, id, sorun) => { if (!sorun) return; const r = D(s).ted[anahtar(b.city, id)]; if (r) r.sad = Math.max(0, r.sad - 1.5); };
 export interface Res { ok: boolean; m: string }
 export function tedZiyaret(s: GameState, city: number, id: string): Res {

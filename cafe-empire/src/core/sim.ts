@@ -143,7 +143,7 @@ function processCustomer(s: GameState, b: Branch, ev: SimEvent[], c: City): void
       for (const p of PRODUCTS) {
         if ((p.kat === 'yiyecek') !== food) continue; if (!productAvailable(b, p, lv)) continue; const mi = b.menu[p.id];
         const pr = mi.fiyat * (ae.indirim ? 0.9 : 1) * (rivalAv > 0 ? Math.pow(1 / rivalAv, 0.25) : 1), month = dateOf(dayOf(s)).ay, yaz = month >= 5 && month <= 8, kis = month <= 1 || month === 11;
-        const sez = p.soguk ? (yaz ? 1.9 : kis ? 0.35 : 1) : p.sicak ? (yaz ? 0.85 : kis ? 1.2 : 1) : 1;
+        const sez = (p.soguk ? (yaz ? 1.9 : kis ? 0.35 : 1) : p.sicak ? (yaz ? 0.85 : kis ? 1.2 : 1) : 1) * (p.sezon ? (p.sezon.includes(month) ? 1.6 : 0.12) : 1);
         const w = p.talep * p.aff[SEG_KEYS.indexOf(seg)]! * sez * Math.exp(-eks * (pr - 1)) * (0.85 + 0.15 * mi.kalite) * (pr0(b).gunun === p.id && pr0(b).gununGun === dayOf(s) ? 1.5 : 1);
         cand.push([p, w]); tot += w;
       }

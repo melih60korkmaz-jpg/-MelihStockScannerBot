@@ -4,8 +4,13 @@ import { suppliersOf } from '../core/supply';
 import { dayOf } from '../core/calendar';
 import { TED_SEVIYE, iliski, tedSeviye, tedIndirim, tedZiyaret, tedSozlesme, sozlesmeHedef, SOZ_GUN, SOZ_INDIRIM } from '../core/tedarik2';
 import { NEDENLER, yorumYanit } from '../core/yorum';
+import { D } from '../core/derin';
 import { fmt, type Result } from '../core/actions';
 import { ctx, cur, esc, bar, tr, bchips, S as getS, type Helpers } from './panels';
+import { pGrafik, handleGrafik } from './grafik';
+import { DONEM_PAGES, handleDonem } from './donem';
+import { pSezon, handleSezon } from './sezon';
+import { pYatirim, handleYatirim } from './yatirim';
 import { kamyon, muteri, hareketli } from './art';
 
 const RENK: Record<string, string> = { yerel: '#3aa89a', eko: '#d98a3a', premium: '#7a5cd6' };
@@ -26,11 +31,12 @@ export function pYorumlar(): string {
   <div class="cardx"><b>😍 Övgü nedenleri</b>${poz.length ? poz.map(([id, x]) => { const nd = NEDENLER[id]!; return `<div class="row small" style="margin-top:4px"><span>${hareketli(nd.ik)} ${nd.ad}</span><b>${x.pozitif}</b></div>`; }).join('') : '<div class="small muted" style="margin-top:6px">Henüz övgü yok.</div>'}</div></div>
   <div class="duoR"><div class="cardx"><b>💬 Son yorumlar</b>${l.slice(0, 12).map((r, i) => { const nd = r.neden ? NEDENLER[r.neden] : undefined; return `<div class="art" style="margin-top:8px;align-items:flex-start"><div style="width:40px;flex:0 0 40px">${muteri(r.kim + r.gun, r.yildiz >= 4 ? 80 : 40, 38)}</div><div style="flex:1"><div class="row small"><b>${esc(r.kim)}</b><span style="color:var(--am)">${YILDIZ(r.yildiz)}</span></div><div class="small">${esc(r.metin)}</div><div class="row"><span class="tiny muted">${nd ? `${nd.ik} ${nd.ad} · ` : ''}${dayOf(s) - r.gun} gün önce</span>${r.yanit ? '<span class="tiny good">✓ yanıtlandı</span>' : `<button class="btn sm" data-a="yorumYanit" data-i="${i}">Yanıtla</button>`}</div></div></div>`; }).join('') || '<div class="small muted" style="margin-top:6px">Henüz yorum yok.</div>'}</div></div></div>`;
 }
-export const DERIN2_PAGES: Record<string, () => string> = { tedil: pTedIl, yorumlar: pYorumlar };
+export const DERIN2_PAGES: Record<string, () => string> = { tedil: pTedIl, yorumlar: pYorumlar, grafik: pGrafik, sezon: pSezon, yatirim: pYatirim, ...DONEM_PAGES };
 export function handleDerin2(a: string, d: DOMStringMap, h: Helpers): boolean {
   const s = getS(), R = (r: Result | { ok: boolean; m: string }): boolean => { h.res(r as Result); h.refresh(); return true; };
+  if (handleGrafik(a, d, h) || handleDonem(a, d, h) || handleSezon(a, d, h) || handleYatirim(a, d, h)) return true;
   switch (a) {
-    case 'tedZiyaret': return R(tedZiyaret(s, cur().city, d.id!)); case 'tedSoz': return R(tedSozlesme(s, cur().city, d.id!)); case 'yorumYanit': return R(yorumYanit(cur(), +d.i!));
+    case 'tedZiyaret': return R(tedZiyaret(s, cur().city, d.id!)); case 'tedSoz': return R(tedSozlesme(s, cur().city, d.id!)); case 'yorumYanit': { const r = yorumYanit(cur(), +d.i!); if (r.ok) D(s).say.yanit = (D(s).say.yanit ?? 0) + 1; return R(r); }
     default: return false;
   }
 }
