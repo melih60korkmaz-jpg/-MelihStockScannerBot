@@ -10,7 +10,7 @@ const fails = []; const ok = (c, m) => { if (!c) fails.push(m); console.log((c ?
   const bad = () => ev(() => { const e = document.getElementById('page'); const m = e.innerText.match(/NaN|undefined|\[object|Infinity/); return { bad: m ? m[0] : '', len: e.innerText.length, ow: document.documentElement.scrollWidth > innerWidth + 2 }; });
   console.log('Kurulum ve şubesiz başlangıç'); await p.goto(URL); await p.click('#yeni'); await p.waitForTimeout(300); await p.click('#basla'); await p.waitForTimeout(500); await p.click('#tX');
   const s0 = await ev(() => ({ n: window.__app.S.subeler.length, kasa: window.__app.S.kasa, il: Object.keys(window.__app.S.bolge.il), g: document.querySelectorAll('.nav [data-g]').length }));
-  ok(s0.n === 0 && s0.kasa === 2000000 && s0.il.join() === '34', 'şubesiz, 2 M ₺, yalnız İstanbul açık'); ok(s0.g === 10, 'altta 10 sekme');
+  ok(s0.n === 0 && s0.kasa === 2000000 && s0.il.join() === '34', 'şubesiz, 2 M ₺, yalnız İstanbul açık'); ok(s0.g === 4, 'başlangıçta altta 4 sekme (kademeli açılma)');
   for (const t of ['ana', 'harita', 'subeler', 'online', 'stok', 'tedarik', 'sosyal', 'reklam', 'prestij', 'hedefler', 'iller', 'siralama', 'banka', 'finans', 'ekonomi', 'rapor', 'ayar', 'cek', 'tarif', 'fuar', 'rakipler']) { await tab(t); const r = await bad(); ok(r.len > 60 && !r.bad && !r.ow, `şubesiz sayfa ${t}: boş değil, NaN yok`); }
   console.log('Harita → ilan → Kirala ve kur'); await tab('harita'); await ev(() => document.querySelector('path[data-il="34"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))); await p.waitForTimeout(1200);
   ok((await ev(() => document.querySelectorAll('path.ilce').length)) === 39, 'İstanbul 39 ilçe haritada');

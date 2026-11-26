@@ -5,7 +5,7 @@ import { LEVELS } from '../data/catalog';
 import { newGame, fmt, type Result } from '../core/actions';
 import { step, dateText, timeText, dayOf, levelOf, resolveEvent } from '../core/sim';
 import { oyunDakikasi } from '../core/pace';
-import { save, load, wipe } from '../core/save';
+import { save, load, wipe, kurtar } from '../core/save';
 import { NAT_VB, type VB } from './map';
 import type { GameState } from '../core/types';
 import { startAudio, setAudio, sfx, stopAudio } from './audio';
@@ -13,6 +13,10 @@ import { BASARIM } from '../core/goals';
 import { ctx, cur, esc as _esc, NAV, GRUPLAR, grupOf, PANELS, LIVE_TABS, handle, isBranchTab } from './panels';
 import { handleDerin } from './derin';
 import { handleDerin2 } from './derin2';
+import { handleYonet, KARAR_ETIKET, gorunurGruplar, altSekmeler, acilisKontrol, yeniGrup } from './yonet';
+import { kararKaydet, Kd } from '../core/karar';
+import { yolKontrol } from '../core/rehber';
+import '../core/kademe';
 import { ZORLUK } from '../core/derin';
 import { confetti } from './juice';
 import { PAGES, handlePages, kurHtml, kisa, BOS_UYARI } from './pages';
@@ -68,7 +72,7 @@ function ipucu(): void {
 function sekmeAc(tab: string): void { TAB = tab; sonSekme[grupOf(tab).id] = tab; ctx.anim = true; sfx.tick(); if (tab === 'harita') newOpp = false; nav(); page(false); const pg = $('#page'); pg.classList.remove('gecis'); void pg.offsetWidth; pg.classList.add('gecis'); setTimeout(() => pg.classList.remove('gecis'), 350); tourEvent('tab', tab); }
 function nav(): void {
   const gt = grupOf(TAB).id;
-  $('#nav').innerHTML = GRUPLAR.map((g) => `<button data-g="${g.id}" class="${gt === g.id ? 'on' : ''}" style="--c:${g.renk}"><i>${g.ik}</i><span>${g.ad}</span>${g.id === 'harita' && newOpp && TAB !== 'harita' ? '<u class="dot"></u>' : ''}</button>`).join('');
+  if (yeniGrup.has(gt)) yeniGrup.delete(gt); $('#nav').innerHTML = gorunurGruplar(S!).map((g) => `<button data-g="${g.id}" class="${gt === g.id ? 'on' : ''}" style="--c:${g.renk}"><i>${g.ik}</i><span>${g.ad}</span>${(g.id === 'harita' && newOpp && TAB !== 'harita') || yeniGrup.has(g.id) ? '<u class="dot"></u>' : ''}</button>`).join('');
   $('#nav').querySelectorAll<HTMLElement>('[data-g]').forEach((b) => { b.onclick = () => { const g = GRUPLAR.find((x) => x.id === b.dataset.g)!; sekmeAc(sonSekme[g.id] ?? g.tabs[0]!); }; });
   queueMicrotask(ipucu);
 }
@@ -85,7 +89,7 @@ function loop(dt: number): void {
 }
 /** Seviye/komşuluk şartı sağlanan yeni pazarları bildirir (zamanla gelişen harita). */
 function checkOpportunities(): void {
-  if (!S) return; const yeniB = Object.keys(S.basarim).filter((k) => !lastAch.has(k)); if (yeniB.length) { lastAch = new Set(Object.keys(S.basarim)); sfx.ach(); confetti(50); toast(`🏆 Başarım: ${yeniB.map((k) => BASARIM[k]?.ad ?? k).join(', ')}`); if (TAB === 'hedefler') page(true); } const lv = levelOf(S), now = new Set(CITIES.filter((c) => ilDurum(S!, c.id, lv).d === 'satilik').map((c) => c.id));
+  if (!S) return; const ac = acilisKontrol(S); if (ac.length) { sfx.unlock(); toast(`🔓 Yeni sistem açıldı: ${ac.slice(0, 3).join(', ')}${ac.length > 3 ? ' +' + (ac.length - 3) : ''}`); nav(); if (TAB === 'ana') page(true); } const yol = yolKontrol(S); if (yol.length) { sfx.ach(); confetti(30); toast(`🧭 Yol haritası: ${yol.join(', ')}`); if (TAB === 'ana') page(true); } const kd = Kd(S); if (kd.yeni.length) { toast(kd.yeni[0]!); kd.yeni.length = 0; if (TAB === 'ana') page(true); } const yeniB = Object.keys(S.basarim).filter((k) => !lastAch.has(k)); if (yeniB.length) { lastAch = new Set(Object.keys(S.basarim)); sfx.ach(); confetti(50); toast(`🏆 Başarım: ${yeniB.map((k) => BASARIM[k]?.ad ?? k).join(', ')}`); if (TAB === 'hedefler') page(true); } const lv = levelOf(S), now = new Set(CITIES.filter((c) => ilDurum(S!, c.id, lv).d === 'satilik').map((c) => c.id));
   if (known.size === 0 && S.subeler.length && dayOf(S) < 2) { known = now; return; }
   const yeni = [...now].filter((id) => !known.has(id)); known = now;
   if (yeni.length) { newOpp = true; nav(); toast(yeni.length > 8 ? `🇹🇷 Ulusal zincir oldun: ${yeni.length} ilin pazarı artık açılabilir!` : `🗺️ Yeni pazar fırsatı: ${yeni.slice(0, 3).map((id) => cityById(id).ad).join(', ')}${yeni.length > 3 ? ' +' + (yeni.length - 3) : ''}`); }
@@ -135,8 +139,8 @@ const FIT = new Set(['harita']);
 function page(keep: boolean): void {
   if (!S) return; const el = $('#page'); const sc = keep ? el.querySelector<HTMLElement>('.pb')?.scrollTop ?? 0 : 0, nm = NAV.find((n) => n[0] === TAB)!; ctx.S = S;
   const body = isBranchTab(TAB) && !S.subeler.length ? BOS_UYARI(TAB) : (ALL[TAB] ?? ALL.ana!)(); const wasAnim = ctx.anim; ctx.anim = false;
-  const gr = grupOf(TAB), alt = gr.tabs.length > 1 ? `<div class="subtabs">${gr.tabs.map((id) => { const n = NAV.find((x) => x[0] === id)!; return `<button data-n="${id}" class="${id === TAB ? 'on' : ''}">${n[1]} ${n[2]}</button>`; }).join('')}</div>` : '';
-  el.innerHTML = `${alt}<div class="pb ${FIT.has(TAB) ? 'fit' : 'cols'}" data-tab="${TAB}">${body}</div>`; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); queueMicrotask(ipucu); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); if (wasAnim) animateCounters(pb); void nm;
+  const gr = grupOf(TAB), alt = altSekmeler(S, gr, TAB);
+  el.innerHTML = `${alt}<div class="pb ${FIT.has(TAB) ? 'fit' : 'cols'}" data-tab="${TAB}">${body}</div>`; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); el.querySelectorAll<HTMLElement>('.subtabs [data-lock]').forEach((b) => { b.onclick = () => act('kilit', { id: b.dataset.lock! }); }); queueMicrotask(ipucu); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); if (wasAnim) animateCounters(pb); void nm;
 }
 function animateCounters(pb: HTMLElement): void {
   const els = [...pb.querySelectorAll<HTMLElement>('.cnt')]; if (!els.length) return; const t0 = performance.now(), ease = (t: number): number => 1 - Math.pow(1 - t, 3);
@@ -157,11 +161,11 @@ function act(a: string, d: DOMStringMap): void {
   if (!S) return; ctx.S = S;
   const h = {
     zoom: (vb: VB, done?: () => void) => zoomTo(vb, () => { done?.(); page(true); }),
-    res: (r: Result) => { toast(r.m); if (r.ok) { if (['ilac', 'ilceac', 'sube', 'frver', 'merkez', 'invest', 'gel', 'kur_ac2', 'platKatil'].includes(a)) sfx.unlock(); else if (['kredi', 'siparis', 'ad', 'bonus', 'banka', 'paylas'].includes(a)) sfx.coin(); else sfx.tick(); } else sfx.err(); save(S!); page(true); hud(); tourEvent('act', a); },
+    res: (r: Result) => { toast(r.m); if (r.ok && KARAR_ETIKET[a]) kararKaydet(S!, KARAR_ETIKET[a]!, ctx.bid); if (r.ok) { if (['ilac', 'ilceac', 'sube', 'frver', 'merkez', 'invest', 'gel', 'kur_ac2', 'platKatil'].includes(a)) sfx.unlock(); else if (['kredi', 'siparis', 'ad', 'bonus', 'banka', 'paylas'].includes(a)) sfx.coin(); else sfx.tick(); } else sfx.err(); save(S!); page(true); hud(); tourEvent('act', a); },
     toast, refresh: () => page(true), show: () => { hud(); }, go: (t: string) => { sekmeAc(t); tour(); },
     save: () => save(S!), exit: () => { save(S!); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); }, wipe: () => { wipe(); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); }, kurYenile,
   };
-  if (handlePages(a, d, h) || handleDerin(a, d, h) || handleDerin2(a, d, h)) { return; }
+  if (handlePages(a, d, h) || handleDerin(a, d, h) || handleDerin2(a, d, h) || handleYonet(a, d, h)) { return; }
   handle(a, d, h);
   if (a === 'bsel') { hud(); page(true); }
 }
@@ -172,4 +176,4 @@ function yonKontrol(): void {
   if (dikey) { hizEski = S.hiz || 1; S.hiz = 0; } else { S.hiz = hizEski; spdBar(); }
 }
 function yatayKilit(): void { try { void (screen.orientation as unknown as { lock?: (o: string) => Promise<void> }).lock?.('landscape')?.catch(() => 0); } catch { /* desteklenmiyor */ } }
-export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); title(); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, openTab: (t: string) => sekmeAc(t) }; }
+export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); void kurtar().catch(() => false).finally(() => title()); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, openTab: (t: string) => sekmeAc(t) }; }

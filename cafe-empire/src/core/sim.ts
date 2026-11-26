@@ -233,7 +233,7 @@ function dailyClose(s: GameState, ev: SimEvent[]): void {
   for (const r of rpts) { for (const k of Object.keys(r.gelir) as Array<keyof DayReport['gelir']>) toplam.gelir[k] += r.gelir[k]; for (const k of Object.keys(r.gider) as Array<keyof DayReport['gider']>) toplam.gider[k] += r.gider[k]; toplam.musteri += r.musteri; toplam.kayip += r.kayip; toplam.alim += r.alim; toplam.memnuniyet += r.memnuniyet / Math.max(1, rpts.length); }
   for (const f of hooks.gunOnce) f(s, toplam);
   toplam.capex = s.capexBugun; s.capexBugun = 0;
-  toplam = finalize(toplam); s.rapor.push(toplam); if (s.rapor.length > 800) s.rapor.shift(); for (const f of hooks.gunSonu) f(s); s.ayKar += toplam.kar; s.ayGelir += toplam.toplamGelir;
+  toplam = finalize(toplam); s.rapor.push(toplam); if (s.rapor.length > 540) s.rapor.shift(); for (const f of hooks.gunSonu) f(s); s.ayKar += toplam.kar; s.ayGelir += toplam.toplamGelir;
   // ay sonu geliri vergisi
   const d = dateOf(dayOf(s)); if (d.ayGun === 1) { const vergi = Math.max(0, s.ayKar) * 0.10; s.kasa -= vergi; s.ayKar = 0; s.ayGelir = 0; s.log.unshift(`Ay sonu gelir vergisi ödendi: ${Math.round(vergi)} ₺`); s.log = s.log.slice(0, 40); }
   s.kasa += toplam.toplamGelir; s.borc *= 1 + (s.faiz ?? 0.002);   // borç faizi (günlük ≈ yıllık %70 değil: aylık %6'dan düşük)

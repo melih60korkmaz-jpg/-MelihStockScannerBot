@@ -19,6 +19,21 @@ export function migrate(s: GameState): GameState {
   return s;
 }
 export function deserialize(j: string): GameState { const s = JSON.parse(j) as GameState; if (!s || s.v !== 1 || !Array.isArray(s.subeler)) throw new Error('bozuk kayıt'); return migrate(s); }
-export function save(s: GameState): boolean { try { localStorage.setItem(KEY, serialize(s)); return true; } catch { return false; } }
-export function load(): GameState | null { try { const j = localStorage.getItem(KEY); return j ? deserialize(j) : null; } catch { return null; } }
-export function wipe(): void { try { localStorage.removeItem(KEY); } catch { /* yok say */ } }
+/* ---- Çift katmanlı kayıt: localStorage + IndexedDB yedeği (depolama doluluğu / temizlenme durumunda kurtarır) ---- */
+let yedekJson: string | null = null;   // localStorage yazılamazsa bellekte tutulan son geçerli kayıt
+const DB_AD = 'cafe-empire', DB_DEPO = 'kv';
+function idb(): Promise<IDBDatabase | null> {
+  return new Promise((ok) => { try { if (typeof indexedDB === 'undefined') return ok(null); const r = indexedDB.open(DB_AD, 1); r.onupgradeneeded = () => { r.result.createObjectStore(DB_DEPO); }; r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); r.onblocked = () => ok(null); } catch { ok(null); } });
+}
+async function idbYaz(json: string): Promise<void> { const db = await idb(); if (!db) return; try { const tx = db.transaction(DB_DEPO, 'readwrite'); tx.objectStore(DB_DEPO).put(json, 'kayit'); await new Promise<void>((ok) => { tx.oncomplete = () => ok(); tx.onerror = () => ok(); tx.onabort = () => ok(); }); } catch { /* yok say */ } db.close(); }
+async function idbOku(): Promise<string | null> { const db = await idb(); if (!db) return null; try { const tx = db.transaction(DB_DEPO, 'readonly'), r = tx.objectStore(DB_DEPO).get('kayit'); const v = await new Promise<unknown>((ok) => { r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }); db.close(); return typeof v === 'string' ? v : null; } catch { db.close(); return null; } }
+async function idbSil(): Promise<void> { const db = await idb(); if (!db) return; try { const tx = db.transaction(DB_DEPO, 'readwrite'); tx.objectStore(DB_DEPO).delete('kayit'); await new Promise<void>((ok) => { tx.oncomplete = () => ok(); tx.onerror = () => ok(); tx.onabort = () => ok(); }); } catch { /* yok say */ } db.close(); }
+const dkOf = (j: string | null): number => { try { const o = j ? (JSON.parse(j) as { dk?: number; v?: number; subeler?: unknown }) : null; return o && o.v === 1 && Array.isArray(o.subeler) ? (o.dk ?? 0) : -1; } catch { return -1; } };
+export function save(s: GameState): boolean { const j = serialize(s); yedekJson = j; let ok = false; try { localStorage.setItem(KEY, j); ok = true; } catch { /* kota dolu olabilir */ } void idbYaz(j); return ok; }
+export function load(): GameState | null { try { const j = localStorage.getItem(KEY) ?? yedekJson; return j ? deserialize(j) : null; } catch { try { return yedekJson ? deserialize(yedekJson) : null; } catch { return null; } } }
+/** Açılışta çağrılır: IndexedDB yedeği localStorage'dan yeniyse (ya da localStorage boşsa) onu kullanır. */
+export async function kurtar(): Promise<boolean> {
+  const ls = (() => { try { return localStorage.getItem(KEY); } catch { return null; } })(), yd = await idbOku(), a = dkOf(ls), b = dkOf(yd);
+  if (b > a) { yedekJson = yd; try { localStorage.setItem(KEY, yd!); } catch { /* bellekten yüklenir */ } return true; } return false;
+}
+export function wipe(): void { yedekJson = null; try { localStorage.removeItem(KEY); } catch { /* yok say */ } void idbSil(); }

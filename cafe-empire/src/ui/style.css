@@ -275,3 +275,17 @@ html,body{background:var(--bg)}
 .tambur .don{animation:donus 3s linear infinite}.tambur .duman,.telefon .bild{animation:buhar 2.6s ease-in-out infinite}.telefon .bild{animation:bildir 3s ease-in-out infinite}@keyframes bildir{0%,100%{opacity:.4;transform:translateX(-3px)}50%{opacity:1;transform:none}}
 .kuryes{animation:surus 3s ease-in-out infinite}@keyframes surus{0%,100%{transform:translateX(-4px)}50%{transform:translateX(4px)}}.kuryes .tek{transform-box:fill-box;transform-origin:center;animation:donus .9s linear infinite}
 .gazete{animation:yuz 3.5s ease-in-out infinite}.evs,.kalkan{animation:yuz 4s ease-in-out infinite}.yaprak .zip2{animation:zip 2s ease-in-out infinite}
+
+/* Yönetim hissi */
+.subtabs button.lock{opacity:.5;border-style:dashed;color:var(--mu)}.oner .art{align-items:center}.cardx.oner{border-color:rgba(255,212,92,.55)}
+.nav button .dot{animation:nabiz 1.4s infinite}
+/* Denetim düzeltmeleri: çok sütunlu akış yatay taşıyordu → tek sütun (dikey kaydırma); dokunma hedefleri büyütüldü */
+.pb.cols{column-width:auto!important;columns:auto!important;display:block}
+.pb.cols>.card,.pb.cols>.eyebrow,.pb.cols>.cardx:not(.zafer),.pb.cols>.row,.pb.cols>.rows,.pb.cols>.legend,.pb.cols>.chiprow,.pb.cols>.mapbox{max-width:780px;margin-left:auto;margin-right:auto}
+.btn.sm,.cx,.innertabs button,.subtabs button{min-height:36px}.btn.sm,.cx{padding-top:6px;padding-bottom:6px}
+.stp button,.stp2 button{min-width:36px;min-height:36px}
+.btn,.ybtn{touch-action:manipulation}button{-webkit-tap-highlight-color:transparent}
+
+.oneb{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;border-radius:14px;background:linear-gradient(135deg,#3a2616,#16282f);border:1px solid rgba(255,212,92,.5);animation:nabiz 2.4s ease-in-out infinite}
+.oneb i{font-style:normal;font-size:26px;flex:0 0 auto}.oneb span{flex:1;min-width:0;display:block}.oneb small{display:block;font-size:9.5px;letter-spacing:1px;color:var(--am)}.oneb b{display:block;font-size:14px}.oneb em{display:block;font-style:normal;font-size:11.5px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.oneb .btn{flex:0 0 auto}
+.oneb.slim{background:rgba(255,255,255,.03);border-color:var(--line);animation:none;margin-top:6px;padding:6px 10px}.oneb.slim i{font-size:20px}.oneb.slim b{font-size:13px}
