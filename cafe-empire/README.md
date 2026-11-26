@@ -23,6 +23,7 @@ Kural: **iç mekân yoktur** — kamera daima dükkânı dışarıdan gösterir.
 | Müşteri metrikleri (sepet, bekleme, tekrar, sadakat, kayıp nedenleri), reklam (10 tür incl. ikinci/paket), işletme geliştirme (8 ekipman/operasyon yatırımı: kapasite, kalite, raf ömrü, enerji, marka) | ✅ |
 | Rakipler: strateji, kampanya, tahmini pazar payı | ⚠️ pazar payı tahmini bir modeldir; rakipler tek tek şehre bağlı |
 | Türkiye haritasında il ve ilçeleri parayla açma: yalnız İstanbul'dan başlanır; gerçek ilçe sınırları (973 ilçe), seviye + sınırdaş şartı, ilçe profili (talep/gelir/kira), pazarın zamanla olgunlaşması, zoom ve açılış animasyonları | ✅ (testli). İlçe profilleri tahmindir: yalnız İstanbul'un 39 ilçesi elle girildi, diğer illerde ilçe ağırlıkları türetilir |
+| 28 ürün (7 yeni kahve çeşidi: flat white, macchiato, cortado, iced latte, V60, dibek, sahlep); ₺ bazlı fiyat ayarı; tüm fiyatları birlikte artırınca müşteri sayısı da azalır; fiyat danışmanı (beklenen kâra göre öneri), menü önerileri, menüyü tüm şubelere kopyalama | ✅ (testli; öneriler beklenen değerdir) |
 | Eski kayıtlar yeni sürümde açılır (alan göçü) | ✅ (testli) |
 | **Franchise sistemi** | ❌ henüz yok |
 | Birden fazla şehirde şube aç ve haritadan yönet | ✅ (şube ağı), ✅ harita pinleri |

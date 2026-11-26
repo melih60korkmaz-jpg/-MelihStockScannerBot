@@ -57,6 +57,12 @@ export function outdoorSeats(b: Branch): number { return SHOP[b.tip].masa === 0 
 export function adEffect(b: Branch, now: number): { trafik: number; marka: number; indirim: boolean; paket: boolean; ikinci: boolean } {
   let t = 0, m = 0, ind = false, pk = false, ik = false; for (const a of b.reklam) { if (a.bit <= now || !a.tuttu) continue; const d = AD[a.id]; t += d.trafik; m += d.marka / d.gun; if (a.id === 'indirim') ind = true; if (a.id === 'paket') pk = true; if (a.id === 'ikinci') ik = true; } return { trafik: t, marka: m, indirim: ind, paket: pk, ikinci: ik };
 }
+/** Menü fiyat düzeyi (talep ağırlıklı): fiyatların tümü birlikte artarsa gelen müşteri de azalır. */
+export function priceLevel(s: GameState, b: Branch, ae?: { indirim: boolean }): number {
+  const rv = avgRivalPrice(s, b.city), disc = ae?.indirim ? 0.9 : 1; let w = 0, t = 0;
+  for (const p of PRODUCTS) { const m = b.menu[p.id]; if (!m?.aktif) continue; w += p.talep; t += p.talep * m.fiyat * disc * (rv > 0 ? Math.pow(1 / rv, 0.25) : 1); } return w ? t / w : 1;
+}
+export function priceFactor(s: GameState, b: Branch, ae?: { indirim: boolean }): number { const c = cityById(b.city); const eks = 1.5 - 0.25 * (c.gelir - 1) - (b.tip === 'luks' ? 0.5 : 0); return Math.exp(-0.7 * eks * (priceLevel(s, b, ae) - 1)); }
 export function dailyDemand(s: GameState, b: Branch): number {
   const c0 = cityById(b.city), pf = profilBranch(b), st = SHOP[b.tip], now = dayOf(s), d = dateOf(now), ae = adEffect(b, now);
   const c = pf.turizm < 0 ? c0 : { ...c0, turizm: 0.5 * c0.turizm + 0.5 * pf.turizm, ogrenci: 0.5 * c0.ogrenci + 0.5 * pf.ogrenci };
@@ -65,15 +71,19 @@ export function dailyDemand(s: GameState, b: Branch): number {
   const turizm = 1 + c.turizm * (seasonTourism(c, d.ay) - 1) * 0.9, hafta = d.haftaGun >= 5 ? 1.15 : 1;
   const ogr = SHOP[b.tip].id === 'uni' ? 1 + 0.5 * c.ogrenci : 1 + 0.2 * c.ogrenci, ogrTatil = (d.ay >= 5 && d.ay <= 7) ? 1 - 0.35 * c.ogrenci : 1;
   const rv = 1 - Math.min(0.5, rivalPressure(s, b)), mod = modValue(s, 'talep') * modValue(s, 'talep_' + b.city);
-  return st.potansiyel * 1.75 * pf.talep * olgunluk(s, b) * talepIdx * marka * hava * turizm * hafta * ogr * ogrTatil * rv * mod * facadeAppeal(b) * (1 + ae.trafik) * (b.hijyen < 40 ? 0.85 : 1);
+  return st.potansiyel * 1.75 * pf.talep * olgunluk(s, b) * talepIdx * marka * hava * turizm * hafta * ogr * ogrTatil * rv * mod * facadeAppeal(b) * (1 + ae.trafik) * priceFactor(s, b, ae) * (b.hijyen < 40 ? 0.85 : 1);
 }
 
 /* ===================== Müşteri ve sipariş ===================== */
 function poisson(s: GameState, lam: number): number { if (lam <= 0) return 0; const L = Math.exp(-Math.min(lam, 30)); let k = 0, p = 1; do { k++; p *= rand(s.rng, 'customers'); } while (p > L && k < 60); return k - 1; }
-const SEG_KEYS = ['ogr', 'cal', 'tur', 'aile', 'emk'] as const;
+export const SEG_KEYS = ['ogr', 'cal', 'tur', 'aile', 'emk'] as const;
+export const SEG_ESNEKLIK = (seg: typeof SEG_KEYS[number]): number => ({ ogr: 2.2, cal: 1.2, tur: 1.0, aile: 1.6, emk: 1.8 } as const)[seg];
 const ESEG = { ogr: 2.2, cal: 1.2, tur: 1.0, aile: 1.6, emk: 1.8 } as const;
+export function segWeights(b: Branch, c: City): Record<typeof SEG_KEYS[number], number> {
+  const w = { ...c.profil }; const t = b.tip; if (t === 'uni') w.ogr *= 2.4; if (t === 'sahil') { w.tur *= 1.8; w.aile *= 1.3; } if (t === 'avm') { w.aile *= 1.6; w.ogr *= 1.2; } if (t === 'luks') { w.cal *= 1.6; w.tur *= 1.4; w.ogr *= 0.5; } return w;
+}
 function pickSegment(s: GameState, b: Branch, c: City): typeof SEG_KEYS[number] {
-  const w = { ...c.profil }; const t = b.tip; if (t === 'uni') w.ogr *= 2.4; if (t === 'sahil') { w.tur *= 1.8; w.aile *= 1.3; } if (t === 'avm') { w.aile *= 1.6; w.ogr *= 1.2; } if (t === 'luks') { w.cal *= 1.6; w.tur *= 1.4; w.ogr *= 0.5; }
+  const w = segWeights(b, c);
   const tot = SEG_KEYS.reduce((a, k) => a + w[k], 0); let r = rand(s.rng, 'customers') * tot; for (const k of SEG_KEYS) { r -= w[k]; if (r <= 0) return k; } return 'cal';
 }
 const TIP_NAME = (seg: typeof SEG_KEYS[number], grup: number, b: Branch, r: number): string => {

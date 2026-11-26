@@ -1,10 +1,12 @@
 import type { GameState } from './types';
+import { PRODUCTS } from '../data/catalog';
 import { migrateBolge } from './region';
 const KEY = 'cafe-empire.save.v1';
 export const serialize = (s: GameState): string => JSON.stringify(s);
 /** Eski kayıtlara sonradan eklenen alanları güvenle tamamlar. */
 export function migrate(s: GameState): GameState {
   for (const b of s.subeler) {
+    for (const p of PRODUCTS) b.menu[p.id] ??= { aktif: false, fiyat: 1, kalite: 1 };
     b.yat ??= {}; b.partiler ??= {}; b.minStok ??= {}; b.tedarikci ??= {}; b.kullanim ??= {}; b.siparisler ??= []; b.ilanlar ??= []; b.adaylar ??= []; b.sikayetler ??= []; b.malKalite ??= 1; b.backlog ??= 0;
     b.mesai ??= { aci: 0, kapa: 0 } as never; b.sonAdet ??= {}; b.otoSiparis ??= true;
     b.mus ??= { ortSiparis: 0, ortBekleme: 0, hizmet: 70, urunKal: 70, fiyatMemn: 70, tekrar: 0, sadik: 0, sikayet: 0 } as never;
