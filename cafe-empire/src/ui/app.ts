@@ -1,5 +1,5 @@
 import './style.css';
-import { CafeView, type CamPreset } from '../render3d/view';
+import { panoHtml } from './pano';
 import { cityById, CITIES } from '../data/turkey';
 import { ilDurum } from '../core/region';
 import { SHOP, SHOP_TYPES, LEVELS, type ShopTypeId } from '../data/catalog';
@@ -17,7 +17,7 @@ import { ctx, cur, esc as _esc, NAV, GRUPLAR, grupOf, PANELS, LIVE_TABS, handle 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 const esc = _esc;
 const root = document.getElementById('app') as HTMLElement;
-let S: GameState | null = null, view: CafeView | null = null, TAB = 'genel', PANEL_OPEN = false;
+let S: GameState | null = null, TAB = 'genel', PANEL_OPEN = false;
 let lastDay = -1, lastSumDay = -1, lastAch = new Set<string>();
 let known = new Set<number>(), newOpp = false, oppT = 0;
 let accMin = 0, uiT = 0, saveT = 0, modalOpen = false;
@@ -60,17 +60,18 @@ function cityFacts(c: ReturnType<typeof cityById>): string {
 /* ===================== Oyun ekranı ===================== */
 function enter(): void {
   if (!S) return; cancelAnimationFrame(zoomRaf); ctx.S = S; ctx.bid = S.subeler[0]!.id; TAB = 'genel'; ctx.zoomIl = null; ctx.selIlce = null; ctx.vb = NAT_VB; ctx.fx = []; ctx.mapsel = 34; ctx.mapm = 'erisim'; known = new Set(); newOpp = false;
-  root.innerHTML = `<div id="v3d" style="position:absolute;inset:0"></div><div class="top"><b class="brand" id="tBrand"></b><span class="chip" id="tDate"></span><span class="chip">💰 <b id="tKasa"></b></span><span class="chip">⭐ <b id="tMarka"></b></span><span class="chip">🏅 <b id="tSev"></b></span><span class="sp"></span><button class="btn sm" id="tHelp" title="Rehber">?</button><span class="chip" id="tHava"></span><div class="spd" id="spd"></div></div><div class="nav" id="nav"></div><div class="cam" id="cam"></div><div class="hud" id="hud"></div><div class="bsel" id="bsel"></div><div class="panel hid" id="panel"></div><div class="fps" id="fps"></div>`;
+  root.innerHTML = `<div id="pano"></div><div class="top"><b class="brand" id="tBrand"></b><span class="chip" id="tDate"></span><span class="chip">💰 <b id="tKasa"></b></span><span class="chip">⭐ <b id="tMarka"></b></span><span class="chip">🏅 <b id="tSev"></b></span><span class="sp"></span><button class="btn sm" id="tHelp" title="Rehber">?</button><span class="chip" id="tHava"></span><div class="spd" id="spd"></div></div><div class="nav" id="nav"></div><div class="panel hid" id="panel"></div>`;
   setAudio({ ses: S.ayar.ses, muzik: S.ayar.muzik, vol: S.ayar.ses_vol }); root.onpointerdown = () => startAudio(); lastSumDay = dayOf(S); lastAch = new Set(Object.keys(S.basarim)); $('#tHelp').onclick = () => { S!.tur = 0; tour(); };
-  view?.destroy(); view = new CafeView($('#v3d')); view.show(S, cur()); S.hiz = 1; nav(); camBar(); spdBar(); hud(); panel(false); window.addEventListener('resize', layout);
-  view.frameHook = (dt) => loop(dt); tour();
+  S.hiz = 1; nav(); spdBar(); hud(); panel(false); window.addEventListener('resize', layout); $('#pano').onclick = (e) => { const k = (e.target as HTMLElement).closest<HTMLElement>('[data-p]'); if (k) { ctx.bid = +k.dataset.p!; hud(); panel(true); } };
+  cancelAnimationFrame(rafId); let son = performance.now(); const kare = (n: number): void => { rafId = requestAnimationFrame(kare); const dt = Math.min(0.1, (n - son) / 1000); son = n; loop(dt); }; rafId = requestAnimationFrame(kare); tour();
   document.addEventListener('visibilitychange', () => { if (document.hidden && S) { save(S); } });
 }
 function layout(): void {
-  const el = document.getElementById('v3d'); if (!el || !view) return; const land = innerWidth >= innerHeight, navH = 52, wide = PANEL_OPEN && TAB === 'harita' && ctx.mapWide, pw = PANEL_OPEN ? (wide ? innerWidth - 20 : Math.min(innerWidth * 0.48, 440)) : 0;
-  if (land) { el.style.left = '0'; el.style.right = pw + 'px'; el.style.top = '0'; el.style.bottom = `calc(${navH}px + env(safe-area-inset-bottom))`; } else { el.style.left = '0'; el.style.right = '0'; el.style.top = '0'; el.style.bottom = (PANEL_OPEN ? '58%' : '58px'); }
-  view.resize(); const p = document.getElementById('panel'); if (p) p.style.width = land ? (pw ? pw + 'px' : '') : '';
+  const el = document.getElementById('pano'); if (!el) return; const land = innerWidth >= innerHeight, navH = 52, wide = PANEL_OPEN && TAB === 'harita' && ctx.mapWide, pw = PANEL_OPEN ? (wide ? innerWidth - 20 : Math.min(innerWidth * 0.48, 440)) : 0;
+  if (land) { el.style.right = pw + 'px'; el.style.bottom = `calc(${navH}px + env(safe-area-inset-bottom))`; } else { el.style.right = '0'; el.style.bottom = (PANEL_OPEN ? '58%' : '58px'); }
+  const p = document.getElementById('panel'); if (p) p.style.width = land ? (pw ? pw + 'px' : '') : '';
 }
+let rafId = 0;
 const sonSekme: Record<string, string> = {};
 function ipucu(): void {
   document.querySelectorAll('.hint').forEach((e) => e.classList.remove('hint')); if (!S || S.tur < 0) return; const st = TUR[S.tur]; if (!st?.n) return; const g = grupOf(st.n);
@@ -83,20 +84,17 @@ function nav(): void {
   $('#nav').querySelectorAll<HTMLElement>('[data-g]').forEach((b) => { b.onclick = () => { const g = GRUPLAR.find((x) => x.id === b.dataset.g)!; if (gt === g.id && PANEL_OPEN && g.id !== 'ana') { PANEL_OPEN = false; nav(); panel(false); return; } sekmeAc(sonSekme[g.id] ?? g.tabs[0]!); }; });
   queueMicrotask(ipucu);
 }
-function camBar(): void { const P: Array<[CamPreset, string]> = [['cephe', 'Cephe'], ['sol', 'Sol'], ['sag', 'Sağ'], ['sokak', 'Sokak'], ['sehir', 'Şehir']]; $('#cam').innerHTML = '<button id="camT">📷</button><div class="cl">' + P.map(([k, n]) => `<button data-c="${k}">${n}</button>`).join('') + '<button data-z="1">＋</button><button data-z="-1">－</button></div>'; $('#camT').onclick = () => $('#cam').classList.toggle('open'); $('#cam').querySelectorAll<HTMLElement>('.cl button').forEach((b) => { b.onclick = () => { if (b.dataset.c) view?.setPreset(b.dataset.c as CamPreset); else view?.zoom(+b.dataset.z! > 0 ? 0.8 : 1.25); }; }); }
 function spdBar(): void { const V: Array<[number, string]> = [[0, '⏸'], [1, '▶'], [2, '⏩'], [4, '⏭']]; $('#spd').innerHTML = V.map(([v, t]) => `<button data-s="${v}" class="${S!.hiz === v ? 'on' : ''}">${t}</button>`).join(''); $('#spd').querySelectorAll<HTMLElement>('button').forEach((b) => { b.onclick = () => { S!.hiz = +b.dataset.s!; spdBar(); }; }); }
 function hud(): void {
   if (!S) return; const b = cur(), c = cityById(b.city), t = S.rapor[S.rapor.length - 1];
   $('#tBrand').textContent = S.marka.ad; $('#tDate').textContent = `${dateText(S)} · ${timeText(S)}`; $('#tKasa').textContent = fmt(S.kasa); $('#tMarka').textContent = String(Math.round(S.marka_puani)); $('#tSev').textContent = `Sv ${levelOf(S)}`; $('#tSev').parentElement!.title = LEVELS[levelOf(S) - 1]?.ad ?? '';
   const hv = S.hava[b.city] ?? 'gunesli'; $('#tHava').textContent = `${{ gunesli: '☀️', bulutlu: '⛅', yagmur: '🌧️', kar: '❄️' }[hv]} ${c.ad}`;
-  $('#hud').innerHTML = `<span class="chip">Memnuniyet <b>${Math.round(b.memnuniyet)}</b></span><span class="chip">Bugün <b>${b.bugun.musteri}</b> müşteri</span><span class="chip">Bugün <b>${fmt(Object.values(b.bugun.gelir).reduce((a, x) => a + x, 0))}</b></span><span class="chip">Kayıp <b>${b.bugun.kayip}</b></span>`;
-  $('#bsel').innerHTML = S.subeler.length > 1 ? S.subeler.map((x) => `<button data-b="${x.id}" class="${x.id === ctx.bid ? 'on' : ''}">${esc(x.ad.length > 18 ? x.ad.slice(0, 17) + '…' : x.ad)}</button>`).join('') : ''; $('#bsel').querySelectorAll<HTMLElement>('[data-b]').forEach((e) => { e.onclick = () => { ctx.bid = +e.dataset.b!; view!.show(S!, cur()); hud(); panel(true); }; });
-  const f = $('#fps'); if (f && view) f.textContent = ctx.fps ? `${view.fps} fps` : ""; void t;
+  const pn = $('#pano'), sc = pn.scrollTop; pn.innerHTML = panoHtml(S, ctx.bid); pn.scrollTop = sc; void t;
 }
 function loop(dt: number): void {
-  if (!S || !view) return; const dk = oyunDakikasi(dt, S.hiz, S.ayar.gunSn); accMin += dk; let n = 0;
-  while (accMin >= 10 && n < 8) { accMin -= 10; const ev = step(S, 10); view.handleEvents(ev); if (ev.some((e) => e.t === 'musteri')) sfx.door(); if (ev.some((e) => e.t === 'olay')) sfx.warn(); n++; if (S.oyunBitti) break; }
-  view.tick(dt, S); if (dayOf(S) !== lastSumDay) { lastSumDay = dayOf(S); gunOzeti(); } if (TAB === 'ekonomi' && PANEL_OPEN && dayOf(S) !== lastDay) { lastDay = dayOf(S); panel(true); } oppT += dt; if (oppT > 2) { oppT = 0; checkOpportunities(); } uiT += dt; saveT += dt; if (uiT > 0.5) { uiT = 0; hud(); if (LIVE_TABS.has(TAB) && PANEL_OPEN) panel(true); if (S.bekleyen.length && !modalOpen) showEvent(); if (S.oyunBitti) gameOver(); }
+  if (!S) return; const dk = oyunDakikasi(dt, S.hiz, S.ayar.gunSn); accMin += dk; let n = 0;
+  while (accMin >= 10 && n < 8) { accMin -= 10; const ev = step(S, 10); if (ev.some((e) => e.t === 'musteri')) sfx.door(); if (ev.some((e) => e.t === 'olay')) sfx.warn(); n++; if (S.oyunBitti) break; }
+  if (dayOf(S) !== lastSumDay) { lastSumDay = dayOf(S); gunOzeti(); } if (TAB === 'ekonomi' && PANEL_OPEN && dayOf(S) !== lastDay) { lastDay = dayOf(S); panel(true); } oppT += dt; if (oppT > 2) { oppT = 0; checkOpportunities(); } uiT += dt; saveT += dt; if (uiT > 0.5) { uiT = 0; hud(); if (LIVE_TABS.has(TAB) && PANEL_OPEN) panel(true); if (S.bekleyen.length && !modalOpen) showEvent(); if (S.oyunBitti) gameOver(); }
   if (saveT > 15) { saveT = 0; save(S); }
 }
 /** Seviye/komşuluk şartı sağlanan yeni pazarları bildirir (zamanla gelişen harita). */
@@ -117,7 +115,7 @@ function gunOzeti(): void {
 }
 /* ===================== Eğitim turu ===================== */
 const TUR: Array<{ n?: string; t: string; ok?: [string, string] }> = [
-  { t: '👋 Hoş geldin! Dükkân dışarıdan görünür; asıl iş soldaki menülerde. Üstteki ⏸ ▶ ⏩ düğmeleriyle zamanı yönetirsin (1 gün birkaç dakika sürer; süreyi Ayarlar menüsünden değiştirebilirsin). Takıldığında üstteki ? ile bu turu yeniden açabilirsin.' },
+  { t: '👋 Hoş geldin! Dükkânlarını dışarıdan, bu panodan yönetirsin; asıl iş alttaki menülerde. Üstteki ⏸ ▶ ⏩ düğmeleriyle zamanı yönetirsin (1 gün birkaç dakika sürer; süreyi Ayarlar menüsünden değiştirebilirsin). Takıldığında üstteki ? ile bu turu yeniden açabilirsin.' },
   { n: 'menu', t: '📋 Önce menüye bak: fiyatları ₺ olarak ayarla, Fiyat danışmanı hangi ürünün fiyatını değiştirmeni öneriyor? Menü ve Ürünler\'e gir.', ok: ['tab', 'menu'] },
   { n: 'vardiya', t: '🗓️ Vardiyalar: kırmızı saatlerde barista yoktur ve o saatte müşteri kaybedersin. Vardiyalar menüsüne gir.', ok: ['tab', 'vardiya'] },
   { n: 'stok', t: '📦 Stok bitince ürün satılamaz. Stok menüsünde otomatik sipariş açık mı ve minimum seviye yeterli mi bak.', ok: ['tab', 'stok'] },
@@ -139,7 +137,7 @@ function showEvent(): void {
   m.innerHTML = `<div class="mbox"><div class="pill">Olay</div><h2>${p.ikon} ${esc(p.baslik)}</h2><p>${esc(p.metin)}</p>${p.secenek.map((c, i) => `<button class="btn" data-o="${i}" style="width:100%;margin-top:6px;justify-content:flex-start;text-align:left"><span><b>${esc(c.ad)}</b><br><small class="muted">${esc(c.ac)}</small></span></button>`).join('')}</div>`; root.appendChild(m);
   m.querySelectorAll<HTMLElement>('[data-o]').forEach((b) => { b.onclick = () => { resolveEvent(S!, p.id, +b.dataset.o!); m.remove(); modalOpen = false; S!.hiz = 1; spdBar(); save(S!); hud(); panel(true); }; });
 }
-function gameOver(): void { if (modalOpen) return; modalOpen = true; S!.hiz = 0; const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div class="mbox"><h2>📉 İflas</h2><p>Kasa uzun süre eksi kaldı ve zincir kapandı. Bir dahaki sefere stok, ekip ve fiyat dengesini daha dikkatli kur.</p><div class="row"><span>Süre</span><b>${dayOf(S!)} gün</b></div><div class="row"><span>Şube</span><b>${S!.subeler.length}</b></div><button class="btn pri" id="y" style="width:100%;margin-top:8px">Ana menü</button></div>`; root.appendChild(m); $('#y').onclick = () => { wipe(); modalOpen = false; view?.destroy(); view = null; S = null; title(); }; }
+function gameOver(): void { if (modalOpen) return; modalOpen = true; S!.hiz = 0; const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div class="mbox"><h2>📉 İflas</h2><p>Kasa uzun süre eksi kaldı ve zincir kapandı. Bir dahaki sefere stok, ekip ve fiyat dengesini daha dikkatli kur.</p><div class="row"><span>Süre</span><b>${dayOf(S!)} gün</b></div><div class="row"><span>Şube</span><b>${S!.subeler.length}</b></div><button class="btn pri" id="y" style="width:100%;margin-top:8px">Ana menü</button></div>`; root.appendChild(m); $('#y').onclick = () => { wipe(); modalOpen = false; cancelAnimationFrame(rafId); stopAudio(); S = null; title(); }; }
 
 /* ===================== Paneller ===================== */
 function panel(keep: boolean): void {
@@ -160,14 +158,14 @@ function bind(pb: HTMLElement): void {
   pb.querySelectorAll<SVGElement>('path[data-il]').forEach((p) => { p.onclick = () => act('ilsec', p.dataset); });
   pb.querySelectorAll<SVGElement>('path[data-ilce]').forEach((p) => { p.onclick = () => act('ilcesec', { id: p.dataset.ilce }); });
 }
-function showBranch(): void { if (S && view) { view.show(S, cur()); hud(); } }
+function showBranch(): void { if (S) hud(); }
 function act(a: string, d: DOMStringMap): void {
   if (!S) return; ctx.S = S;
   handle(a, d, {
     zoom: (vb, done) => zoomTo(vb, () => { done?.(); panel(true); }),
     res: (r: Result) => { toast(r.m); if (r.ok) { if (['ilac', 'ilceac', 'sube', 'frver', 'merkez', 'invest', 'gel'].includes(a)) sfx.unlock(); else if (['kredi', 'siparis', 'ad', 'bonus'].includes(a)) sfx.coin(); else sfx.tick(); } else sfx.err(); save(S!); panel(true); hud(); tourEvent('act', a); },
     toast, refresh: () => panel(true), show: () => { showBranch(); }, go: (t) => { sekmeAc(t); tour(); },
-    save: () => save(S!), exit: () => { save(S!); stopAudio(); view?.destroy(); view = null; S = null; ctx.S = null; title(); }, wipe: () => { wipe(); stopAudio(); view?.destroy(); view = null; S = null; ctx.S = null; title(); },
+    save: () => save(S!), exit: () => { save(S!); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); }, wipe: () => { wipe(); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); },
   });
   if (a === 'bsel') { hud(); panel(true); }
 }
@@ -178,4 +176,4 @@ function yonKontrol(): void {
   if (dikey) { hizEski = S.hiz || 1; S.hiz = 0; } else { S.hiz = hizEski; spdBar(); layout(); }
 }
 function yatayKilit(): void { try { void (screen.orientation as unknown as { lock?: (o: string) => Promise<void> }).lock?.('landscape')?.catch(() => 0); } catch { /* desteklenmiyor */ } }
-export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); title(); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, get view() { return view; }, openTab: (t: string) => sekmeAc(t) }; }
+export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); title(); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, openTab: (t: string) => sekmeAc(t) }; }

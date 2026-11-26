@@ -11,12 +11,9 @@
     "sim": "tsx src/headless/run.ts",
     "qa": "node qa/e2e.cjs"
   },
-  "dependencies": {
-    "three": "^0.170.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^26.6.6",
-    "@types/three": "^0.187.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",

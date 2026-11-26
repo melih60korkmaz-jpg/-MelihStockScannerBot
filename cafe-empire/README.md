@@ -1,7 +1,6 @@
 # CAFE EMPIRE — Türkiye
 
-Türkiye haritası üzerinde geçen, **dışarıdan görülen 3B kafe dükkânları** ve kapsamlı işletme yönetimi içeren mobil tycoon oyunu.
-Kural: **iç mekân yoktur** — kamera daima dükkânı dışarıdan gösterir.
+Türkiye haritası üzerinde geçen, kapsamlı **kafe zinciri yönetim simülasyonu** (yatay, mobil). Dükkânlar 3B/animasyonlu bina olarak değil, **şube panosu** ile dışarıdan yönetilir. (Eski 3B dış sahne git geçmişinde: `3da8e49`.)
 
 ## Test
 `npm test` (vitest: çekirdek, ekonomi, **oyun testi** — bot 1–2 yıl oynar, fuzz testi, menü yapısı) · `npm run build && npm run qa` (telefon boyutunda uçtan uca tarayıcı testi; playwright gerekir).
@@ -12,12 +11,9 @@ Kural: **iç mekân yoktur** — kamera daima dükkânı dışarıdan gösterir.
 ## Durum (dürüst liste)
 | Alan | Durum |
 |---|---|
+| Şube panosu (kartlarda günlük müşteri/gelir/memnuniyet, 14 günlük kâr grafiği, uyarılar), alt menü, gruplanmış sayfalar | ✅ |
 | 81 il haritası (gerçek sınırlar), il verileri (nüfus, gelir, turizm, öğrenci, rekabet, kira, maliyet, müşteri profili) | ✅ |
 | Kafe açma (marka adı, şehir, 8 dükkân türü, uygunluk kuralları) | ✅ (franchise türü kilitli) |
-| Dışarıdan 3B dükkân: cephe, cam, kapı (animasyonlu), tabela, tente, dış masa/sandalye, şemsiye, saksı, ağaç, sokak lambası, menü panosu, çöp kutusu, bisiklet | ✅ |
-| Dış cephe geliştirmeleri görünüme yansır (tabela, cam, LED, premium, marka, kapı, oturma, peyzaj, vitrin, tente) | ✅ |
-| Gerçek zamanlı müşteri animasyonu (yürür, tabelaya bakar, kapıdan girer/çıkar, dış masada oturur, içer, telefon, sohbet, fotoğraf) — 8 müşteri tipi, çeşitli görünüm | ✅ |
-| Gece/gündüz, yağmur, kar, trafik, rüzgârda ağaç/tente, kamera (açılar, yakınlaştırma) | ✅ |
 | 15 menülü yönetim paneli (Genel Bakış, Personel, Vardiyalar, Menü ve Ürünler, Stok, Tedarikçiler, Finans, Müşteriler, Reklam, İşletme Geliştirme, Rakipler, Türkiye Haritası, Şubeler, Raporlar, Ayarlar) | ✅ tüm düğmeler gerçek simülasyona bağlı |
 | Personel: yetenek/motivasyon/yorgunluk/devam, ilan-aday-pazarlıklı işe alım, zam/prim/eğitim/terfi/değerlendirme, şikâyet kararları, şubeler arası nakil | ✅ (testli) |
 | Vardiyalar: sabah/öğle/akşam/tam, haftalık izin, mesai, çalışma saatleri, boşluk haritası; kapsama müşteri kaybını ve kapasiteyi gerçekten etkiler | ✅ (testli) |
