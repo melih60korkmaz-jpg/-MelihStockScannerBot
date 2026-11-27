@@ -78,7 +78,9 @@ jobs:
           print("anahtar gecerli")
           PY
 
-      - name: Arşivle (otomatik imza)
+      # Arşiv imzasız alınır: geliştirme imzası kayıtlı cihaz ister, hesapta cihaz yok.
+      # İmza (App Store dağıtım) dışa aktarma adımında API anahtarıyla otomatik yapılır.
+      - name: Arşivle (imzasız)
         run: |
           cd ios
           WS=$(ls -d *.xcworkspace | head -1)
@@ -88,11 +90,8 @@ jobs:
             -workspace "$WS" -scheme "$SCHEME" -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/app.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}"
 
       - name: App Store Connect'e yükle
