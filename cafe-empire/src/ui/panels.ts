@@ -29,25 +29,23 @@ export interface Ctx { kur: { ilceId: number; tip: ShopTypeId; sc: KurSecim | nu
 export const ctx: Ctx = { kur: null, subeAcik: null, subeSekme: 'ozet', mapTip: 'mahalle', sirTab: 'zincir', ilSecili: null, ilSekme: 'ozet', panoIl: null, frIlce: null, frTip: 'cadde', mapWide: false, eper: 30, escope: 'all', ecurve: 'latte', anim: false, zoomIl: null, selIlce: null, vb: NAT_VB, fx: [], S: null, bid: 0, mapm: 'bolge', mapsel: 34, ilanTip: 'barista', sureGun: 30, menuKat: 'kahve', rapor: 7, fps: true };
 export interface Helpers { zoom: (vb: VB, done?: () => void) => void; res: (r: Result) => void; toast: (m: string) => void; refresh: () => void; show: () => void; go: (tab: string) => void; exit: () => void; wipe: () => void; save: () => void }
 
-export const NAV: Array<[string, string, string]> = [['ana', '🏠', 'Merkez'], ['harita', '🗺️', 'Türkiye'], ['subeler', '🏪', 'Dükkânlar'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarikçiler'], ['merkez', '🏭', 'Merkezi depo'], ['sosyal', '📸', 'Sosyal medya'], ['reklam', '📣', 'Reklam'], ['kampanya', '🏷️', 'Kampanyalar'], ['online', '🛵', 'Teslimat'], ['prestij', '⭐', 'İtibar'], ['hedefler', '🎯', 'Hedefler'], ['iller', '🏙️', 'İller'], ['franchise', '🤝', 'Franchise'], ['siralama', '🥇', 'Liderlik'], ['banka', '🏦', 'Bankalar'], ['finans', '💰', 'Gelir-gider'], ['ekonomi', '📈', 'Ekonomi'], ['rapor', '📊', 'Raporlar'], ['musteri', '🙂', 'Müşteriler'], ['ayar', '⚙️', 'Ayarlar'],
-  ['menu', '📋', 'Menü ve fiyat'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['gelisim', '🛠️', 'Ekipman'], ['genel', '🏠', 'Genel Bakış'],
+export const NAV: Array<[string, string, string]> = [['ana', '🏠', 'Merkez'], ['harita', '🗺️', 'Harita ve yeni şube'], ['subeler', '🏪', 'Dükkânlar'], ['stok', '📦', 'Stok'], ['tedarik', '🚚', 'Tedarikçiler'], ['merkez', '🏭', 'Merkezi depo'], ['sosyal', '📸', 'Sosyal medya'], ['reklam', '📣', 'Reklam'], ['kampanya', '🏷️', 'Kampanyalar'], ['online', '🛵', 'Teslimat'], ['prestij', '⭐', 'Marka itibarı'], ['hedefler', '🎯', 'Hedefler'], ['iller', '🏙️', 'Şehirler'], ['franchise', '🤝', 'Franchise'], ['siralama', '🥇', 'Liderlik'], ['banka', '🏦', 'Banka ve kredi'], ['finans', '💰', 'Kasa ve kâr-zarar'], ['ekonomi', '📈', 'Ekonomi'], ['rapor', '📊', 'Raporlar'], ['musteri', '🙂', 'Müşteriler'], ['ayar', '⚙️', 'Ayarlar'],
+  ['menu', '📋', 'Menü ve fiyat'], ['personel', '👥', 'Personel'], ['vardiya', '🗓️', 'Vardiya'], ['gelisim', '🛠️', 'Ekipman yükseltme'], ['genel', '🏠', 'Genel Bakış'],
   ['cek', '🫘', 'Çekirdek ve kavurma'], ['tarif', '🧪', 'Tarif atölyesi'], ['usta', '🎓', 'Barista ustalığı'], ['fuar', '🏆', 'Kahve fuarı'], ['takvim', '📅', 'Semt takvimi'], ['mudavim', '☕', 'Müdavimler'], ['esnaf', '🤝', 'Komşu esnaf'], ['rakipler', '🏢', 'Rakip zincirler'], ['hikaye', '📖', 'Dükkân hikâyesi'], ['tedil', '🚛', 'Tedarikçi ilişkisi'], ['yorumlar', '💬', 'Yorumlar'], ['grafik', '📊', 'İstatistikler'], ['donem', '🎯', 'Meydan okumalar'], ['kariyer', '🏅', 'Kariyer özeti'], ['sezon', '🍂', 'Sezon ve menü'], ['yatirim', '💼', 'Yatırımcılar'], ['kavurmahane', '🔥', 'Kavurmahane'], ['kurye', '🛵', 'Kurye ve bulut'], ['mulk', '🏠', 'Mülkler'], ['sadakat', '📱', 'Sadakat uygulaması'], ['basin', '📰', 'Basın ve imaj'], ['anket', '📋', 'Anket ve A/B'], ['mevzuat', '⚖️', 'Mevzuat ve devlet'], ['surdur', '🌿', 'Sürdürülebilirlik'], ['sigorta', '🛡️', 'Sigorta ve afet']];
-/** Alt menü: 8 sekme; sekme içindeki sayfalar üstte çip olur. */
-export interface Grup { id: string; ik: string; ad: string; renk: string; tabs: string[] }
+export interface Grup { id: string; ik: string; ad: string; renk: string; tabs: string[]; ac: string; dock?: boolean }
+/** Menü: 7 ana kategori (alt menüde) + Ayarlar (üst çubuktaki ⚙). Her kategori işleviyle ilgili sayfaları bir arada tutar. */
 export const GRUPLAR: Grup[] = [
-  { id: 'ana', ik: '🏠', ad: 'Merkez', renk: '#ff8a4c', tabs: ['ana'] },
-  { id: 'harita', ik: '🗺️', ad: 'Türkiye', renk: '#5fb3ff', tabs: ['harita'] },
-  { id: 'subeler', ik: '🏪', ad: 'Dükkânlar', renk: '#ffb44c', tabs: ['subeler', 'mulk', 'yorumlar', 'musteri'] },
-  { id: 'atolye', ik: '☕', ad: 'Atölye', renk: '#d9a066', tabs: ['cek', 'tarif', 'sezon', 'kavurmahane', 'usta', 'fuar'] },
-  { id: 'semt', ik: '🏘️', ad: 'Semt', renk: '#7fd0c7', tabs: ['takvim', 'mudavim', 'esnaf', 'rakipler', 'hikaye'] },
-  { id: 'depo', ik: '📦', ad: 'Depo', renk: '#4fd1a5', tabs: ['stok', 'tedarik', 'tedil', 'merkez'] },
-  { id: 'tanitim', ik: '📣', ad: 'Tanıtım', renk: '#ff7aa8', tabs: ['sosyal', 'reklam', 'kampanya', 'online', 'kurye', 'sadakat', 'basin', 'anket'] },
-  { id: 'gelisim', ik: '🚀', ad: 'Gelişim', renk: '#b07cff', tabs: ['prestij', 'hedefler', 'donem', 'kariyer', 'surdur', 'iller', 'franchise', 'siralama'] },
-  { id: 'kasa', ik: '💰', ad: 'Kasa', renk: '#4fd1a5', tabs: ['banka', 'yatirim', 'mevzuat', 'sigorta', 'finans', 'ekonomi', 'grafik', 'rapor'] },
-  { id: 'ayar', ik: '⚙️', ad: 'Ayarlar', renk: '#9aa8b0', tabs: ['ayar'] },
+  { id: 'ana', ik: '🏠', ad: 'Merkez', renk: '#ff8a4c', tabs: ['ana'], ac: 'Günün özeti, uyarılar ve sıradaki adım.' },
+  { id: 'isletme', ik: '🏪', ad: 'İşletme', renk: '#ffb44c', tabs: ['subeler', 'menu', 'personel', 'vardiya', 'stok', 'tedarik', 'tedil', 'musteri', 'mudavim', 'yorumlar'], ac: 'Dükkânlar, ürünler, ekip, stok ve müşteriler.' },
+  { id: 'atolye', ik: '☕', ad: 'Atölye', renk: '#d9a066', tabs: ['cek', 'tarif', 'sezon', 'kavurmahane', 'usta', 'fuar'], ac: 'Kahve karışımı, tarifler ve yarışmalar.' },
+  { id: 'finans', ik: '💰', ad: 'Finans', renk: '#4fd1a5', tabs: ['finans', 'rapor', 'banka', 'ekonomi', 'grafik', 'yatirim', 'sigorta', 'mevzuat'], ac: 'Kasa, gelir-gider, kâr-zarar, kredi ve raporlar.' },
+  { id: 'pazarlama', ik: '📣', ad: 'Pazarlama', renk: '#ff7aa8', tabs: ['sosyal', 'reklam', 'kampanya', 'online', 'kurye', 'sadakat', 'basin', 'anket', 'prestij'], ac: 'Reklam, kampanya, teslimat ve marka itibarı.' },
+  { id: 'gelisim', ik: '🚀', ad: 'Gelişim', renk: '#b07cff', tabs: ['gelisim', 'merkez', 'mulk', 'franchise', 'hedefler', 'donem', 'kariyer', 'surdur', 'siralama'], ac: 'Yükseltmeler, hedefler ve büyüme.' },
+  { id: 'dunya', ik: '🗺️', ad: 'Dünya', renk: '#5fb3ff', tabs: ['harita', 'iller', 'rakipler', 'takvim', 'esnaf', 'hikaye'], ac: 'Harita ve yeni şube, şehirler, rakipler ve semt.' },
+  { id: 'ayar', ik: '⚙️', ad: 'Ayarlar', renk: '#9aa8b0', tabs: ['ayar'], ac: 'Ses, hız, kayıt ve rehber.', dock: false },
 ];
-/** Menü gruplarında kendi çipi olmayan ama dükkân detayında açılan sayfalar: hangi gruba bağlı olduklarını söyler (doğru sekme vurgulansın). */
-export const ALT_SAYFA: Record<string, string> = { menu: 'subeler', personel: 'subeler', vardiya: 'subeler', gelisim: 'subeler', genel: 'ana' };
+/** Menü gruplarında kendi çipi olmayan sayfalar: hangi gruba bağlı olduklarını söyler. */
+export const ALT_SAYFA: Record<string, string> = { genel: 'ana' };
 export const grupOf = (tab: string): Grup => GRUPLAR.find((g) => g.tabs.includes(tab)) ?? GRUPLAR.find((g) => g.id === ALT_SAYFA[tab]) ?? GRUPLAR[0]!;
 /** Şube gerektiren sayfalar (şubesiz başlangıçta "önce şube aç" kartı gösterilir). */
 const BRANCH_TABS = new Set(['stok', 'tedarik', 'reklam', 'kampanya', 'online', 'sosyal', 'menu', 'personel', 'vardiya', 'gelisim', 'musteri', 'ekonomi', 'iller', 'subeler', 'franchise', 'rapor', 'genel', 'merkez', 'usta', 'takvim', 'mudavim', 'esnaf', 'hikaye', 'tedil', 'yorumlar', 'grafik', 'donem', 'sezon', 'yatirim', 'kavurmahane', 'kurye', 'mulk', 'sadakat', 'basin', 'anket', 'mevzuat', 'surdur', 'sigorta']);

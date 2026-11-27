@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newGame } from '../src/core/actions';
 import { deserialize, serialize } from '../src/core/save';
+import { YOL } from '../src/core/rehber';
 import { OGR, Og, ogrAtla, ogrDurum, ogrEylem, ogrGorunur, ogrKapat, ogrKontrol, ogrYenidenAc, type OgrUi } from '../src/core/ogretici';
 import { YARDIM_KONULARI, YOK_LISTESI } from '../src/data/yardim';
 import { zaferMaddeleri } from '../src/core/derin';
@@ -65,8 +66,22 @@ describe('oyun rehberi (?) içeriği', () => {
 });
 
 describe('menü gruplaması', () => {
-  it('dükkân detayı sayfaları (menü, personel, vardiya, ekipman) Dükkânlar grubuna bağlı sayılır; Müşteriler Dükkânlar\'da', () => {
-    for (const t of ['menu', 'personel', 'vardiya', 'gelisim']) expect(grupOf(t).id).toBe('subeler');
-    expect(grupOf('musteri').id).toBe('subeler'); expect(grupOf('finans').id).toBe('kasa'); expect(grupOf('ana').id).toBe('ana');
+  it('sayfalar işlevlerine göre doğru kategoride', () => {
+    for (const t of ['menu', 'personel', 'vardiya']) expect(grupOf(t).id).toBe('isletme'); expect(grupOf('gelisim').id).toBe('gelisim'); expect(grupOf('prestij').id).toBe('pazarlama'); expect(grupOf('iller').id).toBe('dunya');
+    expect(grupOf('musteri').id).toBe('isletme'); expect(grupOf('finans').id).toBe('finans'); expect(grupOf('ana').id).toBe('ana');
   });
+});
+
+describe('yönergelerdeki menü yolları gerçek menüyle uyumlu', () => {
+  // "İşletme → Menü ve fiyat" gibi her yol: kategori var, sayfa o kategoride ve adı tutuyor.
+  const metinler = [...YARDIM_KONULARI.flatMap((k) => k.maddeler), ...OGR.map((a) => a.ac), ...YOL.map((y) => y.ac)];
+  const yollar = metinler.flatMap((m) => [...m.matchAll(/(İşletme|Atölye|Finans|Pazarlama|Gelişim|Dünya) → ([^:.;,→(]+?)(?=\s*(?:[:.;,→(]|$))/g)].map((r) => [r[1]!, r[2]!.trim(), r[0]] as const));
+  it('en az 10 yol yazılmış ve her biri menüde var', () => {
+    expect(yollar.length).toBeGreaterThanOrEqual(10);
+    for (const [grup, sayfa, tam] of yollar) {
+      const g = GRUPLAR.find((x) => x.ad === grup); expect(g, tam).toBeTruthy();
+      const bulundu = g!.tabs.some((t) => NAV.find((n) => n[0] === t)![2] === sayfa); expect(bulundu, `"${tam}" menüde yok (${grup} → ${sayfa})`).toBe(true);
+    }
+  });
+  it('eski menü adları (Depo, Tanıtım, Semt, Kasa →) yönergelerde kalmadı', () => { for (const m of metinler) expect(m).not.toMatch(/\bDepo →|\bTanıtım\b|\bSemt →|\bKasa →|\bTürkiye →|Dükkânlar → (Menü|Personel|Vardiya|Ekipman)/); });
 });

@@ -7,6 +7,7 @@ import { grupAcik, tabAcik, acikListe, kilitliListe, kilitNedeni, GRUP_KURAL, TA
 import { oneriler, YOL, Yl, yolKontrol, yolDurum } from '../src/core/rehber';
 import { Kd, kararKaydet, KARAR_GUN, snap } from '../src/core/karar';
 import { GRUPLAR, NAV } from '../src/ui/panels';
+import { gorunurGruplar } from '../src/ui/yonet';
 import { deserialize, serialize } from '../src/core/save';
 
 const yeni = (seed = 1) => newGame({ ad: 'Test', sehir: 34, tip: 'cadde', seed, ilce: '34:Kadıköy' }).s;
@@ -15,8 +16,8 @@ const gunGit = (s: ReturnType<typeof yeni>, hedef: number): void => { while (day
 
 describe('kademeli açılma', () => {
   it('şubesiz başlangıçta yalnız temel gruplar; şube ve gün ilerledikçe açılır', () => {
-    const s = bos(); const ids = GRUPLAR.map((g) => g.id).filter((id) => grupAcik(s, id)); expect(ids.sort()).toEqual(['ana', 'ayar', 'harita', 'subeler'].sort());
-    const t = yeni(); for (const id of ['depo', 'tanitim', 'kasa']) expect(grupAcik(t, id)).toBe(true); expect(grupAcik(t, 'atolye')).toBe(false); expect(grupAcik(t, 'semt')).toBe(false); expect(tabAcik(t, 'yatirim')).toBe(false); expect(kilitNedeni(t, 'yatirim').length).toBeGreaterThan(3);
+    const s = bos(); const ids = GRUPLAR.map((g) => g.id).filter((id) => grupAcik(s, id)); expect(ids.sort()).toEqual(['ana', 'ayar', 'dunya', 'isletme'].sort()); expect(gorunurGruplar(s).map((g) => g.id)).toEqual(['ana', 'isletme', 'dunya']);
+    const t = yeni(); for (const id of ['finans', 'pazarlama', 'gelisim']) expect(grupAcik(t, id)).toBe(true); expect(grupAcik(t, 'atolye')).toBe(false); expect(tabAcik(t, 'takvim')).toBe(false); expect(gorunurGruplar(t).map((g) => g.id)).toEqual(['ana', 'isletme', 'finans', 'pazarlama', 'gelisim', 'dunya']); expect(tabAcik(t, 'yatirim')).toBe(false); expect(kilitNedeni(t, 'yatirim').length).toBeGreaterThan(3);
     gunGit(t, 12); expect(grupAcik(t, 'atolye')).toBe(true); expect(grupAcik(t, 'gelisim')).toBe(true); expect(tabAcik(t, 'donem')).toBe(true); expect(tabAcik(t, 'mevzuat')).toBe(false);
     gunGit(t, 46); expect(tabAcik(t, 'mevzuat')).toBe(true); expect(tabAcik(t, 'mulk')).toBe(true); expect(kilitliListe(t).length).toBeLessThan(kilitliListe(yeni()).length);
   });
@@ -24,7 +25,7 @@ describe('kademeli açılma', () => {
     const idler = new Set(NAV.map((n) => n[0])); for (const k of Object.keys(TAB_KURAL)) expect(idler.has(k)).toBe(true); for (const k of Object.keys(GRUP_KURAL)) expect(GRUPLAR.some((g) => g.id === k)).toBe(true);
     const s = yeni(2); s.marka_puani = 100; for (let i = 0; i < 6; i++) s.subeler.push({ ...JSON.parse(JSON.stringify(s.subeler[0])), id: 400 + i, ilce: 'k' + i }); s.dk = 100 * 1440; expect(kilitliListe(s).length).toBeLessThanOrEqual(2); expect(acikListe(s).length).toBeGreaterThan(30);
   });
-  it('eski (ilerlemiş) kayıtta her şey açık', () => { const s = yeni(3); gunGit(s, 5); s.dk = 120 * 1440; const j = deserialize(serialize(s)); expect(grupAcik(j, 'semt')).toBe(true); expect(tabAcik(j, 'kariyer')).toBe(true); });
+  it('eski (ilerlemiş) kayıtta her şey açık', () => { const s = yeni(3); gunGit(s, 5); s.dk = 120 * 1440; const j = deserialize(serialize(s)); expect(tabAcik(j, 'rakipler')).toBe(true); expect(tabAcik(j, 'kariyer')).toBe(true); });
 });
 describe('sıradaki adım ve yol haritası', () => {
   it('şubesizken ilk öneri şube açmak; şubeyle öneriler öncelik sırasında', () => {
@@ -44,5 +45,14 @@ describe('karar defteri', () => {
   it('kayıt/yükleme yeni durumu korur; alanı olmayan eski kayıt açılır', () => {
     const s = yeni(6); gunGit(s, 8); kararKaydet(s, 'X'); Yl(s).adim.sube = 0; const j = deserialize(serialize(s)); expect(Kd(j).liste.length).toBe(1); expect(Yl(j).adim.sube).toBe(0);
     const eski = JSON.parse(serialize(s)); delete eski.derin.karar; delete eski.derin.yol; delete eski.derin.acilan; const e = deserialize(JSON.stringify(eski)); gunGit(e, dayOf(e) + 3); expect(Number.isFinite(e.kasa)).toBe(true);
+  });
+});
+
+describe('menü düzeni geçişi', () => {
+  it('eski düzenden kalan kayıtta yeni kategoriler bildirim yağdırmaz; sonradan açılanlar yine bildirilir', async () => {
+    const { acilisKontrol } = await import('../src/ui/yonet'); const { D } = await import('../src/core/derin');
+    const s = yeni(5); gunGit(s, 12); const d = D(s); d.acilan = { depo: 0, tanitim: 0, kasa: 0, semt: 0, subeler: 0 };   // eski sürümün kaydı
+    expect(acilisKontrol(s)).toEqual([]); expect(acilisKontrol(s)).toEqual([]);
+    gunGit(s, 46); expect(acilisKontrol(s).length).toBeGreaterThan(0);   // 45. gün: Mevzuat, Mülkler vb. gerçekten yeni
   });
 });

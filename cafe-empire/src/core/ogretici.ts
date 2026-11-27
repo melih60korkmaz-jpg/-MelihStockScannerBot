@@ -17,14 +17,14 @@ export interface OgrAdim {
 }
 const topPersonel = (s: GameState): number => s.subeler.reduce((a, b) => a + b.staff.length, 0);
 export const OGR: OgrAdim[] = [
-  { id: 'kur', ik: '🏪', ad: 'Kafeni kur', ac: 'Türkiye haritasında bir semt seç, ilanlardan birini planla ve aç. Başlangıç sermayen kasada.', git: 'harita', ok: (s) => s.subeler.length >= 1 },
-  { id: 'tani', ik: '🔎', ad: 'Kafeni tanı', ac: 'Dükkânlar sayfasında kafene dokun: bugünkü müşteri, gelir ve durum özeti burada.', git: 'subeler', ok: (_s, ui) => ui.tab === 'subeler' && ui.subeAcik !== null },
-  { id: 'ise', ik: '👥', ad: 'Yeni bir çalışan işe al', ac: 'Dükkân küçük bir ekiple açılır. Personel sayfasında ilan ver; aday gelince işe al, yoğun saatlerde kuyruk uzamasın.', eylem: 'persGit', eylemler: ['hire'], ok: (s, _u, o) => o.baz.personel !== undefined && topPersonel(s) > o.baz.personel },
-  { id: 'urun', ik: '📋', ad: 'Menüye ürün ekle', ac: 'Menü ve fiyat sayfasında bir ürünü aç. Her ürün farklı malzeme kullanır; açtığın ürünün stoğunu tutmalısın.', eylem: 'menuGit', eylemler: ['urun'] },
-  { id: 'stok', ik: '📦', ad: 'İlk stok siparişini ver', ac: 'Depo → Stok: azalan malzemeden sipariş ver. Stok biterse o ürün satılamaz.', git: 'stok', eylemler: ['siparis'] },
-  { id: 'fiyat', ik: '🏷️', ad: 'Satış fiyatlarını belirle', ac: 'Menü ve fiyat: fiyatı artır/azalt ya da fiyat danışmanının önerisini uygula.', eylem: 'menuGit', eylemler: ['fiyat', 'fiyatTl', 'oneri', 'oneritum', 'fiyatset', 'tumfiyat'] },
-  { id: 'gelir', ik: '💰', ad: 'Günlük gelirini takip et', ac: 'Kasa → Gelir-gider: bugünkü gelirini ve giderlerini gör. Kâr, gelirden giderler çıkınca kalandır.', git: 'finans', ok: (_s, ui) => ['finans', 'rapor', 'ekonomi'].includes(ui.tab) },
-  { id: 'memn', ik: '😊', ad: 'Müşteri memnuniyetini kontrol et', ac: 'Dükkânlar → Müşteriler: memnuniyet düşerse müşteri kaybedersin. Merkez\'deki durum kartı da özet verir.', git: 'musteri', ok: (_s, ui) => ['musteri', 'yorumlar'].includes(ui.tab) },
+  { id: 'kur', ik: '🏪', ad: 'Kafeni kur', ac: 'Dünya → Harita ve yeni şube: bir semt seç, ilanlardan birini planla ve aç. Başlangıç sermayen kasada.', git: 'harita', ok: (s) => s.subeler.length >= 1 },
+  { id: 'tani', ik: '🔎', ad: 'Kafeni tanı', ac: 'İşletme → Dükkânlar: kafene dokun: bugünkü müşteri, gelir ve durum özeti burada.', git: 'subeler', ok: (_s, ui) => ui.tab === 'subeler' && ui.subeAcik !== null },
+  { id: 'ise', ik: '👥', ad: 'Yeni bir çalışan işe al', ac: 'Dükkân küçük bir ekiple açılır. İşletme → Personel: ilan ver; aday gelince işe al, yoğun saatlerde kuyruk uzamasın.', eylem: 'persGit', eylemler: ['hire'], ok: (s, _u, o) => o.baz.personel !== undefined && topPersonel(s) > o.baz.personel },
+  { id: 'urun', ik: '📋', ad: 'Menüye ürün ekle', ac: 'İşletme → Menü ve fiyat: bir ürünü aç. Her ürün farklı malzeme kullanır; açtığın ürünün stoğunu tutmalısın.', eylem: 'menuGit', eylemler: ['urun'] },
+  { id: 'stok', ik: '📦', ad: 'İlk stok siparişini ver', ac: 'İşletme → Stok: azalan malzemeden sipariş ver. Stok biterse o ürün satılamaz.', git: 'stok', eylemler: ['siparis'] },
+  { id: 'fiyat', ik: '🏷️', ad: 'Satış fiyatlarını belirle', ac: 'İşletme → Menü ve fiyat: fiyatı artır/azalt ya da fiyat danışmanının önerisini uygula.', eylem: 'menuGit', eylemler: ['fiyat', 'fiyatTl', 'oneri', 'oneritum', 'fiyatset', 'tumfiyat'] },
+  { id: 'gelir', ik: '💰', ad: 'Günlük gelirini takip et', ac: 'Finans → Kasa ve kâr-zarar: gelirini, giderini ve kârını gör. Kâr, gelirden giderler çıkınca kalandır.', git: 'finans', ok: (_s, ui) => ['finans', 'rapor', 'ekonomi'].includes(ui.tab) },
+  { id: 'memn', ik: '😊', ad: 'Müşteri memnuniyetini kontrol et', ac: 'İşletme → Müşteriler: memnuniyet düşerse müşteri kaybedersin. Merkez\'deki durum kartı da özet verir.', git: 'musteri', ok: (_s, ui) => ['musteri', 'yorumlar'].includes(ui.tab) },
 ];
 export function Og(s: GameState): OgrKayit { const d = D(s); return (d.ogr ??= { adim: {}, atla: {}, kapali: false, baz: {}, bitti: false }); }
 export interface OgrDurum { yapilan: number; atlanan: number; toplam: number; siradaki: OgrAdim | null; sira: number }

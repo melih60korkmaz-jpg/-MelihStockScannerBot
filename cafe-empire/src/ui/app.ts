@@ -20,6 +20,7 @@ import '../core/kademe';
 import { ZORLUK } from '../core/derin';
 import { confetti } from './juice';
 import { yardimAc, ogrCiz } from './yardim';
+import { menuAc } from './menu';
 import { ogrKontrol, ogrEylem, OGR, type OgrAdim } from '../core/ogretici';
 import { PAGES, handlePages, kurHtml, kisa, BOS_UYARI } from './pages';
 
@@ -60,8 +61,8 @@ function zoomTo(vb: VB, done?: () => void, ms = 650): void {
 /* ===================== Oyun ekranı ===================== */
 function enter(): void {
   if (!S) return; cancelAnimationFrame(zoomRaf); ctx.S = S; ctx.bid = S.subeler[0]?.id ?? 0; TAB = 'ana'; ctx.zoomIl = null; ctx.selIlce = null; ctx.vb = NAT_VB; ctx.fx = []; ctx.mapsel = 34; ctx.mapm = 'erisim'; ctx.kur = null; ctx.subeAcik = null; known = new Set(); newOpp = false;
-  root.innerHTML = `<div class="top"><div class="brandw"><i>☕</i><div><b id="tBrand"></b><small id="tSub"></small></div></div><span class="sp"></span><div class="chip tm" id="tTime"></div><button class="chip money" id="tKasa" title="Banka"></button><button class="chip star" id="tMarka" title="Prestij"></button><div class="spd" id="spd"></div><button class="ibtn" id="tHelp" title="Rehber">?</button><button class="ibtn" id="tSet" title="Ayarlar">⚙</button></div><div id="page" class="page"></div><div class="nav" id="nav"></div><div id="kur"></div>`;
-  setAudio({ ses: S.ayar.ses, muzik: S.ayar.muzik, vol: S.ayar.ses_vol }); root.onpointerdown = () => startAudio(); lastSumDay = dayOf(S); lastAch = new Set(Object.keys(S.basarim)); $('#tHelp').onclick = () => yardimGoster(); $('#tSet').onclick = () => sekmeAc('ayar'); $('#tKasa').onclick = () => sekmeAc('banka'); $('#tMarka').onclick = () => sekmeAc('prestij');
+  root.innerHTML = `<div class="top"><div class="brandw"><i>☕</i><div><b id="tBrand"></b><small id="tSub"></small></div></div><span class="sp"></span><div class="chip tm" id="tTime"></div><button class="chip money" id="tKasa" title="Banka"></button><button class="chip star" id="tMarka" title="Prestij"></button><div class="spd" id="spd"></div><button class="ibtn" id="tMenu" title="Tüm menüler" aria-label="Tüm menüler">☰</button><button class="ibtn" id="tHelp" title="Oyun rehberi" aria-label="Oyun rehberi">?</button><button class="ibtn" id="tSet" title="Ayarlar">⚙</button></div><div id="page" class="page"></div><div class="nav" id="nav"></div><div id="kur"></div>`;
+  setAudio({ ses: S.ayar.ses, muzik: S.ayar.muzik, vol: S.ayar.ses_vol }); root.onpointerdown = () => startAudio(); lastSumDay = dayOf(S); lastAch = new Set(Object.keys(S.basarim)); $('#tHelp').onclick = () => yardimGoster(); $('#tMenu').onclick = () => menuAc(root, S!, TAB, { git: (t) => sekmeAc(t), kilit: (id) => act('kilit', { id }) }); $('#tSet').onclick = () => sekmeAc('ayar'); $('#tKasa').onclick = () => sekmeAc('finans'); $('#tMarka').onclick = () => sekmeAc('prestij');
   S.hiz = 1; nav(); spdBar(); hud(); page(false);
   cancelAnimationFrame(rafId); let son = performance.now(); const kare = (n: number): void => { rafId = requestAnimationFrame(kare); const dt = Math.min(0.1, (n - son) / 1000); son = n; loop(dt); }; rafId = requestAnimationFrame(kare); S.tur = -1; ogrYenile();
   document.addEventListener('visibilitychange', () => { if (document.hidden && S) { save(S); } });
@@ -69,7 +70,7 @@ function enter(): void {
 const sonSekme: Record<string, string> = {};
 function sekmeAc(tab: string): void { TAB = tab; sonSekme[grupOf(tab).id] = tab; ctx.anim = true; sfx.tick(); if (tab === 'harita') newOpp = false; nav(); page(false); const pg = $('#page'); pg.classList.remove('gecis'); void pg.offsetWidth; pg.classList.add('gecis'); setTimeout(() => pg.classList.remove('gecis'), 350); ogrBildir(ogrKontrol(S!, ogrUi(), dayOf(S!))); ogrYenile(); }
 function nav(): void {
-  const gt = grupOf(TAB).id;
+  const gt = grupOf(TAB).id; $('#tSet')?.classList.toggle('on', TAB === 'ayar');
   if (yeniGrup.has(gt)) yeniGrup.delete(gt); $('#nav').innerHTML = gorunurGruplar(S!).map((g) => `<button data-g="${g.id}" class="${gt === g.id ? 'on' : ''}" style="--c:${g.renk}"><i>${g.ik}</i><span>${g.ad}</span>${(g.id === 'harita' && newOpp && TAB !== 'harita') || yeniGrup.has(g.id) ? '<u class="dot"></u>' : ''}</button>`).join('');
   $('#nav').querySelectorAll<HTMLElement>('[data-g]').forEach((b) => { b.onclick = () => { const g = GRUPLAR.find((x) => x.id === b.dataset.g)!; sekmeAc(sonSekme[g.id] ?? g.tabs[0]!); }; });
 }
@@ -123,7 +124,7 @@ function page(keep: boolean): void {
   if (!S) return; const el = $('#page'); const sc = keep ? el.querySelector<HTMLElement>('.pb')?.scrollTop ?? 0 : 0, nm = NAV.find((n) => n[0] === TAB)!; ctx.S = S;
   const body = isBranchTab(TAB) && !S.subeler.length ? BOS_UYARI(TAB) : (ALL[TAB] ?? ALL.ana!)(); const wasAnim = ctx.anim; ctx.anim = false;
   const gr = grupOf(TAB), alt = altSekmeler(S, gr, TAB);
-  el.innerHTML = `${alt}<div class="pb ${FIT.has(TAB) ? 'fit' : 'cols'}" data-tab="${TAB}">${body}</div>`; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); el.querySelectorAll<HTMLElement>('.subtabs [data-lock]').forEach((b) => { b.onclick = () => act('kilit', { id: b.dataset.lock! }); }); el.querySelectorAll<HTMLElement>('.subtabs [data-a]').forEach((b) => { b.onclick = () => act(b.dataset.a!, b.dataset); }); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); if (wasAnim) animateCounters(pb); void nm;
+  el.innerHTML = `${alt}<div class="pb ${FIT.has(TAB) ? 'fit' : 'cols'}" data-tab="${TAB}">${body}</div>`; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); el.querySelectorAll<HTMLElement>('.subtabs [data-lock]').forEach((b) => { b.onclick = () => act('kilit', { id: b.dataset.lock! }); }); el.querySelectorAll<HTMLElement>('.subtabs [data-mn]').forEach((b) => { b.onclick = () => document.getElementById('tMenu')?.click(); }); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); if (wasAnim) animateCounters(pb); void nm;
 }
 function animateCounters(pb: HTMLElement): void {
   const els = [...pb.querySelectorAll<HTMLElement>('.cnt')]; if (!els.length) return; const t0 = performance.now(), ease = (t: number): number => 1 - Math.pow(1 - t, 3);

@@ -16,9 +16,9 @@ const YASAK = new Set(['cikis', 'sil', 'wipe', 'exit', 'kapat', 'kredi_iptal']);
   const tabs = await ev(() => window.__app.tabIds()); console.log('Sayfa sayısı:', tabs.length);
   const SEL = '#page [data-a], #page [data-n], #page [data-lock]'; const noop = []; const garip = []; let toplam = 0;
   const snap = () => ev(() => ({ s: (() => { const j = JSON.stringify(window.__app.S); let h = 0; for (let i = 0; i < j.length; i++) h = (h * 31 + j.charCodeAt(i)) | 0; return h; })(), h: (() => { const j = document.getElementById('page').innerHTML; let h = 0; for (let i = 0; i < j.length; i++) h = (h * 31 + j.charCodeAt(i)) | 0; return h; })(), t: window.__tc, tab: window.__app.TAB, ov: document.querySelectorAll('.yd,.modal,.ev').length }));
-  const hedefler = [...tabs.map((t) => [t, null]), ['subeler', 'ozet'], ['subeler', 'menu'], ['subeler', 'personel'], ['subeler', 'vardiya'], ['subeler', 'gelisim']];
+  const hedefler = [...tabs.map((t) => [t, null]), ['subeler', 'ozet']];   // son: dükkân detayı (özet)
   for (const [t, sk] of hedefler) {
-    const aç = async () => { await tab(t); if (sk) { await ev(() => { const e = document.querySelector('[data-a="subeAcik"]'); if (e) e.click(); }); await p.waitForTimeout(80); await ev((k) => { document.querySelector(`[data-a="subeSekme"][data-k="${k}"]`)?.click(); }, sk); await p.waitForTimeout(80); } };
+    const aç = async () => { await tab(t); if (sk) { await ev(() => { const e = document.querySelector('[data-a="subeAcik"]'); if (e) e.click(); }); await p.waitForTimeout(80); } };
     await aç(); const n = await ev((s) => document.querySelectorAll(s).length, SEL); const lim = HIZLI ? Math.min(n, 12) : Math.min(n, 70);
     for (let i = 0; i < lim; i++) {
       await aç(); const info = await ev(([s, i]) => { const e = document.querySelectorAll(s)[i]; if (!e) return null; return { a: e.dataset.a || (e.dataset.n ? 'n:' + e.dataset.n : 'lock:' + e.dataset.lock), txt: (e.innerText || '').trim().slice(0, 24) }; }, [SEL, i]);
@@ -38,7 +38,7 @@ const YASAK = new Set(['cikis', 'sil', 'wipe', 'exit', 'kapat', 'kredi_iptal']);
   for (let i = 0; i < 8; i++) await tab(i % 2 ? 'stok' : 'tedarik'); await tab('stok');
   const o0 = await ev(() => window.__app.S.subeler[0].siparisler.length); await ev(() => document.querySelector('#page [data-a="siparis"]').click()); await p.waitForTimeout(100); const o1 = await ev(() => window.__app.S.subeler[0].siparisler.length);
   ok(o1 - o0 === 1, 'sayfa 8 kez yenilendikten sonra "Sipariş" tek tıkta tek sipariş (' + (o1 - o0) + ')');
-  await tab('subeler'); await ev(() => document.querySelector('[data-a="subeAcik"]')?.click()); await p.waitForTimeout(100); for (let i = 0; i < 6; i++) { await ev(() => document.querySelector('[data-a="subeSekme"][data-k="menu"]').click()); await ev(() => document.querySelector('[data-a="subeSekme"][data-k="ozet"]').click()); } await ev(() => document.querySelector('[data-a="subeSekme"][data-k="menu"]').click()); await p.waitForTimeout(100);
+  for (let i = 0; i < 8; i++) await tab(i % 2 ? 'menu' : 'personel'); await tab('menu'); await p.waitForTimeout(100);
   const f = await ev(() => { const e = document.querySelector('[data-a="fiyatTl"][data-d="5"]'); const id = e.dataset.id; const b = window.__app.S.subeler[0]; const x0 = b.menu[id].fiyat; e.click(); return [x0, b.menu[id].fiyat, id]; });
   await p.waitForTimeout(100); const f2 = await ev((id) => window.__app.S.subeler[0].menu[id].fiyat, f[2]); const adim1 = f2 - f[0]; await ev(([id]) => { const e = document.querySelector(`[data-a="fiyatTl"][data-id="${id}"][data-d="5"]`); e.click(); }, [f[2]]); await p.waitForTimeout(100); const f3 = await ev((id) => window.__app.S.subeler[0].menu[id].fiyat, f[2]);
   ok(Math.abs((f3 - f2) - adim1) < 1e-9 && adim1 > 0, 'fiyat artırma her tıkta eşit adım (tek tetik): ' + adim1.toFixed(3) + ' / ' + (f3 - f2).toFixed(3));

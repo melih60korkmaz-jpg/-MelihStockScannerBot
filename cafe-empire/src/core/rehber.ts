@@ -34,14 +34,14 @@ export function oneriler(s: GameState): Oneri[] {
 export interface YolAdim { id: string; ad: string; ac: string; odul: number; ok: (s: GameState) => boolean; git?: string; eylem?: string }
 export const YOL: YolAdim[] = [
   { id: 'sube', ad: 'İlk şubeni aç', ac: 'Haritadan semt seç, ilanı planla ve aç.', odul: 0, ok: (s) => s.subeler.length >= 1, git: 'harita' },
-  { id: 'fiyat', ad: 'Fiyat danışmanını dene', ac: 'Menü ve fiyat sayfasında öneriyi uygula.', odul: 5000, ok: (s) => s.stat.fiyatDeg >= 1, eylem: 'menuGit' },
+  { id: 'fiyat', ad: 'Fiyat danışmanını dene', ac: 'İşletme → Menü ve fiyat: öneriyi uygula.', odul: 5000, ok: (s) => s.stat.fiyatDeg >= 1, eylem: 'menuGit' },
   { id: 'urun', ad: 'Menüye yeni ürün ekle', ac: 'Menü sayfasından bir ürünü aktif et.', odul: 4000, ok: (s) => s.subeler.some((b) => PRODUCTS.filter((p) => b.menu[p.id]?.aktif).length > 13), eylem: 'menuGit' },
-  { id: 'kamp', ad: 'Bir kampanya başlat', ac: 'Tanıtım → Kampanyalar.', odul: 6000, ok: (s) => s.subeler.some((b) => b.promo && (b.promo.sabah || b.promo.mutlu || b.promo.ogrenci || b.promo.kart)), git: 'kampanya' },
-  { id: 'sosyal', ad: 'Sosyal medyada paylaş', ac: 'Tanıtım → Sosyal medya.', odul: 3000, ok: (s) => Object.keys(s.sosyal.son ?? {}).length > 0, git: 'sosyal' },
+  { id: 'kamp', ad: 'Bir kampanya başlat', ac: 'Pazarlama → Kampanyalar.', odul: 6000, ok: (s) => s.subeler.some((b) => b.promo && (b.promo.sabah || b.promo.mutlu || b.promo.ogrenci || b.promo.kart)), git: 'kampanya' },
+  { id: 'sosyal', ad: 'Sosyal medyada paylaş', ac: 'Pazarlama → Sosyal medya.', odul: 3000, ok: (s) => Object.keys(s.sosyal.son ?? {}).length > 0, git: 'sosyal' },
   { id: 'ekip', ad: 'Ekibini 4 kişiye çıkar', ac: 'Personel sayfasından ilan ver, işe al.', odul: 5000, ok: (s) => s.subeler.some((b) => b.staff.length >= 4), eylem: 'persGit' },
   { id: 'tarif', ad: 'İlk tarifini yaz', ac: 'Atölye → Tarif atölyesi (3. günden sonra).', odul: 6000, ok: (s) => (s.derin?.tarif.length ?? 0) >= 1, git: 'tarif' },
-  { id: 'yanit', ad: 'Bir yoruma yanıt ver', ac: 'Dükkânlar → Yorumlar (7. günden sonra).', odul: 3000, ok: (s) => (s.derin?.say?.yanit ?? 0) >= 1, git: 'yorumlar' },
-  { id: 'yat', ad: 'Ekipmanı geliştir', ac: 'Dükkânlar → Ekipman: bir ekipmanı 2. seviyeye çıkar.', odul: 8000, ok: (s) => s.subeler.some((b) => Object.values(b.yat ?? {}).some((v) => v >= 2)), eylem: 'gelGit' },
+  { id: 'yanit', ad: 'Bir yoruma yanıt ver', ac: 'İşletme → Yorumlar (7. günden sonra).', odul: 3000, ok: (s) => (s.derin?.say?.yanit ?? 0) >= 1, git: 'yorumlar' },
+  { id: 'yat', ad: 'Ekipmanı geliştir', ac: 'Gelişim → Ekipman yükseltme: bir ekipmanı 2. seviyeye çıkar.', odul: 8000, ok: (s) => s.subeler.some((b) => Object.values(b.yat ?? {}).some((v) => v >= 2)), eylem: 'gelGit' },
   { id: 'sube2', ad: 'İkinci şubeni aç', ac: 'Büyümenin ilk büyük adımı.', odul: 25000, ok: (s) => s.subeler.length >= 2, git: 'harita' },
 ];
 export interface Yol { adim: Record<string, number>; bitti: boolean }

@@ -6,14 +6,24 @@ import { newGame } from '../src/core/actions';
 import { deserialize, serialize } from '../src/core/save';
 
 describe('menü yapısı', () => {
-  it('10 ana sekme; her grup sayfası tanımlı ve tek grupta; grup başına en çok 10 sayfa', () => {
-    const tabs = GRUPLAR.flatMap((g) => g.tabs); expect(GRUPLAR.length).toBe(10); expect(new Set(tabs).size).toBe(tabs.length); const tum = { ...PANELS, ...PAGES }; const nav = new Set(NAV.map((n) => n[0]));
+  it('8 kategori (7 alt menü + Ayarlar); her grup sayfası tanımlı ve tek grupta; grup başına en çok 10 sayfa', () => {
+    const tabs = GRUPLAR.flatMap((g) => g.tabs); expect(GRUPLAR.length).toBe(8); expect(new Set(tabs).size).toBe(tabs.length); const tum = { ...PANELS, ...PAGES }; const nav = new Set(NAV.map((n) => n[0]));
     for (const id of tabs) { expect(nav.has(id)).toBe(true); expect(tum[id]).toBeTypeOf('function'); expect(grupOf(id).tabs).toContain(id); }
     for (const g of GRUPLAR) expect(g.tabs.length).toBeLessThanOrEqual(10);
-    for (const id of ['menu', 'personel', 'vardiya', 'gelisim']) expect(tum[id]).toBeTypeOf('function');   // Şubeler detayı içindeki sayfalar
+    for (const id of ['menu', 'personel', 'vardiya', 'gelisim']) expect(grupOf(id).id).toBe(id === 'gelisim' ? 'gelisim' : 'isletme');   // artık gerçek menü sayfaları
+    for (const n of NAV) if (n[0] !== 'genel') expect(tabs).toContain(n[0]);   // hiçbir sayfa menüsüz kalmaz
+    expect(GRUPLAR.filter((g) => g.dock !== false).length).toBe(7);
   });
   it('sayfa başlıkları kısa ve benzersiz', () => { const ad = NAV.map((n) => n[2]); expect(new Set(ad).size).toBe(ad.length); for (const a of ad) expect(a.length).toBeLessThanOrEqual(20); });
-  it('alt menü sırası: Merkez, Türkiye, Dükkânlar, Depo, Tanıtım, Gelişim, Kasa, Ayarlar', () => { expect(GRUPLAR.map((g) => g.ad)).toEqual(['Merkez', 'Türkiye', 'Dükkânlar', 'Atölye', 'Semt', 'Depo', 'Tanıtım', 'Gelişim', 'Kasa', 'Ayarlar']); });
+  it('alt menü sırası: Merkez, İşletme, Atölye, Finans, Pazarlama, Gelişim, Dünya (+ Ayarlar üstte)', () => { expect(GRUPLAR.map((g) => g.ad)).toEqual(['Merkez', 'İşletme', 'Atölye', 'Finans', 'Pazarlama', 'Gelişim', 'Dünya', 'Ayarlar']); });
+  it('ilgili sayfalar aynı kategoride: finans, pazarlama, dünya, işletme', () => {
+    const g = (id: string) => GRUPLAR.find((x) => x.id === id)!.tabs;
+    for (const t of ['finans', 'rapor', 'banka', 'ekonomi']) expect(g('finans')).toContain(t);
+    for (const t of ['sosyal', 'reklam', 'kampanya', 'prestij']) expect(g('pazarlama')).toContain(t);
+    for (const t of ['harita', 'iller', 'rakipler']) expect(g('dunya')).toContain(t);
+    for (const t of ['subeler', 'menu', 'personel', 'vardiya', 'stok', 'tedarik', 'musteri']) expect(g('isletme')).toContain(t);
+    for (const t of ['gelisim', 'hedefler', 'franchise']) expect(g('gelisim')).toContain(t);
+  });
 });
 describe('gün süresi (hız)', () => {
   it('varsayılan gün 3 dakika; hız çarpanı orantılı; seçenekler artan', () => {

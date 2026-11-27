@@ -1,6 +1,6 @@
 /** Yönetim hissi: kademeli menü, sıradaki adım, yol haritası, karar defteri ve açılacak sistemler. */
 import { NAV, GRUPLAR, ctx, cur, esc, bar, tr, S as getS, type Grup, type Helpers } from './panels';
-import { GRUP_KURAL, TAB_KURAL, grupAcik, tabAcik, acikListe, kilitliListe, kilitNedeni } from '../core/kademe';
+import { GRUP_KURAL, TAB_KURAL, grupAcik, tabAcik, tabGizli, acikListe, kilitliListe, kilitNedeni } from '../core/kademe';
 import { oneriler, YOL, Yl, yolDurum } from '../core/rehber';
 import { Kd, KARAR_GUN } from '../core/karar';
 import { D } from '../core/derin';
@@ -19,22 +19,28 @@ export const KARAR_ETIKET: Record<string, string> = {
   surd: 'Sürdürülebilirlik programı', esnafOrtak: 'Esnafla ortak kampanya', pilotBasla: 'Pilot ürün başladı', pilotYay: 'Ürün tüm şubelere yayıldı',
 };
 export const yeniGrup = new Set<string>();
-export const gorunurGruplar = (s: GameState): Grup[] => GRUPLAR.filter((g) => grupAcik(s, g.id));
-/** Grup içi sayfa çipleri: açık olanlar tıklanır, kilitli olanlar 🔒 ile gösterilir. */
+const MENU_SURUM = '__menu_v2';
+/** Alt menüde görünen kategoriler (Ayarlar üst çubuktaki ⚙ ile açılır). */
+export const gorunurGruplar = (s: GameState): Grup[] => GRUPLAR.filter((g) => g.dock !== false && grupAcik(s, g.id));
+/** Bir kategorinin sayfa çipleri. Açık olanlar tıklanır; kilitli olanlar 🔒 ile görünür.
+ *  Şubeden önce (sade başlangıç) ve şube gerektiren sayfalarda kilitli çipler gösterilmez. Tek çip varsa şerit çizilmez. */
 export function altSekmeler(s: GameState, gr: Grup, aktif: string): string {
-  if (gr.tabs.length <= 1) return '';
-  const chip = (id: string, on: boolean): string => { const n = NAV.find((x) => x[0] === id)!; return tabAcik(s, id) ? `<button data-n="${id}" class="${on ? 'on' : ''}">${n[1]} ${n[2]}</button>` : `<button class="lock" data-lock="${id}">🔒 ${n[2]}</button>`; };
-  if (gr.id !== 'subeler') return `<div class="subtabs">${gr.tabs.map((id) => chip(id, id === aktif)).join('')}</div>`;
-  // Dükkânlar: Menü, Personel, Vardiya ve Ekipman tek dokunuşla (dükkân detayındaki sekmeye doğrudan gider).
-  const detay = aktif === 'subeler' && ctx.subeAcik !== null, sk = detay ? ctx.subeSekme : 'ozet';
-  const kisa: Array<[string, string, string, string]> = [['menuGit', 'menu', '📋', 'Menü ve fiyat'], ['persGit', 'personel', '👥', 'Personel'], ['vardiyaGit', 'vardiya', '🗓️', 'Vardiya'], ['gelGit', 'gelisim', '🛠️', 'Ekipman']];
-  const [ilk, ...geri] = gr.tabs;
-  const kisaHtml = s.subeler.length ? kisa.map(([a, k, ik, ad]) => `<button data-a="${a}" class="${sk === k ? 'on' : ''}">${ik} ${ad}</button>`).join('') : '';
-  return `<div class="subtabs">${chip(ilk!, aktif === 'subeler' && (!detay || sk === 'ozet'))}${kisaHtml}${geri.map((id) => chip(id, id === aktif)).join('')}</div>`;
+  const sade = s.subeler.length === 0, cipler: string[] = []; let kilitli = 0, saklanan = 0;
+  for (const id of gr.tabs) {
+    const n = NAV.find((x) => x[0] === id)!;
+    if (tabAcik(s, id)) cipler.push(`<button data-n="${id}" class="${id === aktif ? 'on' : ''}">${n[1]} ${n[2]}</button>`);
+    else if (sade || tabGizli(id)) continue;
+    else if (kilitli < 2) { kilitli++; cipler.push(`<button class="lock" data-lock="${id}">🔒 ${n[2]}</button>`); }
+    else saklanan++;   // fazla kilitli sayfalar tek çipte toplanır; "Tüm menüler"de görünür
+  }
+  if (saklanan) cipler.push(`<button class="lock" data-mn="1" title="Tüm menüleri aç">🔒 +${saklanan}</button>`);
+  return cipler.length <= 1 ? '' : `<div class="subtabs">${cipler.join('')}</div>`;
 }
 /** Yeni açılan sistemleri bulur; ilk çağrıda mevcut durumu kaydeder (eski kayıtlarda bildirim yağmaz). */
 export function acilisKontrol(s: GameState): string[] {
-  const d = D(s), simdi = acikListe(s); if (!d.acilan) { d.acilan = {}; for (const k of simdi) d.acilan[k] = dayOf(s); return []; }
+  const d = D(s), simdi = acikListe(s); if (!d.acilan) { d.acilan = {}; for (const k of simdi) d.acilan[k] = dayOf(s); d.acilan[MENU_SURUM] = 1; return []; }
+  // Menü düzeni değişince (v2) eski kayıtlarda yeni adlar "yeni açıldı" diye bildirim yağdırmasın: sessizce yeniden temellendir.
+  if (!d.acilan[MENU_SURUM]) { for (const k of simdi) if (d.acilan[k] === undefined) d.acilan[k] = dayOf(s); d.acilan[MENU_SURUM] = 1; return []; }
   const yeni = simdi.filter((k) => d.acilan![k] === undefined), ad: string[] = [];
   for (const k of yeni) { d.acilan[k] = dayOf(s); ad.push((GRUP_KURAL[k] ?? TAB_KURAL[k])?.ad ?? k); if (GRUP_KURAL[k]) yeniGrup.add(k); }
   return ad;
@@ -56,7 +62,7 @@ export function yonetimKartlari(): string {
   return `<div class="duo" style="margin-top:8px"><div class="duoL">${soldaki}${yolKart}</div><div class="duoR">${kararKart}${kilitKart}</div></div>`;
 }
 export function handleYonet(a: string, d: DOMStringMap, h: Helpers): boolean {
-  const s = getS(); const sub = (k: 'menu' | 'personel' | 'vardiya' | 'gelisim'): boolean => { if (!s.subeler.length) return true; const b = cur(); ctx.bid = b.id; ctx.subeAcik = b.id; ctx.subeSekme = k as typeof ctx.subeSekme; h.go('subeler'); return true; };
+  const s = getS(); const sub = (k: 'menu' | 'personel' | 'vardiya' | 'gelisim'): boolean => { if (!s.subeler.length) return true; ctx.bid = cur().id; h.go(k); return true; };
   switch (a) {
     case 'menuGit': return sub('menu'); case 'persGit': return sub('personel'); case 'vardiyaGit': return sub('vardiya'); case 'gelGit': return sub('gelisim');
     case 'kilit': h.toast(`🔒 ${kilitNedeni(s, d.id!)}`); return true;
