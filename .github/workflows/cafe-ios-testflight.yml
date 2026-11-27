@@ -47,17 +47,36 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/keys"
           KEY="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
-          # iPhone'dan yapıştırınca satır sonları bozulabilir: gövdeyi çıkarıp yeniden sar
-          BODY=$(printf '%s' "$ASC_KEY_P8" | tr -d '\r' \
-            | sed -e 's/-----BEGIN[^-]*-----//' -e 's/-----END[^-]*-----//' \
-            | tr -d ' \n\t')
-          echo "anahtar govde uzunlugu: ${#BODY} (ES256 .p8 icin ~200 beklenir)"
-          { echo "-----BEGIN PRIVATE KEY-----"; printf '%s' "$BODY" | fold -w 64; echo; echo "-----END PRIVATE KEY-----"; } > "$KEY"
-          if ! openssl pkey -in "$KEY" -noout 2>/dev/null; then
-            echo "HATA: ASC_KEY_P8 gecerli bir ozel anahtar degil (eksik ya da bozuk yapistirilmis)."
-            exit 1
-          fi
-          echo "anahtar gecerli"
+          # iPhone'dan yapıştırınca satır sonları bozulabilir ya da fazladan yazı girebilir.
+          # Apple .p8 = PKCS#8 EC P-256: gövde "MIG?AgEAMBMGByqGSM49" ile başlar.
+          # Uzunluk DER başlığından okunur (30 81 LL => LL+3 bayt), fazladan yazı atılır.
+          python3 - "$KEY" <<'PY'
+          import base64, os, re, subprocess, sys
+          key_path = sys.argv[1]
+          raw = os.environ["ASC_KEY_P8"].replace("\r", "")
+          print("ham uzunluk:", len(raw), "satir:", raw.count("\n") + 1)
+          m = re.search(r"-----BEGIN[^-]*-----(.*?)-----END[^-]*-----", raw, re.S)
+          body_src = m.group(1) if m else raw
+          body = re.sub(r"[^A-Za-z0-9+/=]", "", body_src)
+          print("temiz govde uzunlugu:", len(body), "(Apple .p8 icin 200 beklenir)")
+          mm = re.search(r"MIG.AgEAMBMGByqGSM49", body)
+          print("standart baslik bulundu mu:", bool(mm), "konum:", mm.start() if mm else -1)
+          if mm:
+              i = mm.start()
+              hb = base64.b64decode(body[i:i + 4])
+              total = hb[2] + 3
+              want = ((total + 2) // 3) * 4
+              print("DER uzunlugu:", total, "bayt, beklenen govde:", want)
+              body = body[i:i + want]
+          lines = [body[j:j + 64] for j in range(0, len(body), 64)]
+          pem = "-----BEGIN PRIVATE KEY-----\n" + "\n".join(lines) + "\n-----END PRIVATE KEY-----\n"
+          open(key_path, "w").write(pem)
+          r = subprocess.run(["openssl", "pkey", "-in", key_path, "-noout"], capture_output=True)
+          if r.returncode != 0:
+              print("HATA: ASC_KEY_P8 gecerli bir ozel anahtar degil.", r.stderr.decode()[:200])
+              sys.exit(1)
+          print("anahtar gecerli")
+          PY
 
       - name: Arşivle (otomatik imza)
         run: |
