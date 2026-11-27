@@ -51,6 +51,9 @@ jobs:
           npm ci
           ls assets/game.html
 
+      - name: Expo JSI Swift 6.2 yaması
+        run: node scripts/patch-expo-jsi.cjs
+
       - name: iOS projesini üret
         run: npx expo prebuild --platform ios --no-install --clean && cd ios && pod install
 
