@@ -24,6 +24,9 @@ import { ZORLUK } from '../core/derin';
 import { confetti } from './juice';
 import { yardimAc, ogrCiz } from './yardim';
 import { menuAc } from './menu';
+import './oyun.css';
+import { servisAc } from './servis';
+import { servisHazirMi } from '../core/servis';
 import { ogrKontrol, ogrEylem, OGR, type OgrAdim } from '../core/ogretici';
 import { PAGES, handlePages, kurHtml, kisa, BOS_UYARI } from './pages';
 
@@ -44,7 +47,7 @@ function toast(m: string, tip: 'ok' | 'bad' | 'warn' | '' = ''): void {
 
 /* ===================== Başlangıç ekranları ===================== */
 function title(): void {
-  const has = load(); root.innerHTML = `<div class="screen"><div class="title"><div style="font-size:64px">☕</div><h1>CAFE EMPIRE</h1><p>Türkiye · kafe işletme ve zincir simülasyonu</p>${has ? `<button class="btn pri" id="devam">Devam et<br><small>${esc(has.marka.ad)} · ${dateText(has)} · ${has.subeler.length} şube</small></button>` : ''}<button class="btn ${has ? '' : 'pri'}" id="yeni">Yeni oyun</button><button class="btn" id="nasil" style="margin-top:8px">? Nasıl oynanır?</button><p class="tiny muted" style="margin-top:14px">Telefonu yatay tutmanız önerilir. Kurgusal bir simülasyondur.</p></div></div>`;
+  const has = load(); root.innerHTML = `<div class="screen giris">${Array.from({ length: 7 }, (_, i) => `<i class="buhar" style="left:${30 + i * 6}%;--dx:${(i % 2 ? 1 : -1) * (14 + i * 4)}px;animation-delay:${i * 1.0}s"></i>`).join('')}${Array.from({ length: 9 }, (_, i) => `<i class="cekirdek" style="left:${6 + i * 11}%;animation-delay:${-i * 1.3}s;animation-duration:${9 + (i % 4) * 2}s">🫘</i>`).join('')}<div class="title"><div class="logo">☕</div><h1>CAFE EMPIRE</h1><p>Türkiye · kafe işletme ve zincir simülasyonu</p>${has ? `<button class="btn pri" id="devam">Devam et<br><small>${esc(has.marka.ad)} · ${dateText(has)} · ${has.subeler.length} şube</small></button>` : ''}<button class="btn ${has ? '' : 'pri'}" id="yeni">Yeni oyun</button><button class="btn" id="nasil" style="margin-top:8px">? Nasıl oynanır?</button><p class="tiny muted" style="margin-top:14px">Telefonu yatay tutmanız önerilir. Kurgusal bir simülasyondur.</p></div></div>`;
   $('#yeni').onclick = setup; $('#nasil').onclick = () => yardimAc(root, null, { git: () => undefined }); if (has) $('#devam').onclick = () => { S = has; enter(); };
 }
 function setup(): void {
@@ -69,8 +72,8 @@ function zoomTo(vb: VB, done?: () => void, ms = 650): void {
 /* ===================== Oyun ekranı ===================== */
 function enter(): void {
   if (!S) return; cancelAnimationFrame(zoomRaf); kasaGor = NaN; cancelAnimationFrame(kasaRaf); kasaRaf = 0; ctx.S = S; ctx.bid = S.subeler[0]?.id ?? 0; TAB = 'ana'; ctx.zoomIl = null; ctx.selIlce = null; ctx.vb = NAT_VB; ctx.fx = []; ctx.mapsel = 34; ctx.mapm = 'erisim'; ctx.kur = null; ctx.subeAcik = null; known = new Set(); newOpp = false;
-  root.innerHTML = `<div class="top"><div class="brandw"><i>☕</i><div><b id="tBrand"></b><small id="tSub"></small></div></div><span class="sp"></span><div class="chip tm" id="tTime"></div><button class="chip money" id="tKasa" title="Banka"></button><button class="chip star" id="tMarka" title="Prestij"></button><div class="spd" id="spd"></div><button class="ibtn" id="tMenu" title="Tüm menüler" aria-label="Tüm menüler">☰</button><button class="ibtn" id="tHelp" title="Oyun rehberi" aria-label="Oyun rehberi">?</button><button class="ibtn" id="tSet" title="Ayarlar">⚙</button></div><div id="page" class="page"></div><div class="nav" id="nav"></div><div id="kur"></div>`;
-  setAudio({ ses: S.ayar.ses, muzik: S.ayar.muzik, vol: S.ayar.ses_vol }); root.onpointerdown = () => startAudio(); lastSumDay = dayOf(S); lastAch = new Set(Object.keys(S.basarim)); $('#tHelp').onclick = () => yardimGoster(); $('#tMenu').onclick = () => menuAc(root, S!, TAB, { git: (t) => sekmeAc(t), kilit: (id) => act('kilit', { id }) }); $('#tSet').onclick = () => sekmeAc('ayar'); $('#tKasa').onclick = () => sekmeAc('finans'); $('#tMarka').onclick = () => sekmeAc('prestij');
+  root.innerHTML = `<div class="top"><div class="brandw"><i>☕</i><div><b id="tBrand"></b><small id="tSub"></small></div></div><span class="sp"></span><div class="chip tm" id="tTime"></div><button class="chip money" id="tKasa" title="Banka"></button><button class="chip star" id="tMarka" title="Prestij"></button><div class="spd" id="spd"></div><button class="chip" id="tServis" title="Yoğun saat: elle servis yap, ödül kazan">🎮 Servis</button><button class="ibtn" id="tMenu" title="Tüm menüler" aria-label="Tüm menüler">☰</button><button class="ibtn" id="tHelp" title="Oyun rehberi" aria-label="Oyun rehberi">?</button><button class="ibtn" id="tSet" title="Ayarlar">⚙</button></div><div id="page" class="page"></div><div class="nav" id="nav"></div><div id="kur"></div>`;
+  setAudio({ ses: S.ayar.ses, muzik: S.ayar.muzik, vol: S.ayar.ses_vol }); root.onpointerdown = () => startAudio(); lastSumDay = dayOf(S); lastAch = new Set(Object.keys(S.basarim)); $('#tHelp').onclick = () => yardimGoster(); $('#tServis').onclick = () => servisBaslat(); $('#tMenu').onclick = () => menuAc(root, S!, TAB, { git: (t) => sekmeAc(t), kilit: (id) => act('kilit', { id }) }); $('#tSet').onclick = () => sekmeAc('ayar'); $('#tKasa').onclick = () => sekmeAc('finans'); $('#tMarka').onclick = () => sekmeAc('prestij');
   S.hiz = 1; nav(); spdBar(); hud(); page(false);
   cancelAnimationFrame(rafId); let son = performance.now(); const kare = (n: number): void => { rafId = requestAnimationFrame(kare); const dt = Math.min(0.1, (n - son) / 1000); son = n; kareIzle(dt); loop(dt); }; rafId = requestAnimationFrame(kare); S.tur = -1; ogrYenile();
   document.addEventListener('visibilitychange', () => { if (document.hidden && S) { save(S); } });
@@ -97,8 +100,15 @@ function kasaHedefle(v: number): void {
   if (!kasaRaf && Math.abs(kasaHed - kasaGor) >= 1) { kasaSon = performance.now(); kasaRaf = requestAnimationFrame(kasaAdim); }
 }
 function hud(): void {
-  if (!S) return; const b = S.subeler.length ? cur() : null, hv = b ? S.hava[b.city] ?? 'gunesli' : 'gunesli', ikon = { gunesli: '☀️', bulutlu: '⛅', yagmur: '🌧️', kar: '❄️' }[hv], gece = Math.floor((S.dk % 1440) / 60) >= 19 || Math.floor((S.dk % 1440) / 60) < 6;
+  if (!S) return; { const sv = document.getElementById('tServis'); if (sv) { const h = servisHazirMi(S); sv.classList.toggle('hazir', h); sv.classList.toggle('bekle', !h); } } const b = S.subeler.length ? cur() : null, hv = b ? S.hava[b.city] ?? 'gunesli' : 'gunesli', ikon = { gunesli: '☀️', bulutlu: '⛅', yagmur: '🌧️', kar: '❄️' }[hv], gece = Math.floor((S.dk % 1440) / 60) >= 19 || Math.floor((S.dk % 1440) / 60) < 6;
   $('#tBrand').textContent = S.marka.ad; $('#tSub').textContent = `Gün ${dayOf(S) + 1} · ${S.subeler.length} şube`; $('#tTime').innerHTML = `<span>${gece ? '🌙' : ikon}</span><div><b>${timeText(S)}</b><small>${dateText(S)}</small></div>`; if (!document.getElementById('tKasaV')) { $('#tKasa').innerHTML = `<i class="coin">₺</i><b id="tKasaV">${kisa(S.kasa)}</b>`; kasaGor = S.kasa; } kasaHedefle(S.kasa); $('#tMarka').innerHTML = `<i>★</i><b>${Math.round(S.marka_puani)}</b>`; $('#tKasa').title = `${fmt(S.kasa)} · ${LEVELS[levelOf(S) - 1]?.ad ?? ''}`;
+}
+/** Yoğun Saat mini oyununu açar; oyun saati o sürede durur. */
+function servisBaslat(): void {
+  if (!S || root.querySelector('.sv')) return;
+  if (!S.subeler.length) { toast('Önce bir dükkân aç; servis oyunu şube ister.', 'warn'); return; }
+  if (!servisHazirMi(S)) { toast('Bugünkü servis ödülünü aldın. Yarın yeniden oyna!'); return; }
+  const hiz = S.hiz; S.hiz = 0; spdBar(); servisAc(root, S, () => { hud(); save(S!); }); const izle = setInterval(() => { if (!root.querySelector('.sv')) { clearInterval(izle); if (S && !S.oyunBitti) { S.hiz = hiz || 1; spdBar(); hud(); } } }, 250);
 }
 function loop(dt: number): void {
   if (!S) return; const dk = oyunDakikasi(dt, S.hiz, S.ayar.gunSn); accMin += dk; let n = 0;

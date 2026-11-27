@@ -352,7 +352,7 @@ export interface TedIliski { sad: number; harc: number; son: number; soz?: { bas
 export interface Derin {
   yol?: import('./rehber').Yol; karar?: import('./karar').KararDefteri; acilan?: Record<string, number>;
   kav?: import('./kavurma').Kav; kur?: import('./kurye').Kur; mulk?: import('./mulk').Mulk; sad?: import('./sadakat').Sad; basin?: import('./basin').Basin; anket?: import('./anket').Anket; mev?: import('./mevzuat').Mev; surd?: import('./surdur').Surd; afet?: import('./afet').Afet;
-  yat?: import('./yatirim').Yat;
+  yat?: import('./yatirim').Yat; servis?: import('./servis').Servis;
   pilot?: Record<string, import('./sezon').Pilot>;
   donem?: import('./donem').DonemDurum;
   gun90?: Array<import('./analiz').GunKayit>;
