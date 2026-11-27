@@ -1,0 +1,48 @@
+# Cafe Empire'ı Expo hesabına (EAS Update) yayınlar. Expo Go ile bağlantıdan açılır; bilgisayar gerekmez. cafe-expo değişince ya da elle (Actions › Run workflow) çalışır.
+# Gerekli tek şey: GitHub deposunda `EXPO_TOKEN` adlı gizli değer (expo.dev > Account settings > Access tokens).
+name: Cafe Empire — Expo Go güncellemesi yayınla
+on:
+  push:
+    branches: [claude/modest-archimedes-etn5kx]
+    paths: ['cafe-expo/**', '.github/workflows/cafe-expo-update.yml']
+  workflow_dispatch:
+    inputs:
+      message:
+        description: Güncelleme notu
+        default: Oyun güncellemesi
+concurrency: { group: cafe-expo-update, cancel-in-progress: true }
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: cafe-expo } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: cafe-expo/package-lock.json }
+      - name: EXPO_TOKEN var mı?
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then echo "::error::EXPO_TOKEN gizli değeri tanımlı değil (Settings > Secrets and variables > Actions)."; exit 1; fi
+      - uses: expo/expo-github-action@v8
+        with: { eas-version: latest, token: '${{ secrets.EXPO_TOKEN }}' }
+      - run: npm ci
+      - name: Proje kimliği (ilk seferde oluşturur)
+        run: |
+          if ! grep -q '"projectId"' app.json; then eas init --force --non-interactive; fi
+          eas update:configure --non-interactive || true
+      - name: Yayınla
+        run: eas update --branch main --environment production --message "${{ github.event.inputs.message || 'Oyun güncellemesi' }}" --non-interactive | tee /tmp/eas.log
+      - name: Expo Go bağlantısı
+        run: |
+          PID=$(node -e "const a=require('./app.json');console.log(a.expo.extra?.eas?.projectId||'')")
+          RV=$(node -e "const a=require('./app.json');console.log(a.expo.version)")
+          {
+            echo "## Expo Go ile aç"
+            echo ""
+            echo "Expo Go uygulamasında **Enter URL manually** ile şunu gir:"
+            echo ""
+            echo '```'
+            echo "exp://u.expo.dev/${PID}?channel-name=main&runtime-version=${RV}"
+            echo '```'
+            echo ""
+            echo "Panel: https://expo.dev/projects/${PID}"
+          } >> "$GITHUB_STEP_SUMMARY"

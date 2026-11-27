@@ -16,7 +16,9 @@
         "CFBundleDisplayName": "Cafe Empire",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "tr",
-        "CFBundleLocalizations": ["tr"]
+        "CFBundleLocalizations": [
+          "tr"
+        ]
       }
     },
     "android": {
@@ -29,9 +31,21 @@
       "predictiveBackGestureEnabled": false,
       "package": "app.cafeempire.turkiye"
     },
-    "web": { "favicon": "./assets/favicon.png" },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
     "backgroundColor": "#081418",
-    "plugins": [["expo-screen-orientation", { "initialOrientation": "LANDSCAPE" }]],
-    "owner": "meeeellliiihh"
+    "plugins": [
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "LANDSCAPE"
+        }
+      ]
+    ],
+    "owner": "meeeellliiihh",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }
