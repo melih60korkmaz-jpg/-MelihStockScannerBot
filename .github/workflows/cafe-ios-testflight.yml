@@ -33,7 +33,8 @@ jobs:
       - name: Xcode 26 seç
         run: |
           echo "Kurulu Xcode'lar:"; ls -d /Applications/Xcode*.app
-          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          # En yeni Xcode (26.3) Expo'nun Swift kodunda "sending 'slot'" hatasi veriyor; en eski 26.x'i dene.
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | head -1)
           if [ -z "$X" ]; then echo "HATA: bu makinede Xcode 26 yok"; exit 1; fi
           sudo xcode-select -s "$X/Contents/Developer"
           xcodebuild -version
