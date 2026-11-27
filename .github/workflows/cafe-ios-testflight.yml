@@ -29,6 +29,16 @@ jobs:
             if [ -z "${!v}" ]; then echo "EKSIK secret: $v"; exit 1; fi
           done
 
+      # Expo'nun Swift paketi Swift 6.2 ister (Xcode 26); Apple de artık Xcode 26 ile derlenmiş yükleme ister.
+      - name: Xcode 26 seç
+        run: |
+          echo "Kurulu Xcode'lar:"; ls -d /Applications/Xcode*.app
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$X" ]; then echo "HATA: bu makinede Xcode 26 yok"; exit 1; fi
+          sudo xcode-select -s "$X/Contents/Developer"
+          xcodebuild -version
+          swift --version
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
