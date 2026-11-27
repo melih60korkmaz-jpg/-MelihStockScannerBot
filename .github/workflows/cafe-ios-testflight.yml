@@ -1,8 +1,12 @@
 name: Cafe Empire iOS -> TestFlight
 
-# Elle başlatılır: GitHub > Actions > bu workflow > Run workflow
+# Bu dala itilince (workflow dosyası değişince) ya da elle çalışır.
+# Not: "Run workflow" düğmesi yalnızca main'deki workflow'larda görünür.
 on:
   workflow_dispatch:
+  push:
+    branches: [claude/modest-archimedes-etn5kx]
+    paths: ['.github/workflows/cafe-ios-testflight.yml']
 
 jobs:
   ios:
