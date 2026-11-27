@@ -123,7 +123,7 @@ function page(keep: boolean): void {
   if (!S) return; const el = $('#page'); const sc = keep ? el.querySelector<HTMLElement>('.pb')?.scrollTop ?? 0 : 0, nm = NAV.find((n) => n[0] === TAB)!; ctx.S = S;
   const body = isBranchTab(TAB) && !S.subeler.length ? BOS_UYARI(TAB) : (ALL[TAB] ?? ALL.ana!)(); const wasAnim = ctx.anim; ctx.anim = false;
   const gr = grupOf(TAB), alt = altSekmeler(S, gr, TAB);
-  el.innerHTML = `${alt}<div class="pb ${FIT.has(TAB) ? 'fit' : 'cols'}" data-tab="${TAB}">${body}</div>`; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); el.querySelectorAll<HTMLElement>('.subtabs [data-lock]').forEach((b) => { b.onclick = () => act('kilit', { id: b.dataset.lock! }); }); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); if (wasAnim) animateCounters(pb); void nm;
+  el.innerHTML = `${alt}<div class="pb ${FIT.has(TAB) ? 'fit' : 'cols'}" data-tab="${TAB}">${body}</div>`; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); el.querySelectorAll<HTMLElement>('.subtabs [data-lock]').forEach((b) => { b.onclick = () => act('kilit', { id: b.dataset.lock! }); }); el.querySelectorAll<HTMLElement>('.subtabs [data-a]').forEach((b) => { b.onclick = () => act(b.dataset.a!, b.dataset); }); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); if (wasAnim) animateCounters(pb); void nm;
 }
 function animateCounters(pb: HTMLElement): void {
   const els = [...pb.querySelectorAll<HTMLElement>('.cnt')]; if (!els.length) return; const t0 = performance.now(), ease = (t: number): number => 1 - Math.pow(1 - t, 3);
@@ -159,4 +159,4 @@ function yonKontrol(): void {
   if (dikey) { hizEski = S.hiz || 1; S.hiz = 0; } else { S.hiz = hizEski; spdBar(); }
 }
 function yatayKilit(): void { try { void (screen.orientation as unknown as { lock?: (o: string) => Promise<void> }).lock?.('landscape')?.catch(() => 0); } catch { /* desteklenmiyor */ } }
-export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); void kurtar().catch(() => false).finally(() => title()); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, openTab: (t: string) => sekmeAc(t) }; }
+export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); void kurtar().catch(() => false).finally(() => title()); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, get TAB() { return TAB; }, openTab: (t: string) => sekmeAc(t), tabIds: () => NAV.map((n) => n[0]) }; }

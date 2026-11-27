@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
   push:
     branches: [claude/modest-archimedes-etn5kx]
-    paths: ['.github/workflows/cafe-ios-testflight.yml']
+    # Oyun dosyası (cafe-expo/assets/game.html) ya da bu dosya değişince yeni build yüklenir.
+    paths: ['.github/workflows/cafe-ios-testflight.yml', 'cafe-expo/assets/game.html']
 
 jobs:
   ios:

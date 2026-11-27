@@ -23,7 +23,14 @@ export const gorunurGruplar = (s: GameState): Grup[] => GRUPLAR.filter((g) => gr
 /** Grup içi sayfa çipleri: açık olanlar tıklanır, kilitli olanlar 🔒 ile gösterilir. */
 export function altSekmeler(s: GameState, gr: Grup, aktif: string): string {
   if (gr.tabs.length <= 1) return '';
-  return `<div class="subtabs">${gr.tabs.map((id) => { const n = NAV.find((x) => x[0] === id)!; return tabAcik(s, id) ? `<button data-n="${id}" class="${id === aktif ? 'on' : ''}">${n[1]} ${n[2]}</button>` : `<button class="lock" data-lock="${id}">🔒 ${n[2]}</button>`; }).join('')}</div>`;
+  const chip = (id: string, on: boolean): string => { const n = NAV.find((x) => x[0] === id)!; return tabAcik(s, id) ? `<button data-n="${id}" class="${on ? 'on' : ''}">${n[1]} ${n[2]}</button>` : `<button class="lock" data-lock="${id}">🔒 ${n[2]}</button>`; };
+  if (gr.id !== 'subeler') return `<div class="subtabs">${gr.tabs.map((id) => chip(id, id === aktif)).join('')}</div>`;
+  // Dükkânlar: Menü, Personel, Vardiya ve Ekipman tek dokunuşla (dükkân detayındaki sekmeye doğrudan gider).
+  const detay = aktif === 'subeler' && ctx.subeAcik !== null, sk = detay ? ctx.subeSekme : 'ozet';
+  const kisa: Array<[string, string, string, string]> = [['menuGit', 'menu', '📋', 'Menü ve fiyat'], ['persGit', 'personel', '👥', 'Personel'], ['vardiyaGit', 'vardiya', '🗓️', 'Vardiya'], ['gelGit', 'gelisim', '🛠️', 'Ekipman']];
+  const [ilk, ...geri] = gr.tabs;
+  const kisaHtml = s.subeler.length ? kisa.map(([a, k, ik, ad]) => `<button data-a="${a}" class="${sk === k ? 'on' : ''}">${ik} ${ad}</button>`).join('') : '';
+  return `<div class="subtabs">${chip(ilk!, aktif === 'subeler' && (!detay || sk === 'ozet'))}${kisaHtml}${geri.map((id) => chip(id, id === aktif)).join('')}</div>`;
 }
 /** Yeni açılan sistemleri bulur; ilk çağrıda mevcut durumu kaydeder (eski kayıtlarda bildirim yağmaz). */
 export function acilisKontrol(s: GameState): string[] {

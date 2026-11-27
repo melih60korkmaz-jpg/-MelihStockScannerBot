@@ -22,5 +22,11 @@ export function pKariyer(): string {
 }
 export const DONEM_PAGES: Record<string, () => string> = { donem: pDonem, kariyer: pKariyer };
 export function handleDonem(a: string, _d: DOMStringMap, h: Helpers): boolean {
-  if (a !== 'kariyerKopyala') return false; const t = kariyerOzeti(getS()).metin; try { void navigator.clipboard?.writeText(t); h.toast('Kariyer özeti kopyalandı.'); } catch { h.toast(t); } return true;
+  if (a !== 'kariyerKopyala') return false; const t = kariyerOzeti(getS()).metin; void kopyala(t).then((tamam) => h.toast(tamam ? 'Kariyer özeti kopyalandı.' : t)); return true;
+}
+
+/** Panoya yazar. İzin yoksa eski yöntemi dener; başarılıysa true döner (iOS WebView'da pano izni olmayabilir). */
+export async function kopyala(t: string): Promise<boolean> {
+  try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(t); return true; } } catch { /* yedek yönteme geç */ }
+  try { const a = document.createElement('textarea'); a.value = t; a.setAttribute('readonly', ''); a.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(a); a.select(); a.setSelectionRange(0, t.length); const ok = document.execCommand('copy'); a.remove(); return ok; } catch { return false; }
 }

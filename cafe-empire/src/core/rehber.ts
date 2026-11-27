@@ -41,7 +41,7 @@ export const YOL: YolAdim[] = [
   { id: 'ekip', ad: 'Ekibini 4 kişiye çıkar', ac: 'Personel sayfasından ilan ver, işe al.', odul: 5000, ok: (s) => s.subeler.some((b) => b.staff.length >= 4), eylem: 'persGit' },
   { id: 'tarif', ad: 'İlk tarifini yaz', ac: 'Atölye → Tarif atölyesi (3. günden sonra).', odul: 6000, ok: (s) => (s.derin?.tarif.length ?? 0) >= 1, git: 'tarif' },
   { id: 'yanit', ad: 'Bir yoruma yanıt ver', ac: 'Dükkânlar → Yorumlar (7. günden sonra).', odul: 3000, ok: (s) => (s.derin?.say?.yanit ?? 0) >= 1, git: 'yorumlar' },
-  { id: 'yat', ad: 'Ekipmanı geliştir', ac: 'Dükkân detayı → Gelişim: bir ekipmanı 2. seviyeye çıkar.', odul: 8000, ok: (s) => s.subeler.some((b) => Object.values(b.yat ?? {}).some((v) => v >= 2)), eylem: 'gelGit' },
+  { id: 'yat', ad: 'Ekipmanı geliştir', ac: 'Dükkânlar → Ekipman: bir ekipmanı 2. seviyeye çıkar.', odul: 8000, ok: (s) => s.subeler.some((b) => Object.values(b.yat ?? {}).some((v) => v >= 2)), eylem: 'gelGit' },
   { id: 'sube2', ad: 'İkinci şubeni aç', ac: 'Büyümenin ilk büyük adımı.', odul: 25000, ok: (s) => s.subeler.length >= 2, git: 'harita' },
 ];
 export interface Yol { adim: Record<string, number>; bitti: boolean }

@@ -66,7 +66,7 @@ export const YARDIM_KONULARI: Konu[] = [
       'Teslimat: online platformlara katıl; paket sipariş gelir ama platform komisyonu gider yazılır.',
       'Kafe seviyesi 2\'den sonra Kurye, Sadakat uygulaması ve Basın açılır; iki şubede Anket ve A/B testleri de.'], git: ['sosyal', 'Tanıtım'] },
   { id: 'gelisim', ik: '🛠️', ad: 'İşletme geliştirme', ozet: 'Ekipman, itibar ve hedeflerle kafeni güçlendirirsin.',
-    maddeler: ['Ekipman (Dükkân → Ekipman): espresso makinesi ve değirmen gibi yatırımlar kaliteyi ve kapasiteyi artırır.',
+    maddeler: ['Ekipman (Dükkânlar → Ekipman): espresso makinesi ve değirmen gibi yatırımlar kaliteyi ve kapasiteyi artırır.',
       'Gelişim → Hedefler: görevler nakit ödül verir, başarımlar kilometre taşıdır. İtibar sayfası marka puanını gösterir.',
       'Atölye (kafe seviyesi 2 ya da 10. gün): çekirdek karışımı, kendi tariflerini yazma, barista ustalığı ve kahve fuarı.',
       'İlk 90 gün Merkez\'de "İlk adımlar yol haritası" görünür; adımların çoğu nakit ödül verir.'], git: ['hedefler', 'Gelişim'] },

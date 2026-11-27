@@ -37,16 +37,18 @@ export interface Grup { id: string; ik: string; ad: string; renk: string; tabs: 
 export const GRUPLAR: Grup[] = [
   { id: 'ana', ik: '🏠', ad: 'Merkez', renk: '#ff8a4c', tabs: ['ana'] },
   { id: 'harita', ik: '🗺️', ad: 'Türkiye', renk: '#5fb3ff', tabs: ['harita'] },
-  { id: 'subeler', ik: '🏪', ad: 'Dükkânlar', renk: '#ffb44c', tabs: ['subeler', 'mulk', 'yorumlar'] },
+  { id: 'subeler', ik: '🏪', ad: 'Dükkânlar', renk: '#ffb44c', tabs: ['subeler', 'mulk', 'yorumlar', 'musteri'] },
   { id: 'atolye', ik: '☕', ad: 'Atölye', renk: '#d9a066', tabs: ['cek', 'tarif', 'sezon', 'kavurmahane', 'usta', 'fuar'] },
   { id: 'semt', ik: '🏘️', ad: 'Semt', renk: '#7fd0c7', tabs: ['takvim', 'mudavim', 'esnaf', 'rakipler', 'hikaye'] },
   { id: 'depo', ik: '📦', ad: 'Depo', renk: '#4fd1a5', tabs: ['stok', 'tedarik', 'tedil', 'merkez'] },
   { id: 'tanitim', ik: '📣', ad: 'Tanıtım', renk: '#ff7aa8', tabs: ['sosyal', 'reklam', 'kampanya', 'online', 'kurye', 'sadakat', 'basin', 'anket'] },
   { id: 'gelisim', ik: '🚀', ad: 'Gelişim', renk: '#b07cff', tabs: ['prestij', 'hedefler', 'donem', 'kariyer', 'surdur', 'iller', 'franchise', 'siralama'] },
-  { id: 'kasa', ik: '💰', ad: 'Kasa', renk: '#4fd1a5', tabs: ['banka', 'yatirim', 'mevzuat', 'sigorta', 'finans', 'ekonomi', 'grafik', 'rapor', 'musteri'] },
+  { id: 'kasa', ik: '💰', ad: 'Kasa', renk: '#4fd1a5', tabs: ['banka', 'yatirim', 'mevzuat', 'sigorta', 'finans', 'ekonomi', 'grafik', 'rapor'] },
   { id: 'ayar', ik: '⚙️', ad: 'Ayarlar', renk: '#9aa8b0', tabs: ['ayar'] },
 ];
-export const grupOf = (tab: string): Grup => GRUPLAR.find((g) => g.tabs.includes(tab)) ?? GRUPLAR[0]!;
+/** Menü gruplarında kendi çipi olmayan ama dükkân detayında açılan sayfalar: hangi gruba bağlı olduklarını söyler (doğru sekme vurgulansın). */
+export const ALT_SAYFA: Record<string, string> = { menu: 'subeler', personel: 'subeler', vardiya: 'subeler', gelisim: 'subeler', genel: 'ana' };
+export const grupOf = (tab: string): Grup => GRUPLAR.find((g) => g.tabs.includes(tab)) ?? GRUPLAR.find((g) => g.id === ALT_SAYFA[tab]) ?? GRUPLAR[0]!;
 /** Şube gerektiren sayfalar (şubesiz başlangıçta "önce şube aç" kartı gösterilir). */
 const BRANCH_TABS = new Set(['stok', 'tedarik', 'reklam', 'kampanya', 'online', 'sosyal', 'menu', 'personel', 'vardiya', 'gelisim', 'musteri', 'ekonomi', 'iller', 'subeler', 'franchise', 'rapor', 'genel', 'merkez', 'usta', 'takvim', 'mudavim', 'esnaf', 'hikaye', 'tedil', 'yorumlar', 'grafik', 'donem', 'sezon', 'yatirim', 'kavurmahane', 'kurye', 'mulk', 'sadakat', 'basin', 'anket', 'mevzuat', 'surdur', 'sigorta']);
 export const isBranchTab = (t: string): boolean => BRANCH_TABS.has(t);

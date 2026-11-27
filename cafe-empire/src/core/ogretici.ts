@@ -24,7 +24,7 @@ export const OGR: OgrAdim[] = [
   { id: 'stok', ik: '📦', ad: 'İlk stok siparişini ver', ac: 'Depo → Stok: azalan malzemeden sipariş ver. Stok biterse o ürün satılamaz.', git: 'stok', eylemler: ['siparis'] },
   { id: 'fiyat', ik: '🏷️', ad: 'Satış fiyatlarını belirle', ac: 'Menü ve fiyat: fiyatı artır/azalt ya da fiyat danışmanının önerisini uygula.', eylem: 'menuGit', eylemler: ['fiyat', 'fiyatTl', 'oneri', 'oneritum', 'fiyatset', 'tumfiyat'] },
   { id: 'gelir', ik: '💰', ad: 'Günlük gelirini takip et', ac: 'Kasa → Gelir-gider: bugünkü gelirini ve giderlerini gör. Kâr, gelirden giderler çıkınca kalandır.', git: 'finans', ok: (_s, ui) => ['finans', 'rapor', 'ekonomi'].includes(ui.tab) },
-  { id: 'memn', ik: '😊', ad: 'Müşteri memnuniyetini kontrol et', ac: 'Kasa → Müşteriler: memnuniyet düşerse müşteri kaybedersin. Merkez\'deki durum kartı da özet verir.', git: 'musteri', ok: (_s, ui) => ['musteri', 'yorumlar'].includes(ui.tab) },
+  { id: 'memn', ik: '😊', ad: 'Müşteri memnuniyetini kontrol et', ac: 'Dükkânlar → Müşteriler: memnuniyet düşerse müşteri kaybedersin. Merkez\'deki durum kartı da özet verir.', git: 'musteri', ok: (_s, ui) => ['musteri', 'yorumlar'].includes(ui.tab) },
 ];
 export function Og(s: GameState): OgrKayit { const d = D(s); return (d.ogr ??= { adim: {}, atla: {}, kapali: false, baz: {}, bitti: false }); }
 export interface OgrDurum { yapilan: number; atlanan: number; toplam: number; siradaki: OgrAdim | null; sira: number }
