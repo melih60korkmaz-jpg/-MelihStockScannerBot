@@ -86,13 +86,24 @@ jobs:
           WS=$(ls -d *.xcworkspace | head -1)
           SCHEME="${WS%.xcworkspace}"
           echo "scheme=$SCHEME"
-          xcodebuild archive \
+          set +e
+          xcodebuild archive -quiet \
             -workspace "$WS" -scheme "$SCHEME" -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath "$RUNNER_TEMP/app.xcarchive" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" > "$RUNNER_TEMP/archive.log" 2>&1
+          RC=$?
+          set -e
+          echo "xcodebuild cikis kodu: $RC"
+          if [ $RC -ne 0 ]; then
+            echo "=========== HATA OZETI ==========="
+            grep -nE "error:|fatal error|\*\* ARCHIVE FAILED|failed|Command .* failed|No such file|cannot find" "$RUNNER_TEMP/archive.log" | grep -v "^.*note:" | head -40
+            echo "=========== LOG SONU (60 satir) ==========="
+            grep -v "note: Disabling previews" "$RUNNER_TEMP/archive.log" | grep -v "will be run during every build" | tail -60
+            exit $RC
+          fi
 
       - name: App Store Connect'e yükle
         run: |
