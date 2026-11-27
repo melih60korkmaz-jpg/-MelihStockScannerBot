@@ -8,7 +8,7 @@ const fails = []; const ok = (c, m) => { if (!c) fails.push(m); console.log((c ?
   p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => { if (m.type() === 'error' && !/GPU stall|WebGL/.test(m.text())) errs.push(m.text().slice(0, 120)); });
   const ev = (f, a) => p.evaluate(f, a); const tab = async (id) => { await ev((i) => window.__app.openTab(i), id); await p.waitForTimeout(200); };
   const bad = () => ev(() => { const e = document.getElementById('page'); const m = e.innerText.match(/NaN|undefined|\[object|Infinity/); return { bad: m ? m[0] : '', len: e.innerText.length, ow: document.documentElement.scrollWidth > innerWidth + 2 }; });
-  console.log('Kurulum ve şubesiz başlangıç'); await p.goto(URL); await p.click('#yeni'); await p.waitForTimeout(300); await p.click('#basla'); await p.waitForTimeout(500); await p.click('#tX');
+  console.log('Kurulum ve şubesiz başlangıç'); await p.goto(URL); await p.click('#yeni'); await p.waitForTimeout(300); await p.click('#basla'); await p.waitForTimeout(500); await p.click('[data-ogr="kapat"]');
   const s0 = await ev(() => ({ n: window.__app.S.subeler.length, kasa: window.__app.S.kasa, il: Object.keys(window.__app.S.bolge.il), g: document.querySelectorAll('.nav [data-g]').length }));
   ok(s0.n === 0 && s0.kasa === 2000000 && s0.il.join() === '34', 'şubesiz, 2 M ₺, yalnız İstanbul açık'); ok(s0.g === 4, 'başlangıçta altta 4 sekme (kademeli açılma)');
   for (const t of ['ana', 'harita', 'subeler', 'online', 'stok', 'tedarik', 'sosyal', 'reklam', 'prestij', 'hedefler', 'iller', 'siralama', 'banka', 'finans', 'ekonomi', 'rapor', 'ayar', 'cek', 'tarif', 'fuar', 'rakipler']) { await tab(t); const r = await bad(); ok(r.len > 60 && !r.bad && !r.ow, `şubesiz sayfa ${t}: boş değil, NaN yok`); }

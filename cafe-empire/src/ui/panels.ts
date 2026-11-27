@@ -1,5 +1,6 @@
 /** 15 yönetim menüsünün panelleri. Hepsi gerçek simülasyon verisini gösterir ve gerçek eylemleri tetikler. */
 import { CITIES, cityById, REGION_NAME } from '../data/turkey';
+import { ogrYenidenAc } from '../core/ogretici';
 import { ADS, AD, INGREDIENTS, ING, PRODUCTS, SHOP, SHOP_TYPES, STAFF_TYPES, STAFF_TYPE, UPGRADES, LEVELS, type IngId, type ProductId, type ShopTypeId, type StaffTypeId, type AdId, type UpgradeId } from '../data/catalog';
 import { subeAc, ilanVer, iseAl, isCikar, setPrice, toggleProduct, upgrade, upgradeCost, startAd, adCost, orderIng, takeLoan, payLoan, closeBranch, fmt, setupCost, rentOf, staffLimit, invest, type Result } from '../core/actions';
 import { pEkonomi, kontrolHtml } from './eco';
@@ -251,7 +252,7 @@ function pAyar(): string {
   return `<div class="card"><h3>🏢 ${esc(s.marka.ad)}</h3><div class="row small"><span>Oyun süresi</span><b>${dayOf(s)} gün · ${dateText(s)}</b></div><div class="row small"><span>Şube · şehir</span><b>${s.subeler.length} · ${new Set(s.subeler.map((x) => x.city)).size}</b></div><div class="row small"><span>Saat</span><b>${hourOf(s).toFixed(0)}:00</b></div></div>
   <div class="card"><h3>Ses</h3><div class="row small"><span>Ses efektleri</span><button class="btn sm ${s.ayar.ses ? 'on' : ''}" data-a="ses">${s.ayar.ses ? 'Açık' : 'Kapalı'}</button></div><div class="row small"><span>Kafe uğultusu ve müzik</span><button class="btn sm ${s.ayar.muzik ? 'on' : ''}" data-a="muzik">${s.ayar.muzik ? 'Açık' : 'Kapalı'}</button></div><div class="row small"><span>Ses düzeyi</span><div class="chiprow">${[0.25, 0.5, 0.75, 1].map((v) => `<button class="cx ${Math.abs(s.ayar.ses_vol - v) < 0.01 ? 'on' : ''}" data-a="vol" data-v="${v}">${Math.round(v * 100)}%</button>`).join('')}</div></div><div class="tiny muted">Ses ilk dokunuştan sonra başlar (tarayıcı kuralı). Sesler cihazda sentezlenir.</div></div>
   <div class="card"><h3>Gün süresi</h3><div class="chiprow">${GUN_SN.map((g) => `<button class="cx ${s.ayar.gunSn === g.k ? 'on' : ''}" data-a="gunsn" data-k="${g.k}">${g.ad} · ${g.k / 60 >= 1 ? tr(g.k / 60, 1) + ' dk' : g.k + ' sn'}</button>`).join('')}</div><div class="tiny muted">1 oyun gününün gerçek süresi (1× hızda). ⏩ 2×, ⏭ 4× hızlandırır. Şu an: 1 gün ≈ ${tr(s.ayar.gunSn / 60, 1)} dk, 1 yıl ≈ ${tr(s.ayar.gunSn * 365 / 3600, 1)} saat (1×).</div></div>
-  <div class="card"><h3>Günlük özet kartı</h3><div class="chiprow">${([['her', 'Her gün'], ['hafta', 'Haftada bir'], ['kapali', 'Kapalı']] as const).map(([k, n]) => `<button class="cx ${s.ayar.ozet === k ? 'on' : ''}" data-a="ozet" data-k="${k}">${n}</button>`).join('')}</div><div class="tiny muted">Hızlı (4×) oyunda her gün modunda gösterilmez.</div><div class="chiprow" style="margin-top:6px"><button class="btn sm" data-a="turyeni">🎓 Rehberi yeniden başlat</button></div></div>
+  <div class="card"><h3>Günlük özet kartı</h3><div class="chiprow">${([['her', 'Her gün'], ['hafta', 'Haftada bir'], ['kapali', 'Kapalı']] as const).map(([k, n]) => `<button class="cx ${s.ayar.ozet === k ? 'on' : ''}" data-a="ozet" data-k="${k}">${n}</button>`).join('')}</div><div class="tiny muted">Hızlı (4×) oyunda her gün modunda gösterilmez.</div><div class="chiprow" style="margin-top:6px"><button class="btn sm" data-a="turyeni">🧭 İlk adımlar rehberini yeniden aç</button></div></div>
   <div class="card"><h3>Seçenekler</h3><div class="tiny muted">Oyun her 15 saniyede ve sekme kapanırken otomatik kaydedilir (bu cihazda, tarayıcı depolamasında).</div></div>
   <div class="card"><h3>Veri kaynakları</h3><div class="tiny muted">İlçe sınırları: © OpenStreetMap contributors, Overture Maps Foundation (ODbL 1.0), basitleştirilmiş. İlçe ticari profilleri tahminidir; gerçek nüfus/gelir verisi değildir.</div></div><div class="chiprow"><button class="btn" data-a="kaydet">💾 Şimdi kaydet</button><button class="btn" data-a="cikis">Ana menü</button><button class="btn bad" data-a="sil">Oyunu sil</button></div>`;
 }
@@ -379,7 +380,7 @@ export function handle(a: string, d: DOMStringMap, h: Helpers): void {
     case 'muzik': s.ayar.muzik = !s.ayar.muzik; setAudio({ muzik: s.ayar.muzik }); return h.refresh();
     case 'vol': s.ayar.ses_vol = +d.v!; setAudio({ vol: s.ayar.ses_vol }); return h.refresh();
     case 'ozet': s.ayar.ozet = d.k as 'her' | 'hafta' | 'kapali'; return h.refresh();
-    case 'turyeni': s.tur = 0; h.go('genel'); return h.toast('Rehber yeniden başladı.');
+    case 'turyeni': ogrYenidenAc(s); h.go('ana'); return h.toast('İlk adımlar rehberi yeniden açıldı.');
     case 'urun': return h.res(toggleProduct(s, b, d.id as ProductId));
     case 'kalite': { const m = b.menu[d.id as ProductId], c = 8000 * m.kalite * s.market.fiyat; if (m.kalite >= 3) return; if (s.kasa < c) return h.res(no('Kasa yetersiz.')); s.kasa -= c; s.capexBugun += c; m.kalite++; return h.res(ok(`Ürün kalitesi arttı (−${fmt(c)}).`)); }
     case 'siparis': return h.res(orderIng(s, b, d.id as IngId, +d.n!));

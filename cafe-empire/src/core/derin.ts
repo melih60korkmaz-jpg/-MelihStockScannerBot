@@ -363,6 +363,8 @@ export interface Derin {
   bag: Record<number, Ctx & { tip?: string }>; fuar: { kayit: FuarKayit | null; kupa: number; gecmis: Array<{ yil: number; derece: string }> }; rakip: Kisi[];
   kalB: Record<number, number>; talepB: Record<number, number>;
   ted: Record<string, TedIliski>; say: Record<string, number>; zorluk: 'kolay' | 'normal' | 'zor'; zafer: number; ipucu: Record<string, number>;
+  /** İlk adımlar rehberi ilerlemesi (eski kayıtlarda yoktur; ilk kullanımda oluşur). */
+  ogr?: import('./ogretici').OgrKayit;
 }
 export function derinInit(): Derin { return { cek: { ana: 'brezilya', ikinci: null, oran: 0.3, kavurma: 1, ad: 'Ev Karışımı', gecis: 0 }, tarif: [], imza: null, usta: {}, sam: [], mud: {}, esnaf: {}, ortak: {}, hik: {}, trait: {}, hazir: {}, etki: {}, son: {}, kamera: {}, bag: {}, fuar: { kayit: null, kupa: 0, gecmis: [] }, rakip: rakipBaslat(), kalB: {}, talepB: {}, ted: {}, say: {}, zorluk: 'normal', zafer: 0, ipucu: {} }; }
 export function D(s: GameState): Derin { const d = (s.derin ??= derinInit()); d.say ??= {}; d.ted ??= {}; d.zorluk ??= 'normal'; d.ipucu ??= {}; d.zafer ??= 0; return d; }
