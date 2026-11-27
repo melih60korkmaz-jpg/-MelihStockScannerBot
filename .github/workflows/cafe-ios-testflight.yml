@@ -43,10 +43,21 @@ jobs:
       - name: iOS projesini üret
         run: npx expo prebuild --platform ios --no-install --clean && cd ios && pod install
 
-      - name: API anahtarını yaz
+      - name: API anahtarını yaz (biçimi onar ve doğrula)
         run: |
           mkdir -p "$RUNNER_TEMP/keys"
-          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          KEY="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          # iPhone'dan yapıştırınca satır sonları bozulabilir: gövdeyi çıkarıp yeniden sar
+          BODY=$(printf '%s' "$ASC_KEY_P8" | tr -d '\r' \
+            | sed -e 's/-----BEGIN[^-]*-----//' -e 's/-----END[^-]*-----//' \
+            | tr -d ' \n\t')
+          echo "anahtar govde uzunlugu: ${#BODY} (ES256 .p8 icin ~200 beklenir)"
+          { echo "-----BEGIN PRIVATE KEY-----"; printf '%s' "$BODY" | fold -w 64; echo; echo "-----END PRIVATE KEY-----"; } > "$KEY"
+          if ! openssl pkey -in "$KEY" -noout 2>/dev/null; then
+            echo "HATA: ASC_KEY_P8 gecerli bir ozel anahtar degil (eksik ya da bozuk yapistirilmis)."
+            exit 1
+          fi
+          echo "anahtar gecerli"
 
       - name: Arşivle (otomatik imza)
         run: |
