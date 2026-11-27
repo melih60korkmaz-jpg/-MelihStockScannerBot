@@ -7,7 +7,7 @@ import { ILCELER, ilcelerOf, ilceKey, ilceOf, profilOf, type Ilce } from '../dat
 
 export type Metric = 'erisim' | 'bolge' | 'talep' | 'kira' | 'rekabet' | 'turizm' | 'ogrenci' | 'gelir';
 export const METRICS: Array<[Metric, string]> = [['erisim', 'Erişim'], ['bolge', 'Bölge'], ['talep', 'Kafe talebi'], ['kira', 'Kira'], ['rekabet', 'Rekabet'], ['turizm', 'Turizm'], ['ogrenci', 'Öğrenci'], ['gelir', 'Gelir']];
-const REGION_COLOR: Record<string, string> = { M: '#4d7ea8', E: '#5aa38a', A: '#c99a4a', I: '#a38b6a', K: '#4f9a62', D: '#8a6fa3', G: '#c0705a' };
+const REGION_COLOR: Record<string, string> = { M: '#6499C5', E: '#43A77B', A: '#C6A477', I: '#A9875E', K: '#5F8F7A', D: '#955B66', G: '#B97F6A' };
 const cent = new Map<number, [number, number]>();
 export function centroid(c: City): [number, number] {
   let r = cent.get(c.id); if (r) return r; const n = c.path.match(/-?\d+(\.\d+)?/g) ?? []; let sx = 0, sy = 0, k = 0; for (let i = 0; i + 1 < n.length; i += 2) { sx += +n[i]!; sy += +n[i + 1]!; k++; } r = [sx / Math.max(1, k), sy / Math.max(1, k)]; cent.set(c.id, r); return r;
@@ -37,8 +37,8 @@ export function zoomVb(il: number): VB {
   const [x0, y0, x1, y1] = pathBox(cityById(il)), r = MAP_W / MAP_H; let w = (x1 - x0) * 1.18, h = (y1 - y0) * 1.18; if (w / h < r) w = h * r; else h = w / r; const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2; return [cx - w / 2, cy - h / 2, w, h];
 }
 export interface RegOpts { metric: Metric; sel: number; zoomIl: number | null; selIlce: number | null; vb: VB; fx: Fx[]; now: number; lv: number; start?: boolean }
-const STATE_FILL = { acik: '#b9a93a', satilik: '#2f6b6f', kilitli: '#2a303b' } as const;
-export const SINIF_RENK: Record<Sinif, string> = { Seçkin: '#b07cff', Canlı: '#ffb44c', Mahalle: '#35b99a', Ekonomik: '#4a6677' };
+const STATE_FILL = { acik: '#C6A477', satilik: '#6499C5', kilitli: '#35353B' } as const;
+export const SINIF_RENK: Record<Sinif, string> = { Seçkin: '#B97C89', Canlı: '#C6A477', Mahalle: '#43A77B', Ekonomik: '#6499C5' };
 export function regionMap(s: GameState, o: RegOpts): string {
   const recent = (k: Fx['k'], id: string): boolean => o.fx.some((f) => f.k === k && f.id === id && o.now - f.t < 1600);
   const by: Record<number, number> = {}, byI: Record<string, number> = {}; for (const b of s.subeler) { by[b.city] = (by[b.city] ?? 0) + 1; if (b.ilce) byI[b.ilce] = (byI[b.ilce] ?? 0) + 1; }

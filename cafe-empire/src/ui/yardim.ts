@@ -3,6 +3,7 @@ import { YARDIM_KONULARI, YOK_LISTESI } from '../data/yardim';
 import { OGR, Og, ogrAtla, ogrDurum, ogrGorunur, ogrKapat, ogrYenidenAc, type OgrAdim } from '../core/ogretici';
 import { grupAcik, tabAcik } from '../core/kademe';
 import { grupOf } from './panels';
+import { kapatAnimli } from './anim';
 import type { GameState } from '../core/types';
 
 const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } as Record<string, string>)[c] ?? c);
@@ -28,7 +29,7 @@ export function yardimAc(root: HTMLElement, s: GameState | null, cb: YardimCb): 
   const ogrBtn = s ? `<button class="btn sm" data-yd="ogr">🧭 İlk adımlar</button>` : '';
   o.innerHTML = `<div class="ydbox" role="dialog" aria-label="Oyun rehberi"><div class="ydtop"><b>? Oyun rehberi</b><span class="sp"></span>${ogrBtn}<button class="ibtn" data-yd="kapat" aria-label="Kapat">✕</button></div><div class="ydbody"><nav class="ydlist" id="ydList">${liste(sonKonu)}</nav><section class="ydcont" id="ydCont">${icerik(s, sonKonu)}</section></div></div>`;
   root.appendChild(o);
-  const kapat = (): void => { o.remove(); };
+  const kapat = (): void => { kapatAnimli(o); };
   o.addEventListener('click', (e) => {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-yk],[data-yd]'); if (!el) { if (e.target === o) kapat(); return; }
     if (el.dataset.yk) { sonKonu = el.dataset.yk; o.querySelectorAll('#ydList button').forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.yk === sonKonu)); const c = o.querySelector('#ydCont') as HTMLElement; c.innerHTML = icerik(s, sonKonu); c.scrollTop = 0; return; }

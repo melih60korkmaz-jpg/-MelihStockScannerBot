@@ -40,7 +40,7 @@ const fails = []; const ok = (c, m) => { if (!c) fails.push(m); console.log((c ?
   console.log('Tüm menüler (☰)');
   await tab('personel'); await click('#tMenu'); ok(await ev(() => document.querySelectorAll('.mng').length === 8), '8 kategori listelenir (7 alt menü + Ayarlar)');
   ok(await ev(() => [...document.querySelectorAll('.mng.open')].map((e) => e.querySelector('b').innerText).join() === 'İşletme'), 'yalnız şu anki kategori (İşletme) açık gelir');
-  await click('.mnh[data-mg="finans"]'); ok(await ev(() => document.querySelector('.mng[style*="4fd1a5"]').classList.contains('open') || [...document.querySelectorAll('.mng.open')].length === 2), 'başlığa dokununca kategori açılır');
+  await click('.mnh[data-mg="finans"]'); ok(await ev(() => document.querySelector('.mnh[data-mg="finans"]').closest('.mng').classList.contains('open') || [...document.querySelectorAll('.mng.open')].length === 2), 'başlığa dokununca kategori açılır');
   await click('.mnh[data-mg="finans"]'); await click('.mnh[data-mg="isletme"]'); ok(await ev(() => document.querySelectorAll('.mng.open').length === 0), 'başlığa tekrar dokununca kapanır');
   await click('.mnh[data-mg="atolye"]'); const kilitliBas = await ev(() => document.querySelector('.mng.open .mnt.lock')?.dataset.mk); const oncekiTab = await ev(() => window.__app.TAB);
   await click('.mng.open .mnt.lock'); ok(kilitliBas && (await ev(() => window.__app.TAB)) === oncekiTab && !!(await ev(() => document.querySelector('.mn'))), 'kilitli sayfaya dokununca gitmez, ekran açık kalır (nedeni bildirilir)');

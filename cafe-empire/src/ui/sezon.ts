@@ -8,11 +8,11 @@ import { esc, bar, tr, bchips, cur, S as getS, type Helpers } from './panels';
 import { hareketli } from './art';
 
 let secim: ProductId | null = null;
-const SR: Record<MenuSinif, string> = { yildiz: '#ffd45c', inek: '#5fb3ff', bilmece: '#b07cff', kopek: '#ef6b63' };
+const SR: Record<MenuSinif, string> = { yildiz: '#C6A477', inek: '#6499C5', bilmece: '#E6D6C5', kopek: '#D9535F' };
 function sacilim(l: ReturnType<typeof menuMuhendisligi>): string {
   if (!l.length) return '<div class="small muted" style="padding:12px">Birkaç günlük satış verisi gerekir.</div>'; const W = 320, H = 150, mxp = Math.max(0.01, ...l.map((x) => x.pay)), mxm = Math.max(1, ...l.map((x) => x.marj)), mnm = Math.min(0, ...l.map((x) => x.marj));
   const x = (p: number): number => 22 + (W - 34) * (p / mxp), y = (m: number): number => 10 + (H - 28) * (1 - (m - mnm) / (mxm - mnm || 1)), ortP = 1 / l.length * 0.7 / mxp;
-  return `<svg class="grf" viewBox="0 0 ${W} ${H}" width="100%" aria-hidden="true"><line x1="${22 + (W - 34) * ortP}" x2="${22 + (W - 34) * ortP}" y1="6" y2="${H - 16}" stroke="rgba(255,255,255,.2)" stroke-dasharray="3 3"/><text x="${W - 6}" y="${H - 4}" font-size="8.5" fill="#86a0a6" text-anchor="end">satış payı ›</text><text x="4" y="12" font-size="8.5" fill="#86a0a6">marj ▲</text>${l.map((q, i) => `<g class="kabarcik" style="animation-delay:${i * 0.07}s"><circle cx="${x(q.pay).toFixed(1)}" cy="${y(q.marj).toFixed(1)}" r="${(6 + Math.sqrt(q.gelir) / 28).toFixed(1)}" fill="${SR[q.sinif]}" opacity=".8" stroke="rgba(0,0,0,.35)"/><text x="${x(q.pay).toFixed(1)}" y="${(y(q.marj) + 4).toFixed(1)}" font-size="11" text-anchor="middle">${PRODUCT[q.id].ikon}</text></g>`).join('')}</svg>`;
+  return `<svg class="grf" viewBox="0 0 ${W} ${H}" width="100%" aria-hidden="true"><line x1="${22 + (W - 34) * ortP}" x2="${22 + (W - 34) * ortP}" y1="6" y2="${H - 16}" stroke="rgba(255,255,255,.2)" stroke-dasharray="3 3"/><text x="${W - 6}" y="${H - 4}" font-size="8.5" fill="#BDB5B0" text-anchor="end">satış payı ›</text><text x="4" y="12" font-size="8.5" fill="#BDB5B0">marj ▲</text>${l.map((q, i) => `<g class="kabarcik" style="animation-delay:${i * 0.07}s"><circle cx="${x(q.pay).toFixed(1)}" cy="${y(q.marj).toFixed(1)}" r="${(6 + Math.sqrt(q.gelir) / 28).toFixed(1)}" fill="${SR[q.sinif]}" opacity=".8" stroke="rgba(0,0,0,.35)"/><text x="${x(q.pay).toFixed(1)}" y="${(y(q.marj) + 4).toFixed(1)}" font-size="11" text-anchor="middle">${PRODUCT[q.id].ikon}</text></g>`).join('')}</svg>`;
 }
 export function pSezon(): string {
   const s = getS(), b = cur(), now = dayOf(s), ay = dateOf(now).ay, sz = sezonOf(ay), o = sezonOneri(s, b), mm = menuMuhendisligi(s, b, 30), mf = mutfakOzet(s, b), pl = pilotlar(s);

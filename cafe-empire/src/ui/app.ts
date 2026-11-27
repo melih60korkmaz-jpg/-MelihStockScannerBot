@@ -1,4 +1,7 @@
 import './style.css';
+import './tema.css';
+import './anim.css';
+import { animUygula, animEtkin, kareIzle, kapatAnimli } from './anim';
 import { cityById, CITIES } from '../data/turkey';
 import { ilDurum } from '../core/region';
 import { LEVELS } from '../data/catalog';
@@ -32,7 +35,12 @@ let lastSumDay = -1, lastAch = new Set<string>();
 let known = new Set<number>(), newOpp = false, oppT = 0;
 let accMin = 0, uiT = 0, saveT = 0, modalOpen = false, rafId = 0;
 const ALL: Record<string, () => string> = { ...PANELS, ...PAGES };
-function toast(m: string): void { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; root.appendChild(t); setTimeout(() => t.remove(), 2600); }
+/** Bildirimler üstte yığılır (en çok 3), türüne göre renk/titreşim alır ve kendiliğinden kapanır. */
+function toast(m: string, tip: 'ok' | 'bad' | 'warn' | '' = ''): void {
+  let k = document.getElementById('toasts'); if (!k || !root.contains(k)) { k = document.createElement('div'); k.id = 'toasts'; k.setAttribute('role', 'status'); k.setAttribute('aria-live', 'polite'); root.appendChild(k); }
+  while (k.childElementCount >= 3) k.firstElementChild!.remove();
+  const t = document.createElement('div'); t.className = 'toast' + (tip ? ' ' + tip : ''); t.textContent = m; k.appendChild(t); setTimeout(() => kapatAnimli(t, 200), 2600);
+}
 
 /* ===================== Başlangıç ekranları ===================== */
 function title(): void {
@@ -60,11 +68,11 @@ function zoomTo(vb: VB, done?: () => void, ms = 650): void {
 
 /* ===================== Oyun ekranı ===================== */
 function enter(): void {
-  if (!S) return; cancelAnimationFrame(zoomRaf); ctx.S = S; ctx.bid = S.subeler[0]?.id ?? 0; TAB = 'ana'; ctx.zoomIl = null; ctx.selIlce = null; ctx.vb = NAT_VB; ctx.fx = []; ctx.mapsel = 34; ctx.mapm = 'erisim'; ctx.kur = null; ctx.subeAcik = null; known = new Set(); newOpp = false;
+  if (!S) return; cancelAnimationFrame(zoomRaf); kasaGor = NaN; cancelAnimationFrame(kasaRaf); kasaRaf = 0; ctx.S = S; ctx.bid = S.subeler[0]?.id ?? 0; TAB = 'ana'; ctx.zoomIl = null; ctx.selIlce = null; ctx.vb = NAT_VB; ctx.fx = []; ctx.mapsel = 34; ctx.mapm = 'erisim'; ctx.kur = null; ctx.subeAcik = null; known = new Set(); newOpp = false;
   root.innerHTML = `<div class="top"><div class="brandw"><i>☕</i><div><b id="tBrand"></b><small id="tSub"></small></div></div><span class="sp"></span><div class="chip tm" id="tTime"></div><button class="chip money" id="tKasa" title="Banka"></button><button class="chip star" id="tMarka" title="Prestij"></button><div class="spd" id="spd"></div><button class="ibtn" id="tMenu" title="Tüm menüler" aria-label="Tüm menüler">☰</button><button class="ibtn" id="tHelp" title="Oyun rehberi" aria-label="Oyun rehberi">?</button><button class="ibtn" id="tSet" title="Ayarlar">⚙</button></div><div id="page" class="page"></div><div class="nav" id="nav"></div><div id="kur"></div>`;
   setAudio({ ses: S.ayar.ses, muzik: S.ayar.muzik, vol: S.ayar.ses_vol }); root.onpointerdown = () => startAudio(); lastSumDay = dayOf(S); lastAch = new Set(Object.keys(S.basarim)); $('#tHelp').onclick = () => yardimGoster(); $('#tMenu').onclick = () => menuAc(root, S!, TAB, { git: (t) => sekmeAc(t), kilit: (id) => act('kilit', { id }) }); $('#tSet').onclick = () => sekmeAc('ayar'); $('#tKasa').onclick = () => sekmeAc('finans'); $('#tMarka').onclick = () => sekmeAc('prestij');
   S.hiz = 1; nav(); spdBar(); hud(); page(false);
-  cancelAnimationFrame(rafId); let son = performance.now(); const kare = (n: number): void => { rafId = requestAnimationFrame(kare); const dt = Math.min(0.1, (n - son) / 1000); son = n; loop(dt); }; rafId = requestAnimationFrame(kare); S.tur = -1; ogrYenile();
+  cancelAnimationFrame(rafId); let son = performance.now(); const kare = (n: number): void => { rafId = requestAnimationFrame(kare); const dt = Math.min(0.1, (n - son) / 1000); son = n; kareIzle(dt); loop(dt); }; rafId = requestAnimationFrame(kare); S.tur = -1; ogrYenile();
   document.addEventListener('visibilitychange', () => { if (document.hidden && S) { save(S); } });
 }
 const sonSekme: Record<string, string> = {};
@@ -75,14 +83,27 @@ function nav(): void {
   $('#nav').querySelectorAll<HTMLElement>('[data-g]').forEach((b) => { b.onclick = () => { const g = GRUPLAR.find((x) => x.id === b.dataset.g)!; sekmeAc(sonSekme[g.id] ?? g.tabs[0]!); }; });
 }
 function spdBar(): void { const V: Array<[number, string]> = [[0, '⏸'], [1, '▶'], [2, '⏩'], [4, '⏭']]; $('#spd').innerHTML = V.map(([v, t]) => `<button data-s="${v}" class="${S!.hiz === v ? 'on' : ''}">${t}</button>`).join(''); $('#spd').querySelectorAll<HTMLElement>('button').forEach((b) => { b.onclick = () => { S!.hiz = +b.dataset.s!; spdBar(); }; }); }
+/* Kasa rakamı yumuşakça artar/azalır; artış yeşil, düşüş kırmızı kısa bir vurguyla gösterilir. */
+let kasaGor = NaN, kasaHed = 0, kasaRaf = 0, kasaSon = 0, kasaT = 0;
+function kasaYaz(): void { const el = document.getElementById('tKasaV'); if (el) { const t = kisa(kasaGor); if (el.textContent !== t) el.textContent = t; } }
+function kasaAdim(now: number): void {
+  const dt = Math.min(0.1, (now - kasaSon) / 1000 || 0.016); kasaSon = now; kasaGor += (kasaHed - kasaGor) * Math.min(1, dt * 7);
+  if (Math.abs(kasaHed - kasaGor) < 1) { kasaGor = kasaHed; kasaRaf = 0; } else kasaRaf = requestAnimationFrame(kasaAdim); kasaYaz();
+}
+function kasaHedefle(v: number): void {
+  if (Number.isNaN(kasaGor)) kasaGor = v; const fark = v - kasaHed; kasaHed = v;
+  if (animEtkin() === 'kapali') { kasaGor = v; kasaYaz(); return; }
+  if (Math.abs(fark) >= 1) { const el = document.getElementById('tKasa'); if (el) { el.classList.remove('up', 'dn'); void el.offsetWidth; el.classList.add(fark > 0 ? 'up' : 'dn'); clearTimeout(kasaT); kasaT = window.setTimeout(() => el.classList.remove('up', 'dn'), 950); } }
+  if (!kasaRaf && Math.abs(kasaHed - kasaGor) >= 1) { kasaSon = performance.now(); kasaRaf = requestAnimationFrame(kasaAdim); }
+}
 function hud(): void {
   if (!S) return; const b = S.subeler.length ? cur() : null, hv = b ? S.hava[b.city] ?? 'gunesli' : 'gunesli', ikon = { gunesli: '☀️', bulutlu: '⛅', yagmur: '🌧️', kar: '❄️' }[hv], gece = Math.floor((S.dk % 1440) / 60) >= 19 || Math.floor((S.dk % 1440) / 60) < 6;
-  $('#tBrand').textContent = S.marka.ad; $('#tSub').textContent = `Gün ${dayOf(S) + 1} · ${S.subeler.length} şube`; $('#tTime').innerHTML = `<span>${gece ? '🌙' : ikon}</span><div><b>${timeText(S)}</b><small>${dateText(S)}</small></div>`; $('#tKasa').innerHTML = `<i class="coin">₺</i><b>${kisa(S.kasa)}</b>`; $('#tMarka').innerHTML = `<i>★</i><b>${Math.round(S.marka_puani)}</b>`; $('#tKasa').title = `${fmt(S.kasa)} · ${LEVELS[levelOf(S) - 1]?.ad ?? ''}`;
+  $('#tBrand').textContent = S.marka.ad; $('#tSub').textContent = `Gün ${dayOf(S) + 1} · ${S.subeler.length} şube`; $('#tTime').innerHTML = `<span>${gece ? '🌙' : ikon}</span><div><b>${timeText(S)}</b><small>${dateText(S)}</small></div>`; if (!document.getElementById('tKasaV')) { $('#tKasa').innerHTML = `<i class="coin">₺</i><b id="tKasaV">${kisa(S.kasa)}</b>`; kasaGor = S.kasa; } kasaHedefle(S.kasa); $('#tMarka').innerHTML = `<i>★</i><b>${Math.round(S.marka_puani)}</b>`; $('#tKasa').title = `${fmt(S.kasa)} · ${LEVELS[levelOf(S) - 1]?.ad ?? ''}`;
 }
 function loop(dt: number): void {
   if (!S) return; const dk = oyunDakikasi(dt, S.hiz, S.ayar.gunSn); accMin += dk; let n = 0;
   while (accMin >= 10 && n < 8) { accMin -= 10; const ev = step(S, 10); if (ev.some((e) => e.t === 'musteri')) sfx.door(); if (ev.some((e) => e.t === 'olay')) sfx.warn(); n++; if (S.oyunBitti) break; }
-  if (dayOf(S) !== lastSumDay) { lastSumDay = dayOf(S); gunOzeti(); if (TAB === 'ekonomi') page(true); } oppT += dt; if (oppT > 2) { oppT = 0; checkOpportunities(); } uiT += dt; saveT += dt; if (uiT > 0.5) { uiT = 0; hud(); if (LIVE_TABS.has(TAB) && !(TAB === 'subeler' && ctx.subeAcik !== null && ctx.subeSekme !== 'ozet')) page(true); if (S.bekleyen.length && !modalOpen) showEvent(); if (S.oyunBitti) gameOver(); }
+  if (dayOf(S) !== lastSumDay) { lastSumDay = dayOf(S); gunOzeti(); if (TAB === 'ekonomi') page(true); } oppT += dt; if (oppT > 2) { oppT = 0; checkOpportunities(); } uiT += dt; saveT += dt; if (uiT > 0.5) { uiT = 0; hud(); if (LIVE_TABS.has(TAB) && performance.now() - sayfaZ > 750 && !(TAB === 'subeler' && ctx.subeAcik !== null && ctx.subeSekme !== 'ozet')) page(true); if (S.bekleyen.length && !modalOpen) showEvent(); if (S.oyunBitti) gameOver(); }
   if (saveT > 15) { saveT = 0; save(S); }
 }
 /** Seviye/komşuluk şartı sağlanan yeni pazarları bildirir (zamanla gelişen harita). */
@@ -113,22 +134,23 @@ function showEvent(): void {
   const p = S!.bekleyen[0]; if (!p) return; modalOpen = true; S!.hiz = 0; spdBar();
   if (p.tip === 'd_hikaye_zafer') { sfx.zafer(); confetti(220); } else if (p.tip === 'd_hikaye_fuar') { if (/madalya/.test(p.metin)) { sfx.madalya(); confetti(130); } else sfx.olay(); } else if (p.tip.startsWith('d_')) { if (['denetim', 'yorum', 'ariza', 'tedarik', 'hirsizlik', 'sendika', 'kapma', 'bayi'].includes(p.tip.slice(2))) sfx.kriz(); else sfx.olay(); } const m = document.createElement('div'); m.className = 'modal';
   m.innerHTML = `<div class="mbox"><div class="pill">Olay</div><h2>${p.ikon} ${esc(p.baslik)}</h2><p>${esc(p.metin)}</p>${p.secenek.map((c, i) => `<button class="btn" data-o="${i}" style="width:100%;margin-top:6px;justify-content:flex-start;text-align:left"><span><b>${esc(c.ad)}</b><br><small class="muted">${esc(c.ac)}</small></span></button>`).join('')}</div>`; root.appendChild(m);
-  m.querySelectorAll<HTMLElement>('[data-o]').forEach((b) => { b.onclick = () => { resolveEvent(S!, p.id, +b.dataset.o!); m.remove(); modalOpen = false; S!.hiz = 1; spdBar(); save(S!); hud(); page(true); }; });
+  m.querySelectorAll<HTMLElement>('[data-o]').forEach((b) => { b.onclick = () => { resolveEvent(S!, p.id, +b.dataset.o!); kapatAnimli(m); modalOpen = false; S!.hiz = 1; spdBar(); save(S!); hud(); page(true); }; });
 }
 function gameOver(): void { if (modalOpen) return; modalOpen = true; S!.hiz = 0; const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div class="mbox"><h2>📉 İflas</h2><p>Kasa uzun süre eksi kaldı ve zincir kapandı. Bir dahaki sefere stok, ekip ve fiyat dengesini daha dikkatli kur.</p><div class="row"><span>Süre</span><b>${dayOf(S!)} gün</b></div><div class="row"><span>Şube</span><b>${S!.subeler.length}</b></div><button class="btn pri" id="y" style="width:100%;margin-top:8px">Ana menü</button></div>`; root.appendChild(m); $('#y').onclick = () => { wipe(); modalOpen = false; cancelAnimationFrame(rafId); stopAudio(); S = null; title(); }; }
 
 
 /* ===================== Sayfa ===================== */
 const FIT = new Set(['harita']);
+let sayfaZ = 0;   // son sayfa girişi (canlı yenileme, giriş animasyonu bitmeden sayfayı yeniden çizmesin)
 function page(keep: boolean): void {
-  if (!S) return; const el = $('#page'); const sc = keep ? el.querySelector<HTMLElement>('.pb')?.scrollTop ?? 0 : 0, nm = NAV.find((n) => n[0] === TAB)!; ctx.S = S;
+  if (!S) return; if (!keep) sayfaZ = performance.now(); const el = $('#page'); const sc = keep ? el.querySelector<HTMLElement>('.pb')?.scrollTop ?? 0 : 0, nm = NAV.find((n) => n[0] === TAB)!; ctx.S = S;
   const body = isBranchTab(TAB) && !S.subeler.length ? BOS_UYARI(TAB) : (ALL[TAB] ?? ALL.ana!)(); const wasAnim = ctx.anim; ctx.anim = false;
   const gr = grupOf(TAB), alt = altSekmeler(S, gr, TAB);
-  el.innerHTML = `${alt}<div class="pb ${FIT.has(TAB) ? 'fit' : 'cols'}" data-tab="${TAB}">${body}</div>`; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); el.querySelectorAll<HTMLElement>('.subtabs [data-lock]').forEach((b) => { b.onclick = () => act('kilit', { id: b.dataset.lock! }); }); el.querySelectorAll<HTMLElement>('.subtabs [data-mn]').forEach((b) => { b.onclick = () => document.getElementById('tMenu')?.click(); }); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); if (wasAnim) animateCounters(pb); void nm;
+  el.innerHTML = `${alt}<div class="pb ${FIT.has(TAB) ? 'fit' : 'cols'}${keep ? '' : ' in'}" data-tab="${TAB}">${body}</div>`; el.querySelectorAll<HTMLElement>('.subtabs [data-n]').forEach((b) => { b.onclick = () => sekmeAc(b.dataset.n!); }); el.querySelectorAll<HTMLElement>('.subtabs [data-lock]').forEach((b) => { b.onclick = () => act('kilit', { id: b.dataset.lock! }); }); el.querySelectorAll<HTMLElement>('.subtabs [data-mn]').forEach((b) => { b.onclick = () => document.getElementById('tMenu')?.click(); }); const pb = el.querySelector<HTMLElement>('.pb')!; pb.scrollTop = sc; bind(pb); if (wasAnim) animateCounters(pb); void nm;
 }
 function animateCounters(pb: HTMLElement): void {
-  const els = [...pb.querySelectorAll<HTMLElement>('.cnt')]; if (!els.length) return; const t0 = performance.now(), ease = (t: number): number => 1 - Math.pow(1 - t, 3);
-  const tick = (now: number): void => { const k = Math.min(1, (now - t0) / 1100); for (const e of els) e.textContent = fmt(+e.dataset.v! * ease(k)); if (k < 1) requestAnimationFrame(tick); else for (const e of els) e.textContent = fmt(+e.dataset.v!); };
+  const els = [...pb.querySelectorAll<HTMLElement>('.cnt')]; if (!els.length) return; if (animEtkin() === 'kapali') { for (const e of els) e.textContent = fmt(+e.dataset.v!); return; } const t0 = performance.now(), ease = (t: number): number => 1 - Math.pow(1 - t, 3), sure = animEtkin() === 'hafif' ? 500 : 900;
+  const tick = (now: number): void => { const k = Math.min(1, (now - t0) / sure); for (const e of els) e.textContent = fmt(+e.dataset.v! * ease(k)); if (k < 1) requestAnimationFrame(tick); else for (const e of els) e.textContent = fmt(+e.dataset.v!); };
   requestAnimationFrame(tick);
 }
 
@@ -145,7 +167,7 @@ function act(a: string, d: DOMStringMap): void {
   if (!S) return; ctx.S = S;
   const h = {
     zoom: (vb: VB, done?: () => void) => zoomTo(vb, () => { done?.(); page(true); }),
-    res: (r: Result) => { toast(r.m); if (r.ok && KARAR_ETIKET[a]) kararKaydet(S!, KARAR_ETIKET[a]!, ctx.bid); if (r.ok) { if (['ilac', 'ilceac', 'sube', 'frver', 'merkez', 'invest', 'gel', 'kur_ac2', 'platKatil'].includes(a)) sfx.unlock(); else if (['kredi', 'siparis', 'ad', 'bonus', 'banka', 'paylas'].includes(a)) sfx.coin(); else sfx.tick(); } else sfx.err(); save(S!); page(true); hud(); if (r.ok) ogrBildir(ogrEylem(S!, a, dayOf(S!))); },
+    res: (r: Result) => { toast(r.m, r.ok ? 'ok' : 'bad'); if (r.ok && KARAR_ETIKET[a]) kararKaydet(S!, KARAR_ETIKET[a]!, ctx.bid); if (r.ok) { if (['ilac', 'ilceac', 'sube', 'frver', 'merkez', 'invest', 'gel', 'kur_ac2', 'platKatil'].includes(a)) sfx.unlock(); else if (['kredi', 'siparis', 'ad', 'bonus', 'banka', 'paylas'].includes(a)) sfx.coin(); else sfx.tick(); } else sfx.err(); save(S!); page(true); hud(); if (r.ok) ogrBildir(ogrEylem(S!, a, dayOf(S!))); },
     toast, refresh: () => { page(true); if (a === 'fiyat' || a === 'fiyatTl') ogrBildir(ogrEylem(S!, a, dayOf(S!))); }, show: () => { hud(); }, go: (t: string) => { sekmeAc(t); },
     save: () => save(S!), exit: () => { save(S!); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); }, wipe: () => { wipe(); stopAudio(); cancelAnimationFrame(rafId); S = null; ctx.S = null; title(); }, kurYenile,
   };
@@ -160,4 +182,4 @@ function yonKontrol(): void {
   if (dikey) { hizEski = S.hiz || 1; S.hiz = 0; } else { S.hiz = hizEski; spdBar(); }
 }
 function yatayKilit(): void { try { void (screen.orientation as unknown as { lock?: (o: string) => Promise<void> }).lock?.('landscape')?.catch(() => 0); } catch { /* desteklenmiyor */ } }
-export function boot(): void { window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); void kurtar().catch(() => false).finally(() => title()); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, get TAB() { return TAB; }, openTab: (t: string) => sekmeAc(t), tabIds: () => NAV.map((n) => n[0]) }; }
+export function boot(): void { animUygula(); window.addEventListener('resize', yonKontrol); window.addEventListener('orientationchange', yonKontrol); document.addEventListener('pointerdown', yatayKilit, { once: true }); void kurtar().catch(() => false).finally(() => title()); (window as unknown as Record<string, unknown>).__app = { get S() { return S; }, get TAB() { return TAB; }, openTab: (t: string) => sekmeAc(t), tabIds: () => NAV.map((n) => n[0]) }; }

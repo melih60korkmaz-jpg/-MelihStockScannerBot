@@ -1,0 +1,117 @@
+/* ============================================================================
+   CAFE EMPIRE · TASARIM SİSTEMİ  (Antrasit + Bordo + Şampanya)
+   Bütün renk, köşe, gölge ve süre değerleri burada; ekranlar yalnızca bu değişkenleri kullanır.
+   ============================================================================ */
+:root{
+  /* yüzeyler */
+  --bg:#202124; --bg2:#292A2F; --p:#2B2C31; --p2:#35353B; --p3:#414148; --line:#48464A;
+  /* bordo */
+  --bo:#46232D; --bo2:#783D4A; --bo-d:#351B23; --bo-l:#955B66;
+  /* şampanya ve altın */
+  --sh:#E6D6C5; --sh-l:#F1E7DC; --gold:#C6A477; --gold-d:#A9875E;
+  /* yazı */
+  --tx:#F5F1ED; --mu:#BDB5B0; --dis:#89858A;
+  /* durum */
+  --ok:#43A77B; --warn:#E5AD54; --bad:#D9535F; --bl:#6499C5;
+  /* seçili/öncelikli öğe (bordo) */
+  --sel-bg:linear-gradient(180deg,var(--bo2),var(--bo)); --on-sel:var(--sh-l); --sel-line:var(--bo-l);
+  /* eski adlar (geriye uyum): altın vurgu */
+  --am:var(--gold); --am2:var(--sh);
+  /* kategori vurguları (menü grupları) */
+  --c-merkez:#F1E7DC; --c-isletme:#C6A477; --c-atolye:#A9875E; --c-finans:#43A77B; --c-pazarlama:#955B66; --c-gelisim:#6499C5; --c-dunya:#E6D6C5; --c-ayar:#BDB5B0;
+  /* şekil */
+  --r-s:8px; --r:10px; --r-l:14px; --r-pill:999px;
+  --gol-1:0 1px 2px rgba(0,0,0,.30); --gol-2:0 4px 14px rgba(0,0,0,.34); --gol-3:0 10px 30px rgba(0,0,0,.45);
+  --ic-ust:inset 0 1px 0 rgba(241,231,220,.05);
+  /* boşluk ve yazı */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px;
+  --fd:'Avenir Next','Trebuchet MS',-apple-system,sans-serif;
+  /* hareket (tek yerden yönetilir) */
+  --d1:120ms; --d2:200ms; --d3:320ms; --d4:480ms; --e:cubic-bezier(.22,.8,.3,1); --e2:cubic-bezier(.4,0,.2,1);
+}
+html,body{background:var(--bg);color:var(--tx)}
+
+/* ---------- üst çubuk ---------- */
+.top{background:var(--bg2);border-bottom:1px solid var(--line);box-shadow:var(--gol-1)}
+.brandw i{background:var(--bo);border:1px solid var(--bo-l)}
+.brandw b{color:var(--sh-l)}.brandw small{color:var(--mu)}
+.chip{background:var(--p);border:1px solid var(--line);border-radius:var(--r-pill);color:var(--tx)}
+.chip b,.chip.money b,.chip.star b{color:var(--sh);font-variant-numeric:tabular-nums}
+.chip .coin,.chip.money i{background:var(--gold);color:var(--bg)}
+.chip.star i{color:var(--gold)}
+.chip.tm b{color:var(--tx)}.chip.tm small{color:var(--mu)}
+.ibtn,.spd button{background:var(--p);border:1px solid var(--line);color:var(--tx);border-radius:var(--r)}
+.spd{background:var(--p);border:1px solid var(--line);border-radius:var(--r)}
+.spd button{border:0;background:transparent}
+.spd button.on,.ibtn.on{background:var(--sel-bg);color:var(--on-sel);box-shadow:inset 0 0 0 1px var(--sel-line)}
+
+/* ---------- alt menü (kategoriler) ---------- */
+.nav{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--gol-3)}
+.nav button{--c:var(--gold);background:transparent;color:var(--mu);border:1px solid transparent;border-radius:var(--r);box-shadow:none}
+.nav button i{background:color-mix(in srgb,var(--c) 14%,var(--bg));border:1px solid color-mix(in srgb,var(--c) 40%,transparent);border-radius:var(--r-s)}
+.nav button.on{background:var(--sel-bg);color:var(--on-sel);border-color:var(--sel-line);box-shadow:inset 0 1px 0 rgba(241,231,220,.10)}
+.nav button.on i{background:color-mix(in srgb,var(--c) 26%,var(--bo-d));border-color:var(--c)}
+.nav button .dot{background:var(--gold);box-shadow:0 0 0 2px var(--bg2)}
+
+/* ---------- sayfa şeridi (kategori içi sayfalar) ---------- */
+.subtabs{border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--bg2),transparent)}
+.subtabs button{background:var(--p);border:1px solid var(--line);border-radius:var(--r-pill);color:var(--mu)}
+.subtabs button.on{background:var(--sel-bg);color:var(--on-sel);border-color:var(--sel-line)}
+.subtabs button.lock{background:transparent;border-style:dashed;color:var(--dis)}
+
+/* ---------- yüzeyler: kart ailesi ---------- */
+.card,.cardx,.pk,.kp,.sc,.hqt,.hqkasa,.mng,.cards3 .pk,.hqshops .sc{background:var(--p);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--gol-1),var(--ic-ust)}
+.card h3,.cardx h3,.cardx>b:first-child{color:var(--sh-l);font-family:var(--fd);letter-spacing:.1px}
+.card .muted,.cardx .muted,.muted,.tiny.muted,.small.muted{color:var(--mu)}
+.hqhero{background:linear-gradient(135deg,var(--bo),var(--bo-d));border:1px solid var(--sel-line);border-radius:var(--r-l)}
+.eyebrow2,.eyebrow{color:var(--gold);letter-spacing:.9px}
+.pill,.chip2{background:rgba(198,164,119,.14);color:var(--sh);border:1px solid rgba(198,164,119,.28);border-radius:var(--r-pill)}
+.para,.para.sm{color:var(--sh);font-variant-numeric:tabular-nums}
+.good{color:var(--ok)}.badc,.bad{color:var(--bad)}
+.hqt:active,.pk:active,.sc:active{background:var(--p2)}
+.sc.sel{border-color:var(--sel-line);background:linear-gradient(180deg,var(--p2),var(--p))}
+
+/* ---------- düğmeler ---------- */
+.btn,.ybtn{background:var(--p2);border:1px solid var(--line);border-radius:var(--r);color:var(--tx);font-weight:700;box-shadow:var(--ic-ust)}
+.btn.pri,.ybtn,.btn.on{background:var(--sel-bg);color:var(--on-sel);border:1px solid var(--sel-line)}
+.btn.bad{background:rgba(217,83,95,.12);border-color:rgba(217,83,95,.55);color:var(--bad)}
+.btn:disabled,.ybtn:disabled{opacity:.4}
+.cx{background:var(--p2);border:1px solid var(--line);border-radius:var(--r-pill);color:var(--mu)}
+.cx.on{background:var(--sel-bg);color:var(--on-sel);border-color:var(--sel-line)}
+input,select,.kin{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);color:var(--tx)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+
+/* ---------- çubuk ve grafik ---------- */
+.bar{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r-pill)}
+.bar i{border-radius:inherit}
+
+/* ---------- pencereler (hepsi aynı kalıp) ---------- */
+.modal,.yd,.mn{background:rgba(24,25,27,.74)}
+.mbox,.ydbox,.mnbox{background:var(--p);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--gol-3)}
+.mbox h2,.ydcont h2{color:var(--sh-l);font-family:var(--fd)}
+.ydtop,.mntop,.ydlist{border-color:var(--line)}
+.ydlist button{border-radius:var(--r)}
+.ydlist button i{background:var(--p2);color:var(--mu)}
+.ydlist button.on{background:var(--sel-bg);outline:1px solid var(--sel-line);color:var(--on-sel)}
+.ydlist button.on i{background:var(--gold);color:var(--bg)}
+.mng{border-left:3px solid var(--c)}
+.mnh em{background:var(--p2);color:var(--mu)}
+.mnt{background:var(--p2);border-radius:var(--r)}
+.ogrbox{background:var(--p);border:1px solid var(--sel-line);border-radius:var(--r-l);box-shadow:var(--gol-3)}
+.ogrbar{background:var(--bg2)}.ogrbar i{background:linear-gradient(90deg,var(--gold-d),var(--gold))}
+.gun{background:rgba(41,42,47,.97);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--gol-3)}
+
+/* ---------- bildirim ---------- */
+.toast{background:var(--bg2);color:var(--tx);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:var(--r);box-shadow:var(--gol-2)}
+.toast.ok{border-left-color:var(--ok)}.toast.bad{border-left-color:var(--bad)}.toast.warn{border-left-color:var(--warn)}
+
+/* ---------- alt menü: gereksiz boşluk yok, ortalı ---------- */
+.nav{height:auto;padding:5px 6px calc(5px + env(safe-area-inset-bottom));align-items:center;box-sizing:border-box}
+.nav button{min-height:52px;align-self:center}
+
+/* ---------- yerleşim düzeltmeleri ---------- */
+.pb.fit{padding-bottom:4px}   /* harita gibi sığdırılan sayfalarda alt satır (gösterge) kesilmesin */
+.screen{background:radial-gradient(120% 80% at 50% 0%,var(--bo-d) 0%,var(--bg) 62%)}
+.title h1{color:var(--sh-l);letter-spacing:1px}
+.title p{color:var(--mu)}
+.pb.fit .legend{margin-bottom:0}

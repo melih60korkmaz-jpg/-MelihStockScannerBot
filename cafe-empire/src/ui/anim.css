@@ -1,0 +1,77 @@
+/* ============================================================================
+   CAFE EMPIRE · ANİMASYON SİSTEMİ
+   - Yalnızca transform ve opacity (mobilde GPU'da, düzeni bozmaz).
+   - Süreler/eğriler tema.css'teki --d1..--d4 ve --e değişkenlerinden gelir.
+   - html[data-anim]: tam | hafif | kapali  (+ sistem "hareketi azalt" tercihi)
+   ============================================================================ */
+@keyframes ceKart{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes cePop{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes cePopOut{to{opacity:0;transform:translateY(6px) scale(.97)}}
+@keyframes ceFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes ceFadeOut{to{opacity:0}}
+@keyframes ceBar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes ceToastIn{from{opacity:0;transform:translateY(-10px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes ceToastOut{to{opacity:0;transform:translateY(-6px) scale(.98)}}
+@keyframes ceShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@keyframes ceSecim{0%{transform:scale(.9)}60%{transform:scale(1.05)}100%{transform:scale(1)}}
+@keyframes ceYukselt{0%{color:var(--ok);transform:translateY(2px)}100%{color:var(--sh);transform:none}}
+@keyframes ceDusur{0%{color:var(--bad);transform:translateY(-2px)}100%{color:var(--sh);transform:none}}
+@keyframes ceNabiz{0%,100%{box-shadow:0 0 0 0 rgba(198,164,119,0)}50%{box-shadow:0 0 0 3px rgba(198,164,119,.28)}}
+
+/* ---------- dokunma geri bildirimi (basınca küçül, bırakınca dön) ---------- */
+.btn,.ybtn,.cx,.nav button,.subtabs button,.hqt,.pk,.sc,.mnt,.mnh,.spd button,.ibtn,.ydlist button,.ogrbox button,.kc,.onc,.gor,.chip{
+  transition:transform var(--d1) var(--e),background-color var(--d2) var(--e2),border-color var(--d2) var(--e2),color var(--d2) var(--e2),box-shadow var(--d2) var(--e2),opacity var(--d2) var(--e2)}
+.btn:active,.ybtn:active,.cx:active,.nav button:active,.subtabs button:active,.hqt:active,.pk:active,.sc:active,.mnt:active,.mnh:active,.spd button:active,.ibtn:active,.ydlist button:active,.ogrbox button:active,.kc:active,.onc:active,.gor:active{transform:scale(.96)}
+/* fare/trackpad olan aygıtlarda hafif aydınlanma ve yükselme */
+@media (hover:hover) and (pointer:fine){
+  .btn:hover,.cx:hover,.subtabs button:hover,.ibtn:hover,.mnt:hover,.ydlist button:hover{background-color:var(--p3);border-color:var(--gold-d)}
+  .btn.pri:hover,.ybtn:hover,.btn.on:hover,.cx.on:hover,.subtabs button.on:hover,.nav button.on:hover{filter:brightness(1.1);background-color:transparent}
+  .nav button:hover{background:rgba(198,164,119,.08)}
+  .cardx:hover,.pk:hover,.sc:hover,.hqt:hover,.kc:hover{transform:translateY(-2px);border-color:var(--gold-d);box-shadow:var(--gol-2)}
+}
+
+/* ---------- sayfa girişi: kartlar kademeli gelir (yalnız yeni sayfa açılırken; canlı yenilemede değil) ---------- */
+#page.gecis{animation:none}
+.pb.in>*{animation:ceKart var(--d3) var(--e) both}
+.pb.in>*:nth-child(2){animation-delay:40ms}.pb.in>*:nth-child(3){animation-delay:80ms}.pb.in>*:nth-child(4){animation-delay:120ms}
+.pb.in>*:nth-child(5){animation-delay:160ms}.pb.in>*:nth-child(6){animation-delay:200ms}.pb.in>*:nth-child(7){animation-delay:240ms}.pb.in>*:nth-child(n+8){animation-delay:280ms}
+.pb.in .bar i{transform-origin:left;animation:ceBar var(--d4) var(--e) both;animation-delay:120ms}
+#page.gecis .subtabs button.on{animation:ceSecim var(--d3) var(--e)}
+.nav button.on i{animation:ceSecim var(--d3) var(--e)}
+
+/* ---------- pencereler: yumuşak giriş, kontrollü çıkış ---------- */
+.modal,.yd,.mn{animation:ceFadeIn var(--d2) var(--e2) both}
+.mbox,.ydbox,.mnbox{animation:cePop var(--d3) var(--e) both}
+.modal.cikis,.yd.cikis,.mn.cikis{animation:ceFadeOut var(--d2) var(--e2) both;pointer-events:none}
+.modal.cikis .mbox,.yd.cikis .ydbox,.mn.cikis .mnbox{animation:cePopOut var(--d2) var(--e2) both}
+.mng .mnb{animation:ceFadeIn var(--d2) var(--e2)}
+.ogrbox{animation:cePop var(--d3) var(--e) both}
+.gun{animation:cePop var(--d3) var(--e) both}
+/* pencere açıkken arkadaki sayfanın süs animasyonları durur (görünmeyen şey çalışmaz) */
+#app:has(.yd,.mn,.modal) #page *{animation-play-state:paused!important}
+
+/* ---------- bildirimler: üstte yığılır, kendiliğinden kapanır ---------- */
+#toasts{position:absolute;left:50%;top:calc(56px + env(safe-area-inset-top));transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;align-items:center;gap:6px;width:min(92vw,520px);pointer-events:none}
+#toasts .toast{position:static;transform:none;max-width:100%;animation:ceToastIn var(--d3) var(--e) both}
+#toasts .toast.bad{animation:ceToastIn var(--d3) var(--e) both,ceShake 360ms var(--d1) var(--e2)}
+#toasts .toast.cikis{animation:ceToastOut var(--d2) var(--e2) both}
+
+/* ---------- finans: kasa değişince renkli vurgu ---------- */
+#tKasa.up b{animation:ceYukselt 900ms var(--e2)}
+#tKasa.dn b{animation:ceDusur 900ms var(--e2)}
+#tKasa b{display:inline-block;font-variant-numeric:tabular-nums}
+
+/* ---------- süs animasyonları: yalnız "tam" modda sürekli çalışır ---------- */
+html[data-anim="hafif"] .fincan *,html[data-anim="hafif"] .bean *,html[data-anim="hafif"] .avatar *,html[data-anim="hafif"] .mav *,html[data-anim="hafif"] .vitrin *,html[data-anim="hafif"] .madalya,html[data-anim="hafif"] .madalya *,html[data-anim="hafif"] .rozet,html[data-anim="hafif"] .cadir *,html[data-anim="hafif"] .zip,html[data-anim="hafif"] .il.buy,html[data-anim="hafif"] .ilce.buy{animation:none!important}
+html[data-anim="hafif"]{--d1:70ms;--d2:110ms;--d3:150ms;--d4:220ms}
+html[data-anim="hafif"] .pb.in>*{animation:none}
+html[data-anim="hafif"] .hqt:hover,html[data-anim="hafif"] .pk:hover{transform:none}
+/* kapalı: hiçbir hareket yok (sistem "hareketi azalt" da bu moda düşer) */
+html[data-anim="kapali"] *,html[data-anim="kapali"] *::before,html[data-anim="kapali"] *::after{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
+/* ---------- sürekli (infinite) animasyonları sınırla: arayüzde sonsuz döngü yok ---------- */
+.nav button .dot,.nabiz,.oneb,.zip{animation-iteration-count:3!important}
+html[data-anim="hafif"] #app *,html[data-anim="hafif"] #app *::before,html[data-anim="hafif"] #app *::after{animation-iteration-count:1!important}
