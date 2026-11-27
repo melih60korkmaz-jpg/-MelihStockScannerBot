@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Cafe Empire",
-    "slug": "cafe-empire-turkiye",
+    "slug": "cafe-build",
     "version": "1.0.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
@@ -46,6 +46,11 @@
     "owner": "meeeellliiihh",
     "runtimeVersion": {
       "policy": "appVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "074ae170-eb61-4b0d-86f4-032f997b7891"
+      }
     }
   }
 }
