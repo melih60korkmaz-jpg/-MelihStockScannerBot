@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Futbolcu Kariyeri",
+    "slug": "futbolcu-kariyeri",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "buildNumber": "1",
+      "bundleIdentifier": "app.futbolcukariyeri.turkiye",
+      "infoPlist": {
+        "CFBundleDisplayName": "Futbolcu Kariyeri",
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "tr",
+        "CFBundleLocalizations": ["tr"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": { "backgroundColor": "#0c2a17", "foregroundImage": "./assets/icon.png" },
+      "predictiveBackGestureEnabled": false,
+      "package": "app.futbolcukariyeri.turkiye"
+    },
+    "backgroundColor": "#0c1a12",
+    "plugins": [["expo-screen-orientation", { "initialOrientation": "PORTRAIT_UP" }]],
+    "runtimeVersion": { "policy": "appVersion" }
+  }
+}

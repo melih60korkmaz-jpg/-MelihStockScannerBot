@@ -1,0 +1,148 @@
+name: Futbolcu Kariyeri iOS -> TestFlight
+
+# Bu dala itilince (workflow dosyası değişince) ya da elle çalışır.
+# Not: "Run workflow" düğmesi yalnızca main'deki workflow'larda görünür.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/modest-archimedes-etn5kx]
+    paths: ['futbolcu-expo/**', '.github/workflows/futbolcu-ios-testflight.yml']
+
+jobs:
+  ios:
+    # Push ile yalnızca commit mesajında [ios] varsa derler; elle çalıştırma (workflow_dispatch) her zaman çalışır.
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[ios]')
+    runs-on: macos-15
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: futbolcu-expo
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gizli bilgiler tamam mı
+        run: |
+          for v in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 TEAM_ID; do
+            if [ -z "${!v}" ]; then echo "EKSIK secret: $v"; exit 1; fi
+          done
+
+      # Expo'nun Swift paketi Swift 6.2 ister (Xcode 26); Apple de artık Xcode 26 ile derlenmiş yükleme ister.
+      - name: Xcode 26 seç
+        run: |
+          echo "Kurulu Xcode'lar:"; ls -d /Applications/Xcode*.app
+          # En yeni Xcode (26.3) Expo'nun Swift kodunda "sending 'slot'" hatasi veriyor; en eski 26.x'i dene.
+          X=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | head -1)
+          if [ -z "$X" ]; then echo "HATA: bu makinede Xcode 26 yok"; exit 1; fi
+          sudo xcode-select -s "$X/Contents/Developer"
+          xcodebuild -version
+          swift --version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: futbolcu-expo/package-lock.json
+
+      - name: Oyunu senkronla ve bağımlılıkları kur
+        run: |
+          npm ci
+          ls assets/game.html
+
+      - name: Expo JSI Swift 6.2 yaması
+        run: node scripts/patch-expo-jsi.cjs
+
+      - name: iOS projesini üret
+        run: npx expo prebuild --platform ios --no-install --clean && cd ios && pod install
+
+      - name: API anahtarını yaz (biçimi onar ve doğrula)
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          KEY="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          # iPhone'dan yapıştırınca satır sonları bozulabilir ya da fazladan yazı girebilir.
+          # Apple .p8 = PKCS#8 EC P-256: gövde "MIG?AgEAMBMGByqGSM49" ile başlar.
+          # Uzunluk DER başlığından okunur (30 81 LL => LL+3 bayt), fazladan yazı atılır.
+          python3 - "$KEY" <<'PY'
+          import base64, os, re, subprocess, sys
+          key_path = sys.argv[1]
+          raw = os.environ["ASC_KEY_P8"].replace("\r", "")
+          print("ham uzunluk:", len(raw), "satir:", raw.count("\n") + 1)
+          m = re.search(r"-----BEGIN[^-]*-----(.*?)-----END[^-]*-----", raw, re.S)
+          body_src = m.group(1) if m else raw
+          body = re.sub(r"[^A-Za-z0-9+/=]", "", body_src)
+          print("temiz govde uzunlugu:", len(body), "(Apple .p8 icin 200 beklenir)")
+          mm = re.search(r"MIG.AgEAMBMGByqGSM49", body)
+          print("standart baslik bulundu mu:", bool(mm), "konum:", mm.start() if mm else -1)
+          if mm:
+              i = mm.start()
+              hb = base64.b64decode(body[i:i + 4])
+              total = hb[2] + 3
+              want = ((total + 2) // 3) * 4
+              print("DER uzunlugu:", total, "bayt, beklenen govde:", want)
+              body = body[i:i + want]
+          lines = [body[j:j + 64] for j in range(0, len(body), 64)]
+          pem = "-----BEGIN PRIVATE KEY-----\n" + "\n".join(lines) + "\n-----END PRIVATE KEY-----\n"
+          open(key_path, "w").write(pem)
+          r = subprocess.run(["openssl", "pkey", "-in", key_path, "-noout"], capture_output=True)
+          if r.returncode != 0:
+              print("HATA: ASC_KEY_P8 gecerli bir ozel anahtar degil.", r.stderr.decode()[:200])
+              sys.exit(1)
+          print("anahtar gecerli")
+          PY
+
+      # Arşiv imzasız alınır: geliştirme imzası kayıtlı cihaz ister, hesapta cihaz yok.
+      # İmza (App Store dağıtım) dışa aktarma adımında API anahtarıyla otomatik yapılır.
+      - name: Arşivle (imzasız)
+        run: |
+          cd ios
+          WS=$(ls -d *.xcworkspace | head -1)
+          SCHEME="${WS%.xcworkspace}"
+          echo "scheme=$SCHEME"
+          set +e
+          xcodebuild archive -quiet \
+            -workspace "$WS" -scheme "$SCHEME" -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/app.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" > "$RUNNER_TEMP/archive.log" 2>&1
+          RC=$?
+          set -e
+          echo "xcodebuild cikis kodu: $RC"
+          if [ $RC -ne 0 ]; then
+            echo "=========== HATA OZETI ==========="
+            grep -nE "error:|fatal error|\*\* ARCHIVE FAILED|failed|Command .* failed|No such file|cannot find" "$RUNNER_TEMP/archive.log" | grep -v "^.*note:" | head -40
+            echo "=========== LOG SONU (60 satir) ==========="
+            grep -v "note: Disabling previews" "$RUNNER_TEMP/archive.log" | grep -v "will be run during every build" | tail -60
+            exit $RC
+          fi
+
+      - name: App Store Connect'e yükle
+        run: |
+          cat > "$RUNNER_TEMP/export.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><true/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/app.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" \
+            -exportPath "$RUNNER_TEMP/out" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - name: Temizlik
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"
