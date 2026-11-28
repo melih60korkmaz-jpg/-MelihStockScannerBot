@@ -1,7 +1,7 @@
 /** Oyun durumu ve kariyer akışı. Tüm sistemler burada birbirine bağlanır. Saf (DOM'suz) ve testlenebilir. */
 import { Rng, clamp } from './rng';
 import { YETENEKLER, type YetenekId, type Yetenekler, type Pozisyon, ilkYetenekler, genelPuan, yetenekTavani, yasCarpani, POZ_GRUP, POZ_AD } from './skills';
-import { kulupleriKur, ligleriKur, fikstur, sirala, sonucYaz, takimMaci, HAFTA_SAYISI, tabloBos, type Kulup, type Lig } from './world';
+import { kulupleriKur, ligleriKur, type IsimMod, fikstur, sirala, sonucYaz, takimMaci, HAFTA_SAYISI, tabloBos, type Kulup, type Lig } from './world';
 import { kadroKur } from './week';
 import { ANTRENMANLAR, antrenmanOf, HAFTALIK_ANTRENMAN, type AntrenmanDef } from './training';
 import { esyaOf, ANTRENORLER, YASAM_GIDERI, type Antrenor } from './economy';
@@ -18,7 +18,7 @@ export interface Game {
   iliski: { td: number; takim: number; taraftar: number; kiz: number; sponsor: number }; haftaAntrenman: number; gunlukRapor: string[]; haberler: Haber[]; maclar: MacOzet[]; stat: { mac: number; gol: number; asist: number; sari: number; kirmizi: number; kupa: number }; gecmis: Array<{ sezon: number; kulup: number; lig: number; poz: number; mac: number; gol: number; asist: number }>; sezonStat: { mac: number; gol: number; asist: number }; son: number; kadro: Futbolcu[]; oduller: string[]
 }
 export interface Futbolcu { ad: string; kulup: number; yas: number; hucum: number; gol: number; asist: number; mac: number; puan: number }
-export interface Yaratim { ad: string; soyad: string; cinsiyet: 'Erkek' | 'Kadın'; kita: string; uyruk: string; lig: number; poz: Pozisyon; numara: number; gorunum: Gorunum; seed?: number }
+export interface Yaratim { ad: string; soyad: string; cinsiyet: 'Erkek' | 'Kadın'; kita: string; uyruk: string; lig: number; poz: Pozisyon; numara: number; gorunum: Gorunum; seed?: number; isim?: IsimMod }
 export const KITALAR = ['Avrupa', 'Asya', 'Afrika', 'Kuzey Amerika', 'Güney Amerika', 'Okyanusya'];
 export const UYRUKLAR: Record<string, string[]> = { Avrupa: ['Türkiye', 'Almanya', 'İspanya', 'Fransa', 'İtalya', 'Hollanda', 'Portekiz', 'İngiltere'], Asya: ['Japonya', 'Güney Kore', 'Azerbaycan', 'İran'], Afrika: ['Nijerya', 'Gana', 'Senegal', 'Mısır'], 'Kuzey Amerika': ['ABD', 'Meksika', 'Kanada'], 'Güney Amerika': ['Brezilya', 'Arjantin', 'Uruguay', 'Kolombiya'], Okyanusya: ['Avustralya', 'Yeni Zelanda'] };
 export const clubOf = (g: Game, id = g.kulup): Kulup => g.kulupler[id]!;
@@ -29,7 +29,7 @@ export const yas = (g: Game): number => g.oyuncu.yas;
 export function transferDegeri(g: Game): number { const o = genel(g), y = g.oyuncu.yas, pot = g.oyuncu.pot; const yasK = y <= 20 ? 1.5 : y <= 24 ? 1.2 : y <= 28 ? 1 : y <= 31 ? 0.6 : 0.3; return Math.round(Math.pow(Math.max(1, o), 3.1) * 0.9 * yasK * (0.8 + pot / 200) / 1000) * 1000; }
 export function baslangicSozlesme(g: Game, kulup: number, rng: Rng): Sozlesme { const l = ligOf(g, kulup), carp = g.ligler[l]!.maasCarpan; return { kulup, maas: Math.round(carp * 450 * (0.9 + rng.next() * 0.3) / 50) * 50, golPrimi: Math.round(carp * 40 / 10) * 10, asistPrimi: Math.round(carp * 20 / 10) * 10, sure: 2, bedel: transferDegeri(g) } }
 export function yeniOyun(y: Yaratim, slotId = 'slot'): Game {
-  const seed = y.seed ?? (Date.now() & 0x7fffffff), rng = new Rng(seed), kulupler = kulupleriKur(), ligler = ligleriKur();
+  const seed = y.seed ?? (Date.now() & 0x7fffffff), rng = new Rng(seed), kulupler = kulupleriKur(y.isim ?? 'gercek'), ligler = ligleriKur();
   const yet = ilkYetenekler(y.poz, rng), pot = clamp(Math.round(62 + rng.gauss() * 9 + rng.range(0, 14)), 55, 95);
   const oyuncu: Oyuncu = { ad: y.ad, soyad: y.soyad, cinsiyet: y.cinsiyet, kita: y.kita, uyruk: y.uyruk, yas: 16, poz: y.poz, numara: y.numara, gorunum: y.gorunum, yet, pot, xp: {} };
   const hedefLig = clamp(y.lig, 2, 3); // kariyer alt kulüpten başlar: 3. Lig (önerilen) ya da 2. Lig (zor)
