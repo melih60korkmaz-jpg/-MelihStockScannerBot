@@ -1,0 +1,218 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Yıldız Doğuyor</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;background:#101614;color:#eef6ee;font-family:-apple-system,system-ui,"Segoe UI",sans-serif;overflow:hidden;touch-action:none}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);background:radial-gradient(#2a2e2c,#111413)}
+#score{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 10px;background:linear-gradient(#1b1f1d,#0f1211);border-bottom:2px solid #3a3f3c}
+#score .t{flex:1;font-size:13px;font-weight:900;font-style:italic;letter-spacing:.04em;color:#dfe9e1;display:flex;align-items:center;gap:6px}#score .t:last-child{justify-content:flex-end}
+.rz{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px #000}
+#score .s{font-size:22px;font-weight:900;background:linear-gradient(#e9efe9,#b9c3bb);color:#16201a;border-radius:6px;padding:0 12px;min-width:104px;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px;border:2px solid #fff}#score .s b{background:#2c3a30;color:#fff;font-size:13px;padding:2px 6px;border-radius:4px}
+#wrap{flex:1;position:relative;min-height:0}canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#yorum{position:absolute;inset:0;overflow:hidden;padding:12px 10px;display:flex;flex-direction:column;gap:6px;background:linear-gradient(#232826,#111413)}
+.yl{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:7px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(#3dc2a0,#1f9d86);border:1px solid #5fe0c0;box-shadow:0 2px 0 #0b5e50;animation:yin .28s ease-out}
+.yl i{font-style:normal;min-width:30px;height:24px;border-radius:12px;background:#fff;color:#1b5e50;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center}.yl.k{background:linear-gradient(#3a3f3c,#232826);border-color:#555;box-shadow:0 2px 0 #111}.yl.g{background:linear-gradient(#ffd54a,#e0a800);color:#3a2a00;border-color:#fff;font-size:16px}.yl.o{background:linear-gradient(#e0624a,#b03a28);border-color:#ff9a86;box-shadow:0 2px 0 #6a1f12}
+@keyframes yin{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+#hint{position:absolute;left:0;right:0;top:64%;padding:0 18px;text-align:center;font-size:14px;font-weight:700;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none;transition:opacity .4s}
+#tbar{position:absolute;left:14px;right:14px;bottom:14px;height:14px;border-radius:8px;background:rgba(0,0,0,.55);border:2px solid #fff;overflow:hidden;display:none}#tbar i{display:block;height:100%;background:linear-gradient(90deg,#1e90ff,#6fc3ff);transform-origin:left}
+#hazir{position:absolute;right:14px;bottom:38px;display:none;background:linear-gradient(#3fbf5f,#1f8f3f);border:2px solid #b8f0c4;color:#fff;font-weight:900;font-size:17px;padding:10px 22px;border-radius:12px}
+#topw{position:absolute;right:10px;bottom:10px;width:70px;height:70px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0,#e9e9e9 55%,#bdbdbd 100%);border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.5);touch-action:none;z-index:3;overflow:hidden;display:none}#topw i{position:absolute;width:13px;height:13px;border-radius:50%;background:#e8281c;border:2px solid #fff;transform:translate(-50%,-50%);pointer-events:none}
+#alt{display:flex;align-items:center;gap:8px;padding:8px 10px;background:linear-gradient(#262b29,#101312);border-top:2px solid #3a3f3c}
+#alt button{flex:1;display:flex;align-items:center;gap:8px;justify-content:center;border:2px solid #4a8a5a;background:linear-gradient(#38a24f,#1d7a35);color:#fff;font-weight:900;font-size:14px;padding:10px 6px;border-radius:24px;box-shadow:0 3px 0 #0e4a1e;transition:transform .12s}#alt button:active{transform:scale(.95)}
+#alt button.on{border-color:#ffd54a;box-shadow:0 0 0 3px rgba(255,213,74,.35),0 3px 0 #0e4a1e}#alt #sv.on{background:linear-gradient(#3d86d6,#1f55a0)}#alt #bs.on{background:linear-gradient(#e0623a,#a32f14)}
+#enj{width:80px;font-size:10px;font-weight:800;color:#bfe0c8;text-transform:uppercase}#enj u{display:block;height:9px;border-radius:5px;background:#0a1a10;overflow:hidden;margin-top:3px;border:1px solid #444}#enj u i{display:block;height:100%;background:linear-gradient(90deg,#e0562a,#f2c518,#3fbf5f);transform-origin:left}
+#ov{position:absolute;inset:0;background:radial-gradient(rgba(14,24,18,.9),rgba(6,10,8,.97));display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;z-index:6}
+#ov h1{margin:0;font-size:30px;font-style:italic}#ov p{margin:0;color:#b9d9c1;max-width:320px;line-height:1.4}#ov button{background:linear-gradient(#3fbf5f,#1f8f3f);border:2px solid #b8f0c4;color:#fff;font-weight:900;font-size:20px;padding:14px 46px;border-radius:14px;box-shadow:0 4px 0 #0e4a1e}
+.vs{display:flex;align-items:center;gap:18px;font-weight:900;font-size:22px;font-style:italic}.vs .rz{width:64px;height:64px}
+</style></head><body><div id="app"><div id="score"><div class="t"><span class="rz" style="background:#f2c518"></span><span>SANLIU</span></div><div class="s"><span id="sc">0 - 0</span><b id="mn">0'</b></div><div class="t"><span>İNEGÖL</span><span class="rz" style="background:#d23a2e"></span></div></div>
+<div id="wrap"><canvas id="c"></canvas><div id="yorum"></div><div id="hint"></div><div id="topw"><i id="topd"></i></div><button id="hazir">HAZIR ›</button><div id="tbar"><i id="tbi"></i></div><div id="ov"></div></div>
+<div id="alt"><button id="sv">🛡️ Savunma</button><button id="bs">⚔️ Baskı</button><div id="enj">Enerji<u><i id="enb"></i></u></div></div></div>
+<script>
+'use strict';
+const W = 68, H = 105, GOAL_W = 7.32, GX0 = (W - GOAL_W) / 2, GX1 = (W + GOAL_W) / 2, rnd = (a, b) => a + Math.random() * (b - a), $ = (i) => document.getElementById(i), dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const cv = $('c'), cx = cv.getContext('2d'); let dpr = Math.min(2, devicePixelRatio || 1), CW = 0, CH = 0, SX = 1, TOP = 0, HS = 0;
+function fit() { const r = cv.getBoundingClientRect(); CW = cv.width = Math.round(r.width * dpr); CH = cv.height = Math.round(r.height * dpr); SX = CW / 50; TOP = CH * 0.06; HS = CH * 0.9; VH = HS / (SX * 1.2); }
+addEventListener('resize', fit);
+/* perspektif: uzak (üst) küçük ve sıkışık, yakın (alt) büyük */
+let VH = 58, CAM = -7, CAMX = W / 2; const P = (x, y) => { const t = (y - CAM) / VH, tc = Math.max(0, Math.min(1.15, t)), s = 0.84 + 0.16 * tc; return { x: CW / 2 + (x - CAMX) * SX * s, y: TOP + HS * (t < 0 ? t : Math.pow(t, 1.08)), s: s * SX }; };
+/* ---------- durum ---------- */
+const G = { ekran: 'on', skor: [0, 0], dk: 0, acc: 0, moment: 0, MOM: [], faz: 'ön', t: 0, top: null, me: null, tm: [], op: [], gk: null, aim: null, sure: 0, bitis: 0, log: [], istat: { sut: 0, isabet: 0, pas: 0, gol: 0, asist: 0, kayip: 0 }, puan: 6, tarz: 0, en: 100, cel: null, imp: { x: 0, y: 0 }, topT: 0, vurusT: 0, vurusK: '', golT: 0, atakPas: 0, bekle: null };
+const oyuncu = (x, y, tip) => ({ x, y, tip, vx: 0, vy: 0, h0x: x, h0y: y, px: x, py: y, fa: tip === 'op' ? Math.PI / 2 : -Math.PI / 2, ph: Math.random() * 6, sp: 0, kick: 0, slide: 0, arms: 0, num: 1 + Math.floor(Math.random() * 30), dive: 0, dyn: 0, ten: ['#e8b890', '#d99a6c', '#a86a44', '#f0c8a4'][Math.floor(Math.random() * 4)], sac: ['#1a1008', '#3b2a1a', '#6a4a22', '#c9a24a'][Math.floor(Math.random() * 4)] });
+const ICON = { n: '⚽', k: '🧤', g: '🥅', o: '⚠️' };
+function logla(dk, m, cls) { G.log.unshift({ dk, m, cls }); $('yorum').innerHTML = G.log.slice(0, 8).map((l) => `<div class="yl ${l.cls || ''}"><i>${l.dk}'</i><span>${l.m}</span></div>`).join(''); }
+const skorYaz = () => { $('sc').textContent = G.skor[0] + ' - ' + G.skor[1]; $('mn').textContent = Math.round(G.dk) + "'"; };
+const hint = (m) => { const h = $('hint'); h.textContent = m || ''; h.style.opacity = m ? 1 : 0; };
+const tarzOp = () => (G.tarz === 1 ? 1.14 : G.tarz === 2 ? 0.86 : 1), tarzMe = () => { let k = G.tarz === 2 ? 1.06 : 1; if (G.en < 35) k *= 0.75 + 0.25 * (G.en / 35); return k; };
+const enerjiYaz = () => { $('enb').style.transform = `scaleX(${Math.max(0, G.en / 100).toFixed(3)})`; };
+function ekran(e) { G.ekran = e; $('yorum').style.display = e === 'yorum' ? 'flex' : 'none'; cv.style.display = e === 'yorum' ? 'none' : 'block'; $('topw').style.display = 'none'; $('tbar').style.display = $('hazir').style.display = e === 'top' ? 'block' : 'none'; if (e !== 'saha') hint(''); }
+/* ---------- maç akışı: yorum → fırsat → top ekranı → saha → vuruş sahnesi → sonuç ---------- */
+const FIL = ['Orta sahada top çevriliyor.', 'Kenardan sert bir müdahale, hakem oyunu durdurmadı.', 'Takım topu rakip yarı sahaya taşıyor.', 'Taraftarlar tezahürat yapıyor.', 'Sert bir top kaybı, rakip karşı ataklarda.', 'Uzun bir pas, top auta çıktı.', 'Korner kullanıldı, savunma uzaklaştırdı.'];
+function macBasla() {
+  Object.assign(G, { skor: [0, 0], dk: 0, acc: 0, moment: 0, log: [], istat: { sut: 0, isabet: 0, pas: 0, gol: 0, asist: 0, kayip: 0 }, puan: 6, tarz: 0, en: 100, cel: null, imp: { x: 0, y: 0 }, faz: 'ön' }); G.MOM = [6, 18, 30, 43, 56, 66, 76, 85].map((m) => m + Math.floor(rnd(-2, 3))); $('sv').classList.remove('on'); $('bs').classList.remove('on'); enerjiYaz(); skorYaz(); $('ov').style.display = 'none'; $('yorum').innerHTML = ''; ekran('yorum'); logla(0, 'Maç başladı! SANLIU – İNEGÖL.', 'n');
+}
+function yorumTick(dt) {
+  if (G.dk >= 90) return macSonu(); G.acc += dt; if (G.acc < 0.2) return; G.acc = 0; G.dk++; skorYaz();
+  if (G.moment < G.MOM.length && G.dk >= G.MOM[G.moment]) { G.moment++; return firsat(); }
+  const r = Math.random(); if (r < 0.2) logla(G.dk, FIL[Math.floor(Math.random() * FIL.length)], 'n'); else if (r < 0.26) { const k = (G.tarz === 1 ? 0.35 : G.tarz === 2 ? 1.6 : 1) * 0.3; if (Math.random() < k) { G.skor[1]++; logla(G.dk, 'GOL! İNEGÖL kontra atağında golü buldu.', 'o'); skorYaz(); G.puan -= 0.3; } else logla(G.dk, 'İNEGÖL tehlikeli geliyordu, savunma temizledi.', 'o'); }
+}
+function firsat() { G.en = Math.max(0, G.en - (G.tarz === 2 ? 11 : G.tarz === 1 ? 4 : 7)); enerjiYaz(); logla(G.dk, 'Fırsat! Top sende… Vuruş noktasını seç.', 'n'); G.imp = { x: 0, y: 0 }; G.topT = 6; $('tbi').style.transform = 'scaleX(1)'; ekran('top'); }
+function sahneKur() {
+  const me = oyuncu(W / 2 + rnd(-8, 8), rnd(66, 76), 'me'); G.me = me; G.top = { x: me.x, y: me.y, vx: 0, vy: 0, z: 0, vz: 0, curl: 0, tasiyan: me, son: 0 }; const z = Math.min(4, 1 + Math.floor(G.moment / 2));
+  G.tm = [oyuncu(14, 60, 'tm'), oyuncu(54, 58, 'tm'), oyuncu(24, 44, 'tm'), oyuncu(46, 40, 'tm')]; G.tm.forEach((t) => { t.h0x += rnd(-4, 4); t.h0y += rnd(-4, 4); }); G.op = []; for (let i = 0; i < 3 + z; i++) G.op.push(oyuncu(rnd(10, 58), rnd(18, 56), 'op')); G.gk = oyuncu(W / 2, 3, 'gk');
+  G.devam = false; CAM = Math.max(-7, Math.min(H - VH + 4, me.y - VH * 0.62)); CAMX = Math.max(25, Math.min(43, me.x)); G.faz = 'oyna'; G.sure = 0; G.aim = null; G.atakPas = 0; G.cel = null; ekran('saha'); hint(G.moment === 1 ? 'Parmağını sürükle: yön ve güç. Takım arkadaşına ya da kaleye bırak!' : '');
+}
+function bitirAtak(sonuc, mesaj, cls, gol) {
+  if (G.faz !== 'oyna') return; G.faz = 'bitti'; G.bitis = 1.4; logla(Math.round(G.dk), mesaj, cls || 'k'); hint('');
+  if (gol) { G.skor[0]++; G.istat.gol++; G.puan += 1.2; sars = 0.5; const k = G.top.son; G.cel = { who: k, t: 0, x: k.x < W / 2 ? 6 : W - 6, y: 22 }; G.bitis = 3.1; G.golT = 1.4; ekran('gol'); } skorYaz();
+}
+let sars = 0;
+function macSonu() { G.faz = 'son'; G.dk = 90; skorYaz(); const [a, b] = G.skor, s = a > b ? 'GALİBİYET!' : a < b ? 'MAĞLUBİYET' : 'BERABERLİK', p = Math.max(1, Math.min(10, G.puan + (a > b ? 0.8 : a < b ? -0.6 : 0))).toFixed(1), ov = $('ov'); ov.style.display = 'flex'; ekran('son');
+  ov.innerHTML = `<h1>${s}</h1><div style="font-size:46px;font-weight:900">${a} - ${b}</div><p>Şut ${G.istat.sut} (isabet ${G.istat.isabet}) · Gol ${G.istat.gol} · Asist ${G.istat.asist} · Pas ${G.istat.pas}<br>Maçın puanı: <b style="color:#ffd54a">${p}</b></p><button id="tek">Tekrar oyna</button>`; $('tek').onclick = onizleme; }
+function onizleme() { ekran('on'); const ov = $('ov'); ov.style.display = 'flex'; ov.innerHTML = `<div class="vs"><span class="rz" style="background:#f2c518"></span><span>SANLIU</span><span style="font-size:15px;opacity:.7">VS</span><span>İNEGÖL</span><span class="rz" style="background:#d23a2e"></span></div><p>Maç yorumları akarken fırsat çıkınca top sende. Vuruş noktasını seç, sonra sahada parmağınla yön ve güç ver.</p><button id="bsl">BAŞLA</button>`; $('bsl').onclick = macBasla; }
+/* ---------- fizik ---------- */
+function ballStep(b, d) {
+  const sp = Math.hypot(b.vx, b.vy), hava = b.z > 0.3; if (b.curl && sp > 2) { const th = b.curl * 0.62 * d * Math.min(1, sp / 12), c = Math.cos(th), s = Math.sin(th), vx = b.vx * c - b.vy * s; b.vy = b.vx * s + b.vy * c; b.vx = vx; }
+  b.x += b.vx * d; b.y += b.vy * d; const f = Math.pow(0.5, d / (hava ? 3.4 : 1.3)); b.vx *= f; b.vy *= f;
+  if (b.z > 0 || b.vz > 0) { b.z += b.vz * d; b.vz -= 9.8 * d; if (b.z <= 0) { b.z = 0; b.vz = b.vz < -3 ? -b.vz * 0.3 : 0; if (b.vz < 1) { b.vz = 0; b.curl *= 0.3; } } } if (b.z === 0 && Math.hypot(b.vx, b.vy) < 6) b.curl = 0;
+}
+function hedefOp(o) {
+  const top = G.top, i = G.op.indexOf(o) % 3, car = top.tasiyan;
+  if (!car) { const sp = Math.hypot(top.vx, top.vy), lead = Math.min(1.2, 0.5 + sp * 0.02); return i === 0 || sp < 3 ? [top.x + top.vx * lead, top.y + top.vy * lead] : i === 1 ? [top.x + top.vx * lead * 1.4, top.y + top.vy * lead * 1.4] : [top.x, top.y]; }
+  if (i === 0) return [car.x, car.y]; if (i === 1) { let b = null, bd = 1e9; for (const t of G.tm) { if (t === car) continue; const dd = dist(t, car); if (dd < bd) { bd = dd; b = t; } } return b ? [b.x + (car.x - b.x) * 0.25, b.y + (car.y - b.y) * 0.25 - 1] : [car.x, car.y]; } return [(car.x + W / 2) / 2, car.y - 8];
+}
+function izle(o, dt) { const dx = o.x - o.px, dy = o.y - o.py, sp = Math.hypot(dx, dy) / Math.max(dt, 1e-3); o.sp += (sp - o.sp) * Math.min(1, dt * 10); if (sp > 0.35) { let da = Math.atan2(dy, dx) - o.fa; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; o.fa += da * Math.min(1, dt * 12); } o.ph += o.sp * dt * 2.6; o.px = o.x; o.py = o.y; if (o.kick > 0) o.kick -= dt; if (o.slide > 0) o.slide -= dt; if (o.dive > 0) o.dive -= dt; }
+function kutla(dt) {
+  const c = G.cel; if (!c) { for (const o of G.op.concat(G.tm, [G.gk])) izle(o, dt); return; } c.t += dt; const s = c.who, dd = Math.hypot(c.x - s.x, c.y - s.y); if (dd > 1) { s.x += (c.x - s.x) / dd * 7 * dt; s.y += (c.y - s.y) / dd * 7 * dt; } s.arms = 1;
+  for (const o of G.tm) if (o !== s) { const d2 = dist(s, o); if (d2 > 3) { o.x += (s.x - o.x) / d2 * 5.2 * dt; o.y += (s.y - o.y) / d2 * 5.2 * dt; } o.arms = d2 < 6 ? 1 : 0; } for (const o of G.op) { o.arms = 0; if (c.t > 0.4) o.y += (30 + (o.h0y % 12) - o.y) * 0.3 * dt; } G.top.x = s.x; G.top.y = s.y; G.top.vx = G.top.vy = 0; for (const o of G.op.concat(G.tm, [G.gk])) izle(o, dt);
+}
+function sahaAdim(dt) {
+  const top = G.top; { const hy = (top.tasiyan ? top.tasiyan.y : top.y), tg = Math.max(-7, Math.min(H - VH + 4, hy - VH * 0.62)), hx = Math.max(25, Math.min(43, top.tasiyan ? top.tasiyan.x : top.x)); CAM += (tg - CAM) * Math.min(1, dt * 2.5); CAMX += (hx - CAMX) * Math.min(1, dt * 2.5); }
+  const d = dt * (G.aim ? 0.18 : 1);
+  if (G.faz === 'bitti') { G.bitis -= dt; kutla(dt); if (G.bitis <= 0) { ekran('yorum'); G.faz = 'yorum'; G.dk = Math.min(89, G.dk + 4); skorYaz(); } return; }
+  if (G.faz !== 'oyna') return; G.sure += d;
+  if (top.tasiyan) { const m = top.tasiyan; let ax = 0, ay = -1; for (const o of G.op) { const dd = dist(m, o); if (dd < 9) { ax += (m.x - o.x) / (dd + 1) * 1.6; ay += (m.y - o.y) / (dd + 1) * 0.6; } } ax += (W / 2 - m.x) * 0.012; const l = Math.hypot(ax, ay) || 1, v = 4.4 * tarzMe(); m.x += ax / l * v * d; m.y += ay / l * v * d; m.x = Math.max(2, Math.min(W - 2, m.x)); if (m.y < 6) m.y = 6; top.x = m.x; top.y = m.y; top.vx = top.vy = 0; if (G.sure > 14) return bitirAtak('kayip', 'Top çok beklendi, rakip topu kaptı.'); }
+  else {
+    ballStep(top, d); const sp = Math.hypot(top.vx, top.vy);
+    if (top.y <= 0.3 && top.x > GX0 && top.x < GX1 && top.vy < 0) return sutSonuc();
+    if (top.y < -2 || top.y > H + 2 || top.x < -2 || top.x > W + 2) { if (top.y < 0.3 && sp > 2) { G.istat.sut++; return bitirAtak('aut', 'Şut auta gitti.'); } return bitirAtak('kayip', 'Top çizgiyi geçti, atak bitti.'); }
+    for (const t of G.tm) if (t !== top.son && dist(t, top) < 2.8 && sp > 0.5 && top.z < 2.6) { G.istat.pas++; G.atakPas++; G.puan += 0.1; top.tasiyan = t; G.me = t; top.son = t; top.vx = top.vy = 0; hint(''); G.devam = true; G.imp = { x: 0, y: 0 }; G.topT = 6; $('tbi').style.transform = 'scaleX(1)'; ekran('top'); return; }
+    for (const o of G.op) if (dist(o, top) < 1.7 && !top.tasiyan && top.z < 1.8) { o.kick = 0.3; G.istat.kayip++; G.puan -= 0.25; return bitirAtak('kayip', 'Pas kesildi! Rakip topu aldı.'); }
+    if (sp < 1.2 && !top.tasiyan) { const t = G.tm.concat([G.me]).sort((a, b) => dist(a, top) - dist(b, top))[0]; if (dist(t, top) < 4) { top.tasiyan = t; G.me = t; } else return bitirAtak('kayip', 'Top yavaşladı, rakip aldı.'); }
+  }
+  for (const o of G.op) { const [hx, hy] = hedefOp(o), dd = Math.hypot(hx - o.x, hy - o.y) || 1, v = (3.6 + G.moment * 0.14) * tarzOp(); o.x += (hx - o.x) / dd * v * d; o.y += (hy - o.y) / dd * v * d; if (top.tasiyan && dist(o, top.tasiyan) < 1.5) { o.slide = 0.4; G.istat.kayip++; G.puan -= 0.3; return bitirAtak('kayip', 'Rakip savunmacı topu çaldı!'); } }
+  for (const t of G.tm) if (t !== top.tasiyan) { if (!top.tasiyan && t !== top.son && dist(t, top) < 11) { const dd = dist(t, top) || 1; t.x += (top.x - t.x) / dd * 5 * d; t.y += (top.y - t.y) / dd * 5 * d; continue; } const hx = t.h0x, hy = Math.max(10, t.h0y - Math.max(0, 70 - (top.tasiyan ? top.tasiyan.y : 50)) * 0.2 + Math.sin(G.t * 0.9 + t.h0x) * 3); t.x += (hx - t.x) * 0.8 * d + Math.cos(G.t + t.h0y) * 0.4 * d; t.y += (hy - t.y) * 0.8 * d; }
+  for (const o of G.op.concat(G.tm, [G.gk])) izle(o, d); if (top.tasiyan) izle(top.tasiyan, d);
+  let hdf = (top.x - W / 2) * 0.45 + W / 2, vk = 3; if (!top.tasiyan) { G.gk.rt = (G.gk.rt || 0) + d; if (top.vy < -1 && G.gk.rt > 0.3) { hdf = top.x + top.vx * (top.y / -top.vy); vk = 3.6; } } G.gk.x += Math.max(-vk * d, Math.min(vk * d, (Math.min(GX1 - 0.4, Math.max(GX0 + 0.4, hdf)) - G.gk.x)));
+}
+function sutSonuc() {
+  const top = G.top, kx = G.gk.x, hiz = Math.hypot(top.vx, top.vy), carp = top.x; G.istat.sut++; if (top.z > 2.45) return bitirAtak('aut', 'Top üst direğin üzerinden auta gitti!');
+  const yakin = Math.abs(carp - kx), reaksiyon = (0.8 + 3.5 / Math.max(5, hiz)) * (top.z > 1.3 ? 0.45 : 1), gol = yakin > reaksiyon || hiz > 16 && yakin > 0.8; if (carp < GX0 + 0.35 || carp > GX1 - 0.35) { G.istat.isabet++; return bitirAtak('direk', 'DİREK! Top direğe çarptı, az kalsın!'); }
+  G.istat.isabet++; if (gol) { if (G.atakPas > 0) G.istat.asist++; return bitirAtak('gol', G.atakPas > 0 ? 'GOOOL! Harika asist ve soğukkanlı bitiriş!' : 'GOOOOL! Muhteşem şut!', 'g', true); }
+  G.gk.dive = 0.9; G.gk.dyn = Math.sign(top.x - G.gk.x) || 1; G.puan += 0.2; bitirAtak('kurtaris', 'Kaleci son anda kurtardı!');
+}
+/* ---------- girdi ---------- */
+let down = null; const MAXP = 150;
+cv.addEventListener('pointerdown', (e) => { if (G.ekran === 'top') return topDokun(e); if (G.ekran !== 'saha' || G.faz !== 'oyna' || !G.top.tasiyan) return; cv.setPointerCapture(e.pointerId); down = { x: e.clientX, y: e.clientY }; G.aim = { dx: 0, dy: 0, p: 0 }; hint(''); });
+cv.addEventListener('pointermove', (e) => { if (G.ekran === 'top' && e.buttons) return topDokun(e); if (!down || !G.aim) return; const dx = e.clientX - down.x, dy = e.clientY - down.y, l = Math.hypot(dx, dy); G.aim = { dx: dx / (l || 1), dy: dy / (l || 1), p: Math.min(1, l / MAXP), l }; });
+const birak = () => { if (!down) return; const a = G.aim; down = null; G.aim = null; if (!a || a.l < 14 || G.faz !== 'oyna' || !G.top.tasiyan) return; vurusBasla(a.dx, a.dy, a.p); };
+cv.addEventListener('pointerup', birak); cv.addEventListener('pointercancel', () => { down = null; G.aim = null; });
+/* top ekranı: topun üzerinde vuruş noktası seç */
+const TB = () => ({ x: CW / 2, y: CH * 0.62, r: Math.min(CW, CH) * 0.27 });
+function topDokun(e) { const r = cv.getBoundingClientRect(), b = TB(), x = ((e.clientX - r.left) * dpr - b.x) / b.r, y = ((e.clientY - r.top) * dpr - b.y) / b.r, l = Math.hypot(x, y); G.imp = l > 0.92 ? { x: x / l * 0.92, y: y / l * 0.92 } : { x, y }; if (Math.hypot(G.imp.x, G.imp.y) < 0.1) G.imp = { x: 0, y: 0 }; }
+$('hazir').onclick = () => { if (G.devam) { G.devam = false; ekran('saha'); } else sahneKur(); };
+(function () { const w = $('topw'); let on = false; const set = (e) => { const r = w.getBoundingClientRect(), x = (e.clientX - r.left - r.width / 2) / (r.width / 2 - 6), y = (e.clientY - r.top - r.height / 2) / (r.height / 2 - 6), l = Math.hypot(x, y); G.imp = l > 1 ? { x: x / l, y: y / l } : { x, y }; if (Math.hypot(G.imp.x, G.imp.y) < 0.12) G.imp = { x: 0, y: 0 }; impYaz(); }; w.addEventListener('pointerdown', (e) => { e.stopPropagation(); on = true; w.setPointerCapture(e.pointerId); set(e); }); w.addEventListener('pointermove', (e) => { if (on) set(e); }); w.addEventListener('pointerup', () => { on = false; }); })();
+function impYaz() { const d = $('topd'), r = 35; d.style.left = (r + G.imp.x * (r - 6)) + 'px'; d.style.top = (r + G.imp.y * (r - 6)) + 'px'; }
+function yol(m, dx, dy, p) { const v = (12 + 70 * p) / 1.88 + 1.2, im = G.imp, hz = (1 + 0.18 * Math.max(0, -im.y)) * (1 - 0.34 * Math.max(0, im.y)), b = { x: m.x, y: m.y, vx: dx * v * hz, vy: dy * v * hz, z: 0.25, vz: im.y > 0.2 ? 3.5 + 8.5 * im.y * (0.5 + 0.5 * p) : 0, curl: -im.x }, pts = [[b.x, b.y, 0]]; for (let i = 0; i < 90; i++) { ballStep(b, 0.05); pts.push([b.x, b.y, b.z]); if (Math.hypot(b.vx, b.vy) < 1.2 && b.z === 0) break; if (b.y < -1) break; } return pts; }
+function vurusBasla(dx, dy, p) { const m = G.top.tasiyan, pts = yol(m, dx, dy, p); const pas = G.tm.some((t) => pts.some((q) => Math.hypot(q[0] - t.x, q[1] - t.y) < 3.5)); G.vurusK = pas ? 'PAS!' : 'ŞUT!'; G.vurusT = 0.8; G.bekle = [dx, dy, p]; m.kick = 0.3; ekran('vurus'); }
+function atis(dx, dy, p) { const top = G.top, m = top.tasiyan; if (!m) return; const v = (12 + 70 * p) / 1.88 + 1.2; top.son = m; m.kick = 0.3; top.tasiyan = null; G.gk.rt = 0; const im = G.imp; top.curl = -im.x; top.z = 0.25; top.vz = im.y > 0.2 ? 3.5 + 8.5 * im.y * (0.5 + 0.5 * p) : 0; const hz = (1 + 0.18 * Math.max(0, -im.y)) * (1 - 0.34 * Math.max(0, im.y)); top.vx = dx * v * hz; top.vy = dy * v * hz; G.imp = { x: 0, y: 0 }; impYaz(); }
+$('sv').onclick = () => tarzSec(1); $('bs').onclick = () => tarzSec(2);
+function tarzSec(k) { G.tarz = G.tarz === k ? 0 : k; $('sv').classList.toggle('on', G.tarz === 1); $('bs').classList.toggle('on', G.tarz === 2); if (G.ekran === 'yorum') logla(Math.round(G.dk), G.tarz === 1 ? '🛡️ Savunma: kalın diziliş, rakip kontra bulamıyor.' : G.tarz === 2 ? '⚔️ Baskı: rakip sendeliyor ama arkada boşluk ve enerji eriyor.' : 'Denge: normal oyun.', 'n'); }
+/* ---------- çizim yardımcıları ---------- */
+const fx = (fn) => { cx.save(); fn(cx); cx.restore(); };
+function sahaCiz() {
+  const c = cx; c.fillStyle = '#0f2a18'; c.fillRect(0, 0, CW, CH);
+  // tribün + reklam panoları (uzak uç)
+  const p0 = P(0, -0.5), yTop = 0, yB = p0.y - 4 * dpr; if (yB > 8) { const g = c.createLinearGradient(0, yTop, 0, yB); g.addColorStop(0, '#1c2430'); g.addColorStop(1, '#3a2f2a'); c.fillStyle = g; c.fillRect(0, yTop, CW, yB - yTop);
+  for (let r = 0; r < 5; r++) for (let i = 0; i < 46; i++) { const hh = (i * 53 + r * 17) % 360; c.fillStyle = `hsl(${(hh % 5) * 12 + (i % 3 ? 40 : 0)},45%,${30 + (i * 7 + r * 11) % 30}%)`; c.beginPath(); c.arc((i + (r % 2) * 0.5) * CW / 45, yTop + (r + 0.6) * (yB - yTop) / 5.5, CW / 120, 0, 7); c.fill(); }
+  const bw = CW / 6; for (let i = 0; i < 6; i++) { c.fillStyle = ['#e63946', '#1d3557', '#f4a261', '#2a9d8f', '#e9c46a', '#6d6875'][i]; c.fillRect(i * bw, yB - 7 * dpr, bw - 2, 7 * dpr); } }
+  // çim bantları
+  for (let i = 0; i < 14; i++) { const y0 = i * H / 14, y1 = (i + 1) * H / 14, a = P(-4, y0), b = P(W + 4, y0), cc = P(W + 4, y1), d = P(-4, y1); c.fillStyle = i % 2 ? '#2e8d3c' : '#287f35'; c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.lineTo(cc.x, cc.y); c.lineTo(d.x, d.y); c.closePath(); c.fill(); }
+  c.fillStyle = 'rgba(0,0,0,.18)'; const l0 = P(-4, 0), l1 = P(-4, H); c.beginPath(); c.moveTo(0, l0.y); c.lineTo(l0.x, l0.y); c.lineTo(l1.x, l1.y); c.lineTo(0, l1.y); c.fill(); const r0 = P(W + 4, 0), r1 = P(W + 4, H); c.beginPath(); c.moveTo(CW, r0.y); c.lineTo(r0.x, r0.y); c.lineTo(r1.x, r1.y); c.lineTo(CW, r1.y); c.fill();
+  // çizgiler
+  c.strokeStyle = 'rgba(255,255,255,.88)'; c.lineWidth = 2.2 * dpr; const line = (arr) => { c.beginPath(); arr.forEach((q, i) => { const s = P(q[0], q[1]); i ? c.lineTo(s.x, s.y) : c.moveTo(s.x, s.y); }); c.stroke(); };
+  line([[0, 0], [W, 0], [W, H], [0, H], [0, 0]]); line([[13.8, 0], [13.8, 16.5], [54.1, 16.5], [54.1, 0]]); line([[24.8, 0], [24.8, 5.5], [43.1, 5.5], [43.1, 0]]); line([[0, H / 2], [W, H / 2]]);
+  const arc = (cxm, cym, r, a0, a1) => { const pts = []; for (let i = 0; i <= 24; i++) { const a = a0 + (a1 - a0) * i / 24; pts.push([cxm + Math.cos(a) * r, cym + Math.sin(a) * r]); } line(pts); }; arc(W / 2, H / 2, 9.15, 0, 7); arc(W / 2, 11, 9.15, 0.2 * Math.PI, 0.8 * Math.PI);
+  // kale
+  const a = P(GX0, 0), b = P(GX1, 0), hgt = 2.44 * a.s * 1.05, dp = 2.2 * a.s * 0.5; c.fillStyle = 'rgba(0,0,0,.42)'; c.fillRect(a.x, a.y - hgt - dp, b.x - a.x, hgt + dp); c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = dpr; for (let i = 0; i <= 14; i++) { const x = a.x + (b.x - a.x) * i / 14; c.beginPath(); c.moveTo(x, a.y - hgt - dp); c.lineTo(x, a.y); c.stroke(); } for (let j = 1; j < 5; j++) { const y = a.y - hgt - dp + (hgt + dp) * j / 5; c.beginPath(); c.moveTo(a.x, y); c.lineTo(b.x, y); c.stroke(); }
+  c.strokeStyle = '#fff'; c.lineWidth = 4 * dpr; c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(a.x, a.y - hgt - dp * 0.3); c.lineTo(b.x, a.y - hgt - dp * 0.3); c.lineTo(b.x, b.y); c.stroke();
+}
+function oyuncuCiz(o, ben) {
+  const c = cx, pp = P(o.x, o.y), u = pp.s * 2.4, k = { tm: ['#f2c518', '#c99d00', '#1d3d8f', '#f2c518'], me: ['#ffe066', '#d9a800', '#1d3d8f', '#ffe066'], op: ['#d23a2e', '#8f1f16', '#fff', '#d23a2e'], gk: ['#2fb36b', '#17784a', '#111', '#2fb36b'] }[ben ? 'me' : o.tip], run = o.sp > 0.6, amp = Math.min(1, o.sp / 5), dive = o.tip === 'gk' && o.dive > 0, sl = o.slide > 0;
+  c.save(); c.translate(pp.x, pp.y); c.fillStyle = 'rgba(0,0,0,.32)'; c.beginPath(); c.ellipse(0, u * 0.3, u * 1.0, u * 0.55, 0, 0, 7); c.fill(); c.scale(1, 0.84); c.rotate(o.fa); let sx = 1; if (dive) { c.rotate((o.dyn > 0 ? 1 : -1) * Math.PI / 2 * Math.min(1, (0.9 - o.dive) * 8)); sx = 1.5; } if (sl) sx = 1.5; c.scale(sx, 1);
+  const leg = (side, ph) => { const f = Math.sin(o.ph + ph) * amp, kx = (o.kick > 0 && side > 0) ? 1.35 * Math.sin(Math.min(1, (0.3 - o.kick) / 0.3) * Math.PI) : 0, fx2 = f * 0.95 * u + kx * u; c.lineCap = 'round'; c.strokeStyle = k[2]; c.lineWidth = u * 0.52; c.beginPath(); c.moveTo(0, side * u * 0.28); c.lineTo(fx2 * 0.55, side * u * 0.34); c.stroke(); c.strokeStyle = k[0]; c.lineWidth = u * 0.34; c.beginPath(); c.moveTo(fx2 * 0.55, side * u * 0.34); c.lineTo(fx2, side * u * 0.38); c.stroke(); c.fillStyle = '#101010'; c.beginPath(); c.ellipse(fx2 + u * 0.1, side * u * 0.38, u * 0.34, u * 0.2, 0, 0, 7); c.fill(); };
+  if (!dive) { leg(-1, 0); leg(1, Math.PI); }
+  const arm = (side, ph) => { const up = o.arms > 0 || dive, f = up ? 0 : Math.sin(o.ph + ph + Math.PI) * amp * 0.8 * u, ex = up ? (dive ? u * 1.5 : u * 0.9) : f, ey = side * u * (up ? (dive ? 0.35 : 1.15) : 0.8); c.strokeStyle = k[1]; c.lineWidth = u * 0.34; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, side * u * 0.62); c.lineTo(ex, ey); c.stroke(); c.fillStyle = o.ten; c.beginPath(); c.arc(ex, ey, u * 0.19, 0, 7); c.fill(); if (dive || o.tip === 'gk') { c.fillStyle = '#ffd84a'; c.beginPath(); c.arc(ex, ey, u * 0.26, 0, 7); c.fill(); } };
+  arm(-1, 0); arm(1, Math.PI);
+  const gr = c.createLinearGradient(0, -u * 0.8, 0, u * 0.8); gr.addColorStop(0, k[0]); gr.addColorStop(0.5, k[3]); gr.addColorStop(1, k[1]); c.fillStyle = gr; c.beginPath(); c.ellipse(0, 0, u * 0.5, u * 0.8, 0, 0, 7); c.fill(); c.strokeStyle = k[1]; c.lineWidth = u * 0.08; c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.9)'; c.save(); c.rotate(Math.PI / 2); c.font = `900 ${u * 0.55}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = k[2] === '#fff' ? '#fff' : '#111'; c.fillText(String(o.num), 0, 0); c.restore();
+  c.fillStyle = o.ten; c.beginPath(); c.arc(u * 0.08, 0, u * 0.38, 0, 7); c.fill(); c.fillStyle = o.sac; c.beginPath(); c.arc(-u * 0.04, 0, u * 0.37, Math.PI * 0.5, Math.PI * 1.5); c.fill();
+  c.restore();
+  if (ben) { const bob = Math.sin(G.t * 6) * 3 * dpr; c.save(); c.translate(pp.x, pp.y - u * 2.3 + bob); c.fillStyle = '#fff'; c.strokeStyle = '#111'; c.lineWidth = 2 * dpr; c.beginPath(); c.moveTo(-u * 0.55, -u * 0.5); c.lineTo(u * 0.55, -u * 0.5); c.lineTo(0, u * 0.35); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+}
+function topCiz3(x, y, z, r, rot) { const c = cx; c.save(); c.translate(x, y); const g = c.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r); g.addColorStop(0, '#fff'); g.addColorStop(0.65, '#e6e6e6'); g.addColorStop(1, '#8f8f8f'); c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.save(); c.beginPath(); c.arc(0, 0, r, 0, 7); c.clip(); c.fillStyle = '#1d1d1d'; const patch = (a, d, s) => { const px = Math.cos(a + rot) * d * r, py = Math.sin(a + rot) * d * r * 0.95; c.save(); c.translate(px, py); c.rotate(a + rot); c.scale(1, 0.85 + 0.15 * Math.cos(d * 1.5)); c.beginPath(); for (let i = 0; i < 5; i++) { const aa = i * Math.PI * 0.4 - Math.PI / 2; c.lineTo(Math.cos(aa) * s * r, Math.sin(aa) * s * r); } c.closePath(); c.fill(); c.restore(); }; patch(0, 0, 0.3); for (let i = 0; i < 5; i++) patch(i * Math.PI * 0.4 + 0.3, 0.88, 0.26); c.restore(); c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = Math.max(1, r * 0.04); c.beginPath(); c.arc(0, 0, r, 0, 7); c.stroke(); c.restore(); }
+function top3d() { const t = G.top, car = t.tasiyan, hiz = Math.hypot(t.vx, t.vy); let bx = t.x, by = t.y; if (car) { bx += Math.cos(car.fa) * 1.5; by += Math.sin(car.fa) * 1.5; } const pp = P(bx, by), r = pp.s * 0.9, h = car ? Math.abs(Math.sin(car.ph)) * (car.sp > 0.5 ? r * 0.5 : 0) : (t.z || 0) * pp.s * 1.1; cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(pp.x, pp.y + r * 0.5, r, r * 0.45, 0, 0, 7); cx.fill(); topCiz3(pp.x, pp.y - h - r * 0.4, 0, r, car ? car.ph : G.t * hiz * 0.3); }
+function okCiz() {
+  const c = cx, a = G.aim, m = G.top.tasiyan; if (!a || a.p <= 0 || !m) return; const pts = yol(m, a.dx, a.dy, a.p); if (pts.length < 3) return;
+  const col = `hsl(${125 - 125 * a.p},88%,56%)`, n = pts.length, pr = pts.map((q) => { const s = P(q[0], q[1]); return [s.x, s.y - q[2] * s.s * 0.6, s.s]; }), w0 = 0.5, w1 = 1.0 + 1.1 * a.p, hw = 2.6 + 1.2 * a.p, head = Math.min(n - 2, Math.max(2, Math.floor(n * 0.12))), pul = 1 + Math.sin(G.t * 12) * 0.04, L = [], R = [];
+  for (let k = 0; k < n - head; k++) { const q = pr[k], q2 = pr[Math.min(n - 1, k + 1)], ang = Math.atan2(q2[1] - q[1], q2[0] - q[0]), w = (w0 + (w1 - w0) * k / (n - head)) * q[2] * pul; L.push([q[0] + Math.sin(ang) * w, q[1] - Math.cos(ang) * w]); R.push([q[0] - Math.sin(ang) * w, q[1] + Math.cos(ang) * w]); }
+  const e = pr[n - 1], e0 = pr[n - 1 - head], ea = Math.atan2(e[1] - e0[1], e[0] - e0[0]), hh = hw * e0[2], gg = c.createLinearGradient(pr[0][0], pr[0][1], e[0], e[1]); gg.addColorStop(0, 'rgba(255,255,255,.25)'); gg.addColorStop(0.5, col); gg.addColorStop(1, col);
+  c.save(); c.beginPath(); c.moveTo(L[0][0], L[0][1]); for (const q of L) c.lineTo(q[0], q[1]); c.lineTo(e0[0] + Math.sin(ea) * hh, e0[1] - Math.cos(ea) * hh); c.lineTo(e[0], e[1]); c.lineTo(e0[0] - Math.sin(ea) * hh, e0[1] + Math.cos(ea) * hh); for (let k = R.length - 1; k >= 0; k--) c.lineTo(R[k][0], R[k][1]); c.closePath(); c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 8 * dpr; c.fillStyle = gg; c.fill(); c.shadowBlur = 0; c.lineWidth = 2 * dpr; c.strokeStyle = 'rgba(0,0,0,.55)'; c.stroke(); c.restore();
+}
+/* top ekranı (stadyum önünde büyük top) */
+function topEkraniCiz() {
+  const c = cx, b = TB(); const sky = c.createLinearGradient(0, 0, 0, CH * 0.4); sky.addColorStop(0, '#2f8fe8'); sky.addColorStop(1, '#bfe2ff'); c.fillStyle = sky; c.fillRect(0, 0, CW, CH * 0.42);
+  c.fillStyle = '#2a2f36'; c.fillRect(0, CH * 0.28, CW, CH * 0.3); for (let r = 0; r < 7; r++) for (let i = 0; i < 60; i++) { c.fillStyle = `hsl(${((i * 7 + r * 13) % 4) * 14 + (i % 4 ? 38 : 0)},50%,${28 + (i * 5 + r * 9) % 28}%)`; c.beginPath(); c.arc((i + (r % 2) * 0.5) * CW / 58, CH * 0.3 + r * CH * 0.04, CW / 150, 0, 7); c.fill(); }
+  c.fillStyle = '#d9d9de'; c.fillRect(0, CH * 0.575, CW, CH * 0.03); const bw = CW / 5; for (let i = 0; i < 5; i++) { c.fillStyle = ['#e63946', '#1d3557', '#2a9d8f', '#e9c46a', '#6d6875'][i]; c.fillRect(i * bw + 3, CH * 0.6 - 1, bw - 6, CH * 0.05); c.fillStyle = '#fff'; c.font = `900 ${CH * 0.028}px sans-serif`; c.textAlign = 'center'; c.fillText(['YILDIZ', 'GOL', 'LİG', 'SPOR', 'KUPA'][i], i * bw + bw / 2, CH * 0.637); }
+  const gr = c.createLinearGradient(0, CH * 0.65, 0, CH); gr.addColorStop(0, '#2e8d3c'); gr.addColorStop(1, '#14501f'); c.fillStyle = gr; c.fillRect(0, CH * 0.65, CW, CH * 0.35);
+  c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(b.x, b.y + b.r * 1.02, b.r * 0.85, b.r * 0.18, 0, 0, 7); c.fill(); topCiz3(b.x, b.y, 0, b.r, G.t * 0.25);
+  const px = b.x + G.imp.x * b.r, py = b.y + G.imp.y * b.r; c.fillStyle = 'rgba(232,40,28,.35)'; c.beginPath(); c.arc(px, py, b.r * 0.22, 0, 7); c.fill(); c.fillStyle = '#e8281c'; c.strokeStyle = '#fff'; c.lineWidth = 3 * dpr; c.beginPath(); c.arc(px, py, b.r * 0.1, 0, 7); c.fill(); c.stroke();
+  c.textAlign = 'center'; c.fillStyle = '#fff'; c.shadowColor = '#000'; c.shadowBlur = 6; c.font = `800 ${CH * 0.026}px -apple-system,sans-serif`; c.fillText('Topa dokun: vuruş noktasını seç', CW / 2, CH * 0.06); c.font = `700 ${CH * 0.019}px -apple-system,sans-serif`; c.fillText('Alttan → yüksek · Üstten → sert', CW / 2, CH * 0.09); c.fillText('Sağdan → sola falso · Soldan → sağa falso', CW / 2, CH * 0.115);
+  const a = G.imp, e = []; if (a.y > 0.3) e.push('YÜKSEK'); if (a.y < -0.3) e.push('SERT'); if (a.x > 0.3) e.push('SOLA FALSO'); if (a.x < -0.3) e.push('SAĞA FALSO'); c.font = `900 ${CH * 0.04}px -apple-system,sans-serif`; c.fillStyle = '#ffd54a'; c.fillText(e.length ? e.join(' · ') : 'DÜZ VURUŞ', CW / 2, CH * 0.2); c.shadowBlur = 0;
+}
+
+function bootCiz(c, x, y, k) { c.save(); c.translate(x, y); c.scale(k, k); const g = c.createLinearGradient(0, -60, 0, 60); g.addColorStop(0, '#2b3b55'); g.addColorStop(1, '#0c1018'); c.fillStyle = g; c.strokeStyle = '#2f9bff'; c.lineWidth = 5;
+  c.beginPath(); c.moveTo(-260, -30); c.bezierCurveTo(-200, -70, -90, -75, -20, -50); c.bezierCurveTo(40, -30, 90, -20, 150, 5); c.bezierCurveTo(190, 20, 215, 40, 205, 62); c.lineTo(-250, 62); c.bezierCurveTo(-270, 40, -275, 5, -260, -30); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#e8eef6'; c.fillRect(-250, 62, 460, 12); c.fillStyle = '#c9d2de'; for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(-210 + i * 70, 74); c.lineTo(-190 + i * 70, 74); c.lineTo(-200 + i * 70, 96); c.closePath(); c.fill(); }
+  c.strokeStyle = '#e8eef6'; c.lineWidth = 4; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-40 + i * 38, -44 + i * 8); c.lineTo(-18 + i * 38, -26 + i * 10); c.stroke(); }
+  c.fillStyle = 'rgba(255,255,255,.12)'; c.beginPath(); c.ellipse(-110, -35, 90, 14, -0.12, 0, 7); c.fill(); c.restore(); }
+function vurusCiz() {
+  const c = cx, t = 1 - G.vurusT / 0.8; sahaCiz(); c.fillStyle = 'rgba(0,0,0,' + (0.55 * Math.min(1, t * 4)) + ')'; c.fillRect(0, 0, CW, CH); c.save(); c.translate(CW / 2, CH * 0.5); c.rotate(-0.16);
+  for (let i = 0; i < 16; i++) { c.fillStyle = `rgba(255,255,255,${0.05 + (i % 3) * 0.05})`; c.fillRect(-CW, (i - 8) * CH * 0.05, CW * 2 * Math.min(1, t * 2), CH * 0.012); }
+  const bx = (-CW * 0.75 + CW * 0.85 * Math.min(1, t * 2.2)); bootCiz(c, bx, CH * 0.06, CW / 760); topCiz3(bx + CW * 0.36, CH * 0.0, 0, CW * 0.07, t * 14);
+  c.font = `italic 900 ${CH * 0.1}px -apple-system,sans-serif`; c.textAlign = 'center'; c.lineWidth = 10 * dpr; c.strokeStyle = '#0d3b1a'; c.strokeText(G.vurusK, 0, -CH * 0.12); c.fillStyle = '#38d070'; c.fillText(G.vurusK, 0, -CH * 0.12); c.restore();
+}
+function golCiz() {
+  const c = cx, t = 1 - G.golT / 1.4; c.fillStyle = '#10151a'; c.fillRect(0, 0, CW, CH); c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = dpr; for (let i = -14; i < 24; i++) { c.beginPath(); c.moveTo(i * CW / 10, 0); c.lineTo(CW / 2 + (i - 5) * CW / 30, CH); c.stroke(); } for (let j = 0; j < 14; j++) { c.beginPath(); c.moveTo(0, j * CH / 13); c.lineTo(CW, j * CH / 13); c.stroke(); }
+  for (let i = 0; i < 22; i++) { const a = i * 0.29, r1 = CW * (0.1 + t * 0.4), r2 = CW * (0.3 + t * 0.7); c.strokeStyle = `rgba(255,255,255,${0.35 - t * 0.2})`; c.lineWidth = 3 * dpr; c.beginPath(); c.moveTo(CW / 2 + Math.cos(a) * r1, CH * 0.5 + Math.sin(a) * r1); c.lineTo(CW / 2 + Math.cos(a) * r2, CH * 0.5 + Math.sin(a) * r2); c.stroke(); }
+  topCiz3(CW / 2, CH * 0.5, 0, CW * (0.08 + 0.26 * Math.min(1, t * 1.6)), t * 18); c.save(); c.translate(CW / 2, CH * 0.22); const s = 1 + (1 - Math.min(1, t * 3)) * 1.1; c.scale(s, s); c.font = `italic 900 ${CH * 0.11}px -apple-system,sans-serif`; c.textAlign = 'center'; c.lineWidth = 10 * dpr; c.strokeStyle = '#0d3b1a'; c.strokeText('GOL!', 0, 0); c.fillStyle = '#ffd54a'; c.fillText('GOL!', 0, 0); c.restore();
+}
+function ciz() {
+  const c = cx; c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, CW, CH); const e = G.ekran; if (e === 'yorum' || e === 'on' || e === 'son') return;
+  if (e === 'top') return topEkraniCiz(); if (e === 'vurus') return vurusCiz(); if (e === 'gol' && G.golT > 0) return golCiz();
+  if (sars > 0) c.translate((Math.random() - 0.5) * 7 * dpr, (Math.random() - 0.5) * 7 * dpr); sahaCiz(); if (!G.gk) return;
+  const items = [G.gk].concat(G.op, G.tm).sort((a, b) => a.y - b.y), car = G.top.tasiyan; for (const o of items) if (o !== car) oyuncuCiz(o, false); if (car) oyuncuCiz(car, true); top3d(); okCiz();
+  if (G.aim && G.aim.p > 0) { c.fillStyle = 'rgba(0,0,0,.5)'; c.fillRect(CW - 30 * dpr, CH * 0.3, 14 * dpr, CH * 0.4); c.fillStyle = `hsl(${125 - 125 * G.aim.p},90%,55%)`; c.fillRect(CW - 30 * dpr, CH * 0.7 - CH * 0.4 * G.aim.p, 14 * dpr, CH * 0.4 * G.aim.p); }
+  if (G.cel && G.cel.t < 2.6) { const k = Math.min(1, G.cel.t * 4); c.save(); c.translate(CW / 2, CH * 0.2); c.scale(1 + (1 - k) * 1.2, 1 + (1 - k) * 1.2); c.globalAlpha = Math.min(1, k * 1.5) * (G.cel.t > 2.1 ? (2.6 - G.cel.t) / 0.5 : 1); c.font = `italic 900 ${46 * dpr}px -apple-system,sans-serif`; c.textAlign = 'center'; c.lineWidth = 8 * dpr; c.strokeStyle = '#0d3b1a'; c.strokeText('GOOOL!', 0, 0); c.fillStyle = '#ffd54a'; c.fillText('GOOOL!', 0, 0); c.restore(); }
+}
+/* ---------- ana döngü ---------- */
+let son = performance.now();
+function dongu(n) {
+  requestAnimationFrame(dongu); const dt = Math.min(0.05, (n - son) / 1000); son = n; G.t += dt; if (sars > 0) sars -= dt; const e = G.ekran;
+  if (e === 'yorum') yorumTick(dt);
+  else if (e === 'top') { G.topT -= dt; $('tbi').style.transform = `scaleX(${Math.max(0, G.topT / 6).toFixed(3)})`; if (G.topT <= 0) { if (G.devam) { G.devam = false; ekran('saha'); } else sahneKur(); } }
+  else if (e === 'vurus') { G.vurusT -= dt; if (G.vurusT <= 0) { const [dx, dy, p] = G.bekle; ekran('saha'); atis(dx, dy, p); } }
+  else if (e === 'gol') { if (G.golT > 0) { G.golT -= dt; if (G.golT <= 0) { G.cel.t = 0; } } else sahaAdim(dt); }
+  else if (e === 'saha') sahaAdim(dt);
+  ciz();
+}
+fit(); CAM = -7; onizleme(); requestAnimationFrame(dongu); window.__g = { G, atis, fit, macBasla, sahneKur, ekran };
+</script></body></html>
