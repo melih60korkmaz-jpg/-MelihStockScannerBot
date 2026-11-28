@@ -43,7 +43,7 @@ export function transferDegeri(g: Game): number { const o = genel(g), y = g.oyun
 export function baslangicSozlesme(g: Game, kulup: number, rng: Rng): Sozlesme { const l = ligOf(g, kulup), carp = g.ligler[l]!.maasCarpan; return { kulup, maas: Math.round(carp * 3500 * (0.9 + rng.next() * 0.3) / 50) * 50, golPrimi: Math.round(carp * 400 / 50) * 50, asistPrimi: Math.round(carp * 200 / 50) * 50, sure: 2, bedel: transferDegeri(g) } }
 export function yeniOyun(y: Yaratim, slotId = 'slot'): Game {
   const seed = y.seed ?? (Date.now() & 0x7fffffff), rng = new Rng(seed), kulupler = kulupleriKur(y.isim ?? 'gercek'), ligler = ligleriKur();
-  const yet = ilkYetenekler(y.poz, rng), pot = clamp(Math.round(62 + rng.gauss() * 9 + rng.range(0, 14)), 55, 95);
+  const yet = ilkYetenekler(y.poz, rng), pot = clamp(Math.round(72 + rng.gauss() * 7 + rng.range(0, 10)), 62, 97);
   const oyuncu: Oyuncu = { ad: y.ad, soyad: y.soyad, cinsiyet: y.cinsiyet, kita: y.kita, uyruk: y.uyruk, yas: 16, poz: y.poz, numara: y.numara, gorunum: y.gorunum, yet, pot, xp: {} };
   const hedefLig = clamp(y.lig, 2, 3); void TR_LIG; // kariyer alt kulüpten başlar: 3. Lig (önerilen) ya da 2. Lig (zor)
   const kulup = ligler[hedefLig]!.uye[rng.int(0, 11)]!;
@@ -64,7 +64,7 @@ export function antrenmanYap(g: Game, id: string, basari: number): AntrenmanSonu
   if (g.haftaAntrenman >= HAFTALIK_ANTRENMAN) return { ok: false, neden: 'Bu hafta antrenman hakkın doldu. Haftayı ilerlet.', kazanc: [], enerji: 0, sakatlandi: false, puan: 0 };
   if (g.enerji < def.enerji) return { ok: false, neden: 'Enerjin yetersiz. Dinlen ya da Volt iç.', kazanc: [], enerji: 0, sakatlandi: false, puan: 0 };
   const rng = rngOf(g), o = g.oyuncu, yorgunlukK = 1 - g.yorgunluk / 200, verim = antrenmanVerimi(g, def), yasK = yasCarpani(o.yas), kazanc: AntrenmanSonucu['kazanc'] = [];
-  for (const k of YETENEKLER) { const w = def.kazanc[k]; if (!w) continue; const tavan = yetenekTavani(o.pot, o.poz, k), bos = Math.max(0, 1 - o.yet[k] / tavan); const d = 0.55 * w * (0.25 + s) * Math.pow(bos, 1.25) * yasK * yorgunlukK * verim * (0.92 + g.mut / 100 * 0.16); if (d <= 0) continue; const once = o.yet[k]; o.yet[k] = Math.min(tavan, o.yet[k] + d); kazanc.push({ id: k, delta: o.yet[k] - once, yeni: o.yet[k] }); }
+  for (const k of YETENEKLER) { const w = def.kazanc[k]; if (!w) continue; const tavan = yetenekTavani(o.pot, o.poz, k), bos = Math.max(0, 1 - o.yet[k] / tavan); const d = 2.2 * w * (0.25 + s) * Math.pow(bos, 1.25) * yasK * yorgunlukK * verim * (0.92 + g.mut / 100 * 0.16); if (d <= 0) continue; const once = o.yet[k]; o.yet[k] = Math.min(tavan, o.yet[k] + d); kazanc.push({ id: k, delta: o.yet[k] - once, yeni: o.yet[k] }); }
   g.enerji = clamp(g.enerji - def.enerji, 0, 100); g.yorgunluk = clamp(g.yorgunluk + def.enerji * 0.9, 0, 100); g.haftaAntrenman++;
   // aşırı yorgunlukta sakatlık riski
   const risk = 0.012 + Math.pow(g.yorgunluk / 100, 2.2) * 0.12 * (1 - o.yet.dayaniklilik / 220); let sakat = false; if (rng.chance(risk)) { sakat = true; const hafta = rng.int(1, g.yorgunluk > 70 ? 6 : 3); g.sakatlik = { tur: rng.pick(['Adale kasılması', 'Bilek burkulması', 'Kas yırtığı']), hafta }; haberEkle(g, `${g.ad} antrenmanda sakatlandı: ${g.sakatlik.tur} (${hafta} hafta).`, 'kariyer'); }

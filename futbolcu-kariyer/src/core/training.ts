@@ -12,7 +12,10 @@ export const ANTRENMANLAR: AntrenmanDef[] = [
   { id: 'surat', ad: 'Sürat', ik: '⚡', motor: 'zaman', varyant: 'surat', hedef: 'Doğru anda hızlan', sure: 30, zorluk: 2, enerji: 14, kat: 'fizik', kazanc: { surat: 1, dayaniklilik: 0.2 }, ac: 'Çubuk yeşil bölgedeyken dokun' },
   { id: 'kuvvet', ad: 'Kuvvet', ik: '💪', motor: 'zaman', varyant: 'kuvvet', hedef: 'Gücü tepe noktada kullan', sure: 30, zorluk: 2, enerji: 15, kat: 'fizik', kazanc: { guc: 1, kafa: 0.3, savunma: 0.2 }, ac: 'Çubuk yeşil bölgedeyken dokun' },
   { id: 'dayanik', ad: 'Dayanıklılık', ik: '🫁', motor: 'tutma', varyant: 'dayanik', hedef: 'Nabzı dengede tut', sure: 30, zorluk: 3, enerji: 16, kat: 'fizik', kazanc: { dayaniklilik: 1, savunma: 0.2, surat: 0.1 }, ac: 'Basılı tutarak göstergeyi yeşilde tut' },
-  { id: 'kontrol', ad: 'Top kontrolü', ik: '🧤', motor: 'sira', varyant: 'kontrol', hedef: 'Diziyi doğru tekrarla', sure: 40, zorluk: 3, enerji: 9, kat: 'teknik', kazanc: { topKontrol: 1, teknik: 0.5, gorus: 0.2 }, ac: 'Gösterilen sırayla dokun' }
+  { id: 'kontrol', ad: 'Top kontrolü', ik: '🧤', motor: 'sira', varyant: 'kontrol', hedef: 'Diziyi doğru tekrarla', sure: 40, zorluk: 3, enerji: 9, kat: 'teknik', kazanc: { topKontrol: 1, teknik: 0.5, gorus: 0.2 }, ac: 'Gösterilen sırayla dokun' },
+  { id: 'savunma', ad: 'Savunma çalışması', ik: '🛡️', motor: 'zaman', varyant: 'savunma', hedef: 'Müdahale anını doğru yakala', sure: 30, zorluk: 3, enerji: 13, kat: 'savunma', kazanc: { savunma: 1, gorus: 0.3, guc: 0.15 }, ac: 'Çubuk yeşil bölgedeyken dokun' },
+  { id: 'kafa', ad: 'Kafa vuruşu', ik: '🤕', motor: 'zaman', varyant: 'kafa', hedef: 'Sıçrayış anını tut', sure: 30, zorluk: 2, enerji: 12, kat: 'savunma', kazanc: { kafa: 1, guc: 0.2, savunma: 0.15 }, ac: 'Çubuk yeşil bölgedeyken dokun' },
+  { id: 'taktik', ad: 'Taktik çalışması', ik: '📋', motor: 'sira', varyant: 'taktik', hedef: 'Hareket dizisini tekrarla', sure: 40, zorluk: 3, enerji: 8, kat: 'teknik', kazanc: { gorus: 1, pas: 0.3, savunma: 0.2 }, ac: 'Gösterilen sırayla dokun' }
 ];
 export const antrenmanOf = (id: string): AntrenmanDef => ANTRENMANLAR.find((a) => a.id === id)!;
 export const HAFTALIK_ANTRENMAN = 3;
