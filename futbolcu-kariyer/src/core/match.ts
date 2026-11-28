@@ -1,6 +1,6 @@
 /** Maç motoru: dakika dakika futbol olayları üretir; oyuncuyu ilgilendiren önemli pozisyonlarda durup oyuncudan karar bekler.
  *  Saf (DOM'suz): arayüz yalnızca olayları gösterir ve Aksiyon gönderir. Testlerde bot aynı arayüzü kullanır. */
-import { ilk11, sutcuSec, type Oyuncu11 } from './kadro11';
+import { ilk11, sutcuSec, SLOT_XY, type Oyuncu11 } from './kadro11';
 import { Rng, clamp } from './rng';
 import { type Game, type MacOzet, genel, clubOf, kisaAd, rngOf, rngKaydet } from './game';
 import { POZ_GRUP, type YetenekId } from './skills';
@@ -11,7 +11,10 @@ export type Calis = 0 | 1 | 2; // düşük, normal, yüksek
 export type Odak = 'hucum' | 'savunma' | 'dengeli';
 export interface Tarz { calis: Calis; odak: Odak }
 export type OlayTur = 'bilgi' | 'atak' | 'pas' | 'sut' | 'gol' | 'kurtaris' | 'faul' | 'kart' | 'korner' | 'ofsayt' | 'sakat' | 'penalti' | 'serbest' | 'devre' | 'sonuc' | 'mudahale' | 'dripling';
-export interface Olay { dk: number; tur: OlayTur; metin: string; biz?: boolean; onemli?: boolean; kim?: string }
+export interface TopKonum { x: number; y: number }
+/** Şut verisi: x ∈ [-1,1] kale genişliği (±1 direk), y ∈ [0,1] yükseklik, güç 0-1, falso -1..1. */
+export interface SutVeri { x: number; y: number; guc: number; falso: number; tur: string }
+export interface Olay { dk: number; tur: OlayTur; metin: string; biz?: boolean; onemli?: boolean; kim?: string; top?: TopKonum; sut?: SutVeri; sonuc?: 'direk' | 'disari' | 'blok' | 'gol' | 'kurtaris' }
 export type PozTip = 'sut' | 'pas' | 'dribling' | 'kafa' | 'serbest' | 'penalti' | 'kurtaris' | 'mudahale';
 export interface Hedef { id: number; ad: string; mesafe: number; aciklik: number; risk: number; tur: 'kisa' | 'uzun' | 'ara' }
 export interface Pozisyon { tip: PozTip; dk: number; baski: number; mesafe: number; kaleci: number; rakip: number; hedefler: Hedef[]; ipucu: string; sut?: { yon: number } }
@@ -31,7 +34,7 @@ export interface OzelMac { tur: 'milli' | 'kupa'; rakipAd: string; bizAd: string
 export const MILLI_ID = -2, RAKIP_ID = -1;
 export interface Mac {
   ev: number; dep: number; evde: boolean; dk: number; skor: [number, number]; tarz: Tarz; enerji: number; olaylar: Olay[]; ist: Ist; poz: Pozisyon | null; bitti: boolean; rng: number; sakat: boolean; cikti: boolean; bizSut: [number, number]; bizIsabet: [number, number]; korner: [number, number]; faul: [number, number]; topSahip: [number, number]; yorgunluk: number;
-  ozel?: OzelMac | null; rakipTaktik: RakipTaktik; ilkYari: boolean; bizKirmizi: boolean; hucumZinciri: number; beklenen: { tip: PozTip } | null; rolu: number; rakipPlan: RakipPlan; taktikDegisim: number; kadro: [Oyuncu11[], Oyuncu11[]]; golculer: Array<{ dk: number; biz: boolean; ad: string }>
+  ozel?: OzelMac | null; rakipTaktik: RakipTaktik; ilkYari: boolean; bizKirmizi: boolean; hucumZinciri: number; beklenen: { tip: PozTip } | null; rolu: number; top: TopKonum; rakipPlan: RakipPlan; taktikDegisim: number; kadro: [Oyuncu11[], Oyuncu11[]]; golculer: Array<{ dk: number; biz: boolean; ad: string }>
 }
 const AD = ['Arda', 'Berk', 'Can', 'Deniz', 'Emre', 'Furkan', 'Hakan', 'Kaan', 'Mert', 'Onur', 'Serkan', 'Tolga', 'Umut', 'Yusuf', 'Barış', 'Cem'];
 export const bizKaleci = 'kaleci';
@@ -44,7 +47,7 @@ export function macBaslat(g: Game, tarz: Tarz = { calis: 1, odak: 'dengeli' }, o
   if (ozel) { evde = ozel.evde; const biz = ozel.tur === 'milli' ? MILLI_ID : (ozel.kulupId ?? g.kulup); ev = evde ? biz : (ozel.kulupId ?? RAKIP_ID); dep = evde ? (ozel.kulupId ?? RAKIP_ID) : biz; if (ozel.tur === 'kupa') { ev = evde ? g.kulup : RAKIP_ID; dep = evde ? RAKIP_ID : g.kulup; } else { ev = evde ? MILLI_ID : RAKIP_ID; dep = evde ? RAKIP_ID : MILLI_ID; } rol = g.sakatlik ? -1 : ozel.tur === 'milli' ? 1 : rolOf(g); }
   else { const fx = haftaFiksturum(g); ev = fx.ev; dep = fx.dep; evde = fx.evde; rol = g.sakatlik ? -1 : rolOf(g); }
   const gs = ozel ? ozel.rakipGuc : clubOf(g, evde ? dep : ev).guc, bizg = ozel ? ozel.bizGuc : clubOf(g).guc; const tk = rng.weighted<RakipTaktik>([['pres', 1 + Math.max(0, gs - bizg) * 4], ['derin', 1 + Math.max(0, bizg - gs) * 4], ['kontra', 1.2], ['dengeli', 1.4]]); rngKaydet(g, rng);
-  const o: Mac = { ev, dep, evde, dk: 0, skor: [0, 0], tarz: { ...tarz }, enerji: g.enerji, olaylar: [], ist: bosIst(), poz: null, bitti: false, rng: (g.rng ^ 0x9e3779b9) >>> 0, sakat: false, cikti: false, bizSut: [0, 0], bizIsabet: [0, 0], korner: [0, 0], faul: [0, 0], topSahip: [0, 0], yorgunluk: g.yorgunluk, ozel: ozel ?? null, rakipTaktik: tk, ilkYari: true, bizKirmizi: false, hucumZinciri: 0, beklenen: null, rolu: rol, rakipPlan: rakipAnaliz(g, gs), taktikDegisim: 0, kadro: [[], []], golculer: [] }; { const anah = (id: number): string => (id === MILLI_ID ? 'M:' + (ozel?.bizAd ?? '') : id === RAKIP_ID ? 'R:' + (ozel?.rakipAd ?? '') : 'K' + id); const bizT: 0 | 1 = evde ? 0 : 1; o.kadro = [ilk11(g, anah(ev), bizT === 0), ilk11(g, anah(dep), bizT === 1)]; }
+  const o: Mac = { ev, dep, evde, dk: 0, skor: [0, 0], tarz: { ...tarz }, enerji: g.enerji, olaylar: [], ist: bosIst(), poz: null, bitti: false, rng: (g.rng ^ 0x9e3779b9) >>> 0, sakat: false, cikti: false, bizSut: [0, 0], bizIsabet: [0, 0], korner: [0, 0], faul: [0, 0], topSahip: [0, 0], yorgunluk: g.yorgunluk, ozel: ozel ?? null, rakipTaktik: tk, ilkYari: true, bizKirmizi: false, hucumZinciri: 0, beklenen: null, rolu: rol, top: { x: 0.5, y: 0.5 }, rakipPlan: rakipAnaliz(g, gs), taktikDegisim: 0, kadro: [[], []], golculer: [] }; { const anah = (id: number): string => (id === MILLI_ID ? 'M:' + (ozel?.bizAd ?? '') : id === RAKIP_ID ? 'R:' + (ozel?.rakipAd ?? '') : 'K' + id); const bizT: 0 | 1 = evde ? 0 : 1; o.kadro = [ilk11(g, anah(ev), bizT === 0), ilk11(g, anah(dep), bizT === 1)]; }
   o.olaylar.push({ dk: 0, tur: 'bilgi', metin: `Maç başladı! ${adOf(g, o, ev)} – ${adOf(g, o, dep)}`, onemli: true }); return o;
 }
 const bosIst = (): Ist => ({ dakika: 0, gol: 0, asist: 0, sut: 0, isabet: 0, pas: 0, basariliPas: 0, topKaybi: 0, dripling: 0, driplingBasari: 0, mucadele: 0, mucadeleKazanilan: 0, kurtaris: 0, sari: 0, kirmizi: 0, anahtarPas: 0, puanEk: 0 });
@@ -68,7 +71,37 @@ const M = {
   gecis: ['Orta sahada top kaybı.', 'Pas hatası, top rakipte.', 'Top kaybı, rakip hızlı çıkıyor.']
 };
 const f = (arr: string[], rng: Rng, v: Record<string, string> = {}): string => { let s = rng.pick(arr); for (const [k, x] of Object.entries(v)) s = s.split(`{${k}}`).join(x); return s; };
-function olayEkle(m: Mac, tur: OlayTur, metin: string, biz?: boolean, onemli?: boolean, kim?: string): void { m.olaylar.unshift({ dk: m.dk, tur, metin, biz, onemli, kim }); if (m.olaylar.length > 200) m.olaylar.length = 200; }
+/** Deterministik 0-1 değeri (rastgele sayı üretecini etkilemez). */
+const hh = (n: number): number => { let x = (Math.imul(n | 0, 2654435761) >>> 0); x ^= x >>> 15; x = Math.imul(x, 2246822519) >>> 0; x ^= x >>> 13; return (x >>> 8) / 16777216; };
+const metinHash = (s: string): number => { let h = 7; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return h; };
+/** Oyuncunun sahadaki başlangıç konumu (normalize saha: biz altta, hücum yukarı). */
+export function slotKonum(m: Mac, taraf: 0 | 1, ad?: string): [number, number] | null { const o = ad ? m.kadro[taraf].find((k) => k.ad === ad) : undefined; if (!o) return null; const [sx, dy] = SLOT_XY[o.slot]!, biz = taraf === bizTarafi(m); return biz ? [sx, 0.96 - dy * 0.46] : [1 - sx, 0.04 + dy * 0.46]; }
+export const KALE_YARI = 0.1; // kale genişliğinin yarısı (saha genişliğine oranla)
+/** Olayın sonunda topun gerçek koordinatı. Simülasyondaki tek top konumudur; görsel katman bu değere varır. */
+function topKonumu(m: Mac, tur: OlayTur, metin: string, biz: boolean | undefined, kim: string | undefined, onceki: Olay | undefined): { top: TopKonum; sonuc?: Olay['sonuc'] } {
+  const bz = bizTarafi(m), j = hh(m.dk * 31 + metinHash(metin)), j2 = hh(m.dk * 17 + metinHash(metin) + 3), aktorT: 0 | 1 = biz === undefined ? bz : biz ? bz : ((1 - bz) as 0 | 1), yon = biz === false ? -1 : 1, hucumY = (hedef: number): number => (biz === false ? 1 - hedef : hedef);
+  const aktor = slotKonum(m, aktorT, kim); const sutU = onceki && onceki.tur === 'sut' && onceki.sut ? onceki.sut : undefined; void yon;
+  const kaleY = (hucum: boolean): number => (hucum ? 0 : 1); // biz hücumda üst kale, rakip hücumda alt kale
+  const nokta = (k: boolean): number => 0.5 + (sutU ? sutU.x : (j - 0.5) * 1.6) * KALE_YARI * (k ? 1 : 1);
+  switch (tur) {
+    case 'sut': {
+      const yaz = /DİREK!|direkten|direğe çarptı/.test(metin) ? 'direk' : /auta|dışarı|yanından geçti/.test(metin) ? 'disari' : /blok/i.test(metin) ? 'blok' : undefined; const hy = biz === false ? 0.88 - j2 * 0.1 : 0.12 + j2 * 0.1, hx = aktor ? aktor[0] * 0.5 + 0.25 : 0.3 + j * 0.4;
+      if (yaz === 'direk') return { top: { x: 0.5 + (j < 0.5 ? -1 : 1) * (KALE_YARI + 0.03), y: biz === false ? 0.94 : 0.06 }, sonuc: 'direk' }; /* direkten dönen top kale önünde durur */
+      if (yaz === 'disari') return { top: { x: 0.5 + (j - 0.5) * 0.5, y: biz === false ? 1.03 : -0.03 }, sonuc: 'disari' };
+      if (yaz === 'blok') return { top: { x: hx, y: biz === false ? 0.78 : 0.22 }, sonuc: 'blok' };
+      return { top: { x: hx, y: hy } };
+    }
+    case 'gol': return { top: { x: nokta(true), y: biz === false ? 1.012 : -0.012 }, sonuc: 'gol' };
+    case 'kurtaris': { const kt: 0 | 1 = biz ? bz : ((1 - bz) as 0 | 1), kk = m.kadro[kt][0]; const kn = kk ? slotKonum(m, kt, kk.ad) : null; return { top: { x: sutU ? 0.5 + sutU.x * KALE_YARI * 0.8 : kn ? kn[0] : 0.5, y: biz ? 0.945 : 0.055 }, sonuc: 'kurtaris' }; }
+    case 'korner': return { top: { x: j < 0.5 ? 0.02 : 0.98, y: biz === false ? 0.99 : 0.01 } };
+    case 'penalti': return { top: { x: 0.5, y: biz === false ? 0.885 : 0.115 } };
+    case 'serbest': return { top: { x: 0.35 + j * 0.3, y: biz === false ? 0.7 : 0.3 } };
+    case 'atak': case 'pas': case 'dripling': case 'mudahale': { const hx = aktor ? aktor[0] : 0.2 + j * 0.6; return { top: { x: hx * 0.8 + 0.1, y: hucumY(0.28 + j2 * 0.22) } }; }
+    case 'faul': case 'kart': case 'ofsayt': return { top: { x: 0.25 + j * 0.5, y: 0.35 + j2 * 0.3 } };
+    default: return { top: { ...m.top } };
+  }
+}
+function olayEkle(m: Mac, tur: OlayTur, metin: string, biz?: boolean, onemli?: boolean, kim?: string): void { const onceki = m.olaylar[0]; const r = topKonumu(m, tur, metin, biz, kim, onceki); m.top = r.top; m.olaylar.unshift({ dk: m.dk, tur, metin, biz, onemli, kim, top: r.top, sonuc: r.sonuc }); if (m.olaylar.length > 200) m.olaylar.length = 200; }
 /* ---------- ilerleme ---------- */
 const takimGucu = (g: Game, m: Mac, biz: boolean): number => { const id = biz ? (m.ozel?.tur === 'milli' ? MILLI_ID : g.kulup) : rkIdOf(m); let q = gucOf(g, m, id); if (biz) { q += (genel(g) - (q * 85 + 5)) / 600; if (m.bizKirmizi) q -= 0.06; } return q; };
 /** Tek dakika ilerletir (arayüz animasyonu için). Pozisyon çıkarsa durur. */
@@ -150,7 +183,7 @@ function rakipAtak(g: Game, m: Mac, rng: Rng, oynuyor: boolean, grup: string, bi
 }
 /** Oyuncunun dahil olmadığı pozisyon: yapay zekâ şutu */
 function aiSut(g: Game, m: Mac, rng: Rng, biz: boolean, pGol: number): void {
-  const bz = bizTarafi(m), t = biz ? bz : ((1 - bz) as 0 | 1), ad = m.kadro[t].length ? sutcuSec(m.kadro[t], rng).ad : ADET(rng); m.bizSut[t]++; olayEkle(m, 'sut', f(M.sutBiz, rng, { ad }), biz, false, ad);
+  const bz = bizTarafi(m), t = biz ? bz : ((1 - bz) as 0 | 1), ad = m.kadro[t].length ? sutcuSec(m.kadro[t], rng).ad : ADET(rng); m.bizSut[t]++; olayEkle(m, 'sut', f(M.sutBiz, rng, { ad }), biz, false, ad); { const e = m.olaylar[0]!; e.sut = { x: (hh(m.dk * 7 + metinHash(ad)) - 0.5) * 1.7, y: 0.15 + hh(m.dk * 13 + 1) * 0.6, guc: 0.45 + hh(m.dk * 5 + 2) * 0.45, falso: (hh(m.dk * 11 + 3) - 0.5) * 0.8, tur: 'normal' }; }
   const r = rng.next(), kaleciK = biz ? gucOf(g, m, rkIdOf(m)) : (m.ozel?.tur === 'milli' ? m.ozel.bizGuc : clubOf(g).guc); const p = clamp(pGol - (kaleciK - 0.5) * 0.04, 0.02, 0.4);
   if (r < p) { golYaz(g, m, rng, biz, false, ad); return; }
   if (r < p + 0.34) { m.bizIsabet[t]++; olayEkle(m, 'kurtaris', f(M.kurtBiz, rng), !biz); if (rng.chance(0.3)) { m.korner[t]++; olayEkle(m, 'korner', f(M.korner, rng), biz); } return; }
@@ -170,7 +203,7 @@ function pozisyonKur(g: Game, m: Mac, rng: Rng, tip: PozTip, baski: number, mesa
   m.beklenen = { tip };
 }
 /** Başarı gürültüsü: yetenek, yorgunluk ve baskıya göre */
-const beceriK = (g: Game, m: Mac, ids: YetenekId[]): number => { const ort = ids.reduce((a, k) => a + g.oyuncu.yet[k] + ekipBonus(g, k), 0) / ids.length; const yor = m.enerji < 50 ? 0.75 + m.enerji / 200 : 1; return clamp(ort / 100, 0.05, 1) * yor * [0.92, 1, 1.04][m.tarz.calis]! * mutCarpan(g); };
+const beceriK = (g: Game, m: Mac, ids: YetenekId[]): number => { const ort = ids.reduce((a, k) => a + g.oyuncu.yet[k] + ekipBonus(g, k), 0) / ids.length; const yor = (m.enerji < 50 ? 0.75 + m.enerji / 200 : 1) * (1 - clamp(m.yorgunluk, 0, 100) / 400); return clamp(ort / 100, 0.05, 1) * yor * [0.92, 1, 1.04][m.tarz.calis]! * mutCarpan(g); };
 export interface Sonuc { tur: 'gol' | 'kurtaris' | 'direk' | 'disari' | 'blok' | 'basari' | 'basarisiz' | 'faul' | 'korner'; metin: string }
 export function macAksiyon(g: Game, m: Mac, a: Aksiyon): Sonuc | null {
   const poz = m.poz; if (!poz) return null; const rng = new Rng(m.rng); let s: Sonuc;
@@ -188,7 +221,7 @@ function sutCoz(g: Game, m: Mac, rng: Rng, poz: Pozisyon, a: Extract<Aksiyon, { 
   const b = beceriK(g, m, ids), guc = clamp(a.tur === 'sert' ? Math.max(a.guc, 0.85) : a.tur === 'plase' ? Math.min(a.guc, 0.55) : a.guc, 0.05, 1), mesF = clamp(poz.mesafe / 22, 0.3, 1.6), bz = poz.baski;
   let ns = (1.05 - b) * (0.20 + 0.45 * bz + 0.4 * Math.max(0, guc - 0.7) + 0.2 * Math.abs(a.falso)) * (0.6 + mesF * 0.5) * (a.tur === 'plase' ? 0.65 : a.tur === 'sert' ? 1.25 : 1) * (poz.tip === 'penalti' ? 0.7 : 1);
   let x = a.x + a.falso * 0.18 + rng.gauss() * ns, y = a.y + rng.gauss() * ns * 0.8;
-  m.ist.sut++; m.bizSut[bizTarafi(m)]++; olayEkle(m, 'sut', `${g.ad} ${poz.tip === 'serbest' ? 'serbest vuruşu kullandı' : poz.tip === 'penalti' ? 'penaltıyı kullandı' : kafa ? 'kafayla vurdu' : 'şutunu çekti'}!`, true, false, g.ad);
+  m.ist.sut++; m.bizSut[bizTarafi(m)]++; olayEkle(m, 'sut', `${g.ad} ${poz.tip === 'serbest' ? 'serbest vuruşu kullandı' : poz.tip === 'penalti' ? 'penaltıyı kullandı' : kafa ? 'kafayla vurdu' : 'şutunu çekti'}!`, true, false, g.ad); m.olaylar[0]!.sut = { x: clamp(x, -1.4, 1.4), y: clamp(y, -0.2, 1.3), guc, falso: a.falso, tur: a.tur };
   if (poz.tip === 'sut' && a.tur !== 'kafa' && rng.chance(poz.baski * 0.28 * (a.tur === 'asirtma' ? 0.1 : 1))) { olayEkle(m, 'sut', 'Şut savunmaya takıldı, blok!', true); if (rng.chance(0.3)) { m.korner[bizTarafi(m)]++; olayEkle(m, 'korner', f(M.korner, rng), true); } return { tur: 'blok', metin: 'Blok!' }; }
   if (poz.tip === 'serbest' && Math.abs(x) < 0.45 && y < 0.4 && rng.chance(0.85)) { olayEkle(m, 'sut', 'Top barajda kaldı.', true); return { tur: 'blok', metin: 'Baraj!' }; }
   if (a.tur === 'asirtma') { const ok = rng.chance(clamp(0.25 + beceriK(g, m, ['teknik', 'sut']) * 0.55 - poz.baski * 0.3 + (poz.kaleci < 0.5 ? 0.08 : 0), 0.05, 0.8)); if (!ok) { olayEkle(m, 'sut', 'Aşırtma denedi ama kaleci topu aldı.', true); m.ist.puanEk -= 0.05; m.bizIsabet[bizTarafi(m)]++; m.ist.isabet++; return { tur: 'kurtaris', metin: 'Kaleci aldı' }; } x = rng.range(-0.5, 0.5); y = 0.55; guc && 0; }

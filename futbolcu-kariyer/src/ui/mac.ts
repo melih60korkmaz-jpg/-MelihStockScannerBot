@@ -1,6 +1,7 @@
 /** Maç ekranı: canlı mini saha, anlatım paneli, strateji ve dokunmatik pozisyon sahneleri. Mantık core/match.ts'te. */
 import { cal } from './ses';
 import { Saha } from './saha';
+import { KALE_YARI } from '../core/match';
 import { type Game, kisaAd, kodAd } from '../core/game';
 import { macBaslat, macDakika, macAksiyon, macOtomatik, macOzeti, macTarz, TAKTIK_AD, TAKTIK_AC, MILLI_ID, type Mac, type Pozisyon, type Aksiyon, type Olay, type MacEk, type OzelMac } from '../core/match';
 import type { MacOzet } from '../core/game';
@@ -28,29 +29,57 @@ export function macEkrani(g: Game, kok: HTMLElement, bitti: (ozet: MacOzet & { e
   function konfeti(): void { const sb = el.querySelector('#mS'); if (sb) { sb.classList.add('golfl'); setTimeout(() => sb.classList.remove('golfl'), 1600); } for (let i = 0; i < 46; i++) parca.push({ x: 0.5, y: 0.5, vx: (Math.random() - 0.5) * 0.03, vy: -Math.random() * 0.03 - 0.005, r: KONFETI[i % 5]!, omur: 70 + Math.random() * 40 }); }
   function konfetiCiz(): void { for (let i = parca.length - 1; i >= 0; i--) { const p = parca[i]!; p.x += p.vx; p.y += p.vy; p.vy += 0.0012; p.omur--; if (p.omur <= 0) { parca.splice(i, 1); continue; } cx.fillStyle = p.r; cx.fillRect(p.x * W, p.y * H, W * 0.012, W * 0.012); } }
   let kare = 0; function ciz(): void { kare++;
-    if (!W) return; cx.clearRect(0, 0, W, H); if (m.poz) { sahne(); return; }
-    saha.ciz(cx, kare);
+    if (!W) return; cx.clearRect(0, 0, W, H); const hz = m.poz ? zHedef() : 1, [ofx, ofy] = odak(); saha.yakinla(hz, ofx, ofy);
+    saha.ciz(cx, kare); if (m.poz) { const ilerleme = clampN((saha.kamera.z - 1) / (hz - 1), 0, 1); if (ilerleme > 0.5) { cx.globalAlpha = clampN((ilerleme - 0.5) / 0.4, 0, 1); sahne(); cx.globalAlpha = 1; } }
     konfetiCiz(); if (vurgu) { cx.fillStyle = 'rgba(0,0,0,.55)'; cx.fillRect(0, H * 0.42, W, H * 0.16); cx.fillStyle = '#ffd54a'; cx.font = `900 ${W * 0.07}px sans-serif`; cx.fillText(vurgu, W / 2, H * 0.53); }
   }
   /* ---- pozisyon sahneleri ---- */
   let akis: { aim?: { x: number; y: number; bas: number; yol: Array<[number, number]> } } = {}, tur: string = 'normal', secHedef = -1, topY = 0, kaleci = { x: 0 };
   const poz = (): Pozisyon => m.poz!;
   const kaleRect = (): { x: number; y: number; w: number; h: number } => ({ x: W * 0.08, y: H * 0.12, w: W * 0.84, h: H * 0.34 });
-  const figur = (x: number, y: number, r: number, renk: string, etiket = ''): void => { cx.fillStyle = 'rgba(0,0,0,.35)'; cx.beginPath(); cx.ellipse(x, y + r * 1.1, r, r * 0.35, 0, 0, 7); cx.fill(); cx.fillStyle = renk; cx.beginPath(); cx.roundRect(x - r * 0.7, y - r * 0.4, r * 1.4, r * 1.5, r * 0.5); cx.fill(); cx.fillStyle = '#e8b890'; cx.beginPath(); cx.arc(x, y - r * 0.9, r * 0.5, 0, 7); cx.fill(); if (etiket) { cx.fillStyle = '#fff'; cx.font = `700 ${r * 0.6}px sans-serif`; cx.textAlign = 'center'; cx.fillText(etiket, x, y + r * 2); } };
+  /** Pozisyon görünümü figürü: genel sahadaki futbolcularla aynı silüet. biz: sırtı bize dönük (kendi takımımız). */
+  const figur = (x: number, y: number, r: number, renk: string, etiket = '', opt: { biz?: boolean; kaleci?: boolean; no?: number; ad?: string; ben?: boolean } = {}): void => { void renk; saha.figur(cx, x, y, r * 1.12, { biz: opt.biz ?? false, kaleci: opt.kaleci, no: opt.no, ad: opt.ad, ben: opt.ben, etiket }); if (etiket && !opt.ben) { cx.fillStyle = '#fff'; cx.font = `700 ${r * 0.62}px sans-serif`; cx.textAlign = 'center'; cx.fillText(etiket, x, y + r * 1.45); } };
+  const noOf = (ad: string): number | undefined => saha.oy.find((o) => o.ad === ad)?.no;
   function sahne(): void {
-    const p = poz(), me = m.ozel?.tur === 'milli' ? '#c0392b' : g.kulupler[g.kulup]!.renk, rk = renk(m.evde ? m.dep : m.ev); const gz = cx.createLinearGradient(0, 0, 0, H); gz.addColorStop(0, '#0e3a1f'); gz.addColorStop(1, '#1d7a3c'); cx.fillStyle = gz; cx.fillRect(0, 0, W, H);
-    if (p.tip === 'pas') { cx.strokeStyle = 'rgba(255,255,255,.4)'; cx.lineWidth = dpr; cx.strokeRect(W * 0.04, H * 0.04, W * 0.92, H * 0.92); figur(W * 0.5, H * 0.78, W * 0.045, me, 'SEN'); p.hedefler.forEach((h, i) => { const x = W * (0.2 + i * 0.3), y = H * (h.tur === 'uzun' ? 0.16 : h.tur === 'ara' ? 0.38 : 0.6); cx.strokeStyle = secHedef === i ? '#ffd54a' : 'rgba(255,255,255,.5)'; cx.lineWidth = (secHedef === i ? 4 : 2) * dpr; cx.setLineDash([6 * dpr, 6 * dpr]); cx.beginPath(); cx.moveTo(W * 0.5, H * 0.74); cx.lineTo(x, y + W * 0.04); cx.stroke(); cx.setLineDash([]); figur(x, y, W * 0.04, me, h.ad.split(' ')[0]); cx.fillStyle = '#fff'; cx.font = `700 ${W * 0.026}px sans-serif`; cx.textAlign = 'center'; cx.fillText(`açık %${Math.round(h.aciklik * 100)} · risk %${Math.round(h.risk * 100)}`, x, y + W * 0.11); }); for (let i = 0; i < p.rakip + 1; i++) figur(W * (0.25 + i * 0.25), H * (0.28 + (i % 2) * 0.2), W * 0.034, rk); return; }
-    if (p.tip === 'dribling' || p.tip === 'mudahale') { cx.strokeStyle = 'rgba(255,255,255,.4)'; cx.lineWidth = dpr; cx.strokeRect(W * 0.04, H * 0.04, W * 0.92, H * 0.92); const oy = p.tip === 'dribling' ? H * 0.74 : H * 0.34; figur(W * 0.5, p.tip === 'dribling' ? H * 0.74 : H * 0.7, W * 0.05, me, 'SEN'); for (let i = 0; i < p.rakip; i++) figur(W * (0.5 + (i - (p.rakip - 1) / 2) * 0.22), p.tip === 'dribling' ? H * 0.38 : H * 0.28, W * 0.05, rk); void oy; cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(W * 0.5, p.tip === 'dribling' ? H * 0.64 : H * 0.42, W * 0.014, 0, 7); cx.fill(); return; }
+    const p = poz(), gz = cx.createLinearGradient(0, 0, 0, H); gz.addColorStop(0, '#0e3a1f'); gz.addColorStop(1, '#1d7a3c'); cx.fillStyle = gz; cx.fillRect(0, 0, W, H);
+    const bizAtak = p.tip !== 'kurtaris', cev = saha.yakinCevre(bizAtak), tp = saha.top, ben = saha.oy.find((o) => o.ben)!;
+    /** Gerçek rakip/takım arkadaşı konumunu pozisyon görünümüne yansıtır: yanal fark topa göre, derinlik kaleye göre. */
+    const harita = (q: { x: number; y: number }, ust: number, alt: number, yaricap: number): { x: number; y: number; k: number } => { const dx = q.x - tp.x, ileri = bizAtak ? tp.y - q.y : q.y - tp.y, f = clampN(ileri / 0.4, -0.3, 1); return { x: W * clampN(0.5 + dx * yaricap, 0.08, 0.92), y: H * (alt - (alt - ust) * clampN(f, 0, 1)), k: 1 - 0.28 * clampN(f, 0, 1) }; };
+    if (p.tip === 'pas') {
+      cx.strokeStyle = 'rgba(255,255,255,.4)'; cx.lineWidth = dpr; cx.strokeRect(W * 0.04, H * 0.04, W * 0.92, H * 0.92);
+      p.hedefler.forEach((h, i) => { const x = W * (0.2 + i * 0.3), y = H * (h.tur === 'uzun' ? 0.16 : h.tur === 'ara' ? 0.38 : 0.6); cx.strokeStyle = secHedef === i ? '#ffd54a' : 'rgba(255,255,255,.5)'; cx.lineWidth = (secHedef === i ? 4 : 2) * dpr; cx.setLineDash([6 * dpr, 6 * dpr]); cx.beginPath(); cx.moveTo(W * 0.5, H * 0.74); cx.lineTo(x, y + W * 0.04); cx.stroke(); cx.setLineDash([]); });
+      cev.savunma.slice(0, p.rakip + 1).forEach((q, i) => { const pm = harita(q, 0.24, 0.62, 1.3); figur(pm.x, pm.y, W * 0.034 * pm.k, '', '', { biz: false, no: q.no, ad: q.ad }); void i; });
+      p.hedefler.forEach((h, i) => { const x = W * (0.2 + i * 0.3), y = H * (h.tur === 'uzun' ? 0.16 : h.tur === 'ara' ? 0.38 : 0.6); figur(x, y, W * 0.04, '', h.ad.split(' ')[0]!, { biz: true, no: noOf(h.ad), ad: h.ad }); cx.fillStyle = '#fff'; cx.font = `700 ${W * 0.026}px sans-serif`; cx.textAlign = 'center'; cx.fillText(`açık %${Math.round(h.aciklik * 100)} · risk %${Math.round(h.risk * 100)}`, x, y + W * 0.13); });
+      figur(W * 0.5, H * 0.8, W * 0.045, '', '', { biz: true, no: ben.no, ad: ben.ad, ben: true }); return;
+    }
+    if (p.tip === 'dribling' || p.tip === 'mudahale') {
+      cx.strokeStyle = 'rgba(255,255,255,.4)'; cx.lineWidth = dpr; cx.strokeRect(W * 0.04, H * 0.04, W * 0.92, H * 0.92); const dr = p.tip === 'dribling';
+      cev.savunma.slice(0, Math.max(1, p.rakip)).forEach((q, i, arr) => { figur(W * (0.5 + (i - (arr.length - 1) / 2) * 0.24), dr ? H * 0.4 : H * 0.3, W * 0.05, '', '', { biz: false, no: q.no, ad: q.ad }); });
+      if (!dr) cev.takim.slice(0, 2).forEach((q, i) => figur(W * (0.2 + i * 0.6), H * 0.74, W * 0.04, '', '', { biz: true, no: q.no, ad: q.ad }));
+      figur(W * 0.5, dr ? H * 0.8 : H * 0.72, W * 0.05, '', '', { biz: true, no: ben.no, ad: ben.ad, ben: true }); cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(W * 0.5, dr ? H * 0.66 : H * 0.44, W * 0.014, 0, 7); cx.fill(); return;
+    }
     // kale görünümü: şut, kafa, serbest vuruş, penaltı, kurtarış
     const G = kaleRect(); cx.fillStyle = 'rgba(0,0,0,.35)'; cx.fillRect(G.x, G.y, G.w, G.h); cx.strokeStyle = 'rgba(255,255,255,.3)'; cx.lineWidth = dpr; for (let i = 0; i <= 14; i++) { cx.beginPath(); cx.moveTo(G.x + G.w * i / 14, G.y); cx.lineTo(G.x + G.w * i / 14, G.y + G.h); cx.stroke(); } for (let j = 0; j <= 5; j++) { cx.beginPath(); cx.moveTo(G.x, G.y + G.h * j / 5); cx.lineTo(G.x + G.w, G.y + G.h * j / 5); cx.stroke(); } cx.strokeStyle = '#fff'; cx.lineWidth = 5 * dpr; cx.strokeRect(G.x, G.y, G.w, G.h);
-    if (p.tip === 'kurtaris') { figur(G.x + G.w * (0.5 + kaleci.x * 0.3), G.y + G.h * 0.8, W * 0.06, me, 'SEN'); const t = clampN((performance.now() - zaman) / 1500, 0, 1.1); const hx = G.x + G.w * (0.5 + (p.sut?.yon ?? 0) * 0.34), hy = H * 0.9 - (H * 0.9 - (G.y + G.h * 0.6)) * t; cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(hx, hy, W * (0.03 - t * 0.015), 0, 7); cx.fill(); return; }
-    for (let i = 0; i < p.rakip; i++) figur(W * (0.3 + i * 0.2), H * 0.62, W * 0.04, rk); if (p.tip === 'serbest') for (let i = 0; i < 4; i++) figur(W * (0.38 + i * 0.075), H * 0.58, W * 0.032, rk);
-    const kx = G.x + G.w * (0.5 - (p.sut?.yon ?? 0) * 0.15); figur(kx, G.y + G.h * 0.78, W * 0.055, '#ffb300', 'KL'); figur(W * 0.5, H * 0.86, W * 0.045, me, 'SEN'); cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(W * 0.5, H * 0.76, W * 0.02, 0, 7); cx.fill();
+    if (p.tip === 'kurtaris') {
+      const kk = cev.kaleci, ben2 = saha.oy.find((o) => o.ben)!; void kk; figur(G.x + G.w * (0.5 + kaleci.x * 0.3), G.y + G.h * 0.97, W * 0.05, '', '', { biz: true, kaleci: true, no: ben2.no, ad: ben2.ad, ben: true });
+      cev.savunma.slice(0, 3).forEach((q) => { const pm = harita({ x: q.x, y: q.y }, 0.58, 0.78, 1.2); figur(pm.x, pm.y, W * 0.036 * pm.k, '', '', { biz: false, no: q.no, ad: q.ad }); });
+      const t = clampN((performance.now() - zaman) / 1500, 0, 1.1); const hx = G.x + G.w * (0.5 + (p.sut?.yon ?? 0) * 0.34), hy = H * 0.9 - (H * 0.9 - (G.y + G.h * 0.6)) * t; cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(hx, hy, W * (0.03 - t * 0.015), 0, 7); cx.fill(); return;
+    }
+    // gerçek kaleci: kalede, gerçek yanal konumuna göre
+    const kal = cev.kaleci, kx = G.x + G.w * (0.5 + clampN((kal.x - 0.5) / (KALE_YARI * 2), -0.4, 0.4) - (p.sut?.yon ?? 0) * 0.12); figur(kx, G.y + G.h * 0.97, W * 0.046, '', 'KL', { biz: false, kaleci: true, no: kal.no, ad: kal.ad });
+    // gerçek savunmacılar (en yakın ilk 4; baskı kadar) ve takım arkadaşları
+    const sayi = Math.min(cev.savunma.length, Math.max(1, p.rakip + (p.tip === 'serbest' ? 3 : 0))); cev.savunma.slice(0, sayi).map((q) => ({ q, pm: harita(q, 0.6, 0.78, 1.5) })).sort((u, v) => u.pm.y - v.pm.y).forEach(({ q, pm }) => figur(pm.x, pm.y, W * 0.038 * pm.k, '', '', { biz: false, no: q.no, ad: q.ad }));
+    cev.takim.slice(0, 2).forEach((q) => { const pm = harita(q, 0.66, 0.84, 1.6); figur(pm.x, pm.y, W * 0.036 * pm.k, '', '', { biz: true, no: q.no, ad: q.ad }); });
+    figur(W * 0.5, H * 0.86, W * 0.045, '', '', { biz: true, no: ben.no, ad: ben.ad, ben: true }); cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(W * 0.5, H * 0.76, W * 0.02, 0, 7); cx.fill();
     const a = akis.aim; if (a) { cx.strokeStyle = 'rgba(255,255,255,.8)'; cx.lineWidth = 3 * dpr; cx.setLineDash([8 * dpr, 6 * dpr]); cx.beginPath(); cx.moveTo(W * 0.5, H * 0.76); if (a.yol.length) a.yol.forEach(([x, y]) => cx.lineTo(x, y)); cx.stroke(); cx.setLineDash([]); const l = Math.hypot(a.x - W * 0.5, a.y - H * 0.76), gu = Math.min(1, l / (H * 0.5)); cx.fillStyle = `hsl(${120 - 120 * gu},85%,55%)`; cx.fillRect(W - 26 * dpr, H * 0.7 - gu * H * 0.3, 14 * dpr, gu * H * 0.3); cx.strokeStyle = '#ffd54a'; cx.lineWidth = 3 * dpr; cx.beginPath(); cx.arc(a.x, a.y, W * 0.025, 0, 7); cx.stroke(); }
   }
   const clampN = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v)); void topY;
   /* ---- pozisyon kontrol paneli ---- */
-  function kontrolKur(): void {
+  let kBekle = false; const zHedef = (): number => { const t = m.poz?.tip; return t === 'sut' || t === 'kafa' || t === 'serbest' || t === 'penalti' || t === 'kurtaris' ? 2.2 : 1.6; };
+  const odak = (): [number, number] => { const t = m.poz?.tip; if (t === 'sut' || t === 'kafa' || t === 'serbest' || t === 'penalti') return [0.5, 0.2]; if (t === 'kurtaris') return [0.5, 0.82]; return [saha.top.x, saha.top.y]; };
+  /** Kamera önce pozisyona yaklaşır, sonra karar paneli açılır (oyuncu/top konumları değişmez). */
+  function kontrolKur(): void { if (kBekle) return; kBekle = true; setTimeout(() => { kBekle = false; if (m.poz && !m.bitti) kontrolKurHemen(); }, 380); }
+  function kontrolKurHemen(): void {
     const p = poz(); zaman = performance.now(); tur = p.tip === 'kafa' ? 'kafa' : 'normal'; akis = {}; secHedef = -1; kaleci = { x: 0 }; const ipucu = `<div class="mi">${esc(p.ipucu)} <small>${p.dk}'${p.baski > 0.55 ? ' · yoğun baskı' : ''}</small></div>`;
     if (p.tip === 'sut' || p.tip === 'serbest' || p.tip === 'penalti' || p.tip === 'kafa') { const turler = p.tip === 'kafa' ? [['kafa', 'Kafa']] : p.tip === 'sut' ? [['normal', 'Normal'], ['sert', 'Sert'], ['plase', 'Plase'], ['asirtma', 'Aşırtma']] : [['normal', 'Normal'], ['sert', 'Sert'], ['plase', 'Plase']]; K.innerHTML = `${ipucu}<div class="chips" id="mTur">${turler.map(([k, a], i) => `<button data-m="tur:${k}" class="${i === 0 ? 'on' : ''}">${a}</button>`).join('')}</div><div class="mi2">Topun yanından kaleye doğru sürükle: bırakınca vurur. Uzun sürükleme = güçlü şut. Eğri çizersen falso verirsin.</div>`; }
     else if (p.tip === 'pas') K.innerHTML = `${ipucu}<div class="mi2">Bir oyuncuya dokun: kısa (yakın), ara pas (orta), uzun top (uzak).</div>`;
@@ -76,7 +105,7 @@ export function macEkrani(g: Game, kok: HTMLElement, bitti: (ozet: MacOzet & { e
   let bitis = false; function bitir(): void { if (bitis) return; bitis = true; cal('dudukBitis'); clearInterval(tm); logCiz(); ust(); setTimeout(() => { cancelAnimationFrame(raf); el.remove(); bitti(macOzeti(g, m)); }, 900); }
   cal('dudukBasla'); let raf = 0; const dongu = (): void => { raf = requestAnimationFrame(dongu); ciz(); }; dongu();
   const surucu = (): void => { clearInterval(tm); tm = window.setInterval(() => { if (!m.poz) tick(); }, hiz); }; surucu(); el.addEventListener('click', () => { if (ilk) ilk = false; }, { once: true }); setInterval(() => { if (!bitis && !m.bitti) { clearInterval(tm); tm = window.setInterval(() => { if (!m.poz) tick(); }, hiz); } }, 800);
-  (window as unknown as { __fkmac: Mac }).__fkmac = m; logCiz(); ust(); return { m };
+  (window as unknown as { __fkmac: Mac; __fksaha: Saha }).__fkmac = m; (window as unknown as { __fksaha: Saha }).__fksaha = saha; logCiz(); ust(); return { m };
 }
 export const macRaporu = (g: Game, o: MacOzet & { ek: MacEk }, ozel?: { ad: string; rakipAd: string; bizAd: string; evde: boolean; tur: string }): string => { const bz = ozel ? (ozel.evde ? 0 : 1) : (o.ev === g.kulup ? 0 : 1), k3 = (s: string): string => s.slice(0, 3).toLocaleUpperCase('tr-TR'), rk = ozel ? ozel.rakipAd : kisaAd(g, bz === 0 ? o.dep : o.ev), bizim = ozel ? k3(ozel.bizAd) : kodAd(g, g.kulup), rkK = ozel ? k3(ozel.rakipAd) : kodAd(g, bz === 0 ? o.dep : o.ev), e = o.ek, evK = ozel ? (ozel.evde ? bizim : rkK) : kodAd(g, o.ev), depK = ozel ? (ozel.evde ? rkK : bizim) : kodAd(g, o.dep), bg = bz === 0 ? o.gev : o.gdep, rg = bz === 0 ? o.gdep : o.gev; const sonuc = bg > rg ? 'GALİBİYET' : bg < rg ? 'MAĞLUBİYET' : 'BERABERLİK';
   const sat = (a: string, x: number | string, y: number | string): string => `<div class="rr"><b>${x}</b><span>${a}</span><b>${y}</b></div>`; const pb = (x: number, y: number): string => `<div class="bar2"><i style="width:${(x / Math.max(1, x + y)) * 100}%"></i></div>`;
