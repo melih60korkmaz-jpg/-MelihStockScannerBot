@@ -7,6 +7,8 @@ import { teklifUret } from './transfer';
 import { sponsorMacIsle, sponsorTeklifUret, sponsorSezonSonu, sponsorHaftalikGecen } from './sponsor';
 import { olayCek, gecikmeliIsle } from './olay';
 import { iliskiHaftalik } from './sosyal';
+import { ekMacIsle, ekMacHazirla, kupaTurIsle, kupaKur } from './ekmac';
+import { yilinFutbolcusu, emekliOl, EMEKLI_ZORUNLU } from './kariyer';
 const AD = ['Ahmet', 'Mehmet', 'Emre', 'Burak', 'Can', 'Kerem', 'Arda', 'Yusuf', 'Berk', 'Onur', 'Serkan', 'Tolga', 'Barış', 'Kaan', 'Deniz', 'Umut', 'Furkan', 'Oğuz', 'Eren', 'Cem', 'Mert', 'Selim', 'Hakan', 'Volkan'];
 const SOY = ['Yılmaz', 'Kaya', 'Demir', 'Çelik', 'Şahin', 'Aydın', 'Arslan', 'Doğan', 'Kurt', 'Özkan', 'Aksoy', 'Polat', 'Erdem', 'Tuna', 'Koç', 'Güneş', 'Aslan', 'Bulut', 'Karaca', 'Yıldız', 'Tekin', 'Uysal', 'Sönmez', 'Işık'];
 export function kadroKur(kulupler: Kulup[], rng: Rng): Futbolcu[] { const out: Futbolcu[] = []; for (const k of kulupler) for (let i = 0; i < 4; i++) out.push({ ad: `${rng.pick(AD)} ${rng.pick(SOY)}`, kulup: k.id, yas: rng.int(17, 34), hucum: +(rng.range(0.6, 1.4) * (i === 0 ? 1.5 : i === 1 ? 1.1 : 0.7)).toFixed(2), gol: 0, asist: 0, mac: 0, puan: 0 }); return out; }
@@ -28,7 +30,10 @@ export function haftaFiksturum(g: Game): { ev: number; dep: number; evde: boolea
 export interface HaftaRaporu { satir: string[]; mac: MacOzet | null; sezonSonu: boolean }
 /** Haftayı ilerletir. mac: oyuncunun kendi maçı için dışarıdan verilen sonuç (etkileşimli maç); yoksa otomatik simüle edilir. */
 export function haftaIlerlet(g: Game, mac?: MacOzet): HaftaRaporu {
-  const rng = rngOf(g), satir: string[] = [], fx = haftaFiksturum(g); let ozet: MacOzet | null = null;
+  if (g.emekli) return { satir: ['Kariyerin sona erdi.'], mac: null, sezonSonu: false };
+  const satir: string[] = []; if (g.ekMac) { const s = ekMacIsle(g); if (s) satir.push(`${s.ad}: ${s.bizGol}-${s.rakipGol}${s.ozet.oynadi ? ` · ${s.ozet.gol} gol · puan ${s.ozet.puan.toFixed(1)}` : ''}${s.penaltilar ? ' (penaltılar)' : ''}`); }
+  satir.push(...kupaTurIsle(g)); g.ekSonuc = null;
+  const rng = rngOf(g), fx = haftaFiksturum(g); let ozet: MacOzet | null = null;
   for (let l = 0; l < g.ligler.length; l++) { const lig = g.ligler[l]!; for (const [ev, dep] of fikstur(lig.uye, g.hafta)) { if (ev === g.kulup || dep === g.kulup) continue; const [a, b] = takimMaci(rng, g.kulupler[ev]!.guc, g.kulupler[dep]!.guc); sonucYaz(lig, ev, dep, a, b); golDagit(g, rng, ev, a); golDagit(g, rng, dep, b); } }
   // kendi maçımız
   const lig = g.ligler[ligim(g)]!; let gev: number, gdep: number;
@@ -51,25 +56,27 @@ export function haftaIlerlet(g: Game, mac?: MacOzet): HaftaRaporu {
   // enerji ve sağlık
   const maliyet = ozet.oynadi ? Math.round(ozet.dakika / 90 * 22) : 0; const dinlendi = g.haftaAntrenman > 3; const toparlanma = 38 + g.oyuncu.yet.dayaniklilik / 8 + (dinlendi ? 8 : 0);
   g.enerji = clamp(g.enerji - maliyet + toparlanma, 0, 100); g.yorgunluk = clamp(g.yorgunluk - 14 - (dinlendi ? 10 : 0) + (ozet.oynadi ? ozet.dakika / 9 : 0), 0, 100);
-  if (g.sakatlik) { g.sakatlik.hafta--; if (g.sakatlik.hafta <= 0) { satir.push(`Sakatlığın (${g.sakatlik.tur}) iyileşti.`); g.sakatlik = null; } else satir.push(`Sakatlık: ${g.sakatlik.tur}, ${g.sakatlik.hafta} hafta kaldı.`); }
-  else if (ozet.oynadi && rng.chance(0.012 + g.yorgunluk / 100 * 0.035)) { g.sakatlik = { tur: rng.pick(['Adale kasılması', 'Bilek burkulması', 'Diz zorlanması', 'Kas yırtığı']), hafta: rng.int(1, 6) }; satir.push(`Maçta sakatlandın: ${g.sakatlik.tur} (${g.sakatlik.hafta} hafta).`); haberEkle(g, `${g.ad} sakatlandı: ${g.sakatlik.tur}.`, 'kariyer'); }
+  if (g.sakatlik) { g.sakatlik.hafta--; if (g.sakatlik.hafta <= 0) { satir.push(`Sakatlığın (${g.sakatlik.tur}) iyileşti.${g.rehab >= 2 ? ' Rehabilitasyon tamamlandı: nüks riski düşük.' : ' Dikkat: yeterli rehabilitasyon yapılmadı, nüks riski yüksek (3 hafta).'}`); g.nuks = g.rehab >= 2 ? 0 : 3; g.rehab = 0; g.sakatlik = null; } else satir.push(`Sakatlık: ${g.sakatlik.tur}, ${g.sakatlik.hafta} hafta kaldı.`); }
+  else if (ozet.oynadi && rng.chance((0.012 + g.yorgunluk / 100 * 0.035) * (g.nuks > 0 ? 2.2 : 1))) { g.sakatlik = { tur: rng.pick(['Adale kasılması', 'Bilek burkulması', 'Diz zorlanması', 'Kas yırtığı']), hafta: rng.int(1, 6) }; satir.push(`Maçta sakatlandın: ${g.sakatlik.tur} (${g.sakatlik.hafta} hafta).`); haberEkle(g, `${g.ad} sakatlandı: ${g.sakatlik.tur}.`, 'kariyer'); }
   if (g.uyum > 0) { g.uyum--; if (g.uyum === 0) satir.push('Yeni ülkeye alıştın: uyum süreci bitti.'); else satir.push(`Yeni ülkeye uyum: ${g.uyum} hafta kaldı (performans etkilenir).`); }
   for (const t of g.teklifler) t.kalan--; const bitenTeklif = g.teklifler.filter((t) => t.kalan <= 0); if (bitenTeklif.length) { satir.push(`${bitenTeklif.length} teklifin süresi doldu.`); g.teklifler = g.teklifler.filter((t) => t.kalan > 0); }
-  satir.push(...iliskiHaftalik(g)); sponsorHaftalikGecen(g); g.haftaSosyal = 0; g.toplamHafta++;
+  if (g.nuks > 0) g.nuks--; satir.push(...iliskiHaftalik(g)); sponsorHaftalikGecen(g); g.haftaSosyal = 0; g.toplamHafta++;
   g.gunlukRapor = satir; g.haftaAntrenman = 0; g.hafta++;
   satir.push(...gecikmeliIsle(g)); if ((g.hafta === 3 || g.hafta === 14) && sponsorTeklifUret(g)) satir.push('🤝 Yeni sponsor teklifi geldi! (Ev → Sponsorlar)'); { const oid = olayCek(g); if (oid) satir.push('📋 Karar bekleyen bir olay var!'); }
   if (g.hafta === 11 || g.hafta === 6) { for (const m of sponsorSezonSonu(g, g.sezonStat.mac)) haberEkle(g, m, 'kariyer'); sponsorTeklifUret(g); const n = teklifUret(g); if (n) satir.push(`📄 ${n} yeni transfer teklifi geldi! (Ev → Sözleşme)`); }
   rngKaydet(g, rng); let sezonSonu = false; if (g.hafta > HAFTA_SAYISI) { sezonSonuIsle(g); sezonSonu = true; }
+  ekMacHazirla(g);
   return { satir, mac: ozet, sezonSonu };
 }
 export function sezonSonuIsle(g: Game): void {
-  const rng = rngOf(g), eski = ligim(g), s = sirala(g.ligler[eski]!), poz = s.findIndex((r) => r.id === g.kulup) + 1, ods: string[] = [];
+  kupaKur(g, g.sezon + 1); const rng = rngOf(g), eski = ligim(g), s = sirala(g.ligler[eski]!), poz = s.findIndex((r) => r.id === g.kulup) + 1, ods: string[] = [];
   const sampiyon = clubOf(g, s[0]!.id).ad; ods.push(`🏆 ${g.ligler[eski]!.ad} şampiyonu: ${sampiyon}`);
   const lig = g.kadro.filter((f) => g.ligler[eski]!.uye.includes(f.kulup)); const gk = lig.slice().sort((a, b) => b.gol - a.gol)[0], ak = lig.slice().sort((a, b) => b.asist - a.asist)[0]; const bizGol = g.sezonStat.gol, bizAsist = g.sezonStat.asist;
   if (gk) ods.push(bizGol > gk.gol ? `⚽ Gol kralı: ${g.ad} (${bizGol})` : `⚽ Gol kralı: ${gk.ad} (${gk.gol}) · ${clubOf(g, gk.kulup).ad}`);
   if (ak) ods.push(bizAsist > ak.asist ? `🎯 Asist kralı: ${g.ad} (${bizAsist})` : `🎯 Asist kralı: ${ak.ad} (${ak.asist}) · ${clubOf(g, ak.kulup).ad}`);
   const ortPuan = g.maclar.filter((m) => m.sezon === g.sezon).reduce((a, m, _, arr) => a + m.puan / arr.length, 0); const oyuncuOdul = ortPuan >= 7.3 && g.sezonStat.mac >= 10; const gencOdul = oyuncuOdul || (g.oyuncu.yas <= 21 && ortPuan >= 6.8 && g.sezonStat.mac >= 10);
   const enIyi = lig.slice().sort((a, b) => b.gol * 2 + b.asist - (a.gol * 2 + a.asist))[0]; ods.push(oyuncuOdul ? `⭐ Sezonun oyuncusu: ${g.ad}` : `⭐ Sezonun oyuncusu: ${enIyi ? enIyi.ad : '-'}`); const genc = lig.filter((f) => f.yas <= 21).sort((a, b) => b.gol + b.asist - (a.gol + a.asist))[0]; ods.push(gencOdul ? `🌱 En iyi genç: ${g.ad}` : `🌱 En iyi genç: ${genc ? genc.ad : '-'}`);
+  { const y = yilinFutbolcusu(g, ortPuan); ods.push(y.metin); if (y.biz) { g.kariyerOdulleri.push({ sezon: g.sezon, ad: 'Yılın Futbolcusu' }); g.itibar = clamp(g.itibar + 8, 0, 100); } }
   if (oyuncuOdul) g.itibar = clamp(g.itibar + 6, 0, 100); else if (gencOdul) g.itibar = clamp(g.itibar + 3, 0, 100);
   // yükselme / düşme: ilk 2 yukarı, son 2 aşağı
   const cik: string[] = [], dus: string[] = []; const yeniUye = g.ligler.map((l) => [...l.uye]); for (let l = 1; l < TR_LIG; l++) { const alt = sirala(g.ligler[l]!).map((r) => r.id), ust = sirala(g.ligler[l - 1]!).map((r) => r.id); const up = alt.slice(0, 2), down = ust.slice(-2); yeniUye[l - 1] = yeniUye[l - 1]!.filter((x) => !down.includes(x)).concat(up); yeniUye[l] = yeniUye[l]!.filter((x) => !up.includes(x)).concat(down); up.forEach((x) => cik.push(clubOf(g, x).ad)); down.forEach((x) => dus.push(clubOf(g, x).ad)); }
@@ -77,6 +84,7 @@ export function sezonSonuIsle(g: Game): void {
   g.gecmis.push({ sezon: g.sezon, kulup: g.kulup, lig: eski, poz, mac: g.sezonStat.mac, gol: g.sezonStat.gol, asist: g.sezonStat.asist }); if (poz === 1) g.stat.kupa++;
   g.ligler.forEach((l, i) => { l.uye = yeniUye[i]!; l.tablo = tabloBos(l.uye); }); g.kulupler.forEach((k) => { k.lig = ligOf(g, k.id); });
   for (const f of g.kadro) { f.gol = 0; f.asist = 0; f.mac = 0; f.yas++; } for (const k of g.kulupler) k.guc = +clamp(k.guc + rng.gauss() * 0.012, 0.2, 0.97).toFixed(3);
-  { const n = teklifUret(g); if (n) haberEkle(g, `Sezon sonu: ${n} kulüp ${g.ad} için teklif hazırladı.`, 'dunya'); } g.oyuncu.yas++; if (g.oyuncu.yas > 29) for (const k of ['surat', 'dayaniklilik'] as const) g.oyuncu.yet[k] = Math.max(10, g.oyuncu.yet[k] - (g.oyuncu.yas - 29) * 0.25); g.sozlesme.sure--; let sz = ''; if (g.sozlesme.sure <= 0) { g.sozlesme.sure = 1; sz = ' Sözleşmen bir sezon uzatıldı.'; }
+  { const n = teklifUret(g); if (n) haberEkle(g, `Sezon sonu: ${n} kulüp ${g.ad} için teklif hazırladı.`, 'dunya'); } g.oyuncu.yas++; if (g.oyuncu.yas >= EMEKLI_ZORUNLU && !g.emekli) emekliOl(g); if (g.oyuncu.yas > 29) for (const k of ['surat', 'dayaniklilik'] as const) g.oyuncu.yet[k] = Math.max(10, g.oyuncu.yet[k] - (g.oyuncu.yas - 29) * 0.25); g.sozlesme.sure--; let sz = ''; if (g.sozlesme.sure <= 0) { g.sozlesme.sure = 1; sz = ' Sözleşmen bir sezon uzatıldı.'; }
+  if (g.oyuncu.yas >= 39) haberEkle(g, `${g.ad} 39 yaşında: emeklilik zamanı gelip çattı.`, 'kariyer');
   g.sozlesme.bedel = transferDegeri(g); haberEkle(g, `Sezon ${g.sezon} bitti: ${g.ligler[ligOf(g, g.kulup)]!.ad}'de ${poz}. sıra.${sz}`, 'dunya'); g.oduller = ods; g.sezon++; g.hafta = 1; g.sezonStat = { mac: 0, gol: 0, asist: 0 }; rngKaydet(g, rng);
 }
