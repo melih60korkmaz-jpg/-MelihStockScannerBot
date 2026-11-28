@@ -25,7 +25,7 @@ export function puanAI(g: Game, f: Futbolcu, sira: Map<number, number>): Puanlar
 }
 /** Oyuncunun kendi puanları: tamamen oyun içi başarıya bağlıdır. */
 export function puanBen(g: Game): Puanlar {
-  const son = g.maclar.slice(0, 10).filter((m) => m.oynadi), ort = son.length ? son.reduce((t, m) => t + m.puan, 0) / son.length : 6, sira = kulupSira(g), kupa = g.stat.kupa + (g.milli.unvan ?? 0) + (g.kupa?.sampiyon === g.kulup ? 1 : 0);
+  const son = g.maclar.slice(0, 10).filter((m) => m.oynadi), ort = son.length ? son.reduce((t, m) => t + m.puan, 0) / son.length : 6, sira = kulupSira(g), kupa = g.stat.kupa + (g.milli.unvan ?? 0) + (g.kupa?.sampiyon === String(g.kulup) ? 1 : 0);
   const gol = g.sezonStat.gol + (g.milli.gol ?? 0) * 0.2, asist = g.sezonStat.asist + (g.milli.asist ?? 0) * 0.2;
   return toplamla({ ovr: n01(genel(g), 30, 85), performans: n01(ort, 5, 8.5), golAsist: n01(gol + asist * 0.6, 0, 22), kupa: n01(kupa, 0, 6), kulup: kulupBasari(g, g.kulup, sira), milli: clamp(ulkeGuc(milliyetOf(g)) * 60 + Math.min(40, g.milli.cap * 1.5 + (g.milli.unvan ?? 0) * 15), 0, 100), itibar: clamp(g.itibar, 0, 100) });
 }

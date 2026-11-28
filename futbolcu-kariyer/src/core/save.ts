@@ -1,5 +1,6 @@
 /** Kayıt sistemi: 3 slot, sürüm uyumlu, otomatik/manuel kayıt. */
 import { varsayilanEtnik } from './kimlik';
+import { kupaKur, milliTurnuvalariKur } from './ekmac';
 import { SURUM, type Game } from './game';
 import { kulupleriKur, ligleriKur } from './world';
 export const SLOT_SAYISI = 3, ANAHTAR = 'fk_slot_';
@@ -14,7 +15,7 @@ export function migrate(ham: any): Game { const g = ham as Game; const v = typeo
   if (g.v < 3) { /* v3: sponsor, olay kartı, mutluluk, sosyal eylemler */ g.mut ??= 60; g.toplamHafta ??= (g.sezon - 1) * 22 + (g.hafta - 1); g.sponsorlar ??= []; for (const a of g.sponsorlar) a.sayac ??= 0; g.sponsorTeklifleri ??= []; g.olayGecmis ??= {}; g.gecikmeli ??= []; g.bekleyenOlay ??= null; g.haftaSosyal ??= 0; g.kizVar ??= false; g.kizAd ??= ''; g.bayraklar ??= {}; g.sonMacHafta ??= -1; g.v = 3; }
   if (g.v < 4) { /* v4: milli takım, Avrupa Kupası, rehabilitasyon, kariyer sonu */ g.milli ??= { cap: 0, gol: 0, asist: 0, guven: 55, gecmis: [] }; g.kupa ??= null; g.ekMac ??= null; g.ekSonuc ??= null; g.kupaStat ??= { mac: 0, gol: 0 }; g.rehab ??= 0; g.nuks ??= 0; g.emekli ??= null; g.kariyerOdulleri ??= []; g.v = 4; }
   if (g.v < 5) { /* v5: enerji içecekleri, krampon/ekipman, tema */ g.icecek ??= { klasik: 1 }; g.haftaIcecek ??= 0; g.kramponlar ??= {}; g.giyilen ??= 'temel'; g.tema ??= 'modern'; g.v = 5; }
-  if (g.v < 6) { /* v6: kimlik (doğum ülkesi, vatandaşlıklar, milliyet, etnik köken) */ const o = g.oyuncu; o.dogumUlke ??= o.uyruk; o.vatandasliklar ??= [o.milliyet && o.milliyet !== o.uyruk ? o.uyruk : o.uyruk]; if (o.milliyet && !o.vatandasliklar.includes(o.milliyet)) o.vatandasliklar.push(o.milliyet); o.milliyet ??= o.uyruk; o.etnik ??= varsayilanEtnik(o.dogumUlke); g.milli.resmi ??= 0; g.v = 6; } return g; }
+  if (g.v < 6) { /* v6: kimlik (doğum ülkesi, vatandaşlıklar, milliyet, etnik köken) */ const o = g.oyuncu; o.dogumUlke ??= o.uyruk; o.vatandasliklar ??= [o.milliyet && o.milliyet !== o.uyruk ? o.uyruk : o.uyruk]; if (o.milliyet && !o.vatandasliklar.includes(o.milliyet)) o.vatandasliklar.push(o.milliyet); o.milliyet ??= o.uyruk; o.etnik ??= varsayilanEtnik(o.dogumUlke); g.milli.resmi ??= 0; g.eleme ??= null; g.turnuva ??= null; const eskiKupa = (t: unknown): boolean => !!t && !Array.isArray((t as { gruplar?: unknown }).gruplar); if (eskiKupa(g.kupa)) g.kupa = null; if (eskiKupa(g.turnuva)) g.turnuva = null; if (g.sezon >= 2 && !g.kupa && g.hafta <= 2) kupaKur(g, g.sezon); if (g.sezon % 4 === 0 && !g.turnuva && g.hafta <= 17) milliTurnuvalariKur(g, g.sezon); if (g.sezon % 4 === 3 && !g.eleme && g.hafta <= 3) milliTurnuvalariKur(g, g.sezon); g.v = 6; } return g; }
 export function kaydet(g: Game, slot: number): boolean { try { g.son = Date.now(); depo.setItem(ANAHTAR + slot, JSON.stringify(g)); return true; } catch { return false; } }
 export function yukle(slot: number): Game | null { try { const s = depo.getItem(ANAHTAR + slot); if (!s) return null; const g = migrate(JSON.parse(s)); return g.v <= SURUM ? g : null; } catch { return null; } }
 export function sil(slot: number): void { depo.removeItem(ANAHTAR + slot); }

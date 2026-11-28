@@ -10,7 +10,7 @@ import { sponsorMacIsle, sponsorTeklifUret, sponsorSezonSonu, sponsorHaftalikGec
 import { olayCek, gecikmeliIsle } from './olay';
 import { iliskiHaftalik } from './sosyal';
 import { kramponAsin } from './ekipman';
-import { ekMacIsle, ekMacHazirla, kupaTurIsle, kupaKur, turnuvaTurIsle, turnuvaKur } from './ekmac';
+import { ekMacIsle, ekMacHazirla, turnuvalariIsle, kupaKur, milliTurnuvalariKur } from './ekmac';
 import { yilinFutbolcusu, emekliOl, EMEKLI_ZORUNLU } from './kariyer';
 const AD = ['Ahmet', 'Mehmet', 'Emre', 'Burak', 'Can', 'Kerem', 'Arda', 'Yusuf', 'Berk', 'Onur', 'Serkan', 'Tolga', 'Barış', 'Kaan', 'Deniz', 'Umut', 'Furkan', 'Oğuz', 'Eren', 'Cem', 'Mert', 'Selim', 'Hakan', 'Volkan'];
 const SOY = ['Yılmaz', 'Kaya', 'Demir', 'Çelik', 'Şahin', 'Aydın', 'Arslan', 'Doğan', 'Kurt', 'Özkan', 'Aksoy', 'Polat', 'Erdem', 'Tuna', 'Koç', 'Güneş', 'Aslan', 'Bulut', 'Karaca', 'Yıldız', 'Tekin', 'Uysal', 'Sönmez', 'Işık'];
@@ -38,7 +38,7 @@ export interface HaftaRaporu { satir: string[]; mac: MacOzet | null; sezonSonu: 
 export function haftaIlerlet(g: Game, mac?: MacOzet): HaftaRaporu {
   if (g.emekli) return { satir: ['Kariyerin sona erdi.'], mac: null, sezonSonu: false };
   const satir: string[] = []; if (g.ekMac) { const s = ekMacIsle(g); if (s) satir.push(`${s.ad}: ${s.bizGol}-${s.rakipGol}${s.ozet.oynadi ? ` · ${s.ozet.gol} gol · puan ${s.ozet.puan.toFixed(1)}` : ''}${s.penaltilar ? ' (penaltılar)' : ''}`); }
-  satir.push(...kupaTurIsle(g), ...turnuvaTurIsle(g)); g.ekSonuc = null;
+  satir.push(...turnuvalariIsle(g)); g.ekSonuc = null;
   const rng = rngOf(g), fx = haftaFiksturum(g); let ozet: MacOzet | null = null;
   for (let l = 0; l < g.ligler.length; l++) { const lig = g.ligler[l]!; for (const [ev, dep] of fikstur(lig.uye, g.hafta)) { if (ev === g.kulup || dep === g.kulup) continue; const [a, b] = takimMaci(rng, g.kulupler[ev]!.guc, g.kulupler[dep]!.guc); sonucYaz(lig, ev, dep, a, b); golDagit(g, rng, ev, a); golDagit(g, rng, dep, b); } }
   // kendi maçımız
@@ -75,8 +75,8 @@ export function haftaIlerlet(g: Game, mac?: MacOzet): HaftaRaporu {
   return { satir, mac: ozet, sezonSonu };
 }
 export function sezonSonuIsle(g: Game): void {
-  const kupaSamp = g.kupa?.sampiyon ?? null;
-  kupaKur(g, g.sezon + 1); turnuvaKur(g, g.sezon + 1); { const r0 = rngOf(g); for (let l = 0; l < g.ligler.length; l++) { const sr = sirala(g.ligler[l]!); sr.forEach((row, i) => { const kl = g.kulupler[row.id]!, d = i === 0 ? 0.014 : i < 3 ? 0.006 : i >= sr.length - 2 ? -0.009 : 0; kl.guc = +clamp(kl.guc + d + r0.gauss() * 0.006, 0.15, 0.98).toFixed(3); }); } rngKaydet(g, r0); }
+  const kupaSamp = g.kupa?.sampiyon != null ? +g.kupa.sampiyon : null;
+  kupaKur(g, g.sezon + 1); milliTurnuvalariKur(g, g.sezon + 1); { const r0 = rngOf(g); for (let l = 0; l < g.ligler.length; l++) { const sr = sirala(g.ligler[l]!); sr.forEach((row, i) => { const kl = g.kulupler[row.id]!, d = i === 0 ? 0.014 : i < 3 ? 0.006 : i >= sr.length - 2 ? -0.009 : 0; kl.guc = +clamp(kl.guc + d + r0.gauss() * 0.006, 0.15, 0.98).toFixed(3); }); } rngKaydet(g, r0); }
   const rng = rngOf(g), eski = ligim(g), s = sirala(g.ligler[eski]!), poz = s.findIndex((r) => r.id === g.kulup) + 1, ods: string[] = [];
   for (const l of g.ligler) { const ch = sirala(l)[0]?.id; for (const f of g.kadro) if (f.kulup === ch) f.kupa = (f.kupa ?? 0) + 1; } if (kupaSamp !== null) for (const f of g.kadro) if (f.kulup === kupaSamp) f.kupa = (f.kupa ?? 0) + 1; dunyaGuncelle(g, true);
   const sampiyon = clubOf(g, s[0]!.id).ad; ods.push(`🏆 ${g.ligler[eski]!.ad} şampiyonu: ${sampiyon}`);
