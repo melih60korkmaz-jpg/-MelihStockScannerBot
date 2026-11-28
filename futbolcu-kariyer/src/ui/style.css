@@ -44,3 +44,14 @@ details summary{cursor:pointer;list-style:none}.tb tr[data-a]{cursor:pointer}
 .mpuan{text-align:center;display:flex;flex-direction:column;align-items:center}.mpuan b{font-size:42px;color:var(--gold);line-height:1}.mpuan span{font-size:11px;color:var(--mu)}.rr{display:flex;align-items:center;font-size:13px;gap:8px}.rr b{flex:1}.rr b:last-child{text-align:right}.rr span{color:var(--mu);font-size:11px;flex:none}.bar2{height:5px;border-radius:3px;background:#5a1c17;overflow:hidden;margin-bottom:4px}.bar2 i{display:block;height:100%;background:var(--ac)}
 
 .mtk{padding:4px 10px;font-size:11px;color:var(--mu);background:#0a140e;border-bottom:1px solid var(--line)}.mtk b{color:var(--gold)}
+/* ---- Klasik tema: parlak yeşil düğmeler, metalik şeritler, koyu fırçalı yüzey ---- */
+[data-tema="klasik"]{--bg:#161b17;--p:#1f2a22;--p2:#2a3a2e;--p3:#365040;--line:#4a6a52;--ac:#59e07d;--ac2:#25a34a;--gold:#ffe066}
+[data-tema="klasik"] #app{background:repeating-linear-gradient(45deg,#1b211c 0 3px,#171c18 3px 6px)}
+[data-tema="klasik"] .hd{background:linear-gradient(#59605a,#2d322e 45%,#1a1d1b);border-bottom:3px solid #8a948c}
+[data-tema="klasik"] .nav{background:linear-gradient(#3c443d,#1a1d1b);border-top:3px solid #8a948c}
+[data-tema="klasik"] .nav button{background:linear-gradient(#4a8a56,#215c2d);border:2px solid #86e59a;color:#fff;font-style:italic;box-shadow:0 3px 0 #0e3a18}
+[data-tema="klasik"] .nav button.on{background:linear-gradient(#7af09a,#2fb04f);color:#04210f}
+[data-tema="klasik"] .btn{background:linear-gradient(#66ee88,#1fa044);border:2px solid #b8f5c8;font-style:italic;box-shadow:0 4px 0 #0a4a1c}
+[data-tema="klasik"] .btn.sec{background:linear-gradient(#566a5b,#2f3d33);border-color:#7f9a86;color:#fff}
+[data-tema="klasik"] .card{border-radius:6px;border-width:2px;background:linear-gradient(#26332a,#1b251e)}
+[data-tema="klasik"] .tabs button.on{background:linear-gradient(#45a05a,#26683a);color:#fff}

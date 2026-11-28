@@ -5,6 +5,7 @@ import { type Game, type MacOzet, genel, clubOf, kisaAd, rngOf, rngKaydet } from
 import { POZ_GRUP, type YetenekId } from './skills';
 import { haftaFiksturum, rolOf } from './week';
 import { mutCarpan } from './sosyal';
+import { ekipBonus } from './ekipman';
 export type Calis = 0 | 1 | 2; // düşük, normal, yüksek
 export type Odak = 'hucum' | 'savunma' | 'dengeli';
 export interface Tarz { calis: Calis; odak: Odak }
@@ -147,7 +148,7 @@ function pozisyonKur(g: Game, m: Mac, rng: Rng, tip: PozTip, baski: number, mesa
   m.beklenen = { tip };
 }
 /** Başarı gürültüsü: yetenek, yorgunluk ve baskıya göre */
-const beceriK = (g: Game, m: Mac, ids: YetenekId[]): number => { const ort = ids.reduce((a, k) => a + g.oyuncu.yet[k], 0) / ids.length; const yor = m.enerji < 30 ? 0.85 + m.enerji / 200 : 1; return clamp(ort / 100, 0.05, 1) * yor * [0.92, 1, 1.04][m.tarz.calis]! * mutCarpan(g); };
+const beceriK = (g: Game, m: Mac, ids: YetenekId[]): number => { const ort = ids.reduce((a, k) => a + g.oyuncu.yet[k] + ekipBonus(g, k), 0) / ids.length; const yor = m.enerji < 30 ? 0.85 + m.enerji / 200 : 1; return clamp(ort / 100, 0.05, 1) * yor * [0.92, 1, 1.04][m.tarz.calis]! * mutCarpan(g); };
 export interface Sonuc { tur: 'gol' | 'kurtaris' | 'direk' | 'disari' | 'blok' | 'basari' | 'basarisiz' | 'faul' | 'korner'; metin: string }
 export function macAksiyon(g: Game, m: Mac, a: Aksiyon): Sonuc | null {
   const poz = m.poz; if (!poz) return null; const rng = new Rng(m.rng); let s: Sonuc;
