@@ -46,3 +46,6 @@ export function sozlesmeYenile(g: Game, artis: number, sure: number): { ok: bool
   g.iliski.td = clamp(g.iliski.td - 4, 0, 100); rngKaydet(g, rng); return { ok: false, m: 'Kulüp isteklerini kabul etmedi. Teknik direktör memnuniyetsiz.' };
 }
 export const yurtdisiMi = yurtdisi;
+
+/** Olay kartından gelen özel teklif: kulübün ilgisi doğrulanmadan teklif oluşturur (Teklif listesine eklenir). */
+export function ozelTeklif(g: Game, kulup: number): void { const rng = rngOf(g), carp = LIG_META[ligOf(g, kulup)]!.maas, maas = Math.round(carp * 3500 * (0.9 + genel(g) / 60) * rng.range(1, 1.25) / 50) * 50; g.teklifler.push({ id: Math.floor(rng.next() * 1e9), kulup, maas, golPrimi: Math.round(maas * 0.12 / 50) * 50, asistPrimi: Math.round(maas * 0.06 / 50) * 50, sure: rng.int(2, 4), rol: rolTahmin(g, kulup), imza: maas * 6, bedel: maas * 20, kalan: TEKLIF_OMRU, pazarlik: 0 }); rngKaydet(g, rng); }

@@ -1,7 +1,7 @@
 /** Para birimi ₺. Ekonomi yavaş ilerler: alt ligde haftalık net gelir düşüktür. */
 export const fmt = (v: number): string => { const a = Math.abs(v), s = a >= 1e6 ? (a / 1e6).toFixed(2).replace('.', ',') + ' Mn' : a >= 1e4 ? Math.round(a / 1000) + ' B' : Math.round(a).toLocaleString('tr-TR'); return (v < 0 ? '-' : '') + s + ' ₺'; };
 export const YASAM_GIDERI = 1500; // haftalık temel yaşam gideri
-export interface Esya { id: string; ad: string; ik: string; kat: 'esya' | 'arac' | 'gayri'; fiyat: number; luks: number; bakim: number; ac: string }
+export interface Esya { id: string; ad: string; ik: string; kat: 'esya' | 'arac' | 'gayri'; fiyat: number; luks: number; bakim: number; ac: string; kira?: number }
 export const ESYALAR: Esya[] = [
   { id: 'telefon', ad: 'Telefon', ik: '📱', kat: 'esya', fiyat: 12000, luks: 1, bakim: 0, ac: 'Güncel model' },
   { id: 'tv', ad: 'Televizyon', ik: '📺', kat: 'esya', fiyat: 20000, luks: 1, bakim: 0, ac: '55 inç' },
@@ -16,12 +16,12 @@ export const ESYALAR: Esya[] = [
   { id: 'spor', ad: 'Spor otomobil', ik: '🏎️', kat: 'arac', fiyat: 3500000, luks: 12, bakim: 2500, ac: 'Yüksek performans' },
   { id: 'tekne', ad: 'Tekne', ik: '🛥️', kat: 'arac', fiyat: 6000000, luks: 15, bakim: 4000, ac: 'Motoryat' },
   { id: 'jet', ad: 'Özel jet', ik: '✈️', kat: 'arac', fiyat: 60000000, luks: 40, bakim: 60000, ac: 'Yıldızlara özel' },
-  { id: 'daire', ad: 'Daire', ik: '🏢', kat: 'gayri', fiyat: 1500000, luks: 6, bakim: 300, ac: '2+1 şehir dairesi' },
+  { id: 'daire', ad: 'Daire', ik: '🏢', kat: 'gayri', fiyat: 1500000, luks: 6, bakim: 300, ac: '2+1 şehir dairesi (kiraya verilir)', kira: 2000 },
   { id: 'ev', ad: 'Ev', ik: '🏠', kat: 'gayri', fiyat: 3000000, luks: 9, bakim: 600, ac: 'Bahçeli müstakil ev' },
-  { id: 'sehirevi', ad: 'Şehir evi', ik: '🏙️', kat: 'gayri', fiyat: 8000000, luks: 14, bakim: 1500, ac: 'Merkezde rezidans' },
+  { id: 'sehirevi', ad: 'Şehir evi', ik: '🏙️', kat: 'gayri', fiyat: 8000000, luks: 14, bakim: 1500, ac: 'Merkezde rezidans (kiraya verilir)', kira: 7000 },
   { id: 'villa', ad: 'Villa', ik: '🏡', kat: 'gayri', fiyat: 25000000, luks: 25, bakim: 6000, ac: 'Havuzlu villa' },
-  { id: 'ciftlik', ad: 'Çiftlik', ik: '🌾', kat: 'gayri', fiyat: 40000000, luks: 30, bakim: 8000, ac: 'Geniş arazi' },
-  { id: 'otel', ad: 'Otel', ik: '🏨', kat: 'gayri', fiyat: 120000000, luks: 50, bakim: 25000, ac: 'Butik otel (gelir getirir)' },
+  { id: 'ciftlik', ad: 'Çiftlik', ik: '🌾', kat: 'gayri', fiyat: 40000000, luks: 30, bakim: 8000, ac: 'Geniş arazi (tarım geliri)', kira: 20000 },
+  { id: 'otel', ad: 'Otel', ik: '🏨', kat: 'gayri', fiyat: 120000000, luks: 50, bakim: 25000, ac: 'Butik otel (gelir getirir)', kira: 150000 },
   { id: 'ada', ad: 'Özel ada', ik: '🏝️', kat: 'gayri', fiyat: 400000000, luks: 100, bakim: 90000, ac: 'Kariyerin zirvesi' }
 ];
 export const esyaOf = (id: string): Esya => ESYALAR.find((e) => e.id === id)!;

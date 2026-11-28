@@ -4,6 +4,7 @@ import { Rng, clamp } from './rng';
 import { type Game, type MacOzet, genel, clubOf, kisaAd, rngOf, rngKaydet } from './game';
 import { POZ_GRUP, type YetenekId } from './skills';
 import { haftaFiksturum, rolOf } from './week';
+import { mutCarpan } from './sosyal';
 export type Calis = 0 | 1 | 2; // düşük, normal, yüksek
 export type Odak = 'hucum' | 'savunma' | 'dengeli';
 export interface Tarz { calis: Calis; odak: Odak }
@@ -129,11 +130,11 @@ function pozisyonKur(g: Game, m: Mac, rng: Rng, tip: PozTip, baski: number, mesa
   const rkId = m.ev === g.kulup ? m.dep : m.ev, kaleci = clamp(clubOf(g, rkId).guc + rng.range(-0.05, 0.05), 0.2, 0.99), hedefler: Hedef[] = [];
   if (tip === 'pas' || tip === 'sut' || tip === 'kafa') for (let i = 0; i < 3; i++) { const tur = (['kisa', 'uzun', 'ara'] as const)[i]!, md = tur === 'kisa' ? rng.range(6, 14) : tur === 'uzun' ? rng.range(28, 45) : rng.range(14, 24); hedefler.push({ id: i, ad: ADET(rng), mesafe: +md.toFixed(1), aciklik: +clamp(rng.range(0.2, 0.9), 0, 1).toFixed(2), risk: +clamp((tur === 'kisa' ? 0.05 : tur === 'uzun' ? 0.28 : 0.2) + baski * 0.2 - 0, 0.02, 0.6).toFixed(2), tur }); }
   const ipucu = { sut: 'Şut pozisyonu! Hedefi seç, sürükle, bırak.', kafa: 'Orta geliyor: kafayı doğru anda vur!', pas: 'Takım arkadaşlarından birine pas ver.', dribling: 'Rakip önünde: nasıl geçeceksin?', serbest: 'Serbest vuruş! Barajı aşıp köşeyi bul.', penalti: 'Penaltı! Kaleciyi yanılt.', kurtaris: 'Şut geliyor! Hangi köşeye atlayacaksın?', mudahale: 'Rakip hücumda: nasıl müdahale edeceksin?' }[tip];
-  m.poz = { tip, dk: m.dk, baski: +clamp(baski, 0.05, 0.95).toFixed(2), mesafe: +mesafe.toFixed(1), kaleci: +kaleci.toFixed(2), rakip: rng.int(1, 3), hedefler, ipucu, sut: { yon: rng.pick([-1, 0, 1]) } };
+  const taraftarEtkisi = m.evde ? (g.iliski.taraftar < 25 ? 0.08 : g.iliski.taraftar > 75 ? -0.05 : 0) : 0; m.poz = { tip, dk: m.dk, baski: +clamp(baski + taraftarEtkisi, 0.05, 0.95).toFixed(2), mesafe: +mesafe.toFixed(1), kaleci: +kaleci.toFixed(2), rakip: rng.int(1, 3), hedefler, ipucu, sut: { yon: rng.pick([-1, 0, 1]) } };
   m.beklenen = { tip };
 }
 /** Başarı gürültüsü: yetenek, yorgunluk ve baskıya göre */
-const beceriK = (g: Game, m: Mac, ids: YetenekId[]): number => { const ort = ids.reduce((a, k) => a + g.oyuncu.yet[k], 0) / ids.length; const yor = m.enerji < 30 ? 0.85 + m.enerji / 200 : 1; return clamp(ort / 100, 0.05, 1) * yor * [0.92, 1, 1.04][m.tarz.calis]!; };
+const beceriK = (g: Game, m: Mac, ids: YetenekId[]): number => { const ort = ids.reduce((a, k) => a + g.oyuncu.yet[k], 0) / ids.length; const yor = m.enerji < 30 ? 0.85 + m.enerji / 200 : 1; return clamp(ort / 100, 0.05, 1) * yor * [0.92, 1, 1.04][m.tarz.calis]! * mutCarpan(g); };
 export interface Sonuc { tur: 'gol' | 'kurtaris' | 'direk' | 'disari' | 'blok' | 'basari' | 'basarisiz' | 'faul' | 'korner'; metin: string }
 export function macAksiyon(g: Game, m: Mac, a: Aksiyon): Sonuc | null {
   const poz = m.poz; if (!poz) return null; const rng = new Rng(m.rng); let s: Sonuc;
@@ -165,7 +166,7 @@ function sutCoz(g: Game, m: Mac, rng: Rng, poz: Pozisyon, a: Extract<Aksiyon, { 
 }
 function pasCoz(g: Game, m: Mac, rng: Rng, poz: Pozisyon, a: Extract<Aksiyon, { tip: 'pas' }>): Sonuc {
   const h = poz.hedefler.find((x) => x.id === a.hedef) ?? poz.hedefler[0]!, b = beceriK(g, m, ['pas', 'gorus', 'teknik']); m.ist.pas++;
-  const taban = h.tur === 'kisa' ? 0.82 : h.tur === 'uzun' ? 0.5 : 0.58, p = clamp(taban + b * 0.28 - h.risk * 0.7 - poz.baski * 0.25 + h.aciklik * 0.12 - h.mesafe / 400, 0.06, 0.95);
+  const taban = h.tur === 'kisa' ? 0.82 : h.tur === 'uzun' ? 0.5 : 0.58, p = clamp(taban + b * 0.28 - h.risk * 0.7 - poz.baski * 0.25 + h.aciklik * 0.12 - h.mesafe / 400 + (g.iliski.takim - 50) / 600, 0.06, 0.95);
   if (rng.chance(p)) { m.ist.basariliPas++; const anahtar = h.tur === 'ara' || h.tur === 'uzun'; olayEkle(m, 'pas', `${g.ad}: ${h.tur === 'ara' ? 'Harika bir ara pas' : h.tur === 'uzun' ? 'İsabetli uzun top' : 'Temiz pas'} → ${h.ad}.`, true); m.ist.puanEk += anahtar ? 0.15 : 0.04; if (anahtar) m.ist.anahtarPas++;
     // pas sonrası tehlike: ara/uzun pasta şut ihtimali
     const pSut = clamp(0.2 + (h.tur === 'ara' ? 0.3 : h.tur === 'uzun' ? 0.12 : 0.05) + b * 0.12, 0.1, 0.7); if (rng.chance(pSut)) { const bz = bizTarafi(m); m.bizSut[bz]++; olayEkle(m, 'sut', `${h.ad} şutunu çekti!`, true); const rkId = m.ev === g.kulup ? m.dep : m.ev; const gol = rng.chance(clamp(0.2 + (h.tur === 'ara' ? 0.12 : 0) - (clubOf(g, rkId).guc - 0.5) * 0.15, 0.08, 0.5)); if (gol) { golYaz(g, m, rng, true, false, h.ad); m.ist.asist++; m.ist.puanEk += 0.6; return { tur: 'gol', metin: 'Asist! Gol!' }; } m.bizIsabet[bz]++; olayEkle(m, 'kurtaris', f(M.kurtBiz, rng), false); return { tur: 'basari', metin: 'Pas başarılı, şut kurtarıldı' }; }

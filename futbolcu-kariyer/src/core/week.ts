@@ -4,6 +4,9 @@ import { type Game, kisaAd, type Futbolcu, type MacOzet, clubOf, ligOf, ligim, g
 import { fikstur, sirala, sonucYaz, takimMaci, tabloBos, HAFTA_SAYISI, TR_LIG, type Kulup } from './world';
 import { POZ_GRUP } from './skills';
 import { teklifUret } from './transfer';
+import { sponsorMacIsle, sponsorTeklifUret, sponsorSezonSonu, sponsorHaftalikGecen } from './sponsor';
+import { olayCek, gecikmeliIsle } from './olay';
+import { iliskiHaftalik } from './sosyal';
 const AD = ['Ahmet', 'Mehmet', 'Emre', 'Burak', 'Can', 'Kerem', 'Arda', 'Yusuf', 'Berk', 'Onur', 'Serkan', 'Tolga', 'Barış', 'Kaan', 'Deniz', 'Umut', 'Furkan', 'Oğuz', 'Eren', 'Cem', 'Mert', 'Selim', 'Hakan', 'Volkan'];
 const SOY = ['Yılmaz', 'Kaya', 'Demir', 'Çelik', 'Şahin', 'Aydın', 'Arslan', 'Doğan', 'Kurt', 'Özkan', 'Aksoy', 'Polat', 'Erdem', 'Tuna', 'Koç', 'Güneş', 'Aslan', 'Bulut', 'Karaca', 'Yıldız', 'Tekin', 'Uysal', 'Sönmez', 'Işık'];
 export function kadroKur(kulupler: Kulup[], rng: Rng): Futbolcu[] { const out: Futbolcu[] = []; for (const k of kulupler) for (let i = 0; i < 4; i++) out.push({ ad: `${rng.pick(AD)} ${rng.pick(SOY)}`, kulup: k.id, yas: rng.int(17, 34), hucum: +(rng.range(0.6, 1.4) * (i === 0 ? 1.5 : i === 1 ? 1.1 : 0.7)).toFixed(2), gol: 0, asist: 0, mac: 0, puan: 0 }); return out; }
@@ -39,10 +42,11 @@ export function haftaIlerlet(g: Game, mac?: MacOzet): HaftaRaporu {
   // istatistik + ilişkiler + itibar
   if (ozet.oynadi) { g.stat.mac++; g.sezonStat.mac++; g.stat.gol += ozet.gol; g.sezonStat.gol += ozet.gol; g.stat.asist += ozet.asist; g.sezonStat.asist += ozet.asist; g.maclar.unshift(ozet); if (g.maclar.length > 60) g.maclar.length = 60; const pk = ozet.puan - 6.2; g.iliski.td = clamp(g.iliski.td + pk * 2.2, 0, 100); g.iliski.takim = clamp(g.iliski.takim + pk * 1.4 + (sonuc === 'galibiyet' ? 1 : sonuc === 'mağlubiyet' ? -1 : 0), 0, 100); g.iliski.taraftar = clamp(g.iliski.taraftar + pk * 1.8 + ozet.gol * 1.5, 0, 100); g.itibar = clamp(g.itibar + pk * 0.6 + ozet.gol * 0.7 + ozet.asist * 0.3, 0, 100); if (ozet.puan >= 8) haberEkle(g, `${g.ad}, ${rk.ad} karşısındaki performansıyla göz doldurdu (${ozet.puan.toFixed(1)}).`, 'mac'); else if (ozet.puan <= 4.8) { haberEkle(g, `${g.ad} ${rk.ad} maçında hayal kırıklığı yarattı (${ozet.puan.toFixed(1)}).`, 'mac'); satir.push('Kötü performans: teknik direktörün güveni azaldı.'); } }
   else { g.iliski.td = clamp(g.iliski.td - 1.2, 0, 100); }
+  const spGelir = sponsorMacIsle(g, ozet.oynadi, ozet.gol, ozet.puan); g.sonMacHafta = g.toplamHafta; if (spGelir) { g.para += spGelir; satir.push(`Sponsor geliri: +${spGelir.toLocaleString('tr-TR')} ₺`); }
   const prim = ozet.gol * g.sozlesme.golPrimi + ozet.asist * g.sozlesme.asistPrimi;
   if (prim) satir.push(`Gol/asist primi: +${prim.toLocaleString('tr-TR')} ₺`);
   // ekonomi
-  const e = haftalikGelirGider(g); const net = e.net + prim; g.para += net; satir.push(`Haftalık gelir/gider: ${net >= 0 ? '+' : ''}${net.toLocaleString('tr-TR')} ₺ (maaş ${e.maas}, antrenör -${e.antrenor}, menajer -${e.menajer}, bakım -${e.bakim}, yaşam -${e.yasam})`);
+  const e = haftalikGelirGider(g); const net = e.net + prim; if (e.kira) satir.push(`Kira/işletme geliri: +${e.kira.toLocaleString('tr-TR')} ₺`); g.para += net; satir.push(`Haftalık gelir/gider: ${net >= 0 ? '+' : ''}${net.toLocaleString('tr-TR')} ₺ (maaş ${e.maas}, antrenör -${e.antrenor}, menajer -${e.menajer}, bakım -${e.bakim}, yaşam -${e.yasam})`);
   if (g.para < 0) { satir.push('Paran eksiye düştü! Giderlerini kıs.'); g.iliski.sponsor = clamp(g.iliski.sponsor - 3, 0, 100); }
   // enerji ve sağlık
   const maliyet = ozet.oynadi ? Math.round(ozet.dakika / 90 * 22) : 0; const dinlendi = g.haftaAntrenman > 3; const toparlanma = 38 + g.oyuncu.yet.dayaniklilik / 8 + (dinlendi ? 8 : 0);
@@ -51,8 +55,10 @@ export function haftaIlerlet(g: Game, mac?: MacOzet): HaftaRaporu {
   else if (ozet.oynadi && rng.chance(0.012 + g.yorgunluk / 100 * 0.035)) { g.sakatlik = { tur: rng.pick(['Adale kasılması', 'Bilek burkulması', 'Diz zorlanması', 'Kas yırtığı']), hafta: rng.int(1, 6) }; satir.push(`Maçta sakatlandın: ${g.sakatlik.tur} (${g.sakatlik.hafta} hafta).`); haberEkle(g, `${g.ad} sakatlandı: ${g.sakatlik.tur}.`, 'kariyer'); }
   if (g.uyum > 0) { g.uyum--; if (g.uyum === 0) satir.push('Yeni ülkeye alıştın: uyum süreci bitti.'); else satir.push(`Yeni ülkeye uyum: ${g.uyum} hafta kaldı (performans etkilenir).`); }
   for (const t of g.teklifler) t.kalan--; const bitenTeklif = g.teklifler.filter((t) => t.kalan <= 0); if (bitenTeklif.length) { satir.push(`${bitenTeklif.length} teklifin süresi doldu.`); g.teklifler = g.teklifler.filter((t) => t.kalan > 0); }
+  satir.push(...iliskiHaftalik(g)); sponsorHaftalikGecen(g); g.haftaSosyal = 0; g.toplamHafta++;
   g.gunlukRapor = satir; g.haftaAntrenman = 0; g.hafta++;
-  if (g.hafta === 11 || g.hafta === 6) { const n = teklifUret(g); if (n) satir.push(`📄 ${n} yeni transfer teklifi geldi! (Ev → Sözleşme)`); }
+  satir.push(...gecikmeliIsle(g)); if ((g.hafta === 3 || g.hafta === 14) && sponsorTeklifUret(g)) satir.push('🤝 Yeni sponsor teklifi geldi! (Ev → Sponsorlar)'); { const oid = olayCek(g); if (oid) satir.push('📋 Karar bekleyen bir olay var!'); }
+  if (g.hafta === 11 || g.hafta === 6) { for (const m of sponsorSezonSonu(g, g.sezonStat.mac)) haberEkle(g, m, 'kariyer'); sponsorTeklifUret(g); const n = teklifUret(g); if (n) satir.push(`📄 ${n} yeni transfer teklifi geldi! (Ev → Sözleşme)`); }
   rngKaydet(g, rng); let sezonSonu = false; if (g.hafta > HAFTA_SAYISI) { sezonSonuIsle(g); sezonSonu = true; }
   return { satir, mac: ozet, sezonSonu };
 }
