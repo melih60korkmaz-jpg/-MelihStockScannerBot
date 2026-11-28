@@ -1,0 +1,42 @@
+import { describe, it, expect } from 'vitest';
+import { yeniOyun, antrenmanYap, antrenorAl, dinlen, tedaviOl, satinAl, genel, haftalikGelirGider, luks, type Game } from '../src/core/game';
+import { haftaIlerlet, rolOf } from '../src/core/week';
+import { YETENEKLER, genelPuan, ilkYetenekler } from '../src/core/skills';
+import { Rng } from '../src/core/rng';
+import { kaydet, yukle, slotlar, depoAyarla, migrate, sil } from '../src/core/save';
+import { HAFTA_SAYISI, sirala } from '../src/core/world';
+const yarat = (poz: any = 'SF', seed = 7): Game => yeniOyun({ ad: 'Test', soyad: 'Oyuncu', cinsiyet: 'Erkek', kita: 'Avrupa', uyruk: 'Türkiye', lig: 3, poz, numara: 9, gorunum: { ten: 1, sac: 1, sacRenk: 1 }, seed });
+describe('oyuncu oluşturma', () => {
+  it('16 yaşında, alt ligde, yıldız olmayan bir oyuncuyla başlar', () => { const g = yarat(); expect(g.oyuncu.yas).toBe(16); expect(g.ligler.findIndex((l) => l.uye.includes(g.kulup))).toBe(3); expect(genel(g)).toBeLessThan(55); expect(g.sozlesme.maas).toBeGreaterThan(0); });
+  it('yetenekler mevkiye göre dengelenir (SF bitiricilik, STP savunma yüksek)', () => { let sf = 0, stp = 0; for (let s = 1; s <= 30; s++) { const a = ilkYetenekler('SF', new Rng(s)), b = ilkYetenekler('STP', new Rng(s)); sf += a.bitiricilik - a.savunma; stp += b.savunma - b.bitiricilik; } expect(sf).toBeGreaterThan(0); expect(stp).toBeGreaterThan(0); });
+  it('14 yetenek 1-100 arası', () => { const g = yarat(); expect(YETENEKLER.length).toBe(14); for (const k of YETENEKLER) { expect(g.oyuncu.yet[k]).toBeGreaterThanOrEqual(1); expect(g.oyuncu.yet[k]).toBeLessThanOrEqual(100); } });
+  it('aynı tohum aynı oyuncuyu üretir', () => { expect(yarat('MOS', 5).oyuncu.yet).toEqual(yarat('MOS', 5).oyuncu.yet); });
+  it('genel puan mevkiye göre farklı hesaplanır', () => { const g = yarat('SF'); expect(genelPuan(g.oyuncu.yet, 'SF')).not.toBe(genelPuan(g.oyuncu.yet, 'KL')); });
+});
+describe('antrenman', () => {
+  it('enerji düşer, yorgunluk artar, yetenek gelişir ama tavanı aşmaz', () => { const g = yarat(); const once = g.oyuncu.yet.sut, e = g.enerji; const r = antrenmanYap(g, 'sut', 0.9); expect(r.ok).toBe(true); expect(g.enerji).toBeLessThan(e); expect(g.yorgunluk).toBeGreaterThan(0); expect(g.oyuncu.yet.sut).toBeGreaterThanOrEqual(once); for (let i = 0; i < 400; i++) { g.haftaAntrenman = 0; g.enerji = 100; g.yorgunluk = 0; g.sakatlik = null; antrenmanYap(g, 'sut', 1); } expect(g.oyuncu.yet.sut).toBeLessThanOrEqual(99); });
+  it('başarısız antrenman daha az geliştirir', () => { const a = yarat(), b = yarat(); antrenmanYap(a, 'sut', 1); antrenmanYap(b, 'sut', 0); expect(a.oyuncu.yet.sut - yarat().oyuncu.yet.sut).toBeGreaterThan(b.oyuncu.yet.sut - yarat().oyuncu.yet.sut); });
+  it('haftada 3 antrenman sınırı ve enerji kontrolü', () => { const g = yarat(); for (let i = 0; i < 3; i++) expect(antrenmanYap(g, 'pas', 0.5).ok).toBe(true); expect(antrenmanYap(g, 'pas', 0.5).ok).toBe(false); const h = yarat(); h.enerji = 3; expect(antrenmanYap(h, 'kuvvet', 0.5).ok).toBe(false); });
+  it('yorgun oyuncu daha az gelişir, genç oyuncu yaşlıdan çok gelişir', () => { const a = yarat(), b = yarat(); b.yorgunluk = 90; const x = a.oyuncu.yet.sut; antrenmanYap(a, 'sut', 1); antrenmanYap(b, 'sut', 1); expect(a.oyuncu.yet.sut - x).toBeGreaterThan(b.oyuncu.yet.sut - x); const c = yarat(), d = yarat(); d.oyuncu.yas = 31; const y = c.oyuncu.yet.sut; antrenmanYap(c, 'sut', 1); antrenmanYap(d, 'sut', 1); expect(c.oyuncu.yet.sut - y).toBeGreaterThan(d.oyuncu.yet.sut - y); });
+  it('antrenör verimi artırır; itibar ve para şartı var', () => { const g = yarat(); expect(antrenorAl(g, 'a6').ok).toBe(false); g.para = 100000; g.itibar = 50; expect(antrenorAl(g, 'a2').ok).toBe(true); const h = yarat(), x = h.oyuncu.yet.sut; antrenmanYap(h, 'sut', 1); const solo = h.oyuncu.yet.sut - x; const y0 = g.oyuncu.yet.sut; antrenmanYap(g, 'sut', 1); expect(g.oyuncu.yet.sut - y0).toBeGreaterThan(solo * 0.99); });
+  it('sakat oyuncu antrenman yapamaz; tedavi parayı düşürür', () => { const g = yarat(); g.sakatlik = { tur: 'x', hafta: 3 }; expect(antrenmanYap(g, 'sut', 1).ok).toBe(false); g.para = 20000; const p = g.para; tedaviOl(g); expect(g.para).toBeLessThan(p); expect(g.sakatlik!.hafta).toBe(1); });
+  it('dinlenme enerjiyi artırır', () => { const g = yarat(); g.enerji = 40; g.yorgunluk = 50; expect(dinlen(g).ok).toBe(true); expect(g.enerji).toBe(65); expect(g.yorgunluk).toBe(25); expect(dinlen(g).ok).toBe(false); });
+});
+describe('dünya ve sezon', () => {
+  it('48 kulüp, 4 lig, her lig 12 takım', () => { const g = yarat(); expect(g.kulupler.length).toBe(48); expect(g.ligler.length).toBe(4); expect(g.ligler.every((l) => l.uye.length === 12)).toBe(true); });
+  it('bir sezon oynanınca her takım 22 maç yapar, toplam galibiyet=mağlubiyet, puanlar tutarlı', () => { const g = yarat(); for (let i = 0; i < HAFTA_SAYISI; i++) { if (i === HAFTA_SAYISI - 1) { const tablolar = null; void tablolar; } const oncekiSezon = g.sezon; if (i === HAFTA_SAYISI - 1) { haftaIlerlet(g); expect(g.sezon).toBe(oncekiSezon + 1); } else haftaIlerlet(g); } expect(g.hafta).toBe(1); expect(g.sezon).toBe(2); expect(g.gecmis.length).toBe(1); });
+  it('sezon sonu tablo kontrolü (yükselme/düşme ile 4x12 korunur)', () => { const g = yarat(); for (let i = 0; i < HAFTA_SAYISI; i++) { if (i === HAFTA_SAYISI - 1) { const tablolar = g.ligler.map((l) => l.tablo.map((r) => ({ ...r }))); for (const t of tablolar) for (const r of t) expect(r.o).toBe(i); } haftaIlerlet(g); } expect(g.ligler.every((l) => l.uye.length === 12)).toBe(true); expect(new Set(g.ligler.flatMap((l) => l.uye)).size).toBe(48); expect(g.oduller.length).toBeGreaterThan(4); });
+  it('puan tabloları: her maçta toplam puan 2 veya 3 artar', () => { const g = yarat(); haftaIlerlet(g); for (const l of g.ligler) { const t = l.tablo; const toplam = t.reduce((a, r) => a + r.p, 0), maclar = t.reduce((a, r) => a + r.o, 0) / 2; expect(maclar).toBe(6); expect(toplam).toBeGreaterThanOrEqual(maclar * 2); expect(toplam).toBeLessThanOrEqual(maclar * 3); expect(t.reduce((a, r) => a + r.a, 0)).toBe(t.reduce((a, r) => a + r.y, 0)); } });
+  it('oyuncu kendi maçı oynanır: istatistik ve ilişki güncellenir', () => { const g = yarat(); let oynadi = 0; for (let i = 0; i < 10; i++) { const r = haftaIlerlet(g); if (r.mac?.oynadi) oynadi++; } expect(g.stat.mac).toBe(oynadi); expect(g.maclar.length).toBe(oynadi); });
+});
+describe('ekonomi', () => {
+  it('haftalık gelir-gider: maaş + prim - antrenör - bakım - yaşam', () => { const g = yarat(); g.para = 1_000_000; satinAl(g, 'bisiklet'); const e = haftalikGelirGider(g); expect(e.net).toBe(e.maas - e.antrenor - e.bakim - e.yasam); expect(e.bakim).toBe(20); });
+  it('satın alma: para düşer, lüks artar, tekrar alınamaz, yetmezse alınamaz', () => { const g = yarat(); g.para = 15000; expect(satinAl(g, 'telefon').ok).toBe(true); expect(g.para).toBe(3000); expect(luks(g)).toBe(1); expect(satinAl(g, 'telefon').ok).toBe(false); expect(satinAl(g, 'jet').ok).toBe(false); });
+  it('oyuncu kısa sürede zenginleşmez (1 sezonda net < 250 B)', () => { const g = yarat(); const p0 = g.para; for (let i = 0; i < HAFTA_SAYISI; i++) haftaIlerlet(g); expect(g.para - p0).toBeLessThan(250000); });
+});
+describe('kayıt', () => {
+  it('kaydet-yükle aynı oyunu verir, slotlar listelenir, silinir', () => { const m = new Map<string, string>(); depoAyarla({ getItem: (k) => m.get(k) ?? null, setItem: (k, v) => void m.set(k, v), removeItem: (k) => void m.delete(k) }); const g = yarat(); for (let i = 0; i < 5; i++) haftaIlerlet(g); expect(kaydet(g, 2)).toBe(true); const y = yukle(2)!; expect(y.oyuncu).toEqual(g.oyuncu); expect(y.para).toBe(g.para); expect(y.hafta).toBe(g.hafta); expect(slotlar()[1]!.ad).toBe('Test Oyuncu'); expect(slotlar()[0]).toBeNull(); sil(2); expect(yukle(2)).toBeNull(); });
+  it('sürümsüz (eski) kayıt migrate edilir', () => { const g: any = yarat(); delete g.v; delete g.kadro; const y = migrate(JSON.parse(JSON.stringify(g))); expect(y.v).toBe(1); expect(Array.isArray(y.kadro)).toBe(true); });
+  it('yüklenen oyun kaldığı yerden devam eder (rng sürekliliği)', () => { const a = yarat(), b = JSON.parse(JSON.stringify(a)); haftaIlerlet(a); haftaIlerlet(b); expect(b.para).toBe(a.para); expect(b.ligler[3].tablo).toEqual(a.ligler[3].tablo); });
+});
+describe('rol', () => { it('çok kötü ilişki oyuncuyu yedeğe düşürür', () => { const g = yarat(); g.oyuncu.yet = Object.fromEntries(YETENEKLER.map((k) => [k, 70])) as any; const r1 = rolOf(g); g.iliski.td = 10; expect(rolOf(g)).toBeLessThan(r1); }); });

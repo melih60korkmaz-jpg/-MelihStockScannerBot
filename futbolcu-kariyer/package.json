@@ -1,0 +1,20 @@
+{
+  "name": "futbolcu-kariyer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "qa": "node qa/faz1.cjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vite-plugin-singlefile": "^2.3.4",
+    "vitest": "^5.1.1"
+  }
+}
