@@ -57,3 +57,5 @@ details summary{cursor:pointer;list-style:none}.tb tr[data-a]{cursor:pointer}
 [data-tema="klasik"] .tabs button.on{background:linear-gradient(#45a05a,#26683a);color:#fff}
 
 .gecis{animation:in .22s ease}@media (prefers-reduced-motion:reduce){.gecis{animation:none}}
+
+#mS.golfl{animation:golfl .5s ease 3;color:#ffd54a}@keyframes golfl{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
