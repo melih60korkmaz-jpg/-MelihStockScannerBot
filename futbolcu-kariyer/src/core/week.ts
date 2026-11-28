@@ -1,6 +1,6 @@
 /** Hafta ilerletme: maçlar, ekonomi, enerji, sakatlık, ilişkiler, haberler, sezon sonu. */
 import { Rng, clamp } from './rng';
-import { type Game, type Futbolcu, type MacOzet, clubOf, ligOf, ligim, genel, haberEkle, rngOf, rngKaydet, haftalikGelirGider, transferDegeri } from './game';
+import { type Game, kisaAd, type Futbolcu, type MacOzet, clubOf, ligOf, ligim, genel, haberEkle, rngOf, rngKaydet, haftalikGelirGider, transferDegeri } from './game';
 import { fikstur, sirala, sonucYaz, takimMaci, tabloBos, HAFTA_SAYISI, type Kulup } from './world';
 import { POZ_GRUP } from './skills';
 const AD = ['Ahmet', 'Mehmet', 'Emre', 'Burak', 'Can', 'Kerem', 'Arda', 'Yusuf', 'Berk', 'Onur', 'Serkan', 'Tolga', 'Barış', 'Kaan', 'Deniz', 'Umut', 'Furkan', 'Oğuz', 'Eren', 'Cem', 'Mert', 'Selim', 'Hakan', 'Volkan'];
@@ -31,7 +31,7 @@ export function haftaIlerlet(g: Game, mac?: MacOzet): HaftaRaporu {
   if (mac) { ozet = mac; gev = mac.gev; gdep = mac.gdep; } else { [gev, gdep] = takimMaci(rng, clubOf(g, fx.ev).guc + 0.0, clubOf(g, fx.dep).guc); ozet = otomatikMac(g, rng, fx.evde, gev, gdep); }
   ozet.ev = fx.ev; ozet.dep = fx.dep; sonucYaz(lig, fx.ev, fx.dep, gev, gdep); golDagit(g, rng, fx.ev === g.kulup ? fx.dep : fx.ev, fx.evde ? gdep : gev); { const bizim = g.kadro.filter((f) => f.kulup === g.kulup); const bg = fx.evde ? gev : gdep; const tasi = Math.max(0, bg - ozet.gol), as = Math.max(0, bg - ozet.gol - ozet.asist); if (bizim.length) { for (let i = 0; i < tasi; i++) rng.weighted(bizim.map((f) => [f, f.hucum] as const)).gol++; for (let i = 0; i < Math.min(as, tasi); i++) rng.weighted(bizim.map((f) => [f, f.hucum] as const)).asist++; for (const f of bizim) f.mac++; } }
   const bizimGol = fx.evde ? gev : gdep, rakipGol = fx.evde ? gdep : gev, sonuc = bizimGol > rakipGol ? 'galibiyet' : bizimGol < rakipGol ? 'mağlubiyet' : 'beraberlik'; const rk = clubOf(g, fx.rakip);
-  satir.push(`Maç: ${clubOf(g, fx.ev).ad} ${gev}-${gdep} ${clubOf(g, fx.dep).ad} (${sonuc})`);
+  satir.push(`Maç: ${kisaAd(g, fx.ev)} ${gev}-${gdep} ${kisaAd(g, fx.dep)} (${sonuc})`);
   if (ozet.oynadi) { satir.push(`Performansın: ${ozet.dakika}' · ${ozet.gol} gol · ${ozet.asist} asist · puan ${ozet.puan.toFixed(1)}`); }
   else satir.push(g.sakatlik ? 'Sakat olduğun için kadroda yoktun.' : 'Kadroda olmana rağmen süre almadın.');
   // istatistik + ilişkiler + itibar

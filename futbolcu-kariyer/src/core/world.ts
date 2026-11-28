@@ -1,10 +1,25 @@
 /** Futbol dünyası: kulüpler, ligler, fikstür, puan durumu ve diğer takımların maç simülasyonu. */
 import { Rng, clamp } from './rng';
-export interface Kulup { id: number; ad: string; lig: number; guc: number; renk: string }
+export interface Kulup { id: number; ad: string; kisa?: string; lig: number; guc: number; renk: string }
 export interface TabloSatir { id: number; o: number; g: number; b: number; m: number; a: number; y: number; p: number }
 export interface Lig { ad: string; kisa: string; uye: number[]; tablo: TabloSatir[]; maasCarpan: number }
 export const LIG_AD = ['Süper Lig', '1. Lig', '2. Lig', '3. Lig'] as const;
 export const HAFTA_SAYISI = 22; // 12 takım, çift devre
+/** Kısa adlar: tablolarda ve listelerde oyuncunun hemen tanıyacağı kısa biçim (en fazla ~11 karakter). */
+export const KISA_SETLERI: Record<'gercek' | 'kurgu', string[][]> = {
+  gercek: [
+    ['Galatasaray', 'Fenerbahçe', 'Beşiktaş', 'Trabzon', 'Başakşehir', 'Sivas', 'Konya', 'Alanya', 'Antalya', 'Kasımpaşa', 'Gaziantep', 'Kayseri'],
+    ['Göztepe', 'Altay', 'Samsun', 'Bolu', 'Adana', 'Manisa', 'Gençler', 'Keçiören', 'Bandırma', 'Ümraniye', 'Altınordu', 'Bursa'],
+    ['Eskişehir', 'Sakarya', 'Kocaeli', 'Tuzla', 'Ank. Demir', 'Bodrum', 'Pendik', 'Karşıyaka', 'Giresun', 'Menemen', 'Amed', 'Urfa'],
+    ['Kırklareli', 'Fethiye', 'Çorum', 'Bayburt', 'Malatya', 'Isparta', 'Niğde', 'Karacabey', 'Düzce', 'Muğla', 'Serik', 'Fatsa']
+  ],
+  kurgu: [
+    ['Marmara', 'Ege', 'Karadeniz', 'Akdeniz', 'Anadolu', 'Toros', 'Boğaziçi', 'Kapadokya', 'Trakya', 'Bozkır', 'Tuna', 'Fırat'],
+    ['Sakarya', 'Bursa', 'Konya', 'Kayseri', 'Samsun', 'Trabzon', 'Edirne', 'Mardin', 'Antalya', 'İzmit', 'Eskişehir', 'Denizli'],
+    ['Bozova', 'Çamlık', 'Kızılca', 'Gültepe', 'Demirova', 'Limanköy', 'Kuzeyli', 'Meraklı', 'Ovacık', 'Sarıyer', 'Aydınlık', 'Taşlı'],
+    ['Dereköy', 'Yeşilova', 'Çayırlı', 'Kuzeytepe', 'Yıldızlı', 'Karakaya', 'Doğanlı', 'Pınarbaşı', 'Sazlıdere', 'Gölbaşı', 'Akpınar', 'Çınarlı']
+  ]
+};
 /** İsim setleri veriden gelir. 'gercek': gerçek kulüp adları (yalnızca düz yazı; logo/forma/gerçek oyuncu adı yok; liste güncel olmayabilir).
  *  'kurgu': tamamen kurgusal adlar. Uygulama mağazası yayını için 'kurgu' daha güvenlidir. */
 export type IsimMod = 'gercek' | 'kurgu';
@@ -24,7 +39,7 @@ export const ISIM_SETLERI: Record<IsimMod, string[][]> = {
 };
 const RENKLER = ['#e53935', '#1e88e5', '#43a047', '#fdd835', '#8e24aa', '#fb8c00', '#00acc1', '#6d4c41', '#d81b60', '#546e7a', '#7cb342', '#3949ab'];
 const TABAN = [0.9, 0.72, 0.54, 0.38];
-export function kulupleriKur(mod: IsimMod = 'gercek'): Kulup[] { const ISIMLER = ISIM_SETLERI[mod], out: Kulup[] = []; for (let l = 0; l < 4; l++) for (let i = 0; i < 12; i++) out.push({ id: l * 12 + i, ad: ISIMLER[l]![i]!, lig: l, guc: +(TABAN[l]! - i * 0.012).toFixed(3), renk: RENKLER[i % RENKLER.length]! }); return out; }
+export function kulupleriKur(mod: IsimMod = 'gercek'): Kulup[] { const ISIMLER = ISIM_SETLERI[mod], out: Kulup[] = []; for (let l = 0; l < 4; l++) for (let i = 0; i < 12; i++) out.push({ id: l * 12 + i, ad: ISIMLER[l]![i]!, kisa: KISA_SETLERI[mod][l]![i]!, lig: l, guc: +(TABAN[l]! - i * 0.012).toFixed(3), renk: RENKLER[i % RENKLER.length]! }); return out; }
 export const tabloBos = (uye: number[]): TabloSatir[] => uye.map((id) => ({ id, o: 0, g: 0, b: 0, m: 0, a: 0, y: 0, p: 0 }));
 export function ligleriKur(): Lig[] { return LIG_AD.map((ad, l) => { const uye = Array.from({ length: 12 }, (_, i) => l * 12 + i); return { ad, kisa: `L${l}`, uye, tablo: tabloBos(uye), maasCarpan: [10, 4.5, 2, 1][l]! }; }); }
 /** Daire yöntemi fikstürü: 11 tur, ikinci yarıda ev/deplasman yer değiştirir. hafta 1-22. */

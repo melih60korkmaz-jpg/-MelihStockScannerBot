@@ -22,6 +22,8 @@ export interface Yaratim { ad: string; soyad: string; cinsiyet: 'Erkek' | 'Kadı
 export const KITALAR = ['Avrupa', 'Asya', 'Afrika', 'Kuzey Amerika', 'Güney Amerika', 'Okyanusya'];
 export const UYRUKLAR: Record<string, string[]> = { Avrupa: ['Türkiye', 'Almanya', 'İspanya', 'Fransa', 'İtalya', 'Hollanda', 'Portekiz', 'İngiltere'], Asya: ['Japonya', 'Güney Kore', 'Azerbaycan', 'İran'], Afrika: ['Nijerya', 'Gana', 'Senegal', 'Mısır'], 'Kuzey Amerika': ['ABD', 'Meksika', 'Kanada'], 'Güney Amerika': ['Brezilya', 'Arjantin', 'Uruguay', 'Kolombiya'], Okyanusya: ['Avustralya', 'Yeni Zelanda'] };
 export const clubOf = (g: Game, id = g.kulup): Kulup => g.kulupler[id]!;
+/** Tablolar/listeler için kısa ad (eski kayıtlarda kısa ad yoksa tam ad). */
+export const kisaAd = (g: Game, id: number): string => g.kulupler[id]!.kisa ?? g.kulupler[id]!.ad;
 export const ligOf = (g: Game, id: number): number => g.ligler.findIndex((l) => l.uye.includes(id));
 export const ligim = (g: Game): number => ligOf(g, g.kulup);
 export const genel = (g: Game): number => genelPuan(g.oyuncu.yet, g.oyuncu.poz);
