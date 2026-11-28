@@ -25,7 +25,7 @@ export interface SponsorAnlasma { marka: string; kat: string; macBasi: number; p
 export interface SponsorTeklif { id: number; marka: string; kat: string; macBasi: number; prim: number; sartTip: 'gol' | 'puan' | 'mac'; sartHedef: number; sure: number; kalan: number }
 export interface Gecikmeli { hafta: number; etki: Record<string, unknown>; haber?: string; baslik: string }
 export interface Teklif { id: number; kulup: number; maas: number; golPrimi: number; asistPrimi: number; sure: number; rol: 0 | 1 | 2; imza: number; bedel: number; kalan: number; pazarlik: number }
-export interface Futbolcu { kupa?: number; milliCap?: number; ovr?: number; ad: string; kulup: number; yas: number; hucum: number; gol: number; asist: number; mac: number; puan: number }
+export interface Futbolcu { pot?: number; kupa?: number; milliCap?: number; ovr?: number; ad: string; kulup: number; yas: number; hucum: number; gol: number; asist: number; mac: number; puan: number }
 export interface Yaratim { ad: string; soyad: string; cinsiyet: 'Erkek' | 'Kadın'; kita: string; uyruk: string; dogumUlke?: string; vatandasliklar?: string[]; milliyet?: string; etnik?: string; lig: number; poz: Pozisyon; numara: number; gorunum: Gorunum; seed?: number; isim?: IsimMod }
 export const KITALAR = ['Avrupa', 'Asya', 'Afrika', 'Kuzey Amerika', 'Güney Amerika', 'Okyanusya'];
 export const UYRUKLAR: Record<string, string[]> = { Avrupa: ['Türkiye', 'Almanya', 'İspanya', 'Fransa', 'İtalya', 'Hollanda', 'Portekiz', 'İngiltere'], Asya: ['Japonya', 'Güney Kore', 'Azerbaycan', 'İran'], Afrika: ['Nijerya', 'Gana', 'Senegal', 'Mısır'], 'Kuzey Amerika': ['ABD', 'Meksika', 'Kanada'], 'Güney Amerika': ['Brezilya', 'Arjantin', 'Uruguay', 'Kolombiya'], Okyanusya: ['Avustralya', 'Yeni Zelanda'] };

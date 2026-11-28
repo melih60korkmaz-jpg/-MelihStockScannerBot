@@ -18,7 +18,10 @@ export function kadroKur(kulupler: Kulup[], rng: Rng): Futbolcu[] { const out: F
 /** Takımın gol sayısını kadro üyelerine dağıt. */
 function golDagit(g: Game, rng: Rng, kulup: number, gol: number): void { const k = g.kadro.filter((f) => f.kulup === kulup); for (let i = 0; i < gol; i++) { const s = rng.weighted(k.map((f) => [f, f.hucum] as const)); s.gol++; if (rng.chance(0.7)) rng.weighted(k.map((f) => [f, f.hucum * (f === s ? 0 : 1) + 0.01] as const)).asist++; } for (const f of k) f.mac++; }
 /** Oyuncunun kulüpteki rolü: 0 yedek, 1 ilk 11, 2 yıldız. */
-export function rolOf(g: Game): 0 | 1 | 2 { const base = clubOf(g).guc * 85 + 5, fark = genel(g) - base + rolEtkisi(g); let r: 0 | 1 | 2 = fark > 8 ? 2 : fark > -7 ? 1 : 0; if (g.iliski.td < 25 && r > 0) r = (r - 1) as 0 | 1; return r; }
+/** Teknik direktör son maçlardaki forma bakar: iyi form kadroda yer kazandırır, kötü form yedeğe düşürür. */
+export function formOrtalamasi(g: Game): number | null { const son = g.maclar.slice(0, 5).filter((m) => m.oynadi); return son.length >= 3 ? son.reduce((t, m) => t + m.puan, 0) / son.length : null; }
+export const formFarki = (g: Game): number => { const f = formOrtalamasi(g); return f === null ? 0 : clamp((f - 6.4) * 6, -9, 9); };
+export function rolOf(g: Game): 0 | 1 | 2 { const base = clubOf(g).guc * 85 + 5, fark = genel(g) - base + rolEtkisi(g) + formFarki(g); let r: 0 | 1 | 2 = fark > 8 ? 2 : fark > -7 ? 1 : 0; if (g.iliski.td < 25 && r > 0) r = (r - 1) as 0 | 1; return r; }
 export const ROL_AD = ['Yedek', 'İlk 11', 'Yıldız'];
 export function otomatikMac(g: Game, rng: Rng, evMi: boolean, gev: number, gdep: number): MacOzet {
   const o = g.oyuncu, rol = g.sakatlik ? -1 : rolOf(g), oynadi = rol >= 1 || (rol === 0 && rng.chance(0.45)), dak = !oynadi ? 0 : rol >= 1 ? (g.enerji < 25 ? 65 : 90) : rng.int(10, 35);

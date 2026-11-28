@@ -48,15 +48,34 @@ export function dunyaGolKrali(g: Game, n = 10): SiraSatiri[] {
   const hepsi: SiraSatiri[] = g.kadro.map((f) => ({ ad: f.ad, kulup: kisaAd(g, f.kulup), ovr: ovrOf(g, f), yas: f.yas, ben: false, gol: f.gol, puan: 0, sira: 0, ulke: '' }));
   hepsi.push({ ad: g.ad, kulup: kisaAd(g, g.kulup), ovr: genel(g), yas: g.oyuncu.yas, ben: true, gol: g.sezonStat.gol, puan: 0, sira: 0, ulke: '' }); return hepsi.sort((a, b) => b.gol - a.gol).slice(0, n);
 }
+export const katkiOf = (f: Futbolcu): number => (f.gol + f.asist * 0.6) / Math.max(1, f.mac);
+/** Transfer çekiciliği: yetenek + sezon katkısı. */
+export const cazibe = (g: Game, f: Futbolcu): number => ovrOf(g, f) + katkiOf(f) * 8;
+/** Yapay zekâ oyuncularının kariyeri: potansiyele doğru gelişir, 30+ geriler, 35+ emekli olur ve yerine genç yetenek gelir. */
+const AD = ['Arda', 'Berk', 'Can', 'Deniz', 'Emre', 'Furkan', 'Hakan', 'Kaan', 'Mert', 'Onur', 'Serkan', 'Tolga', 'Umut', 'Yusuf', 'Barış', 'Cem', 'Eren', 'Selim', 'Oğuz', 'Kerem'], SOY = ['Y.', 'K.', 'D.', 'A.', 'Ş.', 'T.', 'Ç.', 'G.', 'B.', 'U.', 'E.', 'S.'];
+export function yzGelisim(g: Game, rng: Rng): string[] {
+  const haber: string[] = [];
+  for (let i = 0; i < g.kadro.length; i++) {
+    const f = g.kadro[i]!, o = ovrOf(g, f); f.pot ??= clamp(o + (f.yas < 24 ? rng.int(3, 14) : f.yas < 28 ? rng.int(0, 4) : 0), o, 94);
+    let d: number; if (f.yas < 24) d = Math.min(f.pot - o, rng.int(1, 4)); else if (f.yas < 29) d = Math.min(Math.max(0, f.pot - o), rng.int(0, 2)) - (rng.chance(0.2) ? 1 : 0); else if (f.yas < 32) d = -rng.int(0, 1); else d = -rng.int(1, 3);
+    d += f.gol + f.asist * 0.6 > 12 && f.yas < 31 ? 1 : 0; f.ovr = clamp(o + d, 25, 92);
+    if (f.yas >= 34 && rng.chance(0.25 + (f.yas - 34) * 0.2)) { // emeklilik + genç yetenek
+      if (o >= 68) haber.push(`${f.ad} (${f.yas}) futbolu bıraktı.`); const k = g.kulupler[f.kulup]!, yas = rng.int(17, 19), tavan = ovrTureT(g, { ...f, yas, hucum: 1 });
+      g.kadro[i] = { ad: `${rng.pick(AD)} ${rng.pick(SOY)}`, kulup: f.kulup, yas, hucum: f.hucum, gol: 0, asist: 0, mac: 0, puan: 0, ovr: clamp(tavan - rng.int(6, 14), 25, 80), pot: clamp(tavan + rng.int(2, 16), 40, 94), kupa: 0 }; void k;
+    }
+  }
+  if (haber.length) haberEkle(g, `Futbol dünyası: ${haber.slice(0, 2).join(' ')}`, 'dunya'); return haber;
+}
 /** Sezon sonu: oyuncular gelişir/yaşlanır, güçlü kulüpler küçük kulüplerin en iyilerini alır (takaslı). Haber döner. */
 export function yzTransferleri(g: Game, rng: Rng): string[] {
-  for (const f of g.kadro) { const o = ovrOf(g, f); f.ovr = clamp(o + (f.yas < 23 ? rng.int(0, 3) : f.yas < 29 ? rng.int(-1, 1) : -rng.int(0, 2)), 25, 92); }
+  yzGelisim(g, rng); const katki = katkiOf;
   const haber: string[] = [], sirali = g.kulupler.slice().sort((a, b) => b.guc - a.guc);
   for (let i = 0; i < 40 && haber.length < 8; i++) {
     const alici = sirali[rng.int(0, 17)]!, verici = g.kulupler[rng.int(0, g.kulupler.length - 1)]!;
     if (alici.id === verici.id || verici.guc > alici.guc - 0.08 || alici.id === g.kulup || verici.id === g.kulup) continue;
-    const vk = g.kadro.filter((f) => f.kulup === verici.id).sort((a, b) => ovrOf(g, b) - ovrOf(g, a)), ak = g.kadro.filter((f) => f.kulup === alici.id).sort((a, b) => ovrOf(g, a) - ovrOf(g, b));
-    const yildiz = vk[0], takas = ak[0]; if (!yildiz || !takas || ovrOf(g, yildiz) < ovrOf(g, takas) - 2) continue;
+    // performansı yüksek oyuncu daha çekicidir: ovr + sezon katkısı
+    const vk = g.kadro.filter((f) => f.kulup === verici.id).sort((a, b) => ovrOf(g, b) + katki(b) * 8 - (ovrOf(g, a) + katki(a) * 8)), ak = g.kadro.filter((f) => f.kulup === alici.id).sort((a, b) => ovrOf(g, a) - ovrOf(g, b));
+    const yildiz = vk[0], takas = ak[0]; if (!yildiz || !takas || ovrOf(g, yildiz) + katki(yildiz) * 8 < ovrOf(g, takas) - 2) continue;
     yildiz.kulup = alici.id; takas.kulup = verici.id; alici.guc = +clamp(alici.guc + 0.006, 0.2, 0.97).toFixed(3); verici.guc = +clamp(verici.guc - 0.006, 0.2, 0.97).toFixed(3);
     haber.push(`${yildiz.ad} (${ovrOf(g, yildiz)}) ${kisaAd(g, verici.id)} → ${kisaAd(g, alici.id)}`);
   }

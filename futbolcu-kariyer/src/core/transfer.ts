@@ -1,4 +1,5 @@
 /** Transfer ve sözleşme sistemi: menajer, teklifler, pazarlık, yenileme, yurt dışı uyumu. */
+import { formOrtalamasi } from './week';
 import { clamp } from './rng';
 import { type Game, type Teklif, clubOf, ligOf, genel, haberEkle, rngOf, rngKaydet, transferDegeri, yurtdisi, ulkeOf, kisaAd } from './game';
 import { LIG_META } from './world';
@@ -11,7 +12,7 @@ export function menajerTut(g: Game): { ok: boolean; m: string } { if (g.menajer)
 export function menajerKov(g: Game): void { g.menajer = false; }
 /** Yeni teklifler üretir. Oyuncunun kalitesi/itibarı kulübün seviyesine yetiyorsa o kulüp ilgilenir. */
 export function teklifUret(g: Game): number {
-  const rng = rngOf(g), q0 = kaliteOf(g, g.kulup), o = genel(g), guc = o + 5 + g.itibar / 8; let sayi = rng.int(1, 2) + (g.menajer ? ((g.menajerKalite ?? 1) > 1.2 ? 2 : (g.menajerKalite ?? 1) < 0.9 ? 0 : 1) : 0); const aday = g.kulupler.filter((k) => k.id !== g.kulup && !g.teklifler.some((t) => t.kulup === k.id) && kaliteOf(g, k.id) <= guc && kaliteOf(g, k.id) >= q0 - 4 && g.oyuncu.yas >= 16);
+  const rng = rngOf(g), q0 = kaliteOf(g, g.kulup), o = genel(g), form = formOrtalamasi(g), formB = form === null ? 0 : clamp((form - 6.4) * 3, -4, 5), golB = Math.min(4, g.sezonStat.gol * 0.25 + g.sezonStat.asist * 0.15), guc = o + 5 + g.itibar / 8 + formB + golB; let sayi = Math.max(1, rng.int(1, 2) + (formB > 2.5 ? 1 : formB < -2 ? -1 : 0)) + (g.menajer ? ((g.menajerKalite ?? 1) > 1.2 ? 2 : (g.menajerKalite ?? 1) < 0.9 ? 0 : 1) : 0); const aday = g.kulupler.filter((k) => k.id !== g.kulup && !g.teklifler.some((t) => t.kulup === k.id) && kaliteOf(g, k.id) <= guc && kaliteOf(g, k.id) >= q0 - 4 && g.oyuncu.yas >= 16);
   let yeni = 0; while (sayi-- > 0 && aday.length) { // üst seviyeyi tercih et
     const k = rng.weighted(aday.map((c) => [c, 0.3 + Math.max(0, kaliteOf(g, c.id) - q0) / 12] as const)); aday.splice(aday.indexOf(k), 1);
     const rol = rolTahmin(g, k.id), carp = LIG_META[ligOf(g, k.id)]!.maas, maas = Math.round(carp * 3500 * (0.9 + o / 60) * rng.range(0.85, 1.2) / 50) * 50, dis = ulkeOf(g, k.id) !== ulkeOf(g, g.kulup);

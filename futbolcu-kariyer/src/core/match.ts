@@ -31,7 +31,7 @@ export interface OzelMac { tur: 'milli' | 'kupa'; rakipAd: string; bizAd: string
 export const MILLI_ID = -2, RAKIP_ID = -1;
 export interface Mac {
   ev: number; dep: number; evde: boolean; dk: number; skor: [number, number]; tarz: Tarz; enerji: number; olaylar: Olay[]; ist: Ist; poz: Pozisyon | null; bitti: boolean; rng: number; sakat: boolean; cikti: boolean; bizSut: [number, number]; bizIsabet: [number, number]; korner: [number, number]; faul: [number, number]; topSahip: [number, number]; yorgunluk: number;
-  ozel?: OzelMac | null; rakipTaktik: RakipTaktik; ilkYari: boolean; bizKirmizi: boolean; hucumZinciri: number; beklenen: { tip: PozTip } | null; rolu: number; kadro: [Oyuncu11[], Oyuncu11[]]; golculer: Array<{ dk: number; biz: boolean; ad: string }>
+  ozel?: OzelMac | null; rakipTaktik: RakipTaktik; ilkYari: boolean; bizKirmizi: boolean; hucumZinciri: number; beklenen: { tip: PozTip } | null; rolu: number; rakipPlan: RakipPlan; taktikDegisim: number; kadro: [Oyuncu11[], Oyuncu11[]]; golculer: Array<{ dk: number; biz: boolean; ad: string }>
 }
 const AD = ['Arda', 'Berk', 'Can', 'Deniz', 'Emre', 'Furkan', 'Hakan', 'Kaan', 'Mert', 'Onur', 'Serkan', 'Tolga', 'Umut', 'Yusuf', 'Barış', 'Cem'];
 export const bizKaleci = 'kaleci';
@@ -44,7 +44,7 @@ export function macBaslat(g: Game, tarz: Tarz = { calis: 1, odak: 'dengeli' }, o
   if (ozel) { evde = ozel.evde; const biz = ozel.tur === 'milli' ? MILLI_ID : (ozel.kulupId ?? g.kulup); ev = evde ? biz : (ozel.kulupId ?? RAKIP_ID); dep = evde ? (ozel.kulupId ?? RAKIP_ID) : biz; if (ozel.tur === 'kupa') { ev = evde ? g.kulup : RAKIP_ID; dep = evde ? RAKIP_ID : g.kulup; } else { ev = evde ? MILLI_ID : RAKIP_ID; dep = evde ? RAKIP_ID : MILLI_ID; } rol = g.sakatlik ? -1 : ozel.tur === 'milli' ? 1 : rolOf(g); }
   else { const fx = haftaFiksturum(g); ev = fx.ev; dep = fx.dep; evde = fx.evde; rol = g.sakatlik ? -1 : rolOf(g); }
   const gs = ozel ? ozel.rakipGuc : clubOf(g, evde ? dep : ev).guc, bizg = ozel ? ozel.bizGuc : clubOf(g).guc; const tk = rng.weighted<RakipTaktik>([['pres', 1 + Math.max(0, gs - bizg) * 4], ['derin', 1 + Math.max(0, bizg - gs) * 4], ['kontra', 1.2], ['dengeli', 1.4]]); rngKaydet(g, rng);
-  const o: Mac = { ev, dep, evde, dk: 0, skor: [0, 0], tarz: { ...tarz }, enerji: g.enerji, olaylar: [], ist: bosIst(), poz: null, bitti: false, rng: (g.rng ^ 0x9e3779b9) >>> 0, sakat: false, cikti: false, bizSut: [0, 0], bizIsabet: [0, 0], korner: [0, 0], faul: [0, 0], topSahip: [0, 0], yorgunluk: g.yorgunluk, ozel: ozel ?? null, rakipTaktik: tk, ilkYari: true, bizKirmizi: false, hucumZinciri: 0, beklenen: null, rolu: rol, kadro: [[], []], golculer: [] }; { const anah = (id: number): string => (id === MILLI_ID ? 'M:' + (ozel?.bizAd ?? '') : id === RAKIP_ID ? 'R:' + (ozel?.rakipAd ?? '') : 'K' + id); const bizT: 0 | 1 = evde ? 0 : 1; o.kadro = [ilk11(g, anah(ev), bizT === 0), ilk11(g, anah(dep), bizT === 1)]; }
+  const o: Mac = { ev, dep, evde, dk: 0, skor: [0, 0], tarz: { ...tarz }, enerji: g.enerji, olaylar: [], ist: bosIst(), poz: null, bitti: false, rng: (g.rng ^ 0x9e3779b9) >>> 0, sakat: false, cikti: false, bizSut: [0, 0], bizIsabet: [0, 0], korner: [0, 0], faul: [0, 0], topSahip: [0, 0], yorgunluk: g.yorgunluk, ozel: ozel ?? null, rakipTaktik: tk, ilkYari: true, bizKirmizi: false, hucumZinciri: 0, beklenen: null, rolu: rol, rakipPlan: rakipAnaliz(g, gs), taktikDegisim: 0, kadro: [[], []], golculer: [] }; { const anah = (id: number): string => (id === MILLI_ID ? 'M:' + (ozel?.bizAd ?? '') : id === RAKIP_ID ? 'R:' + (ozel?.rakipAd ?? '') : 'K' + id); const bizT: 0 | 1 = evde ? 0 : 1; o.kadro = [ilk11(g, anah(ev), bizT === 0), ilk11(g, anah(dep), bizT === 1)]; }
   o.olaylar.push({ dk: 0, tur: 'bilgi', metin: `Maç başladı! ${adOf(g, o, ev)} – ${adOf(g, o, dep)}`, onemli: true }); return o;
 }
 const bosIst = (): Ist => ({ dakika: 0, gol: 0, asist: 0, sut: 0, isabet: 0, pas: 0, basariliPas: 0, topKaybi: 0, dripling: 0, driplingBasari: 0, mucadele: 0, mucadeleKazanilan: 0, kurtaris: 0, sari: 0, kirmizi: 0, anahtarPas: 0, puanEk: 0 });
@@ -78,8 +78,29 @@ export function macIlerle(g: Game, m: Mac): 'bekle' | 'bitti' {
   while (!m.poz && !m.bitti) { adim(g, m, rng); }
   m.rng = rng.s; return m.bitti ? 'bitti' : 'bekle';
 }
+/** Rakip, oyuncunun güçlü ve zayıf yönünü inceler (rakip ne kadar güçlüyse analiz o kadar isabetli). */
+export type Kategori = 'dripling' | 'sut' | 'pas' | 'kafa' | 'hiz' | 'savunma';
+export interface RakipPlan { guclu: Kategori | null; zayif: Kategori | null; yogun: boolean; not: string }
+const KAT_AD: Record<Kategori, string> = { dripling: 'dripling', sut: 'şut', pas: 'pas', kafa: 'kafa vuruşu', hiz: 'sürat', savunma: 'savunma' };
+export const katOf = (tip: PozTip): Kategori | null => (tip === 'dribling' ? 'dripling' : tip === 'sut' || tip === 'serbest' || tip === 'penalti' ? 'sut' : tip === 'pas' ? 'pas' : tip === 'kafa' ? 'kafa' : tip === 'mudahale' ? 'savunma' : null);
+export function rakipAnaliz(g: Game, rakipGuc: number): RakipPlan {
+  const y = g.oyuncu.yet, d: Record<Kategori, number> = { dripling: (y.dribbling + y.topKontrol) / 2, sut: (y.sut + y.bitiricilik) / 2, pas: (y.pas + y.gorus) / 2, kafa: (y.kafa + y.guc) / 2, hiz: y.surat, savunma: y.savunma };
+  const grup = POZ_GRUP(g.oyuncu.poz), alaka: Kategori[] = grup === 'hucum' ? ['dripling', 'sut', 'kafa', 'hiz', 'pas'] : grup === 'orta' ? ['pas', 'dripling', 'sut', 'savunma'] : grup === 'defans' ? ['savunma', 'kafa', 'hiz', 'pas'] : ['pas', 'savunma'];
+  const sirali = alaka.slice().sort((a, b) => d[b] - d[a]); const isabet = rakipGuc >= 0.45 || g.oyuncu.yas >= 20; if (!isabet) return { guclu: null, zayif: null, yogun: false, not: 'Rakip seni tanımıyor.' };
+  const guclu = sirali[0]!, zayif = sirali[sirali.length - 1]!; return { guclu, zayif, yogun: false, not: `Rakip seni inceledi: ${KAT_AD[guclu]} yönüne karşı önlem alıyor, ${KAT_AD[zayif]} tarafını açık görüyor.` };
+}
+/** Pozisyonun baskı düzeltmesi: oyuncunun güçlü yönüne kapatma (+), zayıf yönüne fırsat (-), adam adam markaj (+). */
+export const rakipBaskiEk = (m: Mac, tip: PozTip): number => { const k = katOf(tip), p = m.rakipPlan; if (!k) return 0; return (k === p.guclu ? 0.09 : 0) - (k === p.zayif ? 0.05 : 0) + (p.yogun ? 0.04 : 0); };
+/** Rakip teknik direktörü skor, dakika ve oyuncunun etkisine göre taktik değiştirir. */
+export function rakipUyarla(g: Game, m: Mac): void {
+  if (m.dk < 25 || (m.dk % 5) !== 0 || m.taktikDegisim >= 3) return; const bz = bizTarafi(m), biz = m.skor[bz], rk = m.skor[1 - bz as 0 | 1], fark = rk - biz, yeniYogun = m.ist.puanEk >= 0.9 && !m.rakipPlan.yogun;
+  let hedef: RakipTaktik = m.rakipTaktik, neden = '';
+  if (fark < 0 && m.dk >= 55) { hedef = 'pres'; neden = 'geride kaldığı için baskıyı artırıyor'; } else if (fark > 0 && m.dk >= 60) { hedef = 'derin'; neden = 'öne geçince geri çekiliyor'; } else if (fark === 0 && m.dk >= 75) { hedef = m.rakipTaktik === 'pres' ? 'kontra' : 'pres'; neden = 'beraberliği bozmak için oyun planını değiştirdi'; } else if (fark < -1) { hedef = 'pres'; neden = 'farkı kapatmak için topu yukarıda arıyor'; }
+  if (yeniYogun) { m.rakipPlan.yogun = true; m.rakipPlan.not = `${g.ad} maçı sırtladı: rakip adam adam markaja geçti.`; olayEkle(m, 'bilgi', `🧠 Rakip teknik direktör ${g.ad}'ye özel markaj yaptırıyor (adam adam).`, false, true); m.taktikDegisim++; return; }
+  if (hedef !== m.rakipTaktik) { m.rakipTaktik = hedef; m.taktikDegisim++; olayEkle(m, 'bilgi', `🧠 Rakip taktik değiştirdi: ${TAKTIK_AD[hedef]} (${neden}).`, false, true); }
+}
 function adim(g: Game, m: Mac, rng: Rng): void {
-  m.dk++; const bz = bizTarafi(m), rk = (1 - bz) as 0 | 1, bizGuc = takimGucu(g, m, true), rkGuc = takimGucu(g, m, false), grup = POZ_GRUP(g.oyuncu.poz);
+  m.dk++; rakipUyarla(g, m); const bz = bizTarafi(m), rk = (1 - bz) as 0 | 1, bizGuc = takimGucu(g, m, true), rkGuc = takimGucu(g, m, false), grup = POZ_GRUP(g.oyuncu.poz);
   const oynuyor = !m.cikti && m.rolu >= 0 && (m.rolu >= 1 || m.dk >= 60);
   if (m.dk === 45 && m.ilkYari) { m.ilkYari = false; olayEkle(m, 'devre', `Devre arası: ${adOf(g, m, m.ev)} ${m.skor[0]}-${m.skor[1]} ${adOf(g, m, m.dep)}`, undefined, true); }
   if (m.dk > 90) { m.bitti = true; olayEkle(m, 'sonuc', `Maç sona erdi: ${adOf(g, m, m.ev)} ${m.skor[0]}-${m.skor[1]} ${adOf(g, m, m.dep)}`, undefined, true); return; }
@@ -145,7 +166,7 @@ function pozisyonKur(g: Game, m: Mac, rng: Rng, tip: PozTip, baski: number, mesa
   const kaleci = clamp(gucOf(g, m, rkIdOf(m)) + rng.range(-0.05, 0.05), 0.2, 0.99), hedefler: Hedef[] = [];
   if (tip === 'pas' || tip === 'sut' || tip === 'kafa') for (let i = 0; i < 3; i++) { const tur = (['kisa', 'uzun', 'ara'] as const)[i]!, md = tur === 'kisa' ? rng.range(6, 14) : tur === 'uzun' ? rng.range(28, 45) : rng.range(14, 24); hedefler.push({ id: i, ad: (m.kadro[bizTarafi(m)].length ? sutcuSec(m.kadro[bizTarafi(m)], rng).ad : ADET(rng)), mesafe: +md.toFixed(1), aciklik: +clamp(rng.range(0.2, 0.9), 0, 1).toFixed(2), risk: +clamp((tur === 'kisa' ? 0.05 : tur === 'uzun' ? 0.28 : 0.2) + baski * 0.2 - 0, 0.02, 0.6).toFixed(2), tur }); }
   const ipucu = { sut: 'Şut pozisyonu! Hedefi seç, sürükle, bırak.', kafa: 'Orta geliyor: kafayı doğru anda vur!', pas: 'Takım arkadaşlarından birine pas ver.', dribling: 'Rakip önünde: nasıl geçeceksin?', serbest: 'Serbest vuruş! Barajı aşıp köşeyi bul.', penalti: 'Penaltı! Kaleciyi yanılt.', kurtaris: 'Şut geliyor! Hangi köşeye atlayacaksın?', mudahale: 'Rakip hücumda: nasıl müdahale edeceksin?' }[tip];
-  const taraftarEtkisi = m.evde && !m.ozel ? (g.iliski.taraftar < 25 ? 0.08 : g.iliski.taraftar > 75 ? -0.05 : 0) : 0; m.poz = { tip, dk: m.dk, baski: +clamp(baski + taraftarEtkisi + (m.rakipTaktik === 'pres' ? 0.08 : m.rakipTaktik === 'derin' ? 0.04 : 0), 0.05, 0.95).toFixed(2), mesafe: +mesafe.toFixed(1), kaleci: +kaleci.toFixed(2), rakip: rng.int(1, 3), hedefler, ipucu, sut: { yon: rng.pick([-1, 0, 1]) } };
+  const taraftarEtkisi = m.evde && !m.ozel ? (g.iliski.taraftar < 25 ? 0.08 : g.iliski.taraftar > 75 ? -0.05 : 0) : 0; m.poz = { tip, dk: m.dk, baski: +clamp(baski + taraftarEtkisi + rakipBaskiEk(m, tip) + (m.rakipTaktik === 'pres' ? 0.08 : m.rakipTaktik === 'derin' ? 0.04 : 0), 0.05, 0.95).toFixed(2), mesafe: +mesafe.toFixed(1), kaleci: +kaleci.toFixed(2), rakip: rng.int(1, 3), hedefler, ipucu, sut: { yon: rng.pick([-1, 0, 1]) } };
   m.beklenen = { tip };
 }
 /** Başarı gürültüsü: yetenek, yorgunluk ve baskıya göre */
