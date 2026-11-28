@@ -170,7 +170,7 @@ function pozisyonKur(g: Game, m: Mac, rng: Rng, tip: PozTip, baski: number, mesa
   m.beklenen = { tip };
 }
 /** Başarı gürültüsü: yetenek, yorgunluk ve baskıya göre */
-const beceriK = (g: Game, m: Mac, ids: YetenekId[]): number => { const ort = ids.reduce((a, k) => a + g.oyuncu.yet[k] + ekipBonus(g, k), 0) / ids.length; const yor = m.enerji < 30 ? 0.85 + m.enerji / 200 : 1; return clamp(ort / 100, 0.05, 1) * yor * [0.92, 1, 1.04][m.tarz.calis]! * mutCarpan(g); };
+const beceriK = (g: Game, m: Mac, ids: YetenekId[]): number => { const ort = ids.reduce((a, k) => a + g.oyuncu.yet[k] + ekipBonus(g, k), 0) / ids.length; const yor = m.enerji < 50 ? 0.75 + m.enerji / 200 : 1; return clamp(ort / 100, 0.05, 1) * yor * [0.92, 1, 1.04][m.tarz.calis]! * mutCarpan(g); };
 export interface Sonuc { tur: 'gol' | 'kurtaris' | 'direk' | 'disari' | 'blok' | 'basari' | 'basarisiz' | 'faul' | 'korner'; metin: string }
 export function macAksiyon(g: Game, m: Mac, a: Aksiyon): Sonuc | null {
   const poz = m.poz; if (!poz) return null; const rng = new Rng(m.rng); let s: Sonuc;
@@ -196,14 +196,14 @@ function sutCoz(g: Game, m: Mac, rng: Rng, poz: Pozisyon, a: Extract<Aksiyon, { 
   if (Math.abs(x) > 1 || y > 1) { olayEkle(m, 'sut', f(M.direk, rng), true, true); m.ist.isabet++; m.bizIsabet[bizTarafi(m)]++; m.ist.puanEk += 0.1; return { tur: 'direk', metin: 'Direk!' }; }
   m.ist.isabet++; m.bizIsabet[bizTarafi(m)]++;
   let pSave = clamp(0.84 + 0.38 * poz.kaleci - 0.34 * guc - 0.32 * Math.abs(x) - 0.22 * Math.max(0, y) + 0.1 * (poz.sut?.yon === Math.sign(x) && Math.abs(x) > 0.3 ? 1 : 0) - (poz.mesafe < 8 ? 0.16 : 0) + (a.tur === 'plase' ? -0.02 : 0), 0.04, 0.93);
-  pSave = clamp(pSave - (b - 0.5) * 0.35, 0.04, 0.95); pSave = 1 - (1 - pSave) * 0.6;
+  pSave = clamp(pSave - (b - 0.5) * 0.9, 0.04, 0.95); pSave = 1 - (1 - pSave) * 0.5;
   if (poz.tip === 'penalti') pSave = clamp(0.2 + 0.22 * poz.kaleci - 0.3 * Math.abs(x) + (poz.sut?.yon === Math.sign(x) ? 0.25 : 0) - 0.15 * Math.max(0, y - 0.3) , 0.05, 0.7);
   if (rng.chance(pSave)) { olayEkle(m, 'kurtaris', f(M.kurtBiz, rng), false, true); m.ist.puanEk += 0.1; if (rng.chance(0.3)) { m.korner[bizTarafi(m)]++; olayEkle(m, 'korner', f(M.korner, rng), true); } return { tur: 'kurtaris', metin: 'Kaleci kurtardı' }; }
   golYaz(g, m, rng, true, true); m.ist.gol++; m.ist.puanEk += 0.95; if (m.hucumZinciri > 0) { m.ist.asist += 0; } m.hucumZinciri = 0; return { tur: 'gol', metin: 'GOL!' };
 }
 function pasCoz(g: Game, m: Mac, rng: Rng, poz: Pozisyon, a: Extract<Aksiyon, { tip: 'pas' }>): Sonuc {
   const h = poz.hedefler.find((x) => x.id === a.hedef) ?? poz.hedefler[0]!, b = beceriK(g, m, ['pas', 'gorus', 'teknik']); m.ist.pas++;
-  const taban = h.tur === 'kisa' ? 0.82 : h.tur === 'uzun' ? 0.5 : 0.58, p = clamp(taban + b * 0.28 - h.risk * 0.7 - poz.baski * 0.25 + h.aciklik * 0.12 - h.mesafe / 400 + (g.iliski.takim - 50) / 600, 0.06, 0.95);
+  const taban = h.tur === 'kisa' ? 0.82 : h.tur === 'uzun' ? 0.5 : 0.58, p = clamp(taban + b * 0.4 - h.risk * 0.7 - poz.baski * 0.25 + h.aciklik * 0.12 - h.mesafe / 400 + (g.iliski.takim - 50) / 600, 0.06, 0.95);
   if (rng.chance(p)) { m.ist.basariliPas++; const anahtar = h.tur === 'ara' || h.tur === 'uzun'; olayEkle(m, 'pas', `${g.ad}: ${h.tur === 'ara' ? 'Harika bir ara pas' : h.tur === 'uzun' ? 'İsabetli uzun top' : 'Temiz pas'} → ${h.ad}.`, true); m.ist.puanEk += anahtar ? 0.15 : 0.04; if (anahtar) m.ist.anahtarPas++;
     // pas sonrası tehlike: ara/uzun pasta şut ihtimali
     const pSut = clamp(0.2 + (h.tur === 'ara' ? 0.3 : h.tur === 'uzun' ? 0.12 : 0.05) + b * 0.12, 0.1, 0.7); if (rng.chance(pSut)) { const bz = bizTarafi(m); m.bizSut[bz]++; olayEkle(m, 'sut', `${h.ad} şutunu çekti!`, true); const gol = rng.chance(clamp(0.2 + (h.tur === 'ara' ? 0.12 : 0) - (gucOf(g, m, rkIdOf(m)) - 0.5) * 0.15, 0.08, 0.5)); if (gol) { golYaz(g, m, rng, true, false, h.ad); m.ist.asist++; m.ist.puanEk += 0.6; return { tur: 'gol', metin: 'Asist! Gol!' }; } m.bizIsabet[bz]++; olayEkle(m, 'kurtaris', f(M.kurtBiz, rng), false); return { tur: 'basari', metin: 'Pas başarılı, şut kurtarıldı' }; }
