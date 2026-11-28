@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { yeniOyun, antrenmanYap, antrenorAl, dinlen, tedaviOl, satinAl, genel, haftalikGelirGider, luks, type Game } from '../src/core/game';
+import { SURUM, yeniOyun, antrenmanYap, antrenorAl, dinlen, tedaviOl, satinAl, genel, haftalikGelirGider, luks, type Game } from '../src/core/game';
 import { haftaIlerlet, rolOf } from '../src/core/week';
 import { YETENEKLER, genelPuan, ilkYetenekler } from '../src/core/skills';
 import { Rng } from '../src/core/rng';
@@ -36,8 +36,8 @@ describe('ekonomi', () => {
 });
 describe('kayıt', () => {
   it('kaydet-yükle aynı oyunu verir, slotlar listelenir, silinir', () => { const m = new Map<string, string>(); depoAyarla({ getItem: (k) => m.get(k) ?? null, setItem: (k, v) => void m.set(k, v), removeItem: (k) => void m.delete(k) }); const g = yarat(); for (let i = 0; i < 5; i++) haftaIlerlet(g); expect(kaydet(g, 2)).toBe(true); const y = yukle(2)!; expect(y.oyuncu).toEqual(g.oyuncu); expect(y.para).toBe(g.para); expect(y.hafta).toBe(g.hafta); expect(slotlar()[1]!.ad).toBe('Test Oyuncu'); expect(slotlar()[0]).toBeNull(); sil(2); expect(yukle(2)).toBeNull(); });
-  it('eski (v1: 4 lig, 48 kulüp, kısa adsız) kayıt güncel sürüme taşınır: Avrupa ligleri eklenir, veri korunur', () => { const g: any = JSON.parse(JSON.stringify(yarat())); g.v = 1; g.kulupler = g.kulupler.slice(0, 48); g.ligler = g.ligler.slice(0, 4); for (const k of g.kulupler) { delete k.kisa; delete k.kod; } delete g.teklifler; delete g.transferler; delete g.uyum; const para = g.para, ad = g.ad; const y = migrate(g); expect(y.v).toBe(5); expect(y.kulupler.length).toBe(108); expect(y.ligler.length).toBe(9); expect(y.kulupler[0]!.kod).toBe('GAL'); expect(y.teklifler).toEqual([]); expect(y.para).toBe(para); expect(y.ad).toBe(ad); haftaIlerlet(y); expect(y.hafta).toBe(2); });
-  it('sürümsüz (v0) kayıt migrate edilir', () => { const g: any = yarat(); delete g.v; delete g.kadro; const y = migrate(JSON.parse(JSON.stringify(g))); expect(y.v).toBe(5); expect(Array.isArray(y.kadro)).toBe(true); });
+  it('eski (v1: 4 lig, 48 kulüp, kısa adsız) kayıt güncel sürüme taşınır: Avrupa ligleri eklenir, veri korunur', () => { const g: any = JSON.parse(JSON.stringify(yarat())); g.v = 1; g.kulupler = g.kulupler.slice(0, 48); g.ligler = g.ligler.slice(0, 4); for (const k of g.kulupler) { delete k.kisa; delete k.kod; } delete g.teklifler; delete g.transferler; delete g.uyum; const para = g.para, ad = g.ad; const y = migrate(g); expect(y.v).toBe(SURUM); expect(y.kulupler.length).toBe(108); expect(y.ligler.length).toBe(9); expect(y.kulupler[0]!.kod).toBe('GAL'); expect(y.teklifler).toEqual([]); expect(y.para).toBe(para); expect(y.ad).toBe(ad); haftaIlerlet(y); expect(y.hafta).toBe(2); });
+  it('sürümsüz (v0) kayıt migrate edilir', () => { const g: any = yarat(); delete g.v; delete g.kadro; const y = migrate(JSON.parse(JSON.stringify(g))); expect(y.v).toBe(SURUM); expect(Array.isArray(y.kadro)).toBe(true); });
   it('yüklenen oyun kaldığı yerden devam eder (rng sürekliliği)', () => { const a = yarat(), b = JSON.parse(JSON.stringify(a)); haftaIlerlet(a); haftaIlerlet(b); expect(b.para).toBe(a.para); expect(b.ligler[3].tablo).toEqual(a.ligler[3].tablo); });
 });
 describe('isim setleri', () => {

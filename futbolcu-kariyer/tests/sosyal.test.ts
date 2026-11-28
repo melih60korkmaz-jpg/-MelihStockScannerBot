@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { yeniOyun, satinAl, haftalikGelirGider, type Game } from '../src/core/game';
+import { SURUM, yeniOyun, satinAl, haftalikGelirGider, type Game } from '../src/core/game';
 import { haftaIlerlet } from '../src/core/week';
 import { sponsorTeklifUret, sponsorKabul, sponsorFesih, sponsorMacIsle, sponsorSezonSonu, slotSayisi, markaOf, FESIH_CEZASI } from '../src/core/sponsor';
 import { OLAYLAR, olayCek, olayCoz, gecikmeliIsle, etkiUygula, olayOf } from '../src/core/olay';
@@ -33,4 +33,4 @@ describe('ilişkiler gerçek sonuç üretir', () => {
   it('somut etki metinleri düşük ve yüksek durumlara göre değişir', () => { const g = yarat(); g.iliski.td = 10; expect(iliskiEtkileri(g).join(' ')).toMatch(/yedek|çıkarılabilirsin/); g.iliski.td = 90; expect(iliskiEtkileri(g).join(' ')).toMatch(/güveniyor/); });
   it('kira geliri: gayrimenkul haftalık gelir yazar', () => { const g = yarat(); g.para = 5e9; satinAl(g, 'daire'); expect(haftalikGelirGider(g).kira).toBe(2000); });
 });
-describe('kayıt göçü v3', () => { it('v2 kaydı v3 alanlarıyla taşınır', () => { const g: any = JSON.parse(JSON.stringify(yarat())); g.v = 2; for (const k of ['mut', 'sponsorlar', 'sponsorTeklifleri', 'olayGecmis', 'gecikmeli', 'bekleyenOlay', 'haftaSosyal', 'kizVar', 'kizAd', 'bayraklar', 'sonMacHafta', 'toplamHafta']) delete g[k]; const y = migrate(g); expect(y.v).toBe(5); expect(y.mut).toBe(60); expect(y.sponsorlar).toEqual([]); expect(y.bekleyenOlay).toBeNull(); expect(y.toplamHafta).toBeGreaterThanOrEqual(0); haftaIlerlet(y); expect(y.hafta).toBe(2); }); });
+describe('kayıt göçü v3', () => { it('v2 kaydı v3 alanlarıyla taşınır', () => { const g: any = JSON.parse(JSON.stringify(yarat())); g.v = 2; for (const k of ['mut', 'sponsorlar', 'sponsorTeklifleri', 'olayGecmis', 'gecikmeli', 'bekleyenOlay', 'haftaSosyal', 'kizVar', 'kizAd', 'bayraklar', 'sonMacHafta', 'toplamHafta']) delete g[k]; const y = migrate(g); expect(y.v).toBe(SURUM); expect(y.mut).toBe(60); expect(y.sponsorlar).toEqual([]); expect(y.bekleyenOlay).toBeNull(); expect(y.toplamHafta).toBeGreaterThanOrEqual(0); haftaIlerlet(y); expect(y.hafta).toBe(2); }); });

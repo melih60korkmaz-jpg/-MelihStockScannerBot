@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { yeniOyun, type Game, genel, clubOf } from '../src/core/game';
+import { SURUM, yeniOyun, type Game, genel, clubOf } from '../src/core/game';
 import { haftaIlerlet } from '../src/core/week';
 import { ULKELER, ulkeGuc, milliCagriliMi, ekMacHazirla, ekMacIsle, ekMacCalistir, kupaKur, kupaTurIsle, KUPA_HAFTALAR, MILLI_HAFTALAR } from '../src/core/ekmac';
 import { macBaslat, macOtomatik, macOzeti, type RakipTaktik } from '../src/core/match';
@@ -37,5 +37,5 @@ describe('kariyer sonu ve ödüller', () => {
   it('yılın futbolcusu: çok iyi sezon geçiren oyuncu kazanabilir; sıradan sezonda kazanamaz', () => { const g = yarat(); g.sezonStat = { mac: 22, gol: 0, asist: 0 }; expect(yilinFutbolcusu(g, 6).biz).toBe(false); g.sezonStat = { mac: 22, gol: 90, asist: 40 }; expect(yilinFutbolcusu(g, 8.6).biz).toBe(true); expect(yilinFutbolcusu(g, 8.6).metin).toContain(g.ad); });
   it('sezon sonu ödülleri listesi ve kariyer ödülleri kaydedilir', () => { const g = yarat(); for (let i = 0; i < 22; i++) haftaIlerlet(g); expect(g.oduller.some((o) => o.includes('Yılın Futbolcusu'))).toBe(true); expect(Array.isArray(g.kariyerOdulleri)).toBe(true); });
 });
-describe('kayıt göçü v4', () => { it('v3 kaydı v4 alanlarıyla taşınır ve oynanır', () => { const g: any = JSON.parse(JSON.stringify(yarat())); g.v = 3; for (const k of ['milli', 'kupa', 'ekMac', 'ekSonuc', 'kupaStat', 'rehab', 'nuks', 'emekli', 'kariyerOdulleri']) delete g[k]; const y = migrate(g); expect(y.v).toBe(5); expect(y.milli.cap).toBe(0); expect(y.kupa).toBeNull(); expect(y.emekli).toBeNull(); haftaIlerlet(y); expect(y.hafta).toBe(2); }); });
+describe('kayıt göçü v4', () => { it('v3 kaydı v4 alanlarıyla taşınır ve oynanır', () => { const g: any = JSON.parse(JSON.stringify(yarat())); g.v = 3; for (const k of ['milli', 'kupa', 'ekMac', 'ekSonuc', 'kupaStat', 'rehab', 'nuks', 'emekli', 'kariyerOdulleri']) delete g[k]; const y = migrate(g); expect(y.v).toBe(SURUM); expect(y.milli.cap).toBe(0); expect(y.kupa).toBeNull(); expect(y.emekli).toBeNull(); haftaIlerlet(y); expect(y.hafta).toBe(2); }); });
 void genel; void clubOf; void kupaKur; void macOzeti;
