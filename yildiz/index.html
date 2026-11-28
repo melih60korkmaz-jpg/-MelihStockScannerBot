@@ -6,13 +6,13 @@ html,body{margin:0;height:100%;background:#0e1a12;color:#eef6ee;font-family:-app
 #score{display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 12px;background:#0b130e;font-weight:800;letter-spacing:.04em}
 #score .t{flex:1;font-size:13px;opacity:.85}#score .t:last-child{text-align:right}#score .s{font-size:22px;background:#1f3a28;border-radius:8px;padding:2px 12px;min-width:92px;text-align:center}#score small{display:block;font-size:11px;color:#9fc7a9}
 #wrap{flex:1;position:relative;min-height:0}canvas{width:100%;height:100%;display:block;touch-action:none}
-#tarz{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0b130e}#tarz button{flex:1;border:2px solid #2d5a3a;background:#173022;color:#cfe8d5;font-weight:800;font-size:14px;padding:9px 6px;border-radius:10px;transition:transform .12s}#tarz button:active{transform:scale(.95)}#tarz button.on{border-color:#ffd54a;background:linear-gradient(#3d6b2a,#25501f);color:#fff;box-shadow:0 0 0 2px rgba(255,213,74,.25)}#tarz #sv.on{background:linear-gradient(#2a5a8a,#1b3f66)}#tarz #bs.on{background:linear-gradient(#8a3a2a,#662a1b)}#enj{width:74px;font-size:10px;color:#9fc7a9}#enj u{display:block;height:7px;border-radius:4px;background:#0a1a10;overflow:hidden;margin-top:3px}#enj u i{display:block;height:100%;background:linear-gradient(90deg,#e0562a,#f2c518,#3fbf5f);transform-origin:left}#log{height:92px;overflow:hidden;background:#0b130e;padding:6px 10px;font-size:13px;display:flex;flex-direction:column-reverse;gap:3px}
+#topw{position:absolute;right:10px;bottom:10px;width:92px;height:92px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0,#e9e9e9 55%,#bdbdbd 100%);border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.5);touch-action:none;z-index:3;overflow:hidden}#topw::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,#222 0 16%,transparent 17%),conic-gradient(from 20deg,transparent 0 18%,rgba(0,0,0,.18) 18% 22%,transparent 22% 40%,rgba(0,0,0,.18) 40% 44%,transparent 44% 62%,rgba(0,0,0,.18) 62% 66%,transparent 66% 84%,rgba(0,0,0,.18) 84% 88%,transparent 88%)}#topw i{position:absolute;width:16px;height:16px;border-radius:50%;background:#e8281c;border:2px solid #fff;box-shadow:0 0 8px #e8281c;transform:translate(-50%,-50%);pointer-events:none}#topw small{position:absolute;left:0;right:0;bottom:-1px;text-align:center;font-size:9px;font-weight:800;color:#222;background:rgba(255,255,255,.75)}#tarz{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0b130e}#tarz button{flex:1;border:2px solid #2d5a3a;background:#173022;color:#cfe8d5;font-weight:800;font-size:14px;padding:9px 6px;border-radius:10px;transition:transform .12s}#tarz button:active{transform:scale(.95)}#tarz button.on{border-color:#ffd54a;background:linear-gradient(#3d6b2a,#25501f);color:#fff;box-shadow:0 0 0 2px rgba(255,213,74,.25)}#tarz #sv.on{background:linear-gradient(#2a5a8a,#1b3f66)}#tarz #bs.on{background:linear-gradient(#8a3a2a,#662a1b)}#enj{width:74px;font-size:10px;color:#9fc7a9}#enj u{display:block;height:7px;border-radius:4px;background:#0a1a10;overflow:hidden;margin-top:3px}#enj u i{display:block;height:100%;background:linear-gradient(90deg,#e0562a,#f2c518,#3fbf5f);transform-origin:left}#log{height:92px;overflow:hidden;background:#0b130e;padding:6px 10px;font-size:13px;display:flex;flex-direction:column-reverse;gap:3px}
 #log div{background:#1d3a2a;border-radius:6px;padding:4px 8px;display:flex;gap:8px}#log b{color:#ffd54a;min-width:30px}#log .g{background:#2a6b3a;font-weight:800}#log .k{background:#6b2a2a}
 #hint{position:absolute;left:0;right:0;top:66%;padding:0 18px;text-align:center;font-size:14px;color:#fff;text-shadow:0 1px 3px #000;pointer-events:none;transition:opacity .4s}
 #ov{position:absolute;inset:0;background:rgba(8,16,11,.92);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px;z-index:5}
 #ov h1{margin:0;font-size:28px}#ov p{margin:0;color:#b9d9c1;max-width:320px;line-height:1.4}#ov button{background:linear-gradient(#3fbf5f,#1f8f3f);border:0;color:#fff;font-weight:800;font-size:18px;padding:14px 40px;border-radius:12px}
 </style></head><body><div id="app"><div id="score"><div class="t"><span id="hn">SANLIU</span></div><div class="s"><span id="sc">0 - 0</span><small id="mn">0'</small></div><div class="t"><span id="an">İNEGÖL</span></div></div>
-<div id="wrap"><canvas id="c"></canvas><div id="hint"></div><div id="ov"></div></div><div id="tarz"><button id="sv">🛡️ Savunma</button><button id="bs">⚔️ Baskı</button><div id="enj">Enerji<u><i id="enb"></i></u></div></div><div id="log"></div></div>
+<div id="wrap"><canvas id="c"></canvas><div id="hint"></div><div id="topw"><i id="topd"></i><small id="topl">VURUŞ</small></div><div id="ov"></div></div><div id="tarz"><button id="sv">🛡️ Savunma</button><button id="bs">⚔️ Baskı</button><div id="enj">Enerji<u><i id="enb"></i></u></div></div><div id="log"></div></div>
 <script>
 'use strict';
 const W = 68, H = 105, GOAL_W = 7.32, GX0 = (W - GOAL_W) / 2, GX1 = (W + GOAL_W) / 2, rnd = (a, b) => a + Math.random() * (b - a);
@@ -21,7 +21,7 @@ let sc = 1, ox = 0, oy = 0, dpr = Math.min(2, devicePixelRatio || 1);
 function fit() { const r = cv.getBoundingClientRect(); cv.width = r.width * dpr; cv.height = r.height * dpr; sc = Math.min(cv.width / (W + 6), cv.height / (H + 6)); ox = (cv.width - W * sc) / 2; oy = (cv.height - H * sc) / 2; }
 addEventListener('resize', fit); const toX = (x) => ox + x * sc, toY = (y) => oy + y * sc;
 /* ---------- maç durumu ---------- */
-const G = { skor: [0, 0], dk: 0, atak: 0, ATAK: 8, faz: 'ön', t: 0, top: null, me: null, tm: [], op: [], gk: null, aim: null, sure: 0, bitis: 0, log: [], istat: { sut: 0, isabet: 0, pas: 0, gol: 0, asist: 0, kayip: 0 }, son: null, puan: 6.0, tarz: 0, en: 100, cel: null, kick: 0 };
+const G = { skor: [0, 0], dk: 0, atak: 0, ATAK: 8, faz: 'ön', t: 0, top: null, me: null, tm: [], op: [], gk: null, aim: null, sure: 0, bitis: 0, log: [], istat: { sut: 0, isabet: 0, pas: 0, gol: 0, asist: 0, kayip: 0 }, son: null, imp: { x: 0, y: 0 }, puan: 6.0, tarz: 0, en: 100, cel: null, kick: 0 };
 const oyuncu = (x, y, tip) => ({ x, y, tip, vx: 0, vy: 0, h0x: x, h0y: y, px: x, py: y, fa: tip === 'op' ? Math.PI / 2 : -Math.PI / 2, ph: Math.random() * 6, sp: 0, kick: 0, slide: 0, arms: 0, num: 1 + Math.floor(Math.random() * 30), dive: 0, dyn: 0 });
 function logla(dk, m, cls) { G.log.unshift({ dk, m, cls }); const el = $('log'); el.innerHTML = G.log.slice(0, 5).map((l) => `<div class="${l.cls || ''}"><b>${l.dk}'</b><span>${l.m}</span></div>`).join(''); }
 function skorYaz() { $('sc').textContent = G.skor[0] + ' - ' + G.skor[1]; $('mn').textContent = Math.round(G.dk) + "'"; }
@@ -29,7 +29,7 @@ function hint(m) { const h = $('hint'); h.textContent = m || ''; h.style.opacity
 /* ---------- atak kurulumu ---------- */
 function yeniAtak() {
   G.en = Math.max(0, G.en - (G.tarz === 2 ? 11 : G.tarz === 1 ? 4 : 7)); enerjiYaz(); G.cel = null; G.atak++; G.dk = Math.min(90, (G.atak - 1) * 11 + 3); skorYaz(); const z = Math.min(4, 1 + Math.floor(G.atak / 3));
-  const me = oyuncu(W / 2 + rnd(-8, 8), rnd(66, 76), 'me'); G.me = me; G.top = { x: me.x, y: me.y, vx: 0, vy: 0, tasiyan: me, son: 0 };
+  const me = oyuncu(W / 2 + rnd(-8, 8), rnd(66, 76), 'me'); G.me = me; G.top = { x: me.x, y: me.y, vx: 0, vy: 0, z: 0, vz: 0, curl: 0, tasiyan: me, son: 0 };
   G.tm = [oyuncu(14, 60, 'tm'), oyuncu(54, 58, 'tm'), oyuncu(24, 44, 'tm'), oyuncu(46, 40, 'tm')]; G.tm.forEach((t) => { t.h0x += rnd(-4, 4); t.h0y += rnd(-4, 4); });
   G.op = []; const n = 3 + z; for (let i = 0; i < n; i++) G.op.push(oyuncu(rnd(10, 58), rnd(18, 56), 'op')); G.gk = oyuncu(W / 2, 3, 'gk'); G.gk.dive = 0;
   G.faz = 'oyna'; G.sure = 0; G.aim = null; G.atakPas = 0; G.durum = 'Koş ve parmağını sürükle: yön + güç'; hint(G.atak === 1 ? 'Parmağını sürükle: yön ve güç. Takım arkadaşına ya da kaleye bırak!' : '');
@@ -41,6 +41,22 @@ function bitirAtak(sonuc, mesaj, cls, gol) {
 }
 let sarsinti = 0; const vur = () => { sarsinti = 0.5; };
 
+
+/* ---------- top fiziği: sürtünme, falso (yan dönme) ve yükseklik ---------- */
+function ballStep(b, d) {
+  const sp = Math.hypot(b.vx, b.vy), hava = b.z > 0.3; if (b.curl && sp > 2) { const th = b.curl * 0.62 * d * Math.min(1, sp / 12), c = Math.cos(th), s = Math.sin(th), vx = b.vx * c - b.vy * s; b.vy = b.vx * s + b.vy * c; b.vx = vx; }
+  b.x += b.vx * d; b.y += b.vy * d; const f = Math.pow(0.5, d / (hava ? 3.4 : 1.3)); b.vx *= f; b.vy *= f;
+  if (b.z > 0 || b.vz > 0) { b.z += b.vz * d; b.vz -= 9.8 * d; if (b.z <= 0) { b.z = 0; b.vz = b.vz < -3 ? -b.vz * 0.3 : 0; if (b.vz < 1) { b.vz = 0; b.curl *= 0.3; } } }
+  if (b.z === 0 && Math.hypot(b.vx, b.vy) < 6) b.curl = 0;
+}
+/* Rakip rolleri: biri topa/taşıyıcıya baskı yapar, biri en yakın takım arkadaşımı markajlar, biri pas yolunu keser. */
+function hedefOp(o) {
+  const top = G.top, i = G.op.indexOf(o) % 3, car = top.tasiyan;
+  if (!car) { const sp = Math.hypot(top.vx, top.vy), lead = Math.min(1.2, 0.5 + sp * 0.02); return i === 0 || sp < 3 ? [top.x + top.vx * lead, top.y + top.vy * lead] : i === 1 ? [top.x + top.vx * lead * 1.4, top.y + top.vy * lead * 1.4] : [top.x, top.y]; }
+  if (i === 0) return [car.x, car.y];
+  if (i === 1) { let b = null, bd = 1e9; for (const t of G.tm) { if (t === car) continue; const dd = dist(t, car); if (dd < bd) { bd = dd; b = t; } } return b ? [b.x + (car.x - b.x) * 0.25, b.y + (car.y - b.y) * 0.25 - 1] : [car.x, car.y]; }
+  return [(car.x + W / 2) / 2, car.y - 8];
+}
 /* ---------- hareket izleme: yön, koşu fazı, vuruş/kayma/atlayış zamanlayıcıları ---------- */
 function izle(o, dt) { const dx = o.x - o.px, dy = o.y - o.py, sp = Math.hypot(dx, dy) / Math.max(dt, 1e-3); o.sp += (sp - o.sp) * Math.min(1, dt * 10); if (sp > 0.35) { let da = Math.atan2(dy, dx) - o.fa; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; o.fa += da * Math.min(1, dt * 12); } o.ph += o.sp * dt * 2.6; o.px = o.x; o.py = o.y; if (o.kick > 0) o.kick -= dt; if (o.slide > 0) o.slide -= dt; if (o.dive > 0) o.dive -= dt; }
 function kutla(dt) {
@@ -58,22 +74,22 @@ function adim(dt) {
   // taşıyıcı: kaleye doğru, savunmacılardan kaçınarak koşar
   if (top.tasiyan) { const m = top.tasiyan; let ax = 0, ay = -1; for (const o of G.op) { const dd = dist(m, o); if (dd < 9) { ax += (m.x - o.x) / (dd + 1) * 1.6; ay += (m.y - o.y) / (dd + 1) * 0.6; } } ax += (W / 2 - m.x) * 0.012; const l = Math.hypot(ax, ay) || 1, v = 4.4 * tarzMe(); m.x += ax / l * v * d; m.y += ay / l * v * d; m.x = Math.max(2, Math.min(W - 2, m.x)); if (m.y < 6) m.y = 6; top.x = m.x; top.y = m.y; top.vx = top.vy = 0; if (G.sure > 14) return bitirAtak('kayip', 'Top çok beklendi, rakip topu kaptı.', 'k'); }
   else {
-    top.x += top.vx * d; top.y += top.vy * d; const f = Math.pow(0.5, d / 1.3); top.vx *= f; top.vy *= f; const sp = Math.hypot(top.vx, top.vy);
+    ballStep(top, d); const sp = Math.hypot(top.vx, top.vy);
     if (top.y <= 0.3 && top.x > GX0 && top.x < GX1 && top.vy < 0) return sutSonuc();
     if (top.y < -2 || top.y > H + 2 || top.x < -2 || top.x > W + 2) { if (top.y < 0.3 && sp > 2) { G.istat.sut++; return bitirAtak('aut', 'Şut auta gitti.', 'k'); } return bitirAtak('kayip', 'Top çizgiyi geçti, atak bitti.', 'k'); }
-    for (const t of G.tm) if (t !== top.son && dist(t, top) < 2.8 && sp > 0.5) { G.istat.pas++; G.atakPas++; G.puan += 0.1; top.tasiyan = t; G.me = t; top.son = t; top.vx = top.vy = 0; hint(''); break; }
-    for (const o of G.op) if (dist(o, top) < 1.7 && !top.tasiyan) { o.kick = 0.3; G.istat.kayip++; G.puan -= 0.25; return bitirAtak('kayip', 'Pas kesildi! Rakip topu aldı.', 'k'); }
+    for (const t of G.tm) if (t !== top.son && dist(t, top) < 2.8 && sp > 0.5 && top.z < 2.6) { G.istat.pas++; G.atakPas++; G.puan += 0.1; top.tasiyan = t; G.me = t; top.son = t; top.vx = top.vy = 0; hint(''); break; }
+    for (const o of G.op) if (dist(o, top) < 1.7 && !top.tasiyan && top.z < 1.8) { o.kick = 0.3; G.istat.kayip++; G.puan -= 0.25; return bitirAtak('kayip', 'Pas kesildi! Rakip topu aldı.', 'k'); }
     if (sp < 1.2 && !top.tasiyan) { const t = G.tm.concat([G.me]).sort((a, b) => dist(a, top) - dist(b, top))[0]; if (dist(t, top) < 4) { top.tasiyan = t; G.me = t; } else return bitirAtak('kayip', 'Top yavaşladı, rakip aldı.', 'k'); }
   }
   // rakipler taşıyıcıya/topa koşar
-  for (const o of G.op) { const hx = top.tasiyan ? top.tasiyan.x : top.x, hy = top.tasiyan ? top.tasiyan.y : top.y, dd = Math.hypot(hx - o.x, hy - o.y) || 1, v = (3.4 + G.atak * 0.12) * tarzOp(); o.x += (hx - o.x) / dd * v * d; o.y += (hy - o.y) / dd * v * d; if (top.tasiyan && dd < 1.5) { o.slide = 0.4; G.istat.kayip++; G.puan -= 0.3; return bitirAtak('kayip', 'Rakip savunmacı topu çaldı!', 'k'); } }
+  for (const o of G.op) { const [hx, hy] = hedefOp(o), dd = Math.hypot(hx - o.x, hy - o.y) || 1, v = (3.4 + G.atak * 0.12) * tarzOp(); o.x += (hx - o.x) / dd * v * d; o.y += (hy - o.y) / dd * v * d; if (top.tasiyan && dd < 1.5) { o.slide = 0.4; G.istat.kayip++; G.puan -= 0.3; return bitirAtak('kayip', 'Rakip savunmacı topu çaldı!', 'k'); } }
   for (const t of G.tm) if (t !== top.tasiyan) { if (!top.tasiyan && t !== top.son && dist(t, top) < 11) { const dd = dist(t, top) || 1; t.x += (top.x - t.x) / dd * 5 * d; t.y += (top.y - t.y) / dd * 5 * d; continue; } const hx = t.h0x, hy = Math.max(10, t.h0y - Math.max(0, 70 - (top.tasiyan ? top.tasiyan.y : 50)) * 0.2 + Math.sin(G.t * 0.9 + t.h0x) * 3); t.x += (hx - t.x) * 0.8 * d + Math.cos(G.t + t.h0y) * 0.4 * d; t.y += (hy - t.y) * 0.8 * d; }
   for (const o of G.op.concat(G.tm, [G.gk])) izle(o, d); if (top.tasiyan) izle(top.tasiyan, d);
   // kaleci topun x'ine doğru kayar
   let hdf = (top.x - W / 2) * 0.45 + W / 2, vk = 3; if (!top.tasiyan) { G.gk.rt = (G.gk.rt || 0) + d; if (top.vy < -1 && G.gk.rt > 0.3) { hdf = top.x + top.vx * (top.y / -top.vy); vk = 3.6; } } G.gk.x += Math.max(-vk * d, Math.min(vk * d, (Math.min(GX1 - 0.4, Math.max(GX0 + 0.4, hdf)) - G.gk.x)));
 }
 function sutSonuc() {
-  const top = G.top, kx = G.gk.x, hiz = Math.hypot(top.vx, top.vy), carp = top.x; G.istat.sut++; const yakin = Math.abs(carp - kx), reaksiyon = 0.8 + 3.5 / Math.max(5, hiz), gol = yakin > reaksiyon || hiz > 16 && yakin > 0.8;
+  const top = G.top, kx = G.gk.x, hiz = Math.hypot(top.vx, top.vy), carp = top.x; G.istat.sut++; if (top.z > 2.45) return bitirAtak('aut', 'Top üst direğin üzerinden auta gitti!', 'k'); const yakin = Math.abs(carp - kx), reaksiyon = (0.8 + 3.5 / Math.max(5, hiz)) * (top.z > 1.3 ? 0.45 : 1), gol = yakin > reaksiyon || hiz > 16 && yakin > 0.8;
   if (carp < GX0 + 0.35 || carp > GX1 - 0.35) { G.istat.isabet++; return bitirAtak('direk', 'DİREK! Top direğe çarptı, az kalsın!', 'k'); }
   G.istat.isabet++; if (gol) { if (G.atakPas > 0) { G.istat.asist++; } return bitirAtak('gol', G.atakPas > 0 ? 'GOOOL! Harika asist ve soğukkanlı bitiriş!' : 'GOOOOL! Muhteşem şut!', 'g', true); }
   G.gk.dive = 0.9; G.gk.dyn = Math.sign(top.x - G.gk.x) || 1; G.puan += 0.2; bitirAtak('kurtaris', 'Kaleci son anda kurtardı!', 'k');
@@ -87,7 +103,14 @@ cv.addEventListener('pointerdown', (e) => { if (G.faz !== 'oyna' || !G.top.tasiy
 cv.addEventListener('pointermove', (e) => { if (!down || !G.aim) return; const dx = e.clientX - down.x, dy = e.clientY - down.y, l = Math.hypot(dx, dy); G.aim = { dx: dx / (l || 1), dy: dy / (l || 1), p: Math.min(1, l / MAXP), l }; });
 const birak = () => { if (!down) return; const a = G.aim; down = null; G.aim = null; if (!a || a.l < 14 || G.faz !== 'oyna' || !G.top.tasiyan) return; atis(a.dx, a.dy, a.p); };
 cv.addEventListener('pointerup', birak); cv.addEventListener('pointercancel', () => { down = null; G.aim = null; });
-function atis(dx, dy, p) { const top = G.top, m = top.tasiyan; if (!m) return; const v = (12 + 70 * p) / 1.88 + 1.2; top.son = m; m.kick = 0.3; top.tasiyan = null; G.gk.rt = 0; top.vx = dx * v; top.vy = dy * v; if (m.y < 38 && dy < -0.2) hint(''); }
+function atis(dx, dy, p) { const top = G.top, m = top.tasiyan; if (!m) return; const v = (12 + 70 * p) / 1.88 + 1.2; top.son = m; m.kick = 0.3; top.tasiyan = null; G.gk.rt = 0; const im = G.imp; top.curl = -im.x; top.z = 0.25; top.vz = im.y > 0.2 ? 3.5 + 8.5 * im.y * (0.5 + 0.5 * p) : 0; const hz = (1 + 0.18 * Math.max(0, -im.y)) * (1 - 0.34 * Math.max(0, im.y)); top.vx = dx * v * hz; top.vy = dy * v * hz; G.imp = { x: 0, y: 0 }; impYaz(); if (m.y < 38 && dy < -0.2) hint(''); }
+
+/* ---------- vuruş noktası (top üzerinde): alttan yüksek, sağdan sola, soldan sağa falso ---------- */
+function impYaz() { const d = $('topd'), r = 46; d.style.left = (r + G.imp.x * (r - 8)) + 'px'; d.style.top = (r + G.imp.y * (r - 8)) + 'px'; const a = G.imp, e = []; if (a.y > 0.3) e.push('YÜKSEK'); if (a.y < -0.3) e.push('SERT'); if (a.x > 0.3) e.push('SOLA'); if (a.x < -0.3) e.push('SAĞA'); $('topl').textContent = e.length ? e.join(' · ') : 'VURUŞ'; }
+(function () { const w = $('topw'); let on = false; const set = (e) => { const r = w.getBoundingClientRect(), x = (e.clientX - r.left - r.width / 2) / (r.width / 2 - 8), y = (e.clientY - r.top - r.height / 2) / (r.height / 2 - 8), l = Math.hypot(x, y); G.imp = l > 1 ? { x: x / l, y: y / l } : { x, y }; if (Math.hypot(G.imp.x, G.imp.y) < 0.12) G.imp = { x: 0, y: 0 }; impYaz(); };
+  w.addEventListener('pointerdown', (e) => { e.stopPropagation(); on = true; w.setPointerCapture(e.pointerId); set(e); }); w.addEventListener('pointermove', (e) => { if (on) set(e); }); w.addEventListener('pointerup', () => { on = false; }); })();
+/* nişan önizlemesi: atışla aynı fizikten çıkan gerçek yol */
+function yol(m, dx, dy, p) { const v = (12 + 70 * p) / 1.88 + 1.2, im = G.imp, hz = (1 + 0.18 * Math.max(0, -im.y)) * (1 - 0.34 * Math.max(0, im.y)), b = { x: m.x, y: m.y, vx: dx * v * hz, vy: dy * v * hz, z: 0.25, vz: im.y > 0.2 ? 3.5 + 8.5 * im.y * (0.5 + 0.5 * p) : 0, curl: -im.x }, pts = [[b.x, b.y, 0]]; for (let i = 0; i < 90; i++) { ballStep(b, 0.05); pts.push([b.x, b.y, b.z]); if (Math.hypot(b.vx, b.vy) < 1.2 && b.z === 0) break; if (b.y < -1) break; } return pts; }
 /* ---------- çizim ---------- */
 const KIT = { tm: { f: '#f2c518', s: '#d9a800', sh: '#1d3d8f', hair: '#3b2a1a' }, me: { f: '#ffd84a', s: '#e0a800', sh: '#1d3d8f', hair: '#1a1008' }, op: { f: '#d23a2e', s: '#9c241b', sh: '#fff', hair: '#2a1a10' }, gk: { f: '#2fb36b', s: '#1b7a47', sh: '#111', hair: '#4a3020' } };
 function oyuncuCiz(o, ben, ekstra) {
@@ -108,19 +131,18 @@ function oyuncuCiz(o, ben, ekstra) {
   if (ben) { const bob = Math.sin(G.t * 6) * 0.5; c.save(); c.translate(x, y - u * 2.1 + bob * sc * 0.3); c.fillStyle = '#fff'; c.strokeStyle = '#111'; c.lineWidth = 2 * dpr; c.beginPath(); c.moveTo(-u * 0.55, -u * 0.5); c.lineTo(u * 0.55, -u * 0.5); c.lineTo(0, u * 0.35); c.closePath(); c.fill(); c.stroke(); c.restore(); }
 }
 function top3d() {
-  const c = cx, t = G.top, u = sc, car = t.tasiyan, m = car, hiz = Math.hypot(t.vx, t.vy), h = car ? 0 : Math.min(2.2, hiz * 0.07), rot = (car ? (m.ph * 0.9) : G.t * hiz * 0.35);
+  const c = cx, t = G.top, u = sc, car = t.tasiyan, m = car, hiz = Math.hypot(t.vx, t.vy), h = car ? 0 : (t.z || 0) * 0.55 + Math.min(1.2, hiz * 0.03), rot = (car ? (m.ph * 0.9) : G.t * hiz * 0.35);
   let bx = t.x, by = t.y; if (car) { bx += Math.cos(m.fa) * 1.5 + Math.cos(m.ph) * (m.sp > 0.5 ? 0.6 : 0.05) * Math.cos(m.fa); by += Math.sin(m.fa) * 1.5 + Math.cos(m.ph) * (m.sp > 0.5 ? 0.6 : 0.05) * Math.sin(m.fa); }
   c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(toX(bx), toY(by) + 0.25 * u, 0.8 * u, 0.5 * u, 0, 0, 7); c.fill();
   c.save(); c.translate(toX(bx), toY(by) - h * u); c.rotate(rot); c.fillStyle = '#fff'; c.beginPath(); c.arc(0, 0, 1.05 * u, 0, 7); c.fill(); c.fillStyle = '#222'; for (let i = 0; i < 5; i++) { const a = i * Math.PI * 0.4; c.beginPath(); c.arc(Math.cos(a) * 0.5 * u, Math.sin(a) * 0.5 * u, 0.2 * u, 0, 7); c.fill(); } c.beginPath(); c.arc(0, 0, 0.25 * u, 0, 7); c.fill(); c.strokeStyle = '#555'; c.lineWidth = 1 * dpr; c.beginPath(); c.arc(0, 0, 0.85 * u, 0, 7); c.stroke(); c.restore();
 }
 function okCiz() {
-  const c = cx, a = G.aim, m = G.top.tasiyan; if (!a || a.p <= 0 || !m) return;
-  const rng = 12 + 70 * a.p, sx = toX(m.x), sy = toY(m.y), ang = Math.atan2(a.dy, a.dx), len = rng * sc, hl = Math.min(len * 0.45, 5.5 * sc), w0 = 0.5 * sc, w1 = (1.0 + 1.1 * a.p) * sc, hw = (2.6 + 1.2 * a.p) * sc, col = `hsl(${125 - 125 * a.p},88%,56%)`, pul = 1 + Math.sin(G.t * 12) * 0.04;
-  c.save(); c.translate(sx, sy); c.rotate(ang); c.scale(1, pul); const body = len - hl;
-  const g = c.createLinearGradient(0, 0, len, 0); g.addColorStop(0, 'rgba(255,255,255,.25)'); g.addColorStop(0.5, col); g.addColorStop(1, col);
-  c.beginPath(); c.moveTo(0, -w0); c.lineTo(body, -w1); c.lineTo(body, -hw); c.lineTo(len, 0); c.lineTo(body, hw); c.lineTo(body, w1); c.lineTo(0, w0); c.closePath(); c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 8 * dpr; c.fillStyle = g; c.fill(); c.shadowBlur = 0; c.lineWidth = 2 * dpr; c.strokeStyle = 'rgba(0,0,0,.55)'; c.stroke();
-  c.lineWidth = 1.5 * dpr; c.strokeStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.moveTo(w0 * 2, 0); c.lineTo(body, 0); c.stroke();
-  c.restore();
+  const c = cx, a = G.aim, m = G.top.tasiyan; if (!a || a.p <= 0 || !m) return; const pts = yol(m, a.dx, a.dy, a.p); if (pts.length < 3) return;
+  const col = `hsl(${125 - 125 * a.p},88%,56%)`, n = pts.length, w0 = 0.5 * sc, w1 = (1.0 + 1.1 * a.p) * sc, hw = (2.6 + 1.2 * a.p) * sc, head = Math.min(n - 2, Math.max(2, Math.floor(n * 0.12))), X = (q) => toX(q[0]), Y = (q) => toY(q[1] - q[2] * 0.6), pul = 1 + Math.sin(G.t * 12) * 0.04;
+  const L = [], R = []; for (let k = 0; k < n - head; k++) { const q = pts[k], q2 = pts[Math.min(n - 1, k + 1)], ang = Math.atan2(Y(q2) - Y(q), X(q2) - X(q)), w = (w0 + (w1 - w0) * k / (n - head)) * pul; L.push([X(q) + Math.sin(ang) * w, Y(q) - Math.cos(ang) * w]); R.push([X(q) - Math.sin(ang) * w, Y(q) + Math.cos(ang) * w]); }
+  const e = pts[n - 1], e0 = pts[n - 1 - head], ea = Math.atan2(Y(e) - Y(e0), X(e) - X(e0)), bx = X(e0), by = Y(e0), g = c.createLinearGradient(X(pts[0]), Y(pts[0]), X(e), Y(e)); g.addColorStop(0, 'rgba(255,255,255,.25)'); g.addColorStop(0.5, col); g.addColorStop(1, col);
+  c.save(); c.beginPath(); c.moveTo(L[0][0], L[0][1]); for (const q of L) c.lineTo(q[0], q[1]); c.lineTo(bx + Math.sin(ea) * hw, by - Math.cos(ea) * hw); c.lineTo(X(e), Y(e)); c.lineTo(bx - Math.sin(ea) * hw, by + Math.cos(ea) * hw); for (let k = R.length - 1; k >= 0; k--) c.lineTo(R[k][0], R[k][1]); c.closePath(); c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 8 * dpr; c.fillStyle = g; c.fill(); c.shadowBlur = 0; c.lineWidth = 2 * dpr; c.strokeStyle = 'rgba(0,0,0,.55)'; c.stroke();
+  c.lineWidth = 1.5 * dpr; c.strokeStyle = 'rgba(255,255,255,.8)'; c.beginPath(); for (let k = 1; k < n - head; k++) { if (k === 1) c.moveTo(X(pts[k]), Y(pts[k])); else c.lineTo(X(pts[k]), Y(pts[k])); } c.stroke(); c.restore();
 }
 function ciz() {
   const c = cx; c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height); c.fillStyle = '#143d22'; c.fillRect(0, 0, cv.width, cv.height);
@@ -137,7 +159,7 @@ function ciz() {
   if (G.cel && G.cel.t < 2.6) { const k = Math.min(1, G.cel.t * 4), s = 1 + (1 - k) * 1.2 + Math.sin(G.cel.t * 8) * 0.03; c.save(); c.translate(cv.width / 2, cv.height * 0.2); c.scale(s, s); c.globalAlpha = Math.min(1, k * 1.5) * (G.cel.t > 2.1 ? (2.6 - G.cel.t) / 0.5 : 1); c.font = `900 ${46 * dpr}px -apple-system,system-ui,sans-serif`; c.textAlign = 'center'; c.lineWidth = 8 * dpr; c.strokeStyle = '#1b5e20'; c.strokeText('GOOOL!', 0, 0); c.fillStyle = '#ffd54a'; c.fillText('GOOOL!', 0, 0); c.restore(); }
 }
 let son = performance.now(); function dongu(n) { requestAnimationFrame(dongu); const dt = Math.min(0.05, (n - son) / 1000); son = n; adim(dt); ciz(); } 
-function basla() { Object.assign(G, { skor: [0, 0], dk: 0, atak: 0, faz: 'ön', log: [], istat: { sut: 0, isabet: 0, pas: 0, gol: 0, asist: 0, kayip: 0 }, puan: 6, tarz: 0, en: 100, cel: null }); enerjiYaz(); $('sv').classList.remove('on'); $('bs').classList.remove('on'); $('log').innerHTML = ''; $('ov').style.display = 'none'; skorYaz(); logla(0, 'Maç başladı! SANLIU – İNEGÖL.'); yeniAtak(); }
+function basla() { Object.assign(G, { skor: [0, 0], dk: 0, atak: 0, faz: 'ön', log: [], istat: { sut: 0, isabet: 0, pas: 0, gol: 0, asist: 0, kayip: 0 }, puan: 6, tarz: 0, en: 100, cel: null, imp: { x: 0, y: 0 } }); impYaz(); enerjiYaz(); $('sv').classList.remove('on'); $('bs').classList.remove('on'); $('log').innerHTML = ''; $('ov').style.display = 'none'; skorYaz(); logla(0, 'Maç başladı! SANLIU – İNEGÖL.'); yeniAtak(); }
 $('sv').onclick = () => tarzSec(1); $('bs').onclick = () => tarzSec(2);
 function tarzSec(k) { G.tarz = G.tarz === k ? 0 : k; $('sv').classList.toggle('on', G.tarz === 1); $('bs').classList.toggle('on', G.tarz === 2); logla(Math.round(G.dk), G.tarz === 1 ? '🛡️ Savunma: kalın dizilişte, rakip kontra bulamıyor ama rakip savunma sıkı.' : G.tarz === 2 ? '⚔️ Baskı: rakip savunma sendeliyor, ama arkada boşluk ve enerji hızla eriyor.' : 'Denge: normal oyun.'); }
 fit(); basla(); requestAnimationFrame(dongu); window.__g = { G, atis, adim, fit };
