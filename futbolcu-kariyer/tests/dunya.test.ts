@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { yeniOyun } from '../src/core/game';
 import { haftaIlerlet } from '../src/core/week';
 import { macBaslat, macOtomatik, macOzeti } from '../src/core/match';
-import { ekMacIsle, milliyetOf } from '../src/core/ekmac';
+import { ekMacIsle, ekMacHazirla, milliyetOf } from '../src/core/ekmac';
 import { dunyaSiralamasi, dunyaGolKrali, yzTransferleri, ovrOf } from '../src/core/dunya';
 import { Rng } from '../src/core/rng';
 const yeni = (extra = {}) => yeniOyun({ ad: 'A', soyad: 'B', cinsiyet: 'Erkek', kita: 'Avrupa', uyruk: 'Türkiye', lig: 3, poz: 'SF', numara: 9, gorunum: { ten: 1, sac: 1, sacRenk: 1 }, seed: 5, ...extra } as any);
@@ -12,4 +12,11 @@ describe('dünya sıralaması ve yapay zekâ transferleri', () => {
   it('transferler takaslıdır: her kulübün 4 oyuncusu kalır; bazı oyuncular el değiştirir', () => { const g = yeni(); const once = g.kadro.map((f) => f.kulup); let n = 0; for (let s = 0; s < 6; s++) n += yzTransferleri(g, new Rng(100 + s)).length; for (const k of g.kulupler) expect(g.kadro.filter((f) => f.kulup === k.id).length).toBe(4); expect(n).toBeGreaterThan(5); expect(g.kadro.some((f, i) => f.kulup !== once[i])).toBe(true); expect(g.kadro.every((f) => f.ovr! >= 25 && f.ovr! <= 92)).toBe(true); });
   it('oyuncunun kendi kulübü transfere karışmaz', () => { const g = yeni(); for (let s = 0; s < 10; s++) yzTransferleri(g, new Rng(s)); expect(g.kadro.filter((f) => f.kulup === g.kulup).length).toBe(4); });
   it('sezon sonunda çalışır ve haber üretir', () => { const g = yeni(); for (let i = 0; i < 22; i++) { const m = macBaslat(g); macOtomatik(g, m); if (g.ekMac) ekMacIsle(g); haftaIlerlet(g, macOzeti(g, m)); } expect(g.sezon).toBe(2); expect(g.kadro.every((f) => ovrOf(g, f) > 0)).toBe(true); expect(g.haberler.some((h) => h.bas.startsWith('Transfer dünyası'))).toBe(true); });
+});
+import { turnuvaKur, turnuvaTurIsle, TURNUVA_HAFTALAR, canliUlkelerTest } from '../src/core/ekmac';
+describe('milli turnuva (Dünya Kupası)', () => {
+  it('yalnızca 4. sezonlarda kurulur; 16 ülke, ülkemiz içinde', () => { const g = yeni({ milliyet: 'Türkiye' }); turnuvaKur(g, 3); expect(g.turnuva).toBeNull(); turnuvaKur(g, 4); expect(g.turnuva!.katilimci.length).toBe(16); expect(new Set(g.turnuva!.katilimci).size).toBe(16); expect(g.turnuva!.katilimci).toContain('Türkiye'); });
+  it('4 tur sonunda şampiyon belirlenir; her tur yarı sayıda ülke kalır', () => { const g = yeni(); turnuvaKur(g, 4); const sayilar: number[] = []; for (const h of TURNUVA_HAFTALAR) { g.hafta = h; turnuvaTurIsle(g); sayilar.push(canliUlkelerTest(g.turnuva!).length); } expect(sayilar).toEqual([8, 4, 2, 1]); expect(g.turnuva!.sampiyon).toBe(canliUlkelerTest(g.turnuva!)[0]); expect(g.turnuva!.gecmis.length).toBe(15); });
+  it('çağrılan oyuncu için turnuva maçı ek maç olarak çıkar, oynandığında tur işlenir', () => { let bulundu = false; for (let seed = 1; seed < 40 && !bulundu; seed++) { const g = yeni({ seed, milliyet: 'Brezilya' }); g.itibar = 100; for (const k of Object.keys(g.oyuncu.yet)) (g.oyuncu.yet as any)[k] = 80; g.milli.guven = 90; g.oyuncu.yas = 24; g.sezon = 4; turnuvaKur(g, 4); g.hafta = 17; ekMacHazirla(g); if (g.ekMac?.turnuva) { bulundu = true; expect(g.ekMac.ad).toContain('Dünya Kupası'); ekMacIsle(g); turnuvaTurIsle(g); expect(g.turnuva!.tur).toBe(1); expect(g.milli.cap).toBeGreaterThanOrEqual(0); } } expect(bulundu).toBe(true); });
+  it('turnuva yokken (sezon 1-3) ek maç turnuva olmaz', () => { const g = yeni({ milliyet: 'Brezilya' }); g.itibar = 100; g.hafta = 17; ekMacHazirla(g); expect(g.ekMac?.turnuva).toBeUndefined(); });
 });
