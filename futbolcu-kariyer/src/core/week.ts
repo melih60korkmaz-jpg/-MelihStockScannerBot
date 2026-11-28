@@ -1,4 +1,5 @@
 /** Hafta ilerletme: maçlar, ekonomi, enerji, sakatlık, ilişkiler, haberler, sezon sonu. */
+import { rolEtkisi, kiralikDonus, sozlesmeRedSonu } from './senaryo';
 import { yzTransferleri } from './dunya';
 import { Rng, clamp } from './rng';
 import { type Game, kisaAd, type Futbolcu, type MacOzet, clubOf, ligOf, ligim, genel, haberEkle, rngOf, rngKaydet, haftalikGelirGider, transferDegeri } from './game';
@@ -17,7 +18,7 @@ export function kadroKur(kulupler: Kulup[], rng: Rng): Futbolcu[] { const out: F
 /** Takımın gol sayısını kadro üyelerine dağıt. */
 function golDagit(g: Game, rng: Rng, kulup: number, gol: number): void { const k = g.kadro.filter((f) => f.kulup === kulup); for (let i = 0; i < gol; i++) { const s = rng.weighted(k.map((f) => [f, f.hucum] as const)); s.gol++; if (rng.chance(0.7)) rng.weighted(k.map((f) => [f, f.hucum * (f === s ? 0 : 1) + 0.01] as const)).asist++; } for (const f of k) f.mac++; }
 /** Oyuncunun kulüpteki rolü: 0 yedek, 1 ilk 11, 2 yıldız. */
-export function rolOf(g: Game): 0 | 1 | 2 { const base = clubOf(g).guc * 85 + 5, fark = genel(g) - base; let r: 0 | 1 | 2 = fark > 8 ? 2 : fark > -7 ? 1 : 0; if (g.iliski.td < 25 && r > 0) r = (r - 1) as 0 | 1; return r; }
+export function rolOf(g: Game): 0 | 1 | 2 { const base = clubOf(g).guc * 85 + 5, fark = genel(g) - base + rolEtkisi(g); let r: 0 | 1 | 2 = fark > 8 ? 2 : fark > -7 ? 1 : 0; if (g.iliski.td < 25 && r > 0) r = (r - 1) as 0 | 1; return r; }
 export const ROL_AD = ['Yedek', 'İlk 11', 'Yıldız'];
 export function otomatikMac(g: Game, rng: Rng, evMi: boolean, gev: number, gdep: number): MacOzet {
   const o = g.oyuncu, rol = g.sakatlik ? -1 : rolOf(g), oynadi = rol >= 1 || (rol === 0 && rng.chance(0.45)), dak = !oynadi ? 0 : rol >= 1 ? (g.enerji < 25 ? 65 : 90) : rng.int(10, 35);
@@ -87,7 +88,7 @@ export function sezonSonuIsle(g: Game): void {
   g.gecmis.push({ sezon: g.sezon, kulup: g.kulup, lig: eski, poz, mac: g.sezonStat.mac, gol: g.sezonStat.gol, asist: g.sezonStat.asist }); if (poz === 1) g.stat.kupa++;
   g.ligler.forEach((l, i) => { l.uye = yeniUye[i]!; l.tablo = tabloBos(l.uye); }); g.kulupler.forEach((k) => { k.lig = ligOf(g, k.id); });
   yzTransferleri(g, rng); for (const f of g.kadro) { f.gol = 0; f.asist = 0; f.mac = 0; f.yas++; } for (const k of g.kulupler) k.guc = +clamp(k.guc + rng.gauss() * 0.012, 0.2, 0.97).toFixed(3);
-  { const n = teklifUret(g); if (n) haberEkle(g, `Sezon sonu: ${n} kulüp ${g.ad} için teklif hazırladı.`, 'dunya'); } g.oyuncu.yas++; if (g.oyuncu.yas >= EMEKLI_ZORUNLU && !g.emekli) emekliOl(g); if (g.oyuncu.yas > 29) for (const k of ['surat', 'dayaniklilik'] as const) g.oyuncu.yet[k] = Math.max(10, g.oyuncu.yet[k] - (g.oyuncu.yas - 29) * 0.25); g.sozlesme.sure--; let sz = ''; if (g.sozlesme.sure <= 0) { g.sozlesme.sure = 1; sz = ' Sözleşmen bir sezon uzatıldı.'; }
+  kiralikDonus(g); { const n = teklifUret(g); if (n) haberEkle(g, `Sezon sonu: ${n} kulüp ${g.ad} için teklif hazırladı.`, 'dunya'); } g.oyuncu.yas++; if (g.oyuncu.yas >= EMEKLI_ZORUNLU && !g.emekli) emekliOl(g); if (g.oyuncu.yas > 29) for (const k of ['surat', 'dayaniklilik'] as const) g.oyuncu.yet[k] = Math.max(10, g.oyuncu.yet[k] - (g.oyuncu.yas - 29) * 0.25); g.sozlesme.sure--; let sz = ''; if (g.sozlesme.sure <= 0) { g.sozlesme.sure = 1; sz = ' Sözleşmen bir sezon uzatıldı.'; } sozlesmeRedSonu(g);
   if (g.oyuncu.yas >= 39) haberEkle(g, `${g.ad} 39 yaşında: emeklilik zamanı gelip çattı.`, 'kariyer');
   g.sozlesme.bedel = transferDegeri(g); haberEkle(g, `Sezon ${g.sezon} bitti: ${g.ligler[ligOf(g, g.kulup)]!.ad}'de ${poz}. sıra.${sz}`, 'dunya'); g.oduller = ods; g.sezon++; g.hafta = 1; g.sezonStat = { mac: 0, gol: 0, asist: 0 }; rngKaydet(g, rng);
 }

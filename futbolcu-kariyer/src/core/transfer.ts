@@ -11,7 +11,7 @@ export function menajerTut(g: Game): { ok: boolean; m: string } { if (g.menajer)
 export function menajerKov(g: Game): void { g.menajer = false; }
 /** Yeni teklifler üretir. Oyuncunun kalitesi/itibarı kulübün seviyesine yetiyorsa o kulüp ilgilenir. */
 export function teklifUret(g: Game): number {
-  const rng = rngOf(g), q0 = kaliteOf(g, g.kulup), o = genel(g), guc = o + 5 + g.itibar / 8; let sayi = rng.int(1, 2) + (g.menajer ? 1 : 0); const aday = g.kulupler.filter((k) => k.id !== g.kulup && !g.teklifler.some((t) => t.kulup === k.id) && kaliteOf(g, k.id) <= guc && kaliteOf(g, k.id) >= q0 - 4 && g.oyuncu.yas >= 16);
+  const rng = rngOf(g), q0 = kaliteOf(g, g.kulup), o = genel(g), guc = o + 5 + g.itibar / 8; let sayi = rng.int(1, 2) + (g.menajer ? ((g.menajerKalite ?? 1) > 1.2 ? 2 : (g.menajerKalite ?? 1) < 0.9 ? 0 : 1) : 0); const aday = g.kulupler.filter((k) => k.id !== g.kulup && !g.teklifler.some((t) => t.kulup === k.id) && kaliteOf(g, k.id) <= guc && kaliteOf(g, k.id) >= q0 - 4 && g.oyuncu.yas >= 16);
   let yeni = 0; while (sayi-- > 0 && aday.length) { // üst seviyeyi tercih et
     const k = rng.weighted(aday.map((c) => [c, 0.3 + Math.max(0, kaliteOf(g, c.id) - q0) / 12] as const)); aday.splice(aday.indexOf(k), 1);
     const rol = rolTahmin(g, k.id), carp = LIG_META[ligOf(g, k.id)]!.maas, maas = Math.round(carp * 3500 * (0.9 + o / 60) * rng.range(0.85, 1.2) / 50) * 50, dis = ulkeOf(g, k.id) !== ulkeOf(g, g.kulup);
@@ -23,7 +23,7 @@ export function teklifUret(g: Game): number {
 export function teklifBul(g: Game, id: number): Teklif | undefined { return g.teklifler.find((t) => t.id === id); }
 export function teklifRed(g: Game, id: number): void { g.teklifler = g.teklifler.filter((t) => t.id !== id); }
 /** Pazarlık: maaş artışı ve süre. Her teklifte bir kez. */
-export function pazarlikBasari(g: Game, t: Teklif, artis: number): number { return clamp(0.78 - artis * 1.7 + (g.menajer ? 0.15 : 0) + Math.min(0.15, g.itibar / 600) + (t.rol === 2 ? 0.1 : t.rol === 0 ? -0.1 : 0), 0.08, 0.92); }
+export function pazarlikBasari(g: Game, t: Teklif, artis: number): number { return clamp(0.78 - artis * 1.7 + (g.menajer ? 0.15 + ((g.menajerKalite ?? 1) - 1) * 0.15 : 0) + Math.min(0.15, g.itibar / 600) + (t.rol === 2 ? 0.1 : t.rol === 0 ? -0.1 : 0), 0.08, 0.92); }
 export function pazarlik(g: Game, id: number, artis: number, sure?: number): { ok: boolean; m: string } {
   const t = teklifBul(g, id); if (!t) return { ok: false, m: 'Teklif bulunamadı.' }; if (t.pazarlik >= 1) return { ok: false, m: 'Bu teklifte zaten pazarlık yaptın.' };
   const rng = rngOf(g), p = pazarlikBasari(g, t, artis); t.pazarlik = 1; const bas = rng.chance(p); let m: string;
@@ -32,10 +32,10 @@ export function pazarlik(g: Game, id: number, artis: number, sure?: number): { o
   if (!bas && sure && teklifBul(g, id)) teklifBul(g, id)!.sure = clamp(sure, 1, 5); rngKaydet(g, rng); return { ok: bas, m };
 }
 export function teklifKabul(g: Game, id: number): { ok: boolean; m: string } {
-  const t = teklifBul(g, id); if (!t) return { ok: false, m: 'Teklif bulunamadı.' }; if (g.sakatlik && g.sakatlik.hafta > 4) return { ok: false, m: 'Uzun süreli sakatlıkla transfer yapılamaz.' };
+  const t = teklifBul(g, id); if (!t) return { ok: false, m: 'Teklif bulunamadı.' }; if (g.sakatlik && g.sakatlik.hafta > 4) return { ok: false, m: 'Uzun süreli sakatlıkla transfer yapılamaz.' }; if (g.kiralik) return { ok: false, m: 'Kiralıkken transfer yapamazsın; sezon sonunu bekle.' };
   const eski = g.kulup, dis = ulkeOf(g, t.kulup) !== ulkeOf(g, eski), yeni = clubOf(g, t.kulup);
   g.transferler.push({ sezon: g.sezon, hafta: g.hafta, kimden: eski, kime: t.kulup, imza: t.imza }); g.kulup = t.kulup; g.sozlesme = { kulup: t.kulup, maas: t.maas, golPrimi: t.golPrimi, asistPrimi: t.asistPrimi, sure: t.sure, bedel: t.bedel };
-  g.para += t.imza; g.iliski.td = 50; g.iliski.takim = 45; g.iliski.taraftar = clamp(g.iliski.taraftar * 0.6 + 20, 0, 100); if (dis) g.uyum = 4; g.teklifler = [];
+  g.para += t.imza; g.ayrilmaTalebi = undefined; g.iliski.td = 50; g.iliski.takim = 45; g.iliski.taraftar = clamp(g.iliski.taraftar * 0.6 + 20, 0, 100); if (dis) g.uyum = 4; g.teklifler = [];
   haberEkle(g, `${g.ad} ${yeni.ad} ile anlaştı (${ulkeOf(g, t.kulup)}). İmza parası: ${t.imza.toLocaleString('tr-TR')} ₺.`, 'kariyer'); return { ok: true, m: `${yeni.ad} ile anlaştın!${dis ? ' Yeni ülkeye uyum süreci başlıyor (4 hafta).' : ''}` };
 }
 /** Mevcut kulüple sözleşme yenileme. Yalnızca kalan süre ≤ 2 iken. */
