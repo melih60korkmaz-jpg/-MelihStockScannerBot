@@ -1,47 +1,48 @@
 /** Futbol dünyası: kulüpler, ligler, fikstür, puan durumu ve diğer takımların maç simülasyonu. */
 import { Rng, clamp } from './rng';
-export interface Kulup { id: number; ad: string; kisa?: string; lig: number; guc: number; renk: string }
+export interface Kulup { id: number; ad: string; kisa?: string; kod?: string; lig: number; guc: number; renk: string }
 export interface TabloSatir { id: number; o: number; g: number; b: number; m: number; a: number; y: number; p: number }
 export interface Lig { ad: string; kisa: string; uye: number[]; tablo: TabloSatir[]; maasCarpan: number }
-export const LIG_AD = ['Süper Lig', '1. Lig', '2. Lig', '3. Lig'] as const;
+/** Lig yapısı: ilk 4 lig Türkiye piramidi (yükselme/düşme var), sonraki 5 lig Avrupa'nın büyük ligleri (sabit üyeli, transfer hedefi). */
+export const LIG_META = [
+  { ad: 'Süper Lig', ulke: 'Türkiye', piramit: true, taban: 0.78, maas: 10 }, { ad: '1. Lig', ulke: 'Türkiye', piramit: true, taban: 0.62, maas: 4.5 }, { ad: '2. Lig', ulke: 'Türkiye', piramit: true, taban: 0.48, maas: 2 }, { ad: '3. Lig', ulke: 'Türkiye', piramit: true, taban: 0.34, maas: 1 },
+  { ad: 'Premier Lig', ulke: 'İngiltere', piramit: false, taban: 0.97, maas: 60 }, { ad: 'La Liga', ulke: 'İspanya', piramit: false, taban: 0.95, maas: 42 }, { ad: 'Bundesliga', ulke: 'Almanya', piramit: false, taban: 0.93, maas: 38 }, { ad: 'Serie A', ulke: 'İtalya', piramit: false, taban: 0.92, maas: 36 }, { ad: 'Ligue 1', ulke: 'Fransa', piramit: false, taban: 0.89, maas: 28 }
+] as const;
+export const LIG_AD = LIG_META.map((l) => l.ad);
+export const TR_LIG = 4, LIG_SAYISI = LIG_META.length, KULUP_PER_LIG = 12;
 export const HAFTA_SAYISI = 22; // 12 takım, çift devre
-/** Kısa adlar: tablolarda ve listelerde oyuncunun hemen tanıyacağı kısa biçim (en fazla ~11 karakter). */
-export const KISA_SETLERI: Record<'gercek' | 'kurgu', string[][]> = {
-  gercek: [
-    ['Galatasaray', 'Fenerbahçe', 'Beşiktaş', 'Trabzon', 'Başakşehir', 'Sivas', 'Konya', 'Alanya', 'Antalya', 'Kasımpaşa', 'Gaziantep', 'Kayseri'],
-    ['Göztepe', 'Altay', 'Samsun', 'Bolu', 'Adana', 'Manisa', 'Gençler', 'Keçiören', 'Bandırma', 'Ümraniye', 'Altınordu', 'Bursa'],
-    ['Eskişehir', 'Sakarya', 'Kocaeli', 'Tuzla', 'Ank. Demir', 'Bodrum', 'Pendik', 'Karşıyaka', 'Giresun', 'Menemen', 'Amed', 'Urfa'],
-    ['Kırklareli', 'Fethiye', 'Çorum', 'Bayburt', 'Malatya', 'Isparta', 'Niğde', 'Karacabey', 'Düzce', 'Muğla', 'Serik', 'Fatsa']
-  ],
-  kurgu: [
-    ['Marmara', 'Ege', 'Karadeniz', 'Akdeniz', 'Anadolu', 'Toros', 'Boğaziçi', 'Kapadokya', 'Trakya', 'Bozkır', 'Tuna', 'Fırat'],
-    ['Sakarya', 'Bursa', 'Konya', 'Kayseri', 'Samsun', 'Trabzon', 'Edirne', 'Mardin', 'Antalya', 'İzmit', 'Eskişehir', 'Denizli'],
-    ['Bozova', 'Çamlık', 'Kızılca', 'Gültepe', 'Demirova', 'Limanköy', 'Kuzeyli', 'Meraklı', 'Ovacık', 'Sarıyer', 'Aydınlık', 'Taşlı'],
-    ['Dereköy', 'Yeşilova', 'Çayırlı', 'Kuzeytepe', 'Yıldızlı', 'Karakaya', 'Doğanlı', 'Pınarbaşı', 'Sazlıdere', 'Gölbaşı', 'Akpınar', 'Çınarlı']
-  ]
-};
+export type IsimMod = 'gercek' | 'kurgu';
+type Set3 = Array<[string, string, string]>; // [tam ad, kısa ad, 3 harfli kod]
 /** İsim setleri veriden gelir. 'gercek': gerçek kulüp adları (yalnızca düz yazı; logo/forma/gerçek oyuncu adı yok; liste güncel olmayabilir).
  *  'kurgu': tamamen kurgusal adlar. Uygulama mağazası yayını için 'kurgu' daha güvenlidir. */
-export type IsimMod = 'gercek' | 'kurgu';
-export const ISIM_SETLERI: Record<IsimMod, string[][]> = {
+export const ISIM_SETLERI: Record<IsimMod, Set3[]> = {
   gercek: [
-    ['Galatasaray', 'Fenerbahçe', 'Beşiktaş', 'Trabzonspor', 'Başakşehir', 'Sivasspor', 'Konyaspor', 'Alanyaspor', 'Antalyaspor', 'Kasımpaşa', 'Gaziantep FK', 'Kayserispor'],
-    ['Göztepe', 'Altay', 'Samsunspor', 'Boluspor', 'Adanaspor', 'Manisa FK', 'Gençlerbirliği', 'Keçiörengücü', 'Bandırmaspor', 'Ümraniyespor', 'Altınordu', 'Bursaspor'],
-    ['Eskişehirspor', 'Sakaryaspor', 'Kocaelispor', 'Tuzlaspor', 'Ankara Demirspor', 'Bodrumspor', 'Pendikspor', 'Karşıyaka', 'Giresunspor', 'Menemen FK', 'Amed SK', 'Şanlıurfaspor'],
-    ['Kırklarelispor', 'Fethiyespor', 'Çorum FK', 'Bayburt İl Özel İdare', 'Yeni Malatyaspor', 'Isparta 32 Spor', 'Niğde Anadolu', 'Karacabey Belediyespor', 'Düzcespor', 'Muğlaspor', 'Serik Belediyespor', 'Fatsa Belediyespor']
+    [['Galatasaray', 'Galatasaray', 'GAL'], ['Fenerbahçe', 'Fenerbahçe', 'FEN'], ['Beşiktaş', 'Beşiktaş', 'BJK'], ['Trabzonspor', 'Trabzon', 'TRA'], ['Başakşehir', 'Başakşehir', 'BAŞ'], ['Sivasspor', 'Sivas', 'SİV'], ['Konyaspor', 'Konya', 'KON'], ['Alanyaspor', 'Alanya', 'ALA'], ['Antalyaspor', 'Antalya', 'ANT'], ['Kasımpaşa', 'Kasımpaşa', 'KAS'], ['Gaziantep FK', 'Gaziantep', 'GAZ'], ['Kayserispor', 'Kayseri', 'KAY']],
+    [['Göztepe', 'Göztepe', 'GÖZ'], ['Altay', 'Altay', 'ALT'], ['Samsunspor', 'Samsun', 'SAM'], ['Boluspor', 'Bolu', 'BOL'], ['Adanaspor', 'Adana', 'ADA'], ['Manisa FK', 'Manisa', 'MAN'], ['Gençlerbirliği', 'Gençler', 'GEN'], ['Keçiörengücü', 'Keçiören', 'KEÇ'], ['Bandırmaspor', 'Bandırma', 'BAN'], ['Ümraniyespor', 'Ümraniye', 'ÜMR'], ['Altınordu', 'Altınordu', 'ALN'], ['Bursaspor', 'Bursa', 'BUR']],
+    [['Eskişehirspor', 'Eskişehir', 'ESK'], ['Sakaryaspor', 'Sakarya', 'SAK'], ['Kocaelispor', 'Kocaeli', 'KOC'], ['Tuzlaspor', 'Tuzla', 'TUZ'], ['Ankara Demirspor', 'Ank. Demir', 'ADM'], ['Bodrumspor', 'Bodrum', 'BOD'], ['Pendikspor', 'Pendik', 'PEN'], ['Karşıyaka', 'Karşıyaka', 'KAR'], ['Giresunspor', 'Giresun', 'GİR'], ['Menemen FK', 'Menemen', 'MEN'], ['Amed SK', 'Amed', 'AMD'], ['Şanlıurfaspor', 'Urfa', 'URF']],
+    [['Kırklarelispor', 'Kırklareli', 'KIR'], ['Fethiyespor', 'Fethiye', 'FET'], ['Çorum FK', 'Çorum', 'ÇOR'], ['Bayburt İl Özel İdare', 'Bayburt', 'BAY'], ['Yeni Malatyaspor', 'Malatya', 'MAL'], ['Isparta 32 Spor', 'Isparta', 'ISP'], ['Niğde Anadolu', 'Niğde', 'NİĞ'], ['Karacabey Belediyespor', 'Karacabey', 'KRC'], ['Düzcespor', 'Düzce', 'DÜZ'], ['Muğlaspor', 'Muğla', 'MUĞ'], ['Serik Belediyespor', 'Serik', 'SER'], ['Fatsa Belediyespor', 'Fatsa', 'FAT']],
+    [['Manchester City', 'Man City', 'MCI'], ['Liverpool', 'Liverpool', 'LIV'], ['Arsenal', 'Arsenal', 'ARS'], ['Chelsea', 'Chelsea', 'CHE'], ['Manchester United', 'Man Utd', 'MUN'], ['Tottenham', 'Tottenham', 'TOT'], ['Newcastle United', 'Newcastle', 'NEW'], ['Aston Villa', 'Aston Villa', 'AVL'], ['Brighton', 'Brighton', 'BHA'], ['West Ham United', 'West Ham', 'WHU'], ['Everton', 'Everton', 'EVE'], ['Leicester City', 'Leicester', 'LEI']],
+    [['Real Madrid', 'R. Madrid', 'RMA'], ['Barcelona', 'Barcelona', 'BAR'], ['Atlético Madrid', 'Atlético', 'ATM'], ['Sevilla', 'Sevilla', 'SEV'], ['Real Sociedad', 'R. Sociedad', 'RSO'], ['Villarreal', 'Villarreal', 'VIL'], ['Valencia', 'Valencia', 'VAL'], ['Athletic Bilbao', 'Bilbao', 'ATH'], ['Real Betis', 'Betis', 'BET'], ['Celta Vigo', 'Celta', 'CEL'], ['Getafe', 'Getafe', 'GET'], ['Osasuna', 'Osasuna', 'OSA']],
+    [['Bayern Münih', 'Bayern', 'BYM'], ['Borussia Dortmund', 'Dortmund', 'BVB'], ['Bayer Leverkusen', 'Leverkusen', 'LEV'], ['RB Leipzig', 'Leipzig', 'RBL'], ['Eintracht Frankfurt', 'Frankfurt', 'SGE'], ['Stuttgart', 'Stuttgart', 'VFB'], ['Wolfsburg', 'Wolfsburg', 'WOB'], ['Freiburg', 'Freiburg', 'SCF'], ['Mönchengladbach', 'Gladbach', 'BMG'], ['Hoffenheim', 'Hoffenheim', 'TSG'], ['Werder Bremen', 'Bremen', 'SVW'], ['Union Berlin', 'Union', 'FCU']],
+    [['Inter', 'Inter', 'INT'], ['Milan', 'Milan', 'MIL'], ['Juventus', 'Juventus', 'JUV'], ['Napoli', 'Napoli', 'NAP'], ['Roma', 'Roma', 'ROM'], ['Lazio', 'Lazio', 'LAZ'], ['Atalanta', 'Atalanta', 'ATA'], ['Fiorentina', 'Fiorentina', 'FIO'], ['Bologna', 'Bologna', 'BLG'], ['Torino', 'Torino', 'TOR'], ['Genoa', 'Genoa', 'GNO'], ['Udinese', 'Udinese', 'UDI']],
+    [['Paris Saint-Germain', 'PSG', 'PSG'], ['Marsilya', 'Marsilya', 'MRS'], ['Monaco', 'Monaco', 'MON'], ['Lyon', 'Lyon', 'LYO'], ['Lille', 'Lille', 'LIL'], ['Nice', 'Nice', 'NCE'], ['Rennes', 'Rennes', 'REN'], ['Lens', 'Lens', 'RCL'], ['Nantes', 'Nantes', 'NAN'], ['Strasbourg', 'Strasbourg', 'STR'], ['Montpellier', 'Montpellier', 'MTP'], ['Reims', 'Reims', 'REI']]
   ],
   kurgu: [
-    ['Marmara Yıldız', 'Ege Şimşek', 'Karadeniz Fırtına', 'Akdeniz Güneş', 'Anadolu Kartal', 'Toros Aslan', 'Boğaziçi SK', 'Kapadokya Atlı', 'Trakya Kurt', 'Bozkır Gücü', 'Tuna Spor', 'Fırat Yıldızı'],
-    ['Sakarya Nehir', 'Bursa Çınar', 'Konya Selçuk', 'Kayseri Doruk', 'Samsun Liman', 'Trabzon Dalga', 'Edirne Kule', 'Mardin Taş', 'Antalya Palmiye', 'İzmit Körfez', 'Eskişehir Porsuk', 'Denizli Pamuk'],
-    ['Bozova Kaplan', 'Çamlık Gençlik', 'Kızılcahamam Gücü', 'Gültepe Birlik', 'Demirova Spor', 'Limanköy', 'Kuzeyli Spor', 'Meraklı SK', 'Ovacık Gücü', 'Sarıyer Yıldızı', 'Aydınlık Spor', 'Taşlıbayır SK'],
-    ['Dereköy Gençlik', 'Yeşilova Spor', 'Çayırlı Birlik', 'Kuzeytepe SK', 'Yıldızlı Köy', 'Karakaya Spor', 'Doğanlı SK', 'Pınarbaşı Gücü', 'Sazlıdere Spor', 'Gölbaşı Gençlik', 'Akpınar SK', 'Çınarlı Birlik']
+    [['Marmara Yıldız', 'Marmara', 'MAR'], ['Ege Şimşek', 'Ege', 'EGE'], ['Karadeniz Fırtına', 'Karadeniz', 'KRD'], ['Akdeniz Güneş', 'Akdeniz', 'AKD'], ['Anadolu Kartal', 'Anadolu', 'ANA'], ['Toros Aslan', 'Toros', 'TOR'], ['Boğaziçi SK', 'Boğaziçi', 'BOĞ'], ['Kapadokya Atlı', 'Kapadokya', 'KAP'], ['Trakya Kurt', 'Trakya', 'TRK'], ['Bozkır Gücü', 'Bozkır', 'BZK'], ['Tuna Spor', 'Tuna', 'TUN'], ['Fırat Yıldızı', 'Fırat', 'FIR']],
+    [['Sakarya Nehir', 'Sakarya', 'SKN'], ['Bursa Çınar', 'Bursa', 'BRC'], ['Konya Selçuk', 'Konya', 'KNS'], ['Kayseri Doruk', 'Kayseri', 'KYD'], ['Samsun Liman', 'Samsun', 'SML'], ['Trabzon Dalga', 'Trabzon', 'TRD'], ['Edirne Kule', 'Edirne', 'EDK'], ['Mardin Taş', 'Mardin', 'MRT'], ['Antalya Palmiye', 'Antalya', 'ANP'], ['İzmit Körfez', 'İzmit', 'İZK'], ['Eskişehir Porsuk', 'Eskişehir', 'ESP'], ['Denizli Pamuk', 'Denizli', 'DNP']],
+    [['Bozova Kaplan', 'Bozova', 'BOZ'], ['Çamlık Gençlik', 'Çamlık', 'ÇAM'], ['Kızılcahamam Gücü', 'Kızılca', 'KZL'], ['Gültepe Birlik', 'Gültepe', 'GLT'], ['Demirova Spor', 'Demirova', 'DMV'], ['Limanköy', 'Limanköy', 'LMK'], ['Kuzeyli Spor', 'Kuzeyli', 'KZY'], ['Meraklı SK', 'Meraklı', 'MRK'], ['Ovacık Gücü', 'Ovacık', 'OVC'], ['Sarıyer Yıldızı', 'Sarıyer', 'SRY'], ['Aydınlık Spor', 'Aydınlık', 'AYD'], ['Taşlıbayır SK', 'Taşlı', 'TŞL']],
+    [['Dereköy Gençlik', 'Dereköy', 'DRK'], ['Yeşilova Spor', 'Yeşilova', 'YŞL'], ['Çayırlı Birlik', 'Çayırlı', 'ÇYR'], ['Kuzeytepe SK', 'Kuzeytepe', 'KZT'], ['Yıldızlı Köy', 'Yıldızlı', 'YLD'], ['Karakaya Spor', 'Karakaya', 'KRK'], ['Doğanlı SK', 'Doğanlı', 'DĞN'], ['Pınarbaşı Gücü', 'Pınarbaşı', 'PNR'], ['Sazlıdere Spor', 'Sazlıdere', 'SZL'], ['Gölbaşı Gençlik', 'Gölbaşı', 'GLB'], ['Akpınar SK', 'Akpınar', 'AKP'], ['Çınarlı Birlik', 'Çınarlı', 'ÇNR']],
+    [['Northport United', 'Northport', 'NPU'], ['Westbridge Rovers', 'Westbridge', 'WBR'], ['Eastham City', 'Eastham', 'EHC'], ['Ironvale Town', 'Ironvale', 'IRV'], ['Kingsmere FC', 'Kingsmere', 'KGM'], ['Oakfield Athletic', 'Oakfield', 'OKF'], ['Redcliffe Wanderers', 'Redcliffe', 'RDC'], ['Stonebury County', 'Stonebury', 'STB'], ['Marshgate Albion', 'Marshgate', 'MGA'], ['Highmoor Rangers', 'Highmoor', 'HMR'], ['Brookside Argyle', 'Brookside', 'BKS'], ['Thornwick Villa', 'Thornwick', 'THV']],
+    [['Costa Real', 'Costa Real', 'CRL'], ['Sierra Norte', 'S. Norte', 'SNT'], ['Valle Dorado', 'V. Dorado', 'VDR'], ['Puerto Sol', 'P. Sol', 'PSL'], ['Monte Alto', 'M. Alto', 'MAL'], ['Rio Verde', 'Rio Verde', 'RVD'], ['Campo Azul', 'C. Azul', 'CAZ'], ['Isla Blanca', 'I. Blanca', 'IBL'], ['Playa Brava', 'P. Brava', 'PBR'], ['Torre Vieja', 'T. Vieja', 'TVJ'], ['Cerro Luna', 'C. Luna', 'CLN'], ['Nueva Aurora', 'N. Aurora', 'NAU']],
+    [['Rhein Adler', 'Rhein', 'RHA'], ['Nordstadt 04', 'Nordstadt', 'NSD'], ['Sachsen Blitz', 'Sachsen', 'SBL'], ['Alpen Löwen', 'Alpen', 'ALL'], ['Elbe Sturm', 'Elbe', 'ELS'], ['Harz Wölfe', 'Harz', 'HZW'], ['Mosel Union', 'Mosel', 'MSU'], ['Ruhr Stahl', 'Ruhr', 'RST'], ['Bodensee SC', 'Bodensee', 'BDS'], ['Schwaben FC', 'Schwaben', 'SCH'], ['Havel 09', 'Havel', 'HAV'], ['Oder Falken', 'Oder', 'ODF']],
+    [['Roma Antica', 'R. Antica', 'RAN'], ['Milano Rossa', 'M. Rossa', 'MRO'], ['Torino Nera', 'T. Nera', 'TNE'], ['Napoli Azzurra', 'N. Azzurra', 'NAZ'], ['Firenze Viola', 'F. Viola', 'FVI'], ['Genova Mare', 'G. Mare', 'GMR'], ['Verona Scala', 'V. Scala', 'VSC'], ['Bari Sole', 'Bari', 'BSL'], ['Parma Oro', 'Parma', 'PRO'], ['Lecce Barocca', 'Lecce', 'LBR'], ['Siena Palio', 'Siena', 'SPL'], ['Pisa Torre', 'Pisa', 'PTR']],
+    [['Paris Étoile', 'P. Étoile', 'PET'], ['Marne Royale', 'Marne', 'MRN'], ['Côte Azur FC', 'Côte Azur', 'CTA'], ['Lyon Vallée', 'L. Vallée', 'LVA'], ['Nord Lion', 'Nord', 'NRL'], ['Bretagne Mer', 'Bretagne', 'BTM'], ['Alsace Blanc', 'Alsace', 'ALB'], ['Loire Fleur', 'Loire', 'LRF'], ['Garonne SC', 'Garonne', 'GRN'], ['Provence Soleil', 'Provence', 'PRV'], ['Seine Argent', 'Seine', 'SNA'], ['Rhône Aigle', 'Rhône', 'RHN']]
   ]
 };
 const RENKLER = ['#e53935', '#1e88e5', '#43a047', '#fdd835', '#8e24aa', '#fb8c00', '#00acc1', '#6d4c41', '#d81b60', '#546e7a', '#7cb342', '#3949ab'];
-const TABAN = [0.9, 0.72, 0.54, 0.38];
-export function kulupleriKur(mod: IsimMod = 'gercek'): Kulup[] { const ISIMLER = ISIM_SETLERI[mod], out: Kulup[] = []; for (let l = 0; l < 4; l++) for (let i = 0; i < 12; i++) out.push({ id: l * 12 + i, ad: ISIMLER[l]![i]!, kisa: KISA_SETLERI[mod][l]![i]!, lig: l, guc: +(TABAN[l]! - i * 0.012).toFixed(3), renk: RENKLER[i % RENKLER.length]! }); return out; }
+export function kulupleriKur(mod: IsimMod = 'gercek'): Kulup[] { const out: Kulup[] = []; for (let l = 0; l < LIG_SAYISI; l++) for (let i = 0; i < KULUP_PER_LIG; i++) { const [ad, kisa, kod] = ISIM_SETLERI[mod][l]![i]!; out.push({ id: l * KULUP_PER_LIG + i, ad, kisa, kod, lig: l, guc: +(LIG_META[l].taban - i * 0.013).toFixed(3), renk: RENKLER[i % RENKLER.length]! }); } return out; }
 export const tabloBos = (uye: number[]): TabloSatir[] => uye.map((id) => ({ id, o: 0, g: 0, b: 0, m: 0, a: 0, y: 0, p: 0 }));
-export function ligleriKur(): Lig[] { return LIG_AD.map((ad, l) => { const uye = Array.from({ length: 12 }, (_, i) => l * 12 + i); return { ad, kisa: `L${l}`, uye, tablo: tabloBos(uye), maasCarpan: [10, 4.5, 2, 1][l]! }; }); }
+export function ligleriKur(): Lig[] { return LIG_META.map((m, l) => { const uye = Array.from({ length: KULUP_PER_LIG }, (_, i) => l * KULUP_PER_LIG + i); return { ad: m.ad, kisa: `L${l}`, uye, tablo: tabloBos(uye), maasCarpan: m.maas }; }); }
 /** Daire yöntemi fikstürü: 11 tur, ikinci yarıda ev/deplasman yer değiştirir. hafta 1-22. */
 export function fikstur(uye: number[], hafta: number): Array<[number, number]> {
   const n = uye.length, dz = [...uye], r = (hafta - 1) % (n - 1), out: Array<[number, number]> = [];

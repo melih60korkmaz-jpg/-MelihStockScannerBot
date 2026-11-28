@@ -32,3 +32,6 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px;displa
 .toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%);background:#0a120d;border:1px solid var(--ac);padding:10px 16px;border-radius:12px;z-index:99;font-size:13px;font-weight:700;max-width:90%;text-align:center;animation:in .25s}.toast.bad{border-color:var(--bad)}
 .mg{position:fixed;inset:0;z-index:60;background:#07120b;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}.mg .top{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d1a12;border-bottom:1px solid var(--line)}.mg canvas{flex:1;width:100%;min-height:0;touch-action:none;display:block}.mg .bot{padding:10px 12px;text-align:center;font-size:13px;color:var(--mu)}
 .slot{display:flex;align-items:center;gap:12px}.slot .e{font-size:28px}.slot .d{flex:1}.slot .d b{display:block}.slot .d small{color:var(--mu)}
+
+.chips.scroll{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}.chips.scroll button{flex:none;white-space:nowrap}
+details summary{cursor:pointer;list-style:none}.tb tr[data-a]{cursor:pointer}
