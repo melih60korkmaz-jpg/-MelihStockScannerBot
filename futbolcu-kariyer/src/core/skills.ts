@@ -30,6 +30,6 @@ export function ilkYetenekler(poz: Pozisyon, rng: Rng): Yetenekler {
   return y;
 }
 /** Yetenek tavanı: potansiyel + mevkiye uygunluk. */
-export function yetenekTavani(pot: number, poz: Pozisyon, k: YetenekId): number { const w = POZ_AGIRLIK[poz], maxW = Math.max(...Object.values(w) as number[]), rel = (w[k] ?? 0) / maxW; return clamp(Math.round(pot - 12 + rel * 18), 35, 99); }
+export function yetenekTavani(pot: number, poz: Pozisyon, k: YetenekId): number { const w = POZ_AGIRLIK[poz], maxW = Math.max(...Object.values(w) as number[]), rel = (w[k] ?? 0) / maxW; return clamp(Math.round(pot - 8 + rel * 20), 35, 99); }
 export const yasCarpani = (yas: number): number => (yas <= 17 ? 1.35 : yas <= 20 ? 1.2 : yas <= 24 ? 1 : yas <= 28 ? 0.7 : yas <= 31 ? 0.4 : 0.15);
 export const POZ_GRUP = (p: Pozisyon): 'kaleci' | 'defans' | 'orta' | 'hucum' => (p === 'KL' ? 'kaleci' : p === 'STP' || p === 'SGB' || p === 'SLB' ? 'defans' : p === 'OL' || p === 'MOS' || p === 'ON' ? 'orta' : 'hucum');

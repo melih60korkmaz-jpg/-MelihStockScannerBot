@@ -43,7 +43,7 @@ export function transferDegeri(g: Game): number { const o = genel(g), y = g.oyun
 export function baslangicSozlesme(g: Game, kulup: number, rng: Rng): Sozlesme { const l = ligOf(g, kulup), carp = g.ligler[l]!.maasCarpan; return { kulup, maas: Math.round(carp * 3500 * (0.9 + rng.next() * 0.3) / 50) * 50, golPrimi: Math.round(carp * 400 / 50) * 50, asistPrimi: Math.round(carp * 200 / 50) * 50, sure: 2, bedel: transferDegeri(g) } }
 export function yeniOyun(y: Yaratim, slotId = 'slot'): Game {
   const seed = y.seed ?? (Date.now() & 0x7fffffff), rng = new Rng(seed), kulupler = kulupleriKur(y.isim ?? 'gercek'), ligler = ligleriKur();
-  const yet = ilkYetenekler(y.poz, rng), pot = clamp(Math.round(72 + rng.gauss() * 7 + rng.range(0, 10)), 62, 97);
+  const yet = ilkYetenekler(y.poz, rng), pot = clamp(Math.round(77 + rng.gauss() * 7 + rng.range(0, 10)), 66, 98);
   const oyuncu: Oyuncu = { ad: y.ad, soyad: y.soyad, cinsiyet: y.cinsiyet, kita: y.kita, uyruk: y.uyruk, milliyet: y.milliyet || y.uyruk, yas: 16, poz: y.poz, numara: y.numara, gorunum: y.gorunum, yet, pot, xp: {} };
   const hedefLig = clamp(y.lig, 2, 3); void TR_LIG; // kariyer alt kulüpten başlar: 3. Lig (önerilen) ya da 2. Lig (zor)
   const kulup = ligler[hedefLig]!.uye[rng.int(0, 11)]!;

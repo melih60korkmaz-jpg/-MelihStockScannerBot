@@ -1,6 +1,6 @@
 const { chromium } = require('playwright'); const f = require('path').resolve('dist/index.html'); let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ✗ ') + m); if (!c) bad++; };
 (async () => { const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 })).newPage(); const err = []; p.on('pageerror', (e) => err.push(e.message)); const ev = (fn, a) => p.evaluate(fn, a);
- await p.addInitScript(() => { window.__osc = 0; const A = window.AudioContext; window.AudioContext = class extends A { createOscillator() { window.__osc++; return super.createOscillator(); } }; setInterval(() => { const m = document.querySelector('.modal.olay'); if (m) { const b = m.querySelector('[data-a="olayCoz"]'); b && b.click(); } }, 200); });
+ await p.addInitScript(() => { window.__osc = 0; const A = window.AudioContext; window.AudioContext = class extends A { createOscillator() { window.__osc++; return super.createOscillator(); } }; setInterval(() => { const b = document.querySelector('.modal.olay [data-o]:not([disabled])'); if (b) b.click(); }, 120); });
  await p.goto('file://' + f); await p.click('[data-a="yeni"][data-i="1"]'); await p.fill('#f_ad', 'Emir'); await p.fill('#f_soyad', 'Kaya');
  ok(await ev(() => !!document.querySelector('#f_milli') && document.querySelector('#f_milli').options.length >= 20), 'Milliyet alanı var (ülke listesi)');
  await p.selectOption('#f_milli', 'Brezilya'); await p.click('[data-a="basla"]'); await p.waitForSelector('main');
@@ -12,4 +12,4 @@ const { chromium } = require('playwright'); const f = require('path').resolve('d
  await p.click('[data-a="nav"][data-v="ev"]'); await p.click('[data-a="macCik"]'); await p.waitForSelector('.macekr'); const o1 = await ev(() => window.__osc); await p.waitForTimeout(2500); await p.screenshot({ path: '/tmp/fk_sahne.png' }); ok(o1 > 0, 'maç düdüğü çalındı');
  await p.click('[data-m="hizli"]'); await p.waitForSelector('[data-a="macTamam"]', { timeout: 30000 }); await p.click('[data-a="macTamam"]');
  await p.click('[data-a="nav"][data-v="ev"]'); await p.click('[data-a="tab"][data-v="ayar"]').catch(() => {});
- ok(err.length === 0, 'tarayıcı hatası yok ' + err.join(';')); await b.close(); console.log(bad ? bad + ' BAŞARISIZ' : 'TÜMÜ GEÇTİ'); process.exit(bad ? 1 : 0); })().catch((e) => { console.log('HATA', e.message); process.exit(1); });
+ ok(err.length === 0, 'tarayıcı hatası yok ' + err.join(';')); await b.close(); console.log(bad ? bad + ' BAŞARISIZ' : 'TÜMÜ GEÇTİ'); process.exit(bad ? 1 : 0); })().catch((e) => { console.log('HATA', e.message.split('\n').slice(0,4).join(' | ')); process.exit(1); });

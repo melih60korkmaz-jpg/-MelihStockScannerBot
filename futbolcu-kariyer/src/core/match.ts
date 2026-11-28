@@ -173,7 +173,8 @@ function sutCoz(g: Game, m: Mac, rng: Rng, poz: Pozisyon, a: Extract<Aksiyon, { 
   if (Math.abs(x) > 1.07 || y > 1.07 || y < -0.05) { olayEkle(m, 'sut', f(M.disari, rng), true); m.ist.puanEk -= 0.05; return { tur: 'disari', metin: 'Dışarı' }; }
   if (Math.abs(x) > 1 || y > 1) { olayEkle(m, 'sut', f(M.direk, rng), true, true); m.ist.isabet++; m.bizIsabet[bizTarafi(m)]++; m.ist.puanEk += 0.1; return { tur: 'direk', metin: 'Direk!' }; }
   m.ist.isabet++; m.bizIsabet[bizTarafi(m)]++;
-  let pSave = clamp(0.5 + 0.38 * poz.kaleci - 0.34 * guc - 0.32 * Math.abs(x) - 0.22 * Math.max(0, y) + 0.1 * (poz.sut?.yon === Math.sign(x) && Math.abs(x) > 0.3 ? 1 : 0) - (poz.mesafe < 8 ? 0.16 : 0) + (a.tur === 'plase' ? -0.02 : 0), 0.04, 0.93);
+  let pSave = clamp(0.84 + 0.38 * poz.kaleci - 0.34 * guc - 0.32 * Math.abs(x) - 0.22 * Math.max(0, y) + 0.1 * (poz.sut?.yon === Math.sign(x) && Math.abs(x) > 0.3 ? 1 : 0) - (poz.mesafe < 8 ? 0.16 : 0) + (a.tur === 'plase' ? -0.02 : 0), 0.04, 0.93);
+  pSave = clamp(pSave - (b - 0.5) * 0.35, 0.04, 0.95); pSave = 1 - (1 - pSave) * 0.6;
   if (poz.tip === 'penalti') pSave = clamp(0.2 + 0.22 * poz.kaleci - 0.3 * Math.abs(x) + (poz.sut?.yon === Math.sign(x) ? 0.25 : 0) - 0.15 * Math.max(0, y - 0.3) , 0.05, 0.7);
   if (rng.chance(pSave)) { olayEkle(m, 'kurtaris', f(M.kurtBiz, rng), false, true); m.ist.puanEk += 0.1; if (rng.chance(0.3)) { m.korner[bizTarafi(m)]++; olayEkle(m, 'korner', f(M.korner, rng), true); } return { tur: 'kurtaris', metin: 'Kaleci kurtardı' }; }
   golYaz(g, m, rng, true, true); m.ist.gol++; m.ist.puanEk += 0.95; if (m.hucumZinciri > 0) { m.ist.asist += 0; } m.hucumZinciri = 0; return { tur: 'gol', metin: 'GOL!' };
@@ -208,7 +209,7 @@ function kurtarisCoz(g: Game, m: Mac, rng: Rng, poz: Pozisyon, a: Extract<Aksiyo
 /* ---------- bot (otomatik oynama ve testler) ---------- */
 export function botAksiyon(g: Game, m: Mac, rng: Rng = new Rng(m.rng ^ 0xabc)): Aksiyon {
   const p = m.poz!;
-  if (p.tip === 'sut' || p.tip === 'kafa') return { tip: 'sut', tur: p.tip === 'kafa' ? 'kafa' : 'normal', x: rng.pick([-0.7, 0.7, -0.55, 0.55]), y: rng.range(0.1, 0.5), guc: 0.65, falso: 0 };
+  if (p.tip === 'sut' || p.tip === 'kafa') return { tip: 'sut', tur: p.tip === 'kafa' ? 'kafa' : 'normal', x: rng.pick([-1, 1]) * rng.range(0.25, 0.65), y: rng.range(0.1, 0.6), guc: 0.65, falso: 0 };
   if (p.tip === 'serbest') return { tip: 'sut', tur: 'plase', x: rng.pick([-0.75, 0.75]), y: 0.65, guc: 0.6, falso: rng.pick([-0.5, 0.5]) };
   if (p.tip === 'penalti') return { tip: 'sut', tur: 'plase', x: rng.pick([-0.8, 0.8]), y: 0.15, guc: 0.6, falso: 0 };
   if (p.tip === 'pas') { const h = p.hedefler.slice().sort((a, b) => (b.aciklik - b.risk) - (a.aciklik - a.risk))[0]!; return { tip: 'pas', hedef: h.id, tur: h.tur }; }
