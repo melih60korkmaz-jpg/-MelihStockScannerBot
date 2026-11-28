@@ -1,6 +1,6 @@
 /** Hafta ilerletme: maçlar, ekonomi, enerji, sakatlık, ilişkiler, haberler, sezon sonu. */
 import { rolEtkisi, kiralikDonus, sozlesmeRedSonu } from './senaryo';
-import { yzTransferleri } from './dunya';
+import { yzTransferleri, dunyaGuncelle } from './dunya';
 import { Rng, clamp } from './rng';
 import { type Game, kisaAd, type Futbolcu, type MacOzet, clubOf, ligOf, ligim, genel, haberEkle, rngOf, rngKaydet, haftalikGelirGider, transferDegeri } from './game';
 import { fikstur, sirala, sonucYaz, takimMaci, tabloBos, HAFTA_SAYISI, TR_LIG, type Kulup } from './world';
@@ -68,12 +68,14 @@ export function haftaIlerlet(g: Game, mac?: MacOzet): HaftaRaporu {
   satir.push(...gecikmeliIsle(g)); if ((g.hafta === 3 || g.hafta === 14) && sponsorTeklifUret(g)) satir.push('🤝 Yeni sponsor teklifi geldi! (Ev → Sponsorlar)'); { const oid = olayCek(g); if (oid) satir.push('📋 Karar bekleyen bir olay var!'); }
   if (g.hafta === 11 || g.hafta === 6) { for (const m of sponsorSezonSonu(g, g.sezonStat.mac)) haberEkle(g, m, 'kariyer'); sponsorTeklifUret(g); const n = teklifUret(g); if (n) satir.push(`📄 ${n} yeni transfer teklifi geldi! (Ev → Sözleşme)`); }
   rngKaydet(g, rng); let sezonSonu = false; if (g.hafta > HAFTA_SAYISI) { sezonSonuIsle(g); sezonSonu = true; }
-  ekMacHazirla(g);
+  dunyaGuncelle(g); ekMacHazirla(g);
   return { satir, mac: ozet, sezonSonu };
 }
 export function sezonSonuIsle(g: Game): void {
+  const kupaSamp = g.kupa?.sampiyon ?? null;
   kupaKur(g, g.sezon + 1); turnuvaKur(g, g.sezon + 1); { const r0 = rngOf(g); for (let l = 0; l < g.ligler.length; l++) { const sr = sirala(g.ligler[l]!); sr.forEach((row, i) => { const kl = g.kulupler[row.id]!, d = i === 0 ? 0.014 : i < 3 ? 0.006 : i >= sr.length - 2 ? -0.009 : 0; kl.guc = +clamp(kl.guc + d + r0.gauss() * 0.006, 0.15, 0.98).toFixed(3); }); } rngKaydet(g, r0); }
   const rng = rngOf(g), eski = ligim(g), s = sirala(g.ligler[eski]!), poz = s.findIndex((r) => r.id === g.kulup) + 1, ods: string[] = [];
+  for (const l of g.ligler) { const ch = sirala(l)[0]?.id; for (const f of g.kadro) if (f.kulup === ch) f.kupa = (f.kupa ?? 0) + 1; } if (kupaSamp !== null) for (const f of g.kadro) if (f.kulup === kupaSamp) f.kupa = (f.kupa ?? 0) + 1; dunyaGuncelle(g, true);
   const sampiyon = clubOf(g, s[0]!.id).ad; ods.push(`🏆 ${g.ligler[eski]!.ad} şampiyonu: ${sampiyon}`);
   const lig = g.kadro.filter((f) => g.ligler[eski]!.uye.includes(f.kulup)); const gk = lig.slice().sort((a, b) => b.gol - a.gol)[0], ak = lig.slice().sort((a, b) => b.asist - a.asist)[0]; const bizGol = g.sezonStat.gol, bizAsist = g.sezonStat.asist;
   if (gk) ods.push(bizGol > gk.gol ? `⚽ Gol kralı: ${g.ad} (${bizGol})` : `⚽ Gol kralı: ${gk.ad} (${gk.gol}) · ${clubOf(g, gk.kulup).ad}`);
