@@ -5,6 +5,7 @@ import { macBaslat, macOtomatik, macOzeti, type Mac, type MacEk, type OzelMac } 
 import { takimMaci, sirala, LIG_META } from './world';
 /** Milli takımlar: [ülke, güç]. Oyuncunun uyruğu milli takımını belirler. */
 export const ULKELER: Array<[string, number]> = [['Türkiye', 0.74], ['Almanya', 0.88], ['İspanya', 0.9], ['Fransa', 0.9], ['İtalya', 0.84], ['İngiltere', 0.9], ['Hollanda', 0.84], ['Portekiz', 0.84], ['Brezilya', 0.92], ['Arjantin', 0.92], ['Uruguay', 0.78], ['Kolombiya', 0.76], ['Japonya', 0.72], ['Güney Kore', 0.7], ['Azerbaycan', 0.5], ['İran', 0.62], ['Nijerya', 0.68], ['Gana', 0.62], ['Senegal', 0.7], ['Mısır', 0.64], ['ABD', 0.68], ['Meksika', 0.7], ['Kanada', 0.58], ['Avustralya', 0.6], ['Yeni Zelanda', 0.45]];
+export const milliyetOf = (g: Game): string => g.oyuncu.milliyet || milliyetOf(g);
 export const ulkeGuc = (u: string): number => ULKELER.find((x) => x[0] === u)?.[1] ?? 0.5;
 export const MILLI_HAFTALAR = [7, 15], KUPA_HAFTALAR = [6, 11, 16, 21], KUPA_TUR_AD = ['Son 16', 'Çeyrek final', 'Yarı final', 'Final'];
 export interface Milli { cap: number; gol: number; asist: number; guven: number; gecmis: Array<{ sezon: number; hafta: number; rakip: string; gb: number; gr: number; gol: number; puan: number }> }
@@ -13,15 +14,15 @@ export interface EkMac { tur: 'milli' | 'kupa'; hafta: number; rakipAd: string; 
 export interface EkSonuc { tur: 'milli' | 'kupa'; ad: string; ozet: MacOzet & { ek: MacEk }; bizGol: number; rakipGol: number; penaltilar?: boolean }
 export const milliBos = (): Milli => ({ cap: 0, gol: 0, asist: 0, guven: 55, gecmis: [] });
 /** Milli takıma çağrılma: oyuncunun kalitesi ülkenin takım seviyesine yeterince yakınsa ve güven varsa. */
-export function milliCagriliMi(g: Game): boolean { const q = ulkeGuc(g.oyuncu.uyruk) * 85 + 5, o = genel(g) + g.itibar / 7 + (g.milli.guven - 50) / 12 + (g.sezonStat.gol * 0.3); return !g.sakatlik && g.oyuncu.yas >= 17 && o >= q - 10; }
+export function milliCagriliMi(g: Game): boolean { const q = ulkeGuc(milliyetOf(g)) * 85 + 5, o = genel(g) + g.itibar / 7 + (g.milli.guven - 50) / 12 + (g.sezonStat.gol * 0.3); return !g.sakatlik && g.oyuncu.yas >= 17 && o >= q - 10; }
 /** Önümüzdeki hafta için ek maç var mı? Her hafta sonunda ve oyun başında çağrılır. */
 export function ekMacHazirla(g: Game): void {
   g.ekMac = null; const h = g.hafta; const kupa = g.kupa;
   if (kupa && !kupa.elendi && kupa.katilimci.includes(g.kulup) && KUPA_HAFTALAR[kupa.tur] === h) { const r = rakipBul(g, kupa); if (r !== null) { g.ekMac = { tur: 'kupa', hafta: h, rakipAd: kisaAd(g, r), rakipGuc: clubOf(g, r).guc, rakipId: r, evde: new Rng(g.seed + h + g.sezon).chance(0.5), ad: `Avrupa Kupası · ${KUPA_TUR_AD[kupa.tur]}` }; return; } }
-  if (MILLI_HAFTALAR.includes(h) && milliCagriliMi(g)) { const rng = new Rng((g.seed ^ (g.sezon * 977 + h * 31)) >>> 0), adaylar = ULKELER.filter((u) => u[0] !== g.oyuncu.uyruk), u = rng.pick(adaylar); g.ekMac = { tur: 'milli', hafta: h, rakipAd: u[0], rakipGuc: u[1], evde: rng.chance(0.5), ad: `${g.oyuncu.uyruk} Milli Takımı` }; }
+  if (MILLI_HAFTALAR.includes(h) && milliCagriliMi(g)) { const rng = new Rng((g.seed ^ (g.sezon * 977 + h * 31)) >>> 0), adaylar = ULKELER.filter((u) => u[0] !== milliyetOf(g)), u = rng.pick(adaylar); g.ekMac = { tur: 'milli', hafta: h, rakipAd: u[0], rakipGuc: u[1], evde: rng.chance(0.5), ad: `${milliyetOf(g)} Milli Takımı` }; }
 }
 function rakipBul(g: Game, k: Kupa): number | null { const sira = k.katilimci.filter((x) => k.gecmis.every((m) => !(m.kazanan !== x && (m.a === x || m.b === x)))); const i = sira.indexOf(g.kulup); if (i < 0) return null; return sira[i % 2 === 0 ? i + 1 : i - 1] ?? null; }
-export function ekMacCalistir(g: Game, bot = true): { m: Mac } { const e = g.ekMac!; const m = macBaslat(g, { calis: 1, odak: 'dengeli' }, { tur: e.tur, rakipAd: e.rakipAd, bizAd: e.tur === 'milli' ? g.oyuncu.uyruk : kisaAd(g, g.kulup), rakipGuc: e.rakipGuc, bizGuc: e.tur === 'milli' ? ulkeGuc(g.oyuncu.uyruk) : clubOf(g).guc, evde: e.evde }); if (bot) macOtomatik(g, m); return { m }; }
+export function ekMacCalistir(g: Game, bot = true): { m: Mac } { const e = g.ekMac!; const m = macBaslat(g, { calis: 1, odak: 'dengeli' }, { tur: e.tur, rakipAd: e.rakipAd, bizAd: e.tur === 'milli' ? milliyetOf(g) : kisaAd(g, g.kulup), rakipGuc: e.rakipGuc, bizGuc: e.tur === 'milli' ? ulkeGuc(milliyetOf(g)) : clubOf(g).guc, evde: e.evde }); if (bot) macOtomatik(g, m); return { m }; }
 /** Ek maçın sonucunu işler (oynanmışsa verilen özet, yoksa otomatik simüle edilir). */
 export function ekMacIsle(g: Game, ozet?: MacOzet & { ek: MacEk }): EkSonuc | null {
   const e = g.ekMac; if (!e) return null; let oz = ozet; if (!oz) { const { m } = ekMacCalistir(g); oz = macOzeti(g, m); }

@@ -9,7 +9,7 @@ import { ANTRENMANLAR, antrenmanOf, HAFTALIK_ANTRENMAN, type AntrenmanDef } from
 import { esyaOf, ANTRENORLER, YASAM_GIDERI, type Antrenor } from './economy';
 export const SURUM = 5;
 export interface Gorunum { ten: number; sac: number; sacRenk: number }
-export interface Oyuncu { ad: string; soyad: string; cinsiyet: 'Erkek' | 'Kadın'; kita: string; uyruk: string; yas: number; poz: Pozisyon; numara: number; gorunum: Gorunum; yet: Yetenekler; pot: number; xp: Record<string, number> }
+export interface Oyuncu { ad: string; soyad: string; cinsiyet: 'Erkek' | 'Kadın'; kita: string; uyruk: string; milliyet?: string; yas: number; poz: Pozisyon; numara: number; gorunum: Gorunum; yet: Yetenekler; pot: number; xp: Record<string, number> }
 export interface Sozlesme { kulup: number; maas: number; golPrimi: number; asistPrimi: number; sure: number; bedel: number }
 export interface Sakatlik { tur: string; hafta: number }
 export interface Haber { sezon: number; hafta: number; bas: string; tur: 'mac' | 'kariyer' | 'ilis' | 'dunya' }
@@ -24,8 +24,8 @@ export interface SponsorAnlasma { marka: string; kat: string; macBasi: number; p
 export interface SponsorTeklif { id: number; marka: string; kat: string; macBasi: number; prim: number; sartTip: 'gol' | 'puan' | 'mac'; sartHedef: number; sure: number; kalan: number }
 export interface Gecikmeli { hafta: number; etki: Record<string, unknown>; haber?: string; baslik: string }
 export interface Teklif { id: number; kulup: number; maas: number; golPrimi: number; asistPrimi: number; sure: number; rol: 0 | 1 | 2; imza: number; bedel: number; kalan: number; pazarlik: number }
-export interface Futbolcu { ad: string; kulup: number; yas: number; hucum: number; gol: number; asist: number; mac: number; puan: number }
-export interface Yaratim { ad: string; soyad: string; cinsiyet: 'Erkek' | 'Kadın'; kita: string; uyruk: string; lig: number; poz: Pozisyon; numara: number; gorunum: Gorunum; seed?: number; isim?: IsimMod }
+export interface Futbolcu { ovr?: number; ad: string; kulup: number; yas: number; hucum: number; gol: number; asist: number; mac: number; puan: number }
+export interface Yaratim { ad: string; soyad: string; cinsiyet: 'Erkek' | 'Kadın'; kita: string; uyruk: string; milliyet?: string; lig: number; poz: Pozisyon; numara: number; gorunum: Gorunum; seed?: number; isim?: IsimMod }
 export const KITALAR = ['Avrupa', 'Asya', 'Afrika', 'Kuzey Amerika', 'Güney Amerika', 'Okyanusya'];
 export const UYRUKLAR: Record<string, string[]> = { Avrupa: ['Türkiye', 'Almanya', 'İspanya', 'Fransa', 'İtalya', 'Hollanda', 'Portekiz', 'İngiltere'], Asya: ['Japonya', 'Güney Kore', 'Azerbaycan', 'İran'], Afrika: ['Nijerya', 'Gana', 'Senegal', 'Mısır'], 'Kuzey Amerika': ['ABD', 'Meksika', 'Kanada'], 'Güney Amerika': ['Brezilya', 'Arjantin', 'Uruguay', 'Kolombiya'], Okyanusya: ['Avustralya', 'Yeni Zelanda'] };
 export const clubOf = (g: Game, id = g.kulup): Kulup => g.kulupler[id]!;
@@ -44,7 +44,7 @@ export function baslangicSozlesme(g: Game, kulup: number, rng: Rng): Sozlesme { 
 export function yeniOyun(y: Yaratim, slotId = 'slot'): Game {
   const seed = y.seed ?? (Date.now() & 0x7fffffff), rng = new Rng(seed), kulupler = kulupleriKur(y.isim ?? 'gercek'), ligler = ligleriKur();
   const yet = ilkYetenekler(y.poz, rng), pot = clamp(Math.round(72 + rng.gauss() * 7 + rng.range(0, 10)), 62, 97);
-  const oyuncu: Oyuncu = { ad: y.ad, soyad: y.soyad, cinsiyet: y.cinsiyet, kita: y.kita, uyruk: y.uyruk, yas: 16, poz: y.poz, numara: y.numara, gorunum: y.gorunum, yet, pot, xp: {} };
+  const oyuncu: Oyuncu = { ad: y.ad, soyad: y.soyad, cinsiyet: y.cinsiyet, kita: y.kita, uyruk: y.uyruk, milliyet: y.milliyet || y.uyruk, yas: 16, poz: y.poz, numara: y.numara, gorunum: y.gorunum, yet, pot, xp: {} };
   const hedefLig = clamp(y.lig, 2, 3); void TR_LIG; // kariyer alt kulüpten başlar: 3. Lig (önerilen) ya da 2. Lig (zor)
   const kulup = ligler[hedefLig]!.uye[rng.int(0, 11)]!;
   const g: Game = { v: SURUM, id: slotId, ad: `${y.ad} ${y.soyad}`, seed, rng: rng.s, sezon: 1, hafta: 1, oyuncu, kulup, sozlesme: { kulup, maas: 0, golPrimi: 0, asistPrimi: 0, sure: 2, bedel: 0 }, kulupler, ligler, para: 5000, itibar: 5, enerji: 100, yorgunluk: 0, sakatlik: null, antrenor: null, menajer: false, esyalar: {}, iliski: { td: 50, takim: 50, taraftar: 50, kiz: 0, sponsor: 45 }, haftaAntrenman: 0, gunlukRapor: [], haberler: [], maclar: [], stat: { mac: 0, gol: 0, asist: 0, sari: 0, kirmizi: 0, kupa: 0 }, gecmis: [], sezonStat: { mac: 0, gol: 0, asist: 0 }, son: Date.now(), kadro: [], oduller: [], teklifler: [], transferler: [], uyum: 0, menajerKomisyon: 0.05, mut: 60, toplamHafta: 0, sponsorlar: [], sponsorTeklifleri: [], olayGecmis: {}, gecikmeli: [], bekleyenOlay: null, haftaSosyal: 0, kizVar: false, kizAd: '', bayraklar: {}, sonMacHafta: -1, milli: milliBos(), kupa: null, ekMac: null, ekSonuc: null, kupaStat: { mac: 0, gol: 0 }, rehab: 0, nuks: 0, icecek: { klasik: 1 }, haftaIcecek: 0, kramponlar: {}, giyilen: 'temel', tema: 'modern', emekli: null, kariyerOdulleri: [] };
