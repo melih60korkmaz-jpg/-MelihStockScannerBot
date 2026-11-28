@@ -55,3 +55,5 @@ details summary{cursor:pointer;list-style:none}.tb tr[data-a]{cursor:pointer}
 [data-tema="klasik"] .btn.sec{background:linear-gradient(#566a5b,#2f3d33);border-color:#7f9a86;color:#fff}
 [data-tema="klasik"] .card{border-radius:6px;border-width:2px;background:linear-gradient(#26332a,#1b251e)}
 [data-tema="klasik"] .tabs button.on{background:linear-gradient(#45a05a,#26683a);color:#fff}
+
+.gecis{animation:in .22s ease}@media (prefers-reduced-motion:reduce){.gecis{animation:none}}
